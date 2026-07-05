@@ -19,7 +19,7 @@ class LoginScreen extends StatelessWidget {
           children: [
             const Text('Placeholder login screen'),
             const SizedBox(height: 12),
-            Text('Backend placeholder: ${AppConfig.productionApiBaseUrl}'),
+            const Text('Backend placeholder: ${AppConfig.productionApiBaseUrl}'),
             const SizedBox(height: 24),
             FilledButton(
               onPressed: () => Navigator.pushReplacementNamed(
