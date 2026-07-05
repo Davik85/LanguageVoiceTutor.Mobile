@@ -10,32 +10,52 @@ The mobile app will be built with Flutter using an Android-first delivery path. 
 - Android device audio capture and playback behavior should be validated early.
 - Android release, signing, permissions, and QA can be stabilized before expanding to iOS.
 
+## Verified Android skeleton baseline
+
+The repository has moved beyond the original docs-only foundation and now contains a minimal Flutter Android skeleton under `app/`. This skeleton has been verified locally on Android Emulator: it builds, installs, and runs with package/application id `com.languagevoicetutor.mobile`.
+
+Current verified Android build stack:
+
+- Gradle 8.14
+- Android Gradle Plugin 8.11.1
+- Kotlin Gradle Plugin 2.2.20
+- Java/Kotlin target 17
+
+Verified commands from `app/`:
+
+```bash
+flutter clean
+flutter pub get
+flutter analyze
+flutter test
+flutter run -d emulator-5554
+```
+
+The app remains a placeholder skeleton with Splash, Login, Home, Lesson, and Settings screens. No real backend auth, API integration, billing, voice, TTS, analytics, crash reporting, or store release setup has been implemented.
+
 ## Planned phases
 
-### Phase 0: Docs-only foundation
+### Phase 0: Docs-only foundation — complete
 
 - Define scope and out-of-scope items.
 - Record backend API assumptions.
 - Record billing verification model.
 - Record testing expectations.
-- Do not create Flutter, Android, iOS, or runtime code files.
 
-### Phase 1: Flutter skeleton
+### Phase 1: Flutter Android skeleton — complete
 
-Only after open decisions are resolved:
+- Flutter project structure exists under `app/`.
+- Android target is present and verified on emulator.
+- Linting, tests, and placeholder navigation are present.
+- Backend base URL exists only as non-secret configuration placeholder.
 
-- Create Flutter project structure.
-- Add Android target only if approved.
-- Configure linting and formatting.
-- Add environment configuration for backend base URL without secrets.
-- Add placeholder navigation and dependency structure.
+### Phase 2: Auth, account, and subscription-status shell — next
 
-### Phase 2: Auth and account shell
-
-- Implement login/session flow against backend.
+- Implement login/session flow against the existing backend account system.
 - Implement secure token/session storage.
-- Fetch `/api/me` and settings.
+- Fetch `/api/me`, account settings, and backend-owned subscription/entitlement status.
 - Add logout and expired-session handling.
+- Display Premium/subscription status only from backend responses; do not compute entitlement locally.
 
 ### Phase 3: Lessons and progress
 
@@ -51,7 +71,7 @@ Only after open decisions are resolved:
 - Implement TTS playback using backend-provided responses.
 - Add timeout, retry, and error-state handling.
 
-### Phase 5: Google Play Billing bridge
+### Phase 5: Google Play Billing bridge — later, after backend auth/account/subscription status
 
 - Add Google Play Billing runtime integration.
 - Send purchase tokens to backend for verification.

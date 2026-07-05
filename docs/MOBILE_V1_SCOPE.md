@@ -2,7 +2,28 @@
 
 ## Goal
 
-Mobile V1 establishes an Android-first Flutter client for Language Voice Tutor that uses the existing production backend and shared product model. It should let an existing or new user access the same account, subscription entitlement, usage limits, lesson history, progress, and AI tutor behavior used by the Windows desktop app.
+Mobile V1 establishes an Android-first Flutter client for Language Voice Tutor that uses the existing production backend and shared product model. The current Android skeleton baseline is verified locally on Android Emulator, but the app remains placeholder UI only. It should let an existing or new user access the same account, subscription entitlement, usage limits, lesson history, progress, and AI tutor behavior used by the Windows desktop app.
+
+## Current verified baseline
+
+The Flutter Android skeleton under `app/` builds, installs, and runs on Android Emulator with package/application id `com.languagevoicetutor.mobile`. It contains placeholder Splash, Login, Home, Lesson, and Settings screens only.
+
+Verified commands from `app/`:
+
+```bash
+flutter clean
+flutter pub get
+flutter analyze
+flutter test
+flutter run -d emulator-5554
+```
+
+Verified Android build stack:
+
+- Gradle 8.14
+- Android Gradle Plugin 8.11.1
+- Kotlin Gradle Plugin 2.2.20
+- Java/Kotlin target 17
 
 ## Repository strategy
 
@@ -19,6 +40,19 @@ This separation is intended to keep mobile concerns isolated:
 
 The repository must not duplicate backend business logic or become a fork of backend behavior.
 
+## Next implementation priority
+
+The next safe implementation slice is backend connection, authentication, account retrieval, and subscription-status display from backend-owned entitlement state. Billing, voice recording, TTS, analytics, crash reporting, and store release setup should remain later phases until the account/session/subscription-status path is working against confirmed backend contracts.
+
+This priority preserves the product boundary:
+
+- Mobile is another client for the same Language Voice Tutor product.
+- Mobile uses the same backend account as desktop.
+- Premium entitlement remains backend-owned and backend-verified.
+- Mobile does not call OpenAI directly.
+- Mobile does not store secrets.
+- Mobile does not decide Premium locally.
+
 ## In scope for Mobile V1
 
 - Flutter Android-first client path.
@@ -34,9 +68,8 @@ The repository must not duplicate backend business logic or become a fork of bac
 
 ## Out of scope for Mobile V1 foundation
 
-- Creating Flutter app files in the docs-only phase.
-- Creating Android or iOS project files in the docs-only phase.
-- Implementing runtime code in the docs-only phase.
+- Implementing billing before backend auth/account/subscription-status integration is confirmed.
+- Implementing voice, TTS, analytics, crash reporting, or store release setup before the backend account path is validated.
 - Creating a mobile backend.
 - Creating a mobile database as the source of truth.
 - Client-side OpenAI calls.

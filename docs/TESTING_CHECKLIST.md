@@ -23,16 +23,52 @@ Before creating the Flutter skeleton, verify:
 - Android minimum SDK and target SDK are confirmed.
 - Flutter version/channel is confirmed.
 
+## Verified Android skeleton checks
+
+The Android skeleton baseline has been verified locally on Android Emulator. Run these commands from `app/`:
+
+```bash
+flutter clean
+flutter pub get
+flutter analyze
+flutter test
+flutter run -d emulator-5554
+```
+
+Expected result: the placeholder Flutter app builds, installs, and runs on the emulator using package/application id `com.languagevoicetutor.mobile`. If the active emulator has a different id, replace `emulator-5554` with the id shown by `flutter devices`.
+
+Current verified Android build stack:
+
+- Gradle 8.14
+- Android Gradle Plugin 8.11.1
+- Kotlin Gradle Plugin 2.2.20
+- Java/Kotlin target 17
+
+## Current skeleton checks
+
+For the current placeholder skeleton, keep verifying:
+
+- Flutter package resolution.
+- Static analysis.
+- Unit/widget tests.
+- Emulator launch with the placeholder Splash, Login, Home, Lesson, and Settings screens.
+- No secrets in the repository or app bundle.
+- No client-side OpenAI calls.
+- No client-side Premium decisions.
+
 ## Future Flutter checks
 
-After runtime code exists, add checks for:
+After additional runtime code exists, add checks for:
 
 - Flutter formatting.
 - Static analysis.
 - Unit tests.
 - Widget tests.
 - Integration tests against mocked backend contracts.
+- Backend auth/session flow.
 - Secure storage behavior.
+- Account and settings retrieval from backend.
+- Subscription-status retrieval from backend-owned entitlement state.
 - Expired session handling.
 - Offline and retry states.
 - Audio permission handling.
