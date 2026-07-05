@@ -4,7 +4,7 @@ Language Voice Tutor Mobile is the Android-first Flutter client for the existing
 
 ## Current repository state
 
-This repository now contains a minimal Flutter mobile client skeleton under `app/`. The current implementation is placeholder UI only: it does not include real login, backend API calls, lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, secrets, database migrations, or backend runtime code.
+This repository now contains a minimal Flutter mobile client skeleton under `app/`. The Android skeleton has been verified locally on an Android Emulator: it builds, installs, and runs. The current implementation is placeholder UI only with Splash, Login, Home, Lesson, and Settings screens; it does not include real login, backend API calls, lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, secrets, database migrations, store release setup, or backend runtime code.
 
 ## Product direction
 
@@ -14,7 +14,7 @@ The mobile app will connect to the existing production backend at:
 https://api.languagevoicetutor.com
 ```
 
-The mobile client must use the same backend account, subscription and entitlement state, usage limits, lesson history, progress records, and AI tutor behavior as the Windows desktop app.
+The mobile client must use the same backend account, subscription and entitlement state, usage limits, lesson history, progress records, and AI tutor behavior as the Windows desktop app. The mobile repository remains a separate client repository; it is not the desktop/backend repository and must not duplicate backend-owned product logic.
 
 ## Architecture principles
 
@@ -54,28 +54,45 @@ com.languagevoicetutor.mobile
 
 The skeleton includes placeholder Splash, Login, Home, Lesson, and Settings screens with simple navigation. Runtime backend integration is intentionally not implemented yet; `https://api.languagevoicetutor.com` is present only as a configuration placeholder.
 
-### Run and verify
+### Verified Android skeleton baseline
 
-From the repository root:
+The Android Flutter skeleton is verified locally on Android Emulator with package/application id:
+
+```text
+com.languagevoicetutor.mobile
+```
+
+Verified Android build stack:
+
+- Gradle 8.14
+- Android Gradle Plugin 8.11.1
+- Kotlin Gradle Plugin 2.2.20
+- Java/Kotlin target 17
+
+Verified commands from `app/`:
 
 ```bash
-cd app
+flutter clean
 flutter pub get
 flutter analyze
 flutter test
+flutter run -d emulator-5554
 ```
 
-To run on an Android emulator:
+If a different emulator is running, replace `emulator-5554` with the active device id from `flutter devices`. Install Flutter and Android Studio/Android SDK first if those commands are unavailable.
 
-```bash
-cd app
-flutter devices
-flutter emulators
-flutter emulators --launch <emulator_id>
-flutter run -d <device_id>
-```
+## Next safe implementation focus
 
-If an emulator is already running, `flutter run` from `app/` is usually sufficient. Install Flutter and Android Studio/Android SDK first if those commands are unavailable.
+The next implementation focus should be backend connection, authentication, account loading, and subscription-status display from backend-owned entitlement state. Do this before billing, voice recording, TTS playback, analytics, crash reporting, or store release setup.
+
+The first runtime integration slice should preserve the product boundary:
+
+- Mobile is another client for the same Language Voice Tutor product.
+- Users sign in with the same backend account.
+- Premium entitlement remains backend-owned and backend-verified.
+- Mobile must not call OpenAI directly.
+- Mobile must not contain mobile secrets or provider secrets.
+- Mobile must not make client-side Premium decisions.
 
 ## Open decisions before real backend integration
 
