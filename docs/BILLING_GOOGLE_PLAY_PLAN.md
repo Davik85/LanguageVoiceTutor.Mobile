@@ -1,0 +1,67 @@
+# Google Play Billing Plan
+
+## Billing model
+
+Google Play Billing must be implemented as a client-to-backend verification bridge, not as a client-side entitlement system.
+
+The mobile app may initiate a Google Play purchase and receive a purchase token from Google Play. The app must send that purchase token to the Language Voice Tutor backend. The backend verifies the purchase with Google, reconciles the account, updates entitlement state, and returns authoritative subscription status through backend APIs.
+
+## Required flow
+
+1. User starts a purchase in the Android app.
+2. Google Play returns purchase information to the app.
+3. Mobile sends the purchase token and required product metadata to the backend over HTTPS.
+4. Backend verifies the purchase token with Google Play APIs.
+5. Backend maps the verified purchase to the authenticated Language Voice Tutor account.
+6. Backend updates subscription and entitlement state.
+7. Mobile refreshes subscription status from backend.
+8. Mobile displays the backend-confirmed entitlement state.
+
+## Rules
+
+The mobile app must not:
+
+- Treat a local Google Play purchase callback as Premium entitlement by itself.
+- Decide subscription status locally.
+- Store Google Play API secrets.
+- Store backend billing secrets.
+- Store Paddle secrets.
+- Store Apple secrets.
+- Bypass backend verification.
+
+## Backend responsibilities
+
+Backend remains responsible for:
+
+- Google Play purchase token verification.
+- Product and subscription mapping.
+- Duplicate purchase handling.
+- Account entitlement updates.
+- Cross-provider subscription reconciliation.
+- Refund, cancellation, grace-period, hold, pause, expiration, and renewal state.
+- Webhook or real-time developer notification handling if used.
+
+## Mobile responsibilities
+
+Mobile is responsible for:
+
+- Initiating Google Play purchase UI when billing runtime is added.
+- Receiving purchase token from Google Play Billing APIs.
+- Sending token to backend while authenticated.
+- Showing pending, success, and failure states.
+- Refreshing entitlement from backend after verification.
+- Offering restore/recheck actions that call backend reconciliation paths.
+
+## Open decisions
+
+Before adding billing runtime code, confirm:
+
+- Product IDs and subscription base plans.
+- Backend endpoint for purchase-token submission.
+- Required request fields.
+- Backend response shape.
+- Pending purchase behavior.
+- Restore purchase behavior.
+- Grace period and account-hold UI states.
+- Sandbox tester workflow.
+- Whether desktop Paddle subscriptions and Google Play subscriptions can coexist or need conflict handling.
