@@ -4,9 +4,7 @@ Language Voice Tutor Mobile is the Android-first Flutter client for the existing
 
 ## Current repository state
 
-This repository is in a docs-only foundation phase.
-
-No Flutter application skeleton, Android project, iOS project, runtime code, backend code, local database schema, billing implementation, or store metadata has been added yet.
+This repository now contains a minimal Flutter mobile client skeleton under `app/`. The current implementation is placeholder UI only: it does not include real login, backend API calls, lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, secrets, database migrations, or backend runtime code.
 
 ## Product direction
 
@@ -46,9 +44,42 @@ The mobile app must not:
 - [Google Play Billing Plan](docs/BILLING_GOOGLE_PLAY_PLAN.md)
 - [Testing Checklist](docs/TESTING_CHECKLIST.md)
 
-## Open decisions before Flutter skeleton
+## Flutter app skeleton
 
-Before creating the Flutter skeleton, the team should confirm:
+The Flutter project lives in `app/` and is configured Android-first with package/application id:
+
+```text
+com.languagevoicetutor.mobile
+```
+
+The skeleton includes placeholder Splash, Login, Home, Lesson, and Settings screens with simple navigation. Runtime backend integration is intentionally not implemented yet; `https://api.languagevoicetutor.com` is present only as a configuration placeholder.
+
+### Run and verify
+
+From the repository root:
+
+```bash
+cd app
+flutter pub get
+flutter analyze
+flutter test
+```
+
+To run on an Android emulator:
+
+```bash
+cd app
+flutter devices
+flutter emulators
+flutter emulators --launch <emulator_id>
+flutter run -d <device_id>
+```
+
+If an emulator is already running, `flutter run` from `app/` is usually sufficient. Install Flutter and Android Studio/Android SDK first if those commands are unavailable.
+
+## Open decisions before real backend integration
+
+Before implementing real backend integration, the team should confirm:
 
 1. Final mobile auth flow and token/session storage requirements.
 2. Exact backend endpoint paths, methods, request bodies, response bodies, and error codes.
