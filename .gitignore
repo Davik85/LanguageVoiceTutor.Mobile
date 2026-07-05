@@ -16,12 +16,15 @@ app/.packages
 app/build/
 app/coverage/
 app/android/.gradle/
+app/android/build/
 app/android/local.properties
+app/android/app/build/
 app/android/app/debug/
 app/android/app/profile/
 app/android/app/release/
 app/android/app/*.apk
 app/android/app/*.aab
+app/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
 
 # IDE/editor
 .idea/
