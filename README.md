@@ -128,3 +128,40 @@ Before implementing real backend integration, the team should confirm:
 6. TTS delivery mode: generated audio URL, streaming response, or binary payload.
 7. Google Play Billing product IDs, backend verification endpoint contract, and entitlement reconciliation behavior.
 8. Analytics, crash reporting, privacy consent, and logging requirements.
+
+## PR 2 auth, account, and subscription-status slice
+
+The second backend-connected mobile slice keeps the existing `GET /health` behavior and adds only authentication, current-account loading, and subscription-status display from the existing production backend at `https://api.languagevoicetutor.com`.
+
+Backend endpoints used by this slice:
+
+- `GET /health`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `POST /api/auth/refresh`
+- `POST /api/auth/revoke`
+- `GET /api/me/subscription-status`
+
+Premium, Trial, and Free display in the mobile Settings screen is based only on the backend `GET /api/me/subscription-status` response. The mobile app does not make client-side Premium decisions and does not call `/api/me/lesson-access` in this slice.
+
+Auth tokens are stored only via secure mobile storage. The app does not display or log raw access tokens or refresh tokens, and no OpenAI, Paddle, Google, Apple, JWT signing, backend, or other provider secrets are added.
+
+Still intentionally out of scope:
+
+- Billing implementation or payment UI.
+- Google Play Billing, Apple billing, and Paddle runtime.
+- Voice mode, TTS, lesson runtime, lesson access UI, lesson start, lesson history/progress.
+- Client-side OpenAI calls.
+- Analytics and crash reporting.
+- Store release setup.
+- Backend runtime code and database migrations.
+
+Verification commands from `app/`:
+
+```bash
+flutter pub get
+dart format --set-exit-if-changed lib test
+flutter analyze
+flutter test
+```
