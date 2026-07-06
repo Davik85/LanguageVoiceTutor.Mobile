@@ -7,6 +7,9 @@
 .pub/
 build/
 coverage/
+.gradle/
+.kotlin/
+local.properties
 
 # Flutter generated platform files
 app/.dart_tool/
@@ -16,6 +19,7 @@ app/.packages
 app/build/
 app/coverage/
 app/android/.gradle/
+app/android/.kotlin/
 app/android/build/
 app/android/local.properties
 app/android/app/build/
@@ -34,3 +38,12 @@ app/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
 # OS files
 .DS_Store
 Thumbs.db
+
+# Secrets/local environment
+.env
+*.env
+*.keystore
+*.jks
+key.properties
+google-services.json
+GoogleService-Info.plist

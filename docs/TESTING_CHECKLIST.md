@@ -42,6 +42,7 @@ Current verified Android build stack:
 - Gradle 8.14
 - Android Gradle Plugin 8.11.1
 - Kotlin Gradle Plugin 2.2.20
+- Android NDK 28.2.13676358 for debug builds and Flutter plugin native builds
 - Java/Kotlin target 17
 
 ## Current skeleton checks
