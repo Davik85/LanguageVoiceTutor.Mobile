@@ -43,25 +43,25 @@ class SubscriptionStatus {
 
   factory SubscriptionStatus.fromJson(Map<String, dynamic> json) =>
       SubscriptionStatus(
-        userId: json['userId'] as String? ?? '',
-        planId: json['planId'] as String?,
-        planName: json['planName'] as String?,
-        premiumActive: json['premiumActive'] as bool? ?? false,
-        trialActive: json['trialActive'] as bool? ?? false,
+        userId: _string(json['userId']),
+        planId: _stringOrNull(json['planId']),
+        planName: _stringOrNull(json['planName']),
+        premiumActive: _bool(json['premiumActive']),
+        trialActive: _bool(json['trialActive']),
         trialEndsAtUtc: _dateOrNull(json['trialEndsAtUtc']),
-        subscriptionStatus: json['subscriptionStatus'] as String?,
-        billingProvider: json['billingProvider'] as String?,
-        freeLessonUsedToday: json['freeLessonUsedToday'] as int? ?? 0,
-        freeLessonRemainingToday: json['freeLessonRemainingToday'] as int? ?? 0,
-        freeLessonConsumptionRule: json['freeLessonConsumptionRule'] as String?,
-        checkedAtUtc: DateTime.parse(json['checkedAtUtc'] as String),
-        currentAccessTier: json['currentAccessTier'] as String?,
-        currentAccessSource: json['currentAccessSource'] as String?,
-        currentTariffName: json['currentTariffName'] as String?,
-        premiumDisplayStatusCode: json['premiumDisplayStatusCode'] as String?,
+        subscriptionStatus: _stringOrNull(json['subscriptionStatus']),
+        billingProvider: _stringOrNull(json['billingProvider']),
+        freeLessonUsedToday: _int(json['freeLessonUsedToday']),
+        freeLessonRemainingToday: _int(json['freeLessonRemainingToday']),
+        freeLessonConsumptionRule: _stringOrNull(json['freeLessonConsumptionRule']),
+        checkedAtUtc: _dateOrNull(json['checkedAtUtc']) ?? DateTime.now().toUtc(),
+        currentAccessTier: _stringOrNull(json['currentAccessTier']),
+        currentAccessSource: _stringOrNull(json['currentAccessSource']),
+        currentTariffName: _stringOrNull(json['currentTariffName']),
+        premiumDisplayStatusCode: _stringOrNull(json['premiumDisplayStatusCode']),
         premiumStartsAtUtc: _dateOrNull(json['premiumStartsAtUtc']),
         premiumEndsAtUtc: _dateOrNull(json['premiumEndsAtUtc']),
-        enforcementEnabled: json['enforcementEnabled'] as bool? ?? false,
+        enforcementEnabled: _bool(json['enforcementEnabled']),
       );
 
   String get displayLabel {
@@ -71,5 +71,11 @@ class SubscriptionStatus {
   }
 
   static DateTime? _dateOrNull(Object? value) =>
-      value is String && value.isNotEmpty ? DateTime.parse(value) : null;
+      value is String && value.isNotEmpty ? DateTime.tryParse(value) : null;
+
+  static String _string(Object? value) => value is String ? value : '';
+  static String? _stringOrNull(Object? value) => value is String ? value : null;
+  static bool _bool(Object? value) => value is bool ? value : false;
+  static int _int(Object? value) =>
+      value is int ? value : value is num ? value.toInt() : 0;
 }

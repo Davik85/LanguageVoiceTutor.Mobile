@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'config/app_config.dart';
 import 'services/auth_service.dart';
+import 'services/service_factory.dart';
 import 'screens/home_screen.dart';
 import 'screens/lesson_screen.dart';
 import 'screens/login_screen.dart';
@@ -9,14 +10,14 @@ import 'screens/settings_screen.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
-  runApp(const LanguageVoiceTutorApp());
+  runApp(LanguageVoiceTutorApp());
 }
 
 class LanguageVoiceTutorApp extends StatelessWidget {
-  const LanguageVoiceTutorApp({super.key, AuthService? authService})
-      : _authService = authService;
+  LanguageVoiceTutorApp({super.key, AuthService? authService})
+      : _authService = authService ?? createAuthService();
 
-  final AuthService? _authService;
+  final AuthService _authService;
 
   @override
   Widget build(BuildContext context) {

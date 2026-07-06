@@ -48,6 +48,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() { _user = user; _subscription = subscription; _accountError = null; });
     } on ApiException catch (error) {
       if (!mounted) return;
+      if (error.message == 'Please sign in again.') {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          LoginScreen.routeName,
+          (_) => false,
+        );
+        return;
+      }
       setState(() => _accountError = error.message);
     } catch (_) {
       if (!mounted) return;

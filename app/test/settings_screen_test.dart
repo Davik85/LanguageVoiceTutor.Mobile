@@ -76,7 +76,10 @@ void main() {
 
     expect(find.text('Backend connection'), findsOneWidget);
     expect(find.text('Not checked'), findsOneWidget);
+    expect(find.text('User'), findsOneWidget);
+    expect(find.text('user@example.com'), findsOneWidget);
     expect(find.text('Premium'), findsOneWidget);
+    expect(find.text('Premium Monthly'), findsOneWidget);
 
     await tester.tap(find.text('Check connection'));
     await tester.pumpAndSettle();
