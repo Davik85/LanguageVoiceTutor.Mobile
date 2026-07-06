@@ -181,7 +181,8 @@ void main() {
       },
       postResponse: (path, body) => const ApiResponse(
         statusCode: 200,
-        body: '{"accessToken":"new-access-token","tokenType":"Bearer","expiresAtUtc":"2026-07-06T13:00:00Z","refreshToken":"new-refresh-token","refreshTokenExpiresAtUtc":"2026-08-06T12:00:00Z","user":{"userId":"u1","email":"user@example.com","createdAt":"2026-07-01T12:00:00Z"}}',
+        body:
+            '{"accessToken":"new-access-token","tokenType":"Bearer","expiresAtUtc":"2026-07-06T13:00:00Z","refreshToken":"new-refresh-token","refreshTokenExpiresAtUtc":"2026-08-06T12:00:00Z","user":{"userId":"u1","email":"user@example.com","createdAt":"2026-07-01T12:00:00Z"}}',
       ),
     );
 
@@ -221,16 +222,16 @@ void main() {
         home: HomeScreen(
           authService: FakeAuthService(
             lessonAccess: LessonAccessDecision.fromJson({
-      'userId': 'u1',
-      'canStartNewLesson': true,
-      'premiumActive': false,
-      'trialActive': true,
-      'freeLessonUsedToday': false,
-      'freeLessonRemainingToday': 1,
-      'enforcementEnabled': true,
-      'decision': 'allowed',
-      'reason': 'Trial access is active.',
-      'checkedAtUtc': '2026-07-06T12:00:00Z',
+              'userId': 'u1',
+              'canStartNewLesson': true,
+              'premiumActive': false,
+              'trialActive': true,
+              'freeLessonUsedToday': false,
+              'freeLessonRemainingToday': 1,
+              'enforcementEnabled': true,
+              'decision': 'allowed',
+              'reason': 'Trial access is active.',
+              'checkedAtUtc': '2026-07-06T12:00:00Z',
             }),
           ),
         ),
@@ -251,16 +252,16 @@ void main() {
         home: HomeScreen(
           authService: FakeAuthService(
             lessonAccess: LessonAccessDecision.fromJson({
-      'userId': 'u1',
-      'canStartNewLesson': false,
-      'premiumActive': false,
-      'trialActive': false,
-      'freeLessonUsedToday': true,
-      'freeLessonRemainingToday': 0,
-      'enforcementEnabled': true,
-      'decision': 'blocked',
-      'reason': 'Daily free lesson limit reached.',
-      'checkedAtUtc': '2026-07-06T12:00:00Z',
+              'userId': 'u1',
+              'canStartNewLesson': false,
+              'premiumActive': false,
+              'trialActive': false,
+              'freeLessonUsedToday': true,
+              'freeLessonRemainingToday': 0,
+              'enforcementEnabled': true,
+              'decision': 'blocked',
+              'reason': 'Daily free lesson limit reached.',
+              'checkedAtUtc': '2026-07-06T12:00:00Z',
             }),
           ),
         ),
@@ -270,7 +271,8 @@ void main() {
     await tester.tap(find.text('Check lesson access'));
     await tester.pumpAndSettle();
 
-    expect(find.text('You cannot start a new lesson right now'), findsOneWidget);
+    expect(
+        find.text('You cannot start a new lesson right now'), findsOneWidget);
     expect(find.text('Daily free lesson limit reached.'), findsOneWidget);
     expect(find.text('Free lessons remaining today: 0'), findsOneWidget);
   });
