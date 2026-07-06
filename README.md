@@ -6,6 +6,29 @@ Language Voice Tutor Mobile is the Android-first Flutter client for the existing
 
 This repository now contains a minimal Flutter mobile client skeleton under `app/`. The Android skeleton has been verified locally on an Android Emulator: it builds, installs, and runs. The current implementation includes placeholder UI with Splash, Login, Home, Lesson, and Settings screens plus a small backend health-check slice. The Settings screen can call the production backend public `GET /health` endpoint and display a friendly connection state. It does not include real login, account loading, subscription or Premium logic, lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, secrets, database migrations, store release setup, or backend runtime code.
 
+
+## Current verified mobile baseline
+
+Latest known commit: `fcecef5` (`Fix mobile settings parity foundation`). The mobile Settings parity foundation is fixed and verified with a green baseline from `app/`:
+
+```bash
+dart format --set-exit-if-changed lib test
+flutter analyze
+flutter test
+```
+
+`flutter analyze` returned `No issues found`, and `flutter test` returned `All tests passed`. Settings now has stable visible **Account**, **Learning**, **Audio**, and **Backend diagnostics** sections, with **Save settings** visible and tested. User level is not in Settings. **Open Lesson** remains a placeholder. `selectedTutorId` is not sent to `/api/me/settings`, and selected tutor avatar persistence remains a backend/API gap unless an existing backend-supported endpoint is confirmed.
+
+## Desktop parity source model
+
+The reviewed Windows desktop client walkthrough presentation is a product reference source for mobile parity. Mobile should preserve desktop product flow and behavior while adapting screens into phone-first layouts instead of copying the Windows UI directly. The desktop source flow is:
+
+```text
+Start -> Settings/preferences -> Choose level -> Pick topic -> Pick situation -> Practice
+```
+
+Level selection must remain a separate lesson-start step before topic/situation selection, not a Settings field. Settings parity should gradually cover profile/learning goal, study language, native language, interface/explanation language, tutor avatar, tutor voice, account/subscription, audio, and progress while keeping account/subscription/progress backend-owned.
+
 ## Product direction
 
 The mobile app will connect to the existing production backend at:
@@ -39,6 +62,7 @@ The mobile app must not:
 ## Foundation documents
 
 - [Mobile V1 Scope](docs/MOBILE_V1_SCOPE.md)
+- [Desktop Parity Source Model](docs/DESKTOP_PARITY_SOURCE_MODEL.md)
 - [API Contracts and Assumptions](docs/API_CONTRACTS_ASSUMPTIONS.md)
 - [Android-First Plan](docs/ANDROID_FIRST_PLAN.md)
 - [Google Play Billing Plan](docs/BILLING_GOOGLE_PLAY_PLAN.md)

@@ -268,3 +268,39 @@ dart format --set-exit-if-changed lib test
 flutter analyze
 flutter test
 ```
+
+## Current green Settings parity baseline
+
+Latest known commit: `fcecef5` (`Fix mobile settings parity foundation`). This baseline was verified from `app/` with:
+
+```bash
+dart format --set-exit-if-changed lib test
+flutter analyze
+flutter test
+```
+
+Expected command results:
+
+- `dart format --set-exit-if-changed lib test` passes.
+- `flutter analyze` returns `No issues found`.
+- `flutter test` returns `All tests passed`.
+
+Settings checks for this baseline:
+
+- **Account** section is visible.
+- **Learning** section is visible.
+- **Audio** section is visible.
+- **Backend diagnostics** section is visible.
+- **Save settings** is visible.
+- No level selector is shown in Settings.
+- `selectedTutorId` is not sent to `PUT /api/me/settings`.
+- **Open Lesson** remains a placeholder.
+
+Desktop parity checks:
+
+- Mobile preserves desktop product flow and behavior without copying the Windows layout directly.
+- Level selection remains a separate lesson-start step before topic/situation selection.
+- Settings uses backend-supported `/api/me/settings` fields only: `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `speechVoice`, `speechSpeed`, and `conversationModeEnabled`.
+- Selected tutor avatar persistence remains documented as an API gap unless an existing backend-supported endpoint is confirmed.
+
+Still out of scope for the current documentation update: lesson runtime, voice recording, TTS playback, billing, analytics, Google Play Billing, Apple billing, backend changes, desktop changes, and store release metadata.

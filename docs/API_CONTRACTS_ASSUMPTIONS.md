@@ -46,14 +46,30 @@ Expected settings behavior:
 - Persist mobile-compatible settings through backend APIs.
 - Keep settings consistent with desktop where the same preference exists.
 
-Possible data fields:
+Confirmed current settings contract:
+
+- `GET /api/me/settings` and `PUT /api/me/settings` support backend-owned settings fields: `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `speechVoice`, `speechSpeed`, and `conversationModeEnabled`.
+- `GET /api/me/settings` and `PUT /api/me/settings` do not include `selectedTutorId`.
+- Mobile must not send `selectedTutorId` to `/api/me/settings`.
+- Mobile must not document fake local selected-tutor persistence as the source of truth.
+- Selected tutor avatar persistence remains a backend/API gap unless another existing backend-supported API is confirmed.
+
+Possible `/api/me` data fields:
 
 - User ID.
 - Email or display identifier.
 - Account status.
 - Locale or target language preferences.
-- Tutor preferences shared with desktop.
 - Subscription summary suitable for display.
+
+## Tutor options expectations
+
+Confirmed current tutor options contract:
+
+- `GET /api/tutor-options` can provide available tutors.
+- Current mobile documentation treats desktop tutor profiles as Lana, Nelli, and David.
+- Tutor choice is product-significant because it affects display name, profile/persona, and preferred voice behavior in lessons.
+- Available tutor options are not the same as persisted selected tutor state; persistence needs backend support.
 
 ## Subscription-status expectations
 
@@ -90,6 +106,8 @@ Possible response concepts:
 - Upgrade or billing action hint.
 
 ## Lesson start, message, history, and progress expectations
+
+Desktop parity source flow: `Start -> Settings/preferences -> Choose level -> Pick topic -> Pick situation -> Practice`. Level selection is part of lesson start and must not be a Settings field.
 
 Expected behavior:
 
