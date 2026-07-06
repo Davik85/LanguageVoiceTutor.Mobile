@@ -56,6 +56,40 @@ For the current placeholder skeleton, keep verifying:
 - No client-side OpenAI calls.
 - No client-side Premium decisions.
 
+
+## Backend health-check slice checks
+
+This mobile slice verifies only basic backend reachability from the Flutter client. It uses the production API base URL and calls only:
+
+```text
+GET /health
+```
+
+Expected response fields parsed by the app:
+
+- `status`
+- `environment`
+- `checkedAtUtc`
+
+The Settings screen should show **Backend connection** with one of these friendly states: `Not checked`, `Checking...`, `Connected`, or `Unavailable`. Timeout, network failure, unsuccessful status codes, and invalid response bodies should show `Unavailable` without stack traces, database details, configurable release UI backend URLs, or raw exception text.
+
+Intentionally out of scope for this PR:
+
+- Auth, login, register, account loading, or token storage.
+- Subscription/Premium logic and `/api/me/subscription-status`.
+- Paddle, Google Play Billing, or Apple billing runtime.
+- Voice mode, TTS, lesson runtime, lesson history, progress, analytics, crash reporting, backend runtime code, and database migrations.
+- Client-side OpenAI calls or provider/backend secrets.
+
+Run these commands from `app/` to verify the health-check slice:
+
+```bash
+flutter pub get
+dart format --set-exit-if-changed lib test
+flutter analyze
+flutter test
+```
+
 ## Future Flutter checks
 
 After additional runtime code exists, add checks for:
