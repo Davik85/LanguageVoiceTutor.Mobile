@@ -165,3 +165,25 @@ dart format --set-exit-if-changed lib test
 flutter analyze
 flutter test
 ```
+
+## PR 3 lesson access check slice
+
+This slice adds only a small backend-connected lesson access check to the Flutter mobile client. The exact endpoint used is:
+
+```http
+GET /api/me/lesson-access
+```
+
+The Home screen displays the backend lesson access decision only. Mobile does not decide Premium, Trial, free usage, limits, or lesson access locally, and it does not start a real lesson from this card.
+
+The response fields displayed by mobile are `canStartNewLesson`, `decision`, `reason`, `premiumActive`, `trialActive`, `freeLessonUsedToday`, `freeLessonRemainingToday`, `enforcementEnabled`, and `checkedAtUtc`. Extra backend response fields are tolerated.
+
+Out of scope for this slice: lessons, lesson chat, voice mode, TTS, lesson history/progress, billing, Google Play Billing, Apple billing, Paddle runtime, analytics, crash reporting, backend runtime changes, and database migrations.
+
+Verification commands from `app/`:
+
+```bash
+dart format --set-exit-if-changed lib test
+flutter analyze
+flutter test
+```
