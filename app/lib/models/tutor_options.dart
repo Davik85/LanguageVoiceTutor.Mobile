@@ -30,7 +30,8 @@ class TutorOptions {
       scenarios: _labelsFromAny(json, const ['scenarios', 'scenarioOptions']),
       contexts: _labelsFromAny(json, const ['contexts', 'contextOptions']),
       tutors: _labelsFromAny(json, const ['tutors', 'tutorOptions']),
-      modes: _labelsFromAny(json, const ['modes', 'lessonModes', 'modeOptions']),
+      modes:
+          _labelsFromAny(json, const ['modes', 'lessonModes', 'modeOptions']),
     );
   }
 

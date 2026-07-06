@@ -18,7 +18,8 @@ class TutorOptionsService {
     try {
       final decoded = jsonDecode(response.body);
       if (decoded is! Map<String, dynamic>) {
-        throw const ApiException('The service returned an unexpected response.');
+        throw const ApiException(
+            'The service returned an unexpected response.');
       }
       return TutorOptions.fromJson(decoded);
     } on ApiException {

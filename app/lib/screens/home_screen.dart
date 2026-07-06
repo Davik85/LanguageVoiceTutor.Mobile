@@ -15,8 +15,7 @@ class HomeScreen extends StatefulWidget {
     super.key,
     AuthService? authService,
     TutorOptionsService? tutorOptionsService,
-  })
-      : _authService = authService,
+  })  : _authService = authService,
         _tutorOptionsService = tutorOptionsService;
 
   static const String routeName = '/home';

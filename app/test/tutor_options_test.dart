@@ -32,8 +32,9 @@ class RecordingApiClient implements ApiClient {
 
 class FakeTutorOptionsService extends TutorOptionsService {
   FakeTutorOptionsService({this.options, this.failure})
-      : super(apiClient: RecordingApiClient(
-            const ApiResponse(statusCode: 500, body: '{}')));
+      : super(
+            apiClient: RecordingApiClient(
+                const ApiResponse(statusCode: 500, body: '{}')));
 
   final TutorOptions? options;
   final ApiException? failure;
@@ -103,7 +104,10 @@ void main() {
         {'code': 'es', 'name': 'Spanish', 'extra': 'ignored'},
         {'code': 'fr', 'displayName': 'French'}
       ],
-      'levels': ['Beginner', {'level': 'Intermediate'}],
+      'levels': [
+        'Beginner',
+        {'level': 'Intermediate'}
+      ],
       'topics': [
         {'topicId': 'travel', 'topicTitle': 'Travel'}
       ],
@@ -130,7 +134,8 @@ void main() {
     expect(options.hasAnyOptions, isTrue);
   });
 
-  test('service calls public tutor options endpoint without auth token', () async {
+  test('service calls public tutor options endpoint without auth token',
+      () async {
     final apiClient = RecordingApiClient(const ApiResponse(
       statusCode: 200,
       body: '{"studyLanguages":["Spanish"],"levels":["Beginner"]}',
@@ -186,7 +191,8 @@ void main() {
     expect(find.text('Topics: Travel, Food'), findsOneWidget);
   });
 
-  testWidgets('home widget displays friendly unavailable state', (tester) async {
+  testWidgets('home widget displays friendly unavailable state',
+      (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: HomeScreen(
         authService: FakeAuthService(),
