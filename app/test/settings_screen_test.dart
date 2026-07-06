@@ -28,21 +28,37 @@ class FakeTutorOptionsService extends TutorOptionsService { FakeTutorOptionsServ
 class _MemoryStorage implements SessionStorage { @override Future<void> clear() async {} @override Future<String?> readAccessToken() async => null; @override Future<String?> readRefreshToken() async => null; @override Future<void> saveTokens({required String accessToken, required String refreshToken}) async {} }
 
 Widget _screen(FakeAuthService auth) => MaterialApp(home: SettingsScreen(healthService: BackendHealthService(apiClient: FakeApiClient()), authService: auth, tutorOptionsService: FakeTutorOptionsService()));
+
+Future<void> _scrollToText(WidgetTester tester, String text) async {
+  await tester.scrollUntilVisible(
+    find.text(text),
+    500,
+    scrollable: find.byType(Scrollable),
+  );
+}
+
 void main() {
   testWidgets('settings screen loaded state shows account, learning, audio', (tester) async {
     await tester.pumpWidget(_screen(FakeAuthService())); await tester.pumpAndSettle();
     expect(find.text('Account'), findsOneWidget); expect(find.text('User'), findsOneWidget); expect(find.text('Premium Monthly'), findsOneWidget);
     expect(find.text('Learning'), findsOneWidget); expect(find.text('Study language'), findsOneWidget); expect(find.text('Lana, Nelli'), findsOneWidget); expect(find.text('Tutor voice'), findsOneWidget);
-    expect(find.text('Audio'), findsOneWidget); expect(find.text('Conversation mode enabled'), findsOneWidget); expect(find.text('Backend connection'), findsOneWidget);
+    await _scrollToText(tester, 'Audio');
+    expect(find.text('Audio'), findsOneWidget); expect(find.text('Conversation mode enabled'), findsOneWidget);
+    await _scrollToText(tester, 'Backend diagnostics');
+    expect(find.text('Backend diagnostics'), findsOneWidget);
+    expect(find.text('Save settings'), findsOneWidget);
+    expect(find.textContaining('level', findRichText: true), findsNothing);
   });
   testWidgets('settings screen save success shows friendly message', (tester) async {
     final auth = FakeAuthService(); await tester.pumpWidget(_screen(auth)); await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Save settings');
     await tester.tap(find.text('Save settings')); await tester.pumpAndSettle();
     expect(auth.saved, isTrue); expect(find.text('Settings saved.'), findsOneWidget);
   });
   testWidgets('settings screen friendly failure hides raw backend details', (tester) async {
     final auth = FakeAuthService(saveFailure: const ApiException('raw stack trace secret token'));
     await tester.pumpWidget(_screen(auth)); await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Save settings');
     await tester.tap(find.text('Save settings')); await tester.pumpAndSettle();
     expect(find.text('Unable to save settings right now.'), findsOneWidget);
     expect(find.textContaining('secret token'), findsNothing);

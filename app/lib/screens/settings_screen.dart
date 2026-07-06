@@ -34,7 +34,15 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  static const _languages = ['English', 'Spanish', 'French', 'German'];
+  static const _studyLanguages = [
+    'English',
+    'French',
+    'German',
+    'Portuguese',
+    'Spanish',
+    'Italian',
+  ];
+  static const _interfaceLanguages = ['English', 'Spanish', 'French', 'German'];
   static const _voices = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
 
   late final BackendHealthService _healthService;
@@ -177,7 +185,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             settings: _settings,
             tutorOptions: _tutorOptions,
             error: _settingsError,
-            languages: _languages,
+            studyLanguages: _studyLanguages,
+            interfaceLanguages: _interfaceLanguages,
             voices: _voices,
             onChanged: _updateSettings,
           ),
@@ -242,11 +251,12 @@ class _AccountCard extends StatelessWidget {
 }
 
 class _LearningCard extends StatelessWidget {
-  const _LearningCard({required this.settings, required this.tutorOptions, required this.error, required this.languages, required this.voices, required this.onChanged});
+  const _LearningCard({required this.settings, required this.tutorOptions, required this.error, required this.studyLanguages, required this.interfaceLanguages, required this.voices, required this.onChanged});
   final UserSettings? settings;
   final TutorOptions? tutorOptions;
   final String? error;
-  final List<String> languages;
+  final List<String> studyLanguages;
+  final List<String> interfaceLanguages;
   final List<String> voices;
   final ValueChanged<UserSettings> onChanged;
   @override
@@ -254,9 +264,9 @@ class _LearningCard extends StatelessWidget {
     Text('Learning', style: Theme.of(context).textTheme.titleMedium),
     const SizedBox(height: 8),
     if (settings == null && error == null) const Text('Loading settings...') else if (settings == null) Text(error!) else ...[
-      _Dropdown(label: 'Study language', value: settings!.studyLanguage, values: languages, onChanged: (v) => onChanged(settings!.copyWith(studyLanguage: v))),
-      _Dropdown(label: 'Native language', value: settings!.nativeLanguage, values: languages, onChanged: (v) => onChanged(settings!.copyWith(nativeLanguage: v))),
-      _Dropdown(label: 'Interface / explanation language', value: settings!.explanationLanguage, values: languages, onChanged: (v) => onChanged(settings!.copyWith(explanationLanguage: v))),
+      _Dropdown(label: 'Study language', value: settings!.studyLanguage, values: studyLanguages, onChanged: (v) => onChanged(settings!.copyWith(studyLanguage: v))),
+      _Dropdown(label: 'Native language', value: settings!.nativeLanguage, values: interfaceLanguages, onChanged: (v) => onChanged(settings!.copyWith(nativeLanguage: v))),
+      _Dropdown(label: 'Interface / explanation language', value: settings!.explanationLanguage, values: interfaceLanguages, onChanged: (v) => onChanged(settings!.copyWith(explanationLanguage: v))),
       const SizedBox(height: 8),
       Text('Tutor avatar / available tutors', style: Theme.of(context).textTheme.labelLarge),
       Text(tutorOptions?.activeTutors.map((t) => t.label).join(', ') ?? 'Loading tutors...'),
@@ -290,7 +300,7 @@ class _DiagnosticsCard extends StatelessWidget {
   final VoidCallback onCheck;
   @override
   Widget build(BuildContext context) => Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Text('Backend connection', style: Theme.of(context).textTheme.titleMedium),
+    Text('Backend diagnostics', style: Theme.of(context).textTheme.titleMedium),
     const SizedBox(height: 8),
     Text(connectionLabel),
     const SizedBox(height: 8),
@@ -311,7 +321,7 @@ class _Dropdown extends StatelessWidget {
     final items = {...values, if (value.isNotEmpty) value}.toList();
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(labelText: label),
-      value: value.isEmpty ? null : value,
+      initialValue: value.isEmpty ? null : value,
       items: items.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
       onChanged: (v) { if (v != null) onChanged(v); },
     );
