@@ -165,7 +165,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         (_) => false,
       );
 
-  void _updateSettings(UserSettings settings) => setState(() => _settings = settings);
+  void _updateSettings(UserSettings settings) {
+    setState(() => _settings = settings);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -215,8 +217,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         BackendConnectionState.notChecked => 'Not checked',
         BackendConnectionState.checking => 'Checking...',
         BackendConnectionState.connected => 'Connected',
-        BackendConnectionState.unavailable => 'Unavailable'
+        BackendConnectionState.unavailable => 'Unavailable',
       };
+
   String get _connectionMessage => switch (_connectionState) {
         BackendConnectionState.notChecked =>
           'Tap the button to confirm the app can reach the Language Voice Tutor service.',
@@ -224,34 +227,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
         BackendConnectionState.connected =>
           'The app can reach the Language Voice Tutor service.',
         BackendConnectionState.unavailable =>
-          'The service is unavailable right now. Please try again later.'
+          'The service is unavailable right now. Please try again later.',
       };
 }
 
 class _AccountCard extends StatelessWidget {
-  const _AccountCard({this.user, this.subscription, this.error, required this.onLogout});
+  const _AccountCard({
+    required this.user,
+    required this.subscription,
+    required this.error,
+    required this.onLogout,
+  });
+
   final AuthUser? user;
   final SubscriptionStatus? subscription;
   final String? error;
   final VoidCallback onLogout;
+
   @override
-  Widget build(BuildContext context) => Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Text('Account', style: Theme.of(context).textTheme.titleMedium),
-    const SizedBox(height: 8),
-    if (user == null && error == null) const Text('Loading account...') else if (user != null) ...[
-      Text(user!.displayName?.isNotEmpty == true ? user!.displayName! : 'No display name'),
-      Text(user!.email),
-      const SizedBox(height: 8),
-      Text(subscription?.displayLabel ?? 'Subscription unavailable'),
-      Text(subscription?.planName ?? subscription?.currentTariffName ?? 'No paid plan'),
-    ] else Text(error!),
-    const SizedBox(height: 12),
-    FilledButton.tonal(onPressed: onLogout, child: const Text('Logout')),
-  ])));
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Account', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            if (user == null && error == null)
+              const Text('Loading account...')
+            else if (user != null) ...[
+              Text(
+                user!.displayName?.isNotEmpty == true
+                    ? user!.displayName!
+                    : 'No display name',
+              ),
+              Text(user!.email),
+              const SizedBox(height: 8),
+              Text(subscription?.displayLabel ?? 'Subscription unavailable'),
+              Text(subscription?.planName ??
+                  subscription?.currentTariffName ??
+                  'No paid plan'),
+            ] else
+              Text(error!),
+            const SizedBox(height: 12),
+            FilledButton.tonal(onPressed: onLogout, child: const Text('Logout')),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _LearningCard extends StatelessWidget {
-  const _LearningCard({required this.settings, required this.tutorOptions, required this.error, required this.studyLanguages, required this.interfaceLanguages, required this.voices, required this.onChanged});
+  const _LearningCard({
+    required this.settings,
+    required this.tutorOptions,
+    required this.error,
+    required this.studyLanguages,
+    required this.interfaceLanguages,
+    required this.voices,
+    required this.onChanged,
+  });
+
   final UserSettings? settings;
   final TutorOptions? tutorOptions;
   final String? error;
@@ -259,71 +297,188 @@ class _LearningCard extends StatelessWidget {
   final List<String> interfaceLanguages;
   final List<String> voices;
   final ValueChanged<UserSettings> onChanged;
+
   @override
-  Widget build(BuildContext context) => Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Text('Learning', style: Theme.of(context).textTheme.titleMedium),
-    const SizedBox(height: 8),
-    if (settings == null && error == null) const Text('Loading settings...') else if (settings == null) Text(error!) else ...[
-      _Dropdown(label: 'Study language', value: settings!.studyLanguage, values: studyLanguages, onChanged: (v) => onChanged(settings!.copyWith(studyLanguage: v))),
-      _Dropdown(label: 'Native language', value: settings!.nativeLanguage, values: interfaceLanguages, onChanged: (v) => onChanged(settings!.copyWith(nativeLanguage: v))),
-      _Dropdown(label: 'Interface / explanation language', value: settings!.explanationLanguage, values: interfaceLanguages, onChanged: (v) => onChanged(settings!.copyWith(explanationLanguage: v))),
-      const SizedBox(height: 8),
-      Text('Tutor avatar / available tutors', style: Theme.of(context).textTheme.labelLarge),
-      Text(tutorOptions?.activeTutors.map((t) => t.label).join(', ') ?? 'Loading tutors...'),
-      const Text('Selected tutor persistence is not available in the current settings API yet.'),
-      _Dropdown(label: 'Tutor voice', value: settings!.speechVoice, values: voices, onChanged: (v) => onChanged(settings!.copyWith(speechVoice: v))),
-    ],
-  ])));
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Learning', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            if (settings == null && error == null)
+              const Text('Loading settings...')
+            else if (settings == null)
+              Text(error!)
+            else ...[
+              _Dropdown(
+                label: 'Study language',
+                value: settings!.studyLanguage,
+                values: studyLanguages,
+                onChanged: (value) => onChanged(
+                  settings!.copyWith(studyLanguage: value),
+                ),
+              ),
+              _Dropdown(
+                label: 'Native language',
+                value: settings!.nativeLanguage,
+                values: interfaceLanguages,
+                onChanged: (value) => onChanged(
+                  settings!.copyWith(nativeLanguage: value),
+                ),
+              ),
+              _Dropdown(
+                label: 'Interface / explanation language',
+                value: settings!.explanationLanguage,
+                values: interfaceLanguages,
+                onChanged: (value) => onChanged(
+                  settings!.copyWith(explanationLanguage: value),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tutor avatar / available tutors',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              Text(
+                tutorOptions?.activeTutors.map((tutor) => tutor.label).join(', ') ??
+                    'Loading tutors...',
+              ),
+              const Text(
+                'Selected tutor persistence is not available in the current settings API yet.',
+              ),
+              _Dropdown(
+                label: 'Tutor voice',
+                value: settings!.speechVoice,
+                values: voices,
+                onChanged: (value) => onChanged(
+                  settings!.copyWith(speechVoice: value),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _AudioCard extends StatelessWidget {
   const _AudioCard({required this.settings, required this.onChanged});
+
   final UserSettings? settings;
   final ValueChanged<UserSettings> onChanged;
+
   @override
-  Widget build(BuildContext context) => Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Text('Audio', style: Theme.of(context).textTheme.titleMedium),
-    const SizedBox(height: 8),
-    if (settings == null) const Text('Loading audio settings...') else ...[
-      Text('Speech speed: ${settings!.speechSpeed.toStringAsFixed(1)}x'),
-      Slider(value: settings!.speechSpeed.clamp(0.5, 2.0), min: 0.5, max: 2.0, divisions: 15, label: settings!.speechSpeed.toStringAsFixed(1), onChanged: (v) => onChanged(settings!.copyWith(speechSpeed: double.parse(v.toStringAsFixed(1))))),
-      SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Conversation mode enabled'), value: settings!.conversationModeEnabled, onChanged: (v) => onChanged(settings!.copyWith(conversationModeEnabled: v))),
-    ],
-  ])));
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Audio', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            if (settings == null)
+              const Text('Loading audio settings...')
+            else ...[
+              Text('Speech speed: ${settings!.speechSpeed.toStringAsFixed(1)}x'),
+              Slider(
+                value: settings!.speechSpeed.clamp(0.5, 2.0),
+                min: 0.5,
+                max: 2.0,
+                divisions: 15,
+                label: settings!.speechSpeed.toStringAsFixed(1),
+                onChanged: (value) => onChanged(
+                  settings!.copyWith(
+                    speechSpeed: double.parse(value.toStringAsFixed(1)),
+                  ),
+                ),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Conversation mode enabled'),
+                value: settings!.conversationModeEnabled,
+                onChanged: (value) => onChanged(
+                  settings!.copyWith(conversationModeEnabled: value),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _DiagnosticsCard extends StatelessWidget {
-  const _DiagnosticsCard({required this.connectionLabel, required this.connectionMessage, required this.checking, required this.onCheck});
+  const _DiagnosticsCard({
+    required this.connectionLabel,
+    required this.connectionMessage,
+    required this.checking,
+    required this.onCheck,
+  });
+
   final String connectionLabel;
   final String connectionMessage;
   final bool checking;
   final VoidCallback onCheck;
+
   @override
-  Widget build(BuildContext context) => Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Text('Backend diagnostics', style: Theme.of(context).textTheme.titleMedium),
-    const SizedBox(height: 8),
-    Text(connectionLabel),
-    const SizedBox(height: 8),
-    Text(connectionMessage),
-    const SizedBox(height: 12),
-    FilledButton(onPressed: checking ? null : onCheck, child: const Text('Check connection')),
-  ])));
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Backend diagnostics',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(connectionLabel),
+            const SizedBox(height: 8),
+            Text(connectionMessage),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: checking ? null : onCheck,
+              child: const Text('Check connection'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _Dropdown extends StatelessWidget {
-  const _Dropdown({required this.label, required this.value, required this.values, required this.onChanged});
+  const _Dropdown({
+    required this.label,
+    required this.value,
+    required this.values,
+    required this.onChanged,
+  });
+
   final String label;
   final String value;
   final List<String> values;
   final ValueChanged<String> onChanged;
+
   @override
   Widget build(BuildContext context) {
     final items = {...values, if (value.isNotEmpty) value}.toList();
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(labelText: label),
       initialValue: value.isEmpty ? null : value,
-      items: items.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-      onChanged: (v) { if (v != null) onChanged(v); },
+      items: items
+          .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+          .toList(),
+      onChanged: (value) {
+        if (value != null) onChanged(value);
+      },
     );
   }
 }

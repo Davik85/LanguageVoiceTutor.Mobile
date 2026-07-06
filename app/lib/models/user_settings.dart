@@ -52,7 +52,9 @@ class UserSettings {
       );
 
   static String _string(Object? value) => value is String ? value : '';
+
   static bool _bool(Object? value) => value is bool ? value : false;
+
   static double _double(Object? value, {required double fallback}) => value is num
       ? value.toDouble()
       : value is String
