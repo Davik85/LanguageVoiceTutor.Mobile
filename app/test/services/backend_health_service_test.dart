@@ -9,10 +9,13 @@ class FakeApiClient implements ApiClient {
   String? requestedPath;
 
   @override
-  Future<ApiResponse> get(String path) {
+  Future<ApiResponse> get(String path, {String? accessToken}) {
     requestedPath = path;
     return response(path);
   }
+
+  @override
+  Future<ApiResponse> post(String path, {Map<String, dynamic>? body, String? accessToken}) => throw UnimplementedError();
 }
 
 void main() {
