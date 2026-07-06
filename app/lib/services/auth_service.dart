@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../api/api_client.dart';
 import '../models/auth_models.dart';
+import '../models/lesson_access_decision.dart';
 import '../models/subscription_status.dart';
 import 'session_storage.dart';
 
@@ -38,6 +39,11 @@ class AuthService {
   Future<SubscriptionStatus> fetchSubscriptionStatus() async {
     final response = await _authenticatedGet('/api/me/subscription-status');
     return SubscriptionStatus.fromJson(_decodeObject(response.body));
+  }
+
+  Future<LessonAccessDecision> fetchLessonAccessDecision() async {
+    final response = await _authenticatedGet('/api/me/lesson-access');
+    return LessonAccessDecision.fromJson(_decodeObject(response.body));
   }
 
   Future<void> logout() async {

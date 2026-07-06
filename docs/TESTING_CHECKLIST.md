@@ -171,3 +171,31 @@ dart format --set-exit-if-changed lib test
 flutter analyze
 flutter test
 ```
+
+## PR 3 lesson access check only
+
+This slice verifies only the mobile lesson access check. The exact backend endpoint used by the mobile client is:
+
+```http
+GET /api/me/lesson-access
+```
+
+Expected behavior:
+
+- Home shows a **Lesson access** card.
+- Tapping **Check lesson access** calls `GET /api/me/lesson-access` only when the user has a stored authenticated session.
+- The request uses the stored bearer access token and the existing refresh-on-401 behavior.
+- If refresh fails, the existing session-clear and return-to-login behavior is used.
+- Mobile displays the backend decision only: it does not make client-side Premium, Trial, free usage, limit, or lesson-access decisions.
+- The UI shows whether the backend says the user can start a lesson, a friendly backend-derived reason, and free lessons remaining today when present.
+- Raw exceptions and tokens must not be displayed or logged.
+
+Still out of scope: lessons, lesson chat, voice mode, TTS, lesson history/progress, billing, Google Play Billing, Apple billing, Paddle runtime, analytics, crash reporting, backend runtime changes, and database migrations.
+
+Verification commands from `app/`:
+
+```bash
+dart format --set-exit-if-changed lib test
+flutter analyze
+flutter test
+```
