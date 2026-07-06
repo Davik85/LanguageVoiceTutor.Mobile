@@ -4,7 +4,7 @@ Language Voice Tutor Mobile is the Android-first Flutter client for the existing
 
 ## Current repository state
 
-This repository now contains a minimal Flutter mobile client skeleton under `app/`. The Android skeleton has been verified locally on an Android Emulator: it builds, installs, and runs. The current implementation is placeholder UI only with Splash, Login, Home, Lesson, and Settings screens; it does not include real login, backend API calls, lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, secrets, database migrations, store release setup, or backend runtime code.
+This repository now contains a minimal Flutter mobile client skeleton under `app/`. The Android skeleton has been verified locally on an Android Emulator: it builds, installs, and runs. The current implementation includes placeholder UI with Splash, Login, Home, Lesson, and Settings screens plus a small backend health-check slice. The Settings screen can call the production backend public `GET /health` endpoint and display a friendly connection state. It does not include real login, account loading, subscription or Premium logic, lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, secrets, database migrations, store release setup, or backend runtime code.
 
 ## Product direction
 
@@ -52,7 +52,7 @@ The Flutter project lives in `app/` and is configured Android-first with package
 com.languagevoicetutor.mobile
 ```
 
-The skeleton includes placeholder Splash, Login, Home, Lesson, and Settings screens with simple navigation. Runtime backend integration is intentionally not implemented yet; `https://api.languagevoicetutor.com` is present only as a configuration placeholder.
+The skeleton includes placeholder Splash, Login, Home, Lesson, and Settings screens with simple navigation. Runtime backend integration is intentionally limited to the public health check. `https://api.languagevoicetutor.com` is the production API base URL used by the mobile API foundation, and the only backend endpoint called by this slice is `GET /health`.
 
 ### Verified Android skeleton baseline
 
@@ -81,9 +81,31 @@ flutter run -d emulator-5554
 
 If a different emulator is running, replace `emulator-5554` with the active device id from `flutter devices`. Install Flutter and Android Studio/Android SDK first if those commands are unavailable.
 
+
+## Backend health check slice
+
+The first backend-connected mobile slice is intentionally small:
+
+- API configuration points at `https://api.languagevoicetutor.com`.
+- The mobile HTTP foundation supports minimal GET requests only.
+- The Settings screen exposes a **Backend connection** card with `Not checked`, `Checking...`, `Connected`, and `Unavailable` states.
+- The app calls only `GET /health` and parses the public response fields `status`, `environment`, and `checkedAtUtc`.
+- Timeout, network, non-success, or invalid responses are shown to users only as `Unavailable`; raw exception details and backend internals are not displayed.
+
+Auth, account loading, subscription/Premium decisions, billing, voice mode, TTS, lesson runtime, lesson history, progress, analytics, crash reporting, secrets, and backend runtime changes are intentionally out of scope for this PR. The mobile app still must not call OpenAI directly or store provider/backend secrets.
+
+To verify this slice from `app/`:
+
+```bash
+flutter pub get
+dart format --set-exit-if-changed lib test
+flutter analyze
+flutter test
+```
+
 ## Next safe implementation focus
 
-The next implementation focus should be backend connection, authentication, account loading, and subscription-status display from backend-owned entitlement state. Do this before billing, voice recording, TTS playback, analytics, crash reporting, or store release setup.
+The next implementation focus should build on the existing health-check foundation with authentication, account loading, and subscription-status display from backend-owned entitlement state. Do this before billing, voice recording, TTS playback, analytics, crash reporting, or store release setup.
 
 The first runtime integration slice should preserve the product boundary:
 
