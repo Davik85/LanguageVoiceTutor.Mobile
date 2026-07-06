@@ -69,7 +69,8 @@ class HttpApiClient implements ApiClient {
           );
       request.headers.set(HttpHeaders.acceptHeader, 'application/json');
       if (accessToken != null && accessToken.isNotEmpty) {
-        request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $accessToken');
+        request.headers
+            .set(HttpHeaders.authorizationHeader, 'Bearer $accessToken');
       }
       if (body != null) {
         request.headers.contentType = ContentType.json;

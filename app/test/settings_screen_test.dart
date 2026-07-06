@@ -17,12 +17,17 @@ class FakeApiClient implements ApiClient {
   Future<ApiResponse> get(String path, {String? accessToken}) => response(path);
 
   @override
-  Future<ApiResponse> post(String path, {Map<String, dynamic>? body, String? accessToken}) => throw UnimplementedError();
+  Future<ApiResponse> post(String path,
+          {Map<String, dynamic>? body, String? accessToken}) =>
+      throw UnimplementedError();
 }
 
 class FakeAuthService extends AuthService {
   FakeAuthService()
-      : super(apiClient: FakeApiClient((_) async => const ApiResponse(statusCode: 200, body: '{}')), storage: _MemoryStorage());
+      : super(
+            apiClient: FakeApiClient(
+                (_) async => const ApiResponse(statusCode: 200, body: '{}')),
+            storage: _MemoryStorage());
 
   @override
   Future<AuthUser> loadCurrentUser() async => AuthUser(
@@ -33,7 +38,8 @@ class FakeAuthService extends AuthService {
       );
 
   @override
-  Future<SubscriptionStatus> fetchSubscriptionStatus() async => SubscriptionStatus(
+  Future<SubscriptionStatus> fetchSubscriptionStatus() async =>
+      SubscriptionStatus(
         userId: 'u1',
         planName: 'Premium Monthly',
         premiumActive: true,
@@ -53,7 +59,8 @@ class _MemoryStorage implements SessionStorage {
   @override
   Future<String?> readRefreshToken() async => null;
   @override
-  Future<void> saveTokens({required String accessToken, required String refreshToken}) async {}
+  Future<void> saveTokens(
+      {required String accessToken, required String refreshToken}) async {}
 }
 
 void main() {
@@ -70,7 +77,9 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(home: SettingsScreen(healthService: service, authService: FakeAuthService())),
+      MaterialApp(
+          home: SettingsScreen(
+              healthService: service, authService: FakeAuthService())),
     );
     await tester.pumpAndSettle();
 

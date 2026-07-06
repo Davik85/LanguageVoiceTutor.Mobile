@@ -53,12 +53,15 @@ class SubscriptionStatus {
         billingProvider: _stringOrNull(json['billingProvider']),
         freeLessonUsedToday: _int(json['freeLessonUsedToday']),
         freeLessonRemainingToday: _int(json['freeLessonRemainingToday']),
-        freeLessonConsumptionRule: _stringOrNull(json['freeLessonConsumptionRule']),
-        checkedAtUtc: _dateOrNull(json['checkedAtUtc']) ?? DateTime.now().toUtc(),
+        freeLessonConsumptionRule:
+            _stringOrNull(json['freeLessonConsumptionRule']),
+        checkedAtUtc:
+            _dateOrNull(json['checkedAtUtc']) ?? DateTime.now().toUtc(),
         currentAccessTier: _stringOrNull(json['currentAccessTier']),
         currentAccessSource: _stringOrNull(json['currentAccessSource']),
         currentTariffName: _stringOrNull(json['currentTariffName']),
-        premiumDisplayStatusCode: _stringOrNull(json['premiumDisplayStatusCode']),
+        premiumDisplayStatusCode:
+            _stringOrNull(json['premiumDisplayStatusCode']),
         premiumStartsAtUtc: _dateOrNull(json['premiumStartsAtUtc']),
         premiumEndsAtUtc: _dateOrNull(json['premiumEndsAtUtc']),
         enforcementEnabled: _bool(json['enforcementEnabled']),
@@ -76,6 +79,9 @@ class SubscriptionStatus {
   static String _string(Object? value) => value is String ? value : '';
   static String? _stringOrNull(Object? value) => value is String ? value : null;
   static bool _bool(Object? value) => value is bool ? value : false;
-  static int _int(Object? value) =>
-      value is int ? value : value is num ? value.toInt() : 0;
+  static int _int(Object? value) => value is int
+      ? value
+      : value is num
+          ? value.toInt()
+          : 0;
 }

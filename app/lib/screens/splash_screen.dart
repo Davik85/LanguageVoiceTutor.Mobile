@@ -8,7 +8,8 @@ import 'home_screen.dart';
 import 'login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key, AuthService? authService}) : _authService = authService;
+  const SplashScreen({super.key, AuthService? authService})
+      : _authService = authService;
 
   static const String routeName = '/';
   final AuthService? _authService;
@@ -53,14 +54,20 @@ class _SplashScreenState extends State<SplashScreen> {
             children: [
               const Icon(Icons.record_voice_over, size: 72),
               const SizedBox(height: 16),
-              Text(AppConfig.appName, style: Theme.of(context).textTheme.headlineMedium, textAlign: TextAlign.center),
+              Text(AppConfig.appName,
+                  style: Theme.of(context).textTheme.headlineMedium,
+                  textAlign: TextAlign.center),
               const SizedBox(height: 8),
               Text(_message ?? 'Checking your session...'),
               const SizedBox(height: 24),
-              if (_message == null) const CircularProgressIndicator() else FilledButton(
-                onPressed: () => Navigator.pushReplacementNamed(context, LoginScreen.routeName),
-                child: const Text('Continue to sign in'),
-              ),
+              if (_message == null)
+                const CircularProgressIndicator()
+              else
+                FilledButton(
+                  onPressed: () => Navigator.pushReplacementNamed(
+                      context, LoginScreen.routeName),
+                  child: const Text('Continue to sign in'),
+                ),
             ],
           ),
         ),

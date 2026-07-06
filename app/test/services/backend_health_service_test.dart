@@ -15,7 +15,9 @@ class FakeApiClient implements ApiClient {
   }
 
   @override
-  Future<ApiResponse> post(String path, {Map<String, dynamic>? body, String? accessToken}) => throw UnimplementedError();
+  Future<ApiResponse> post(String path,
+          {Map<String, dynamic>? body, String? accessToken}) =>
+      throw UnimplementedError();
 }
 
 void main() {

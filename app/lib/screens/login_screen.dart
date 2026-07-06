@@ -6,7 +6,8 @@ import '../services/service_factory.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key, AuthService? authService}) : _authService = authService;
+  const LoginScreen({super.key, AuthService? authService})
+      : _authService = authService;
 
   static const String routeName = '/login';
   final AuthService? _authService;
@@ -41,12 +42,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _submit({required bool register}) async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() { _isSubmitting = true; _error = null; });
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
     try {
       if (register) {
-        await _authService.register(_emailController.text.trim(), _passwordController.text, _displayNameController.text.trim());
+        await _authService.register(_emailController.text.trim(),
+            _passwordController.text, _displayNameController.text.trim());
       } else {
-        await _authService.login(_emailController.text.trim(), _passwordController.text);
+        await _authService.login(
+            _emailController.text.trim(), _passwordController.text);
       }
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, HomeScreen.routeName);
@@ -70,14 +76,17 @@ class _LoginScreenState extends State<LoginScreen> {
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
-            Text('Sign in to Language Voice Tutor', style: Theme.of(context).textTheme.titleMedium),
+            Text('Sign in to Language Voice Tutor',
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 16),
             TextFormField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               autofillHints: const [AutofillHints.email],
               decoration: const InputDecoration(labelText: 'Email'),
-              validator: (value) => value == null || !value.contains('@') ? 'Enter a valid email address.' : null,
+              validator: (value) => value == null || !value.contains('@')
+                  ? 'Enter a valid email address.'
+                  : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -85,27 +94,42 @@ class _LoginScreenState extends State<LoginScreen> {
               obscureText: true,
               autofillHints: const [AutofillHints.password],
               decoration: const InputDecoration(labelText: 'Password'),
-              validator: (value) => value == null || value.length < 6 ? 'Enter your password.' : null,
+              validator: (value) => value == null || value.length < 6
+                  ? 'Enter your password.'
+                  : null,
             ),
             if (_isRegistering) ...[
               const SizedBox(height: 12),
               TextFormField(
                 controller: _displayNameController,
-                decoration: const InputDecoration(labelText: 'Display name (optional)'),
+                decoration:
+                    const InputDecoration(labelText: 'Display name (optional)'),
               ),
             ],
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              Text(_error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
             ],
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: _isSubmitting ? null : () => _submit(register: _isRegistering),
-              child: Text(_isSubmitting ? 'Please wait...' : (_isRegistering ? 'Register' : 'Login')),
+              onPressed: _isSubmitting
+                  ? null
+                  : () => _submit(register: _isRegistering),
+              child: Text(_isSubmitting
+                  ? 'Please wait...'
+                  : (_isRegistering ? 'Register' : 'Login')),
             ),
             TextButton(
-              onPressed: _isSubmitting ? null : () => setState(() { _isRegistering = !_isRegistering; _error = null; }),
-              child: Text(_isRegistering ? 'I already have an account' : 'Create an account'),
+              onPressed: _isSubmitting
+                  ? null
+                  : () => setState(() {
+                        _isRegistering = !_isRegistering;
+                        _error = null;
+                      }),
+              child: Text(_isRegistering
+                  ? 'I already have an account'
+                  : 'Create an account'),
             ),
           ],
         ),
