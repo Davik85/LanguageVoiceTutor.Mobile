@@ -3,96 +3,48 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
+import 'package:language_voice_tutor_mobile/models/tutor_options.dart';
+import 'package:language_voice_tutor_mobile/models/user_settings.dart';
 import 'package:language_voice_tutor_mobile/screens/settings_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/backend_health_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
+import 'package:language_voice_tutor_mobile/services/tutor_options_service.dart';
 
 class FakeApiClient implements ApiClient {
-  FakeApiClient(this.response);
-
-  final Future<ApiResponse> Function(String path) response;
-
-  @override
-  Future<ApiResponse> get(String path, {String? accessToken}) => response(path);
-
-  @override
-  Future<ApiResponse> post(String path,
-          {Map<String, dynamic>? body, String? accessToken}) =>
-      throw UnimplementedError();
+  @override Future<ApiResponse> get(String path, {String? accessToken}) async => const ApiResponse(statusCode: 200, body: '{}');
+  @override Future<ApiResponse> post(String path, {Map<String, dynamic>? body, String? accessToken}) async => const ApiResponse(statusCode: 200, body: '{}');
+  @override Future<ApiResponse> put(String path, {Map<String, dynamic>? body, String? accessToken}) async => const ApiResponse(statusCode: 200, body: '{}');
 }
-
 class FakeAuthService extends AuthService {
-  FakeAuthService()
-      : super(
-            apiClient: FakeApiClient(
-                (_) async => const ApiResponse(statusCode: 200, body: '{}')),
-            storage: _MemoryStorage());
-
-  @override
-  Future<AuthUser> loadCurrentUser() async => AuthUser(
-        userId: 'u1',
-        email: 'user@example.com',
-        displayName: 'User',
-        createdAt: DateTime.parse('2026-07-01T12:00:00Z'),
-      );
-
-  @override
-  Future<SubscriptionStatus> fetchSubscriptionStatus() async =>
-      SubscriptionStatus(
-        userId: 'u1',
-        planName: 'Premium Monthly',
-        premiumActive: true,
-        trialActive: false,
-        freeLessonUsedToday: 0,
-        freeLessonRemainingToday: 3,
-        checkedAtUtc: DateTime.parse('2026-07-06T12:00:00Z'),
-        enforcementEnabled: true,
-      );
+  FakeAuthService({this.settingsFailure, this.saveFailure}) : super(apiClient: FakeApiClient(), storage: _MemoryStorage());
+  final ApiException? settingsFailure; final ApiException? saveFailure; bool saved = false;
+  @override Future<AuthUser> loadCurrentUser() async => AuthUser(userId: 'u1', email: 'user@example.com', displayName: 'User', createdAt: DateTime.parse('2026-07-01T12:00:00Z'));
+  @override Future<SubscriptionStatus> fetchSubscriptionStatus() async => SubscriptionStatus(userId: 'u1', planName: 'Premium Monthly', premiumActive: true, trialActive: false, freeLessonUsedToday: 0, freeLessonRemainingToday: 3, checkedAtUtc: DateTime.parse('2026-07-06T12:00:00Z'), enforcementEnabled: true);
+  @override Future<UserSettings> fetchUserSettings() async { if (settingsFailure != null) throw settingsFailure!; return const UserSettings(nativeLanguage: 'English', studyLanguage: 'Spanish', explanationLanguage: 'English', speechVoice: 'nova', speechSpeed: 1.0, conversationModeEnabled: true); }
+  @override Future<UserSettings> updateUserSettings(UserSettings settings) async { if (saveFailure != null) throw saveFailure!; saved = true; return settings; }
 }
+class FakeTutorOptionsService extends TutorOptionsService { FakeTutorOptionsService() : super(apiClient: FakeApiClient()); @override Future<TutorOptions> fetchTutorOptions() async => const TutorOptions(tutors: [TutorOption(tutorId: 'lana', displayName: 'Lana', isActive: true), TutorOption(tutorId: 'nelli', displayName: 'Nelli', isActive: true)]); }
+class _MemoryStorage implements SessionStorage { @override Future<void> clear() async {} @override Future<String?> readAccessToken() async => null; @override Future<String?> readRefreshToken() async => null; @override Future<void> saveTokens({required String accessToken, required String refreshToken}) async {} }
 
-class _MemoryStorage implements SessionStorage {
-  @override
-  Future<void> clear() async {}
-  @override
-  Future<String?> readAccessToken() async => null;
-  @override
-  Future<String?> readRefreshToken() async => null;
-  @override
-  Future<void> saveTokens(
-      {required String accessToken, required String refreshToken}) async {}
-}
-
+Widget _screen(FakeAuthService auth) => MaterialApp(home: SettingsScreen(healthService: BackendHealthService(apiClient: FakeApiClient()), authService: auth, tutorOptionsService: FakeTutorOptionsService()));
 void main() {
-  testWidgets('settings screen shows connected after a successful health check',
-      (tester) async {
-    final service = BackendHealthService(
-      apiClient: FakeApiClient(
-        (_) async => const ApiResponse(
-          statusCode: 200,
-          body:
-              '{"status":"ok","environment":"production","checkedAtUtc":"2026-07-06T12:00:00Z"}',
-        ),
-      ),
-    );
-
-    await tester.pumpWidget(
-      MaterialApp(
-          home: SettingsScreen(
-              healthService: service, authService: FakeAuthService())),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Backend connection'), findsOneWidget);
-    expect(find.text('Not checked'), findsOneWidget);
-    expect(find.text('User'), findsOneWidget);
-    expect(find.text('user@example.com'), findsOneWidget);
-    expect(find.text('Premium'), findsOneWidget);
-    expect(find.text('Premium Monthly'), findsOneWidget);
-
-    await tester.tap(find.text('Check connection'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Connected'), findsOneWidget);
+  testWidgets('settings screen loaded state shows account, learning, audio', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService())); await tester.pumpAndSettle();
+    expect(find.text('Account'), findsOneWidget); expect(find.text('User'), findsOneWidget); expect(find.text('Premium Monthly'), findsOneWidget);
+    expect(find.text('Learning'), findsOneWidget); expect(find.text('Study language'), findsOneWidget); expect(find.text('Lana, Nelli'), findsOneWidget); expect(find.text('Tutor voice'), findsOneWidget);
+    expect(find.text('Audio'), findsOneWidget); expect(find.text('Conversation mode enabled'), findsOneWidget); expect(find.text('Backend connection'), findsOneWidget);
+  });
+  testWidgets('settings screen save success shows friendly message', (tester) async {
+    final auth = FakeAuthService(); await tester.pumpWidget(_screen(auth)); await tester.pumpAndSettle();
+    await tester.tap(find.text('Save settings')); await tester.pumpAndSettle();
+    expect(auth.saved, isTrue); expect(find.text('Settings saved.'), findsOneWidget);
+  });
+  testWidgets('settings screen friendly failure hides raw backend details', (tester) async {
+    final auth = FakeAuthService(saveFailure: const ApiException('raw stack trace secret token'));
+    await tester.pumpWidget(_screen(auth)); await tester.pumpAndSettle();
+    await tester.tap(find.text('Save settings')); await tester.pumpAndSettle();
+    expect(find.text('Unable to save settings right now.'), findsOneWidget);
+    expect(find.textContaining('secret token'), findsNothing);
   });
 }

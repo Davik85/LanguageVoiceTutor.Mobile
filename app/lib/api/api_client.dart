@@ -18,6 +18,11 @@ abstract class ApiClient {
     Map<String, dynamic>? body,
     String? accessToken,
   });
+  Future<ApiResponse> put(
+    String path, {
+    Map<String, dynamic>? body,
+    String? accessToken,
+  });
 }
 
 class ApiException implements Exception {
@@ -53,6 +58,14 @@ class HttpApiClient implements ApiClient {
     String? accessToken,
   }) =>
       _send('POST', path, body: body, accessToken: accessToken);
+
+  @override
+  Future<ApiResponse> put(
+    String path, {
+    Map<String, dynamic>? body,
+    String? accessToken,
+  }) =>
+      _send('PUT', path, body: body, accessToken: accessToken);
 
   Future<ApiResponse> _send(
     String method,
