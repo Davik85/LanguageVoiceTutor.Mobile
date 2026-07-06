@@ -134,3 +134,39 @@ Before any store release:
 - Confirm crash reporting and analytics consent behavior.
 - Confirm production backend environment configuration.
 - Confirm no secrets are present in the app bundle or repository.
+
+## PR 2 auth/account/subscription-status checks
+
+This slice uses the production backend base URL and only these backend endpoints:
+
+```text
+GET /health
+POST /api/auth/register
+POST /api/auth/login
+GET /api/auth/me
+POST /api/auth/refresh
+POST /api/auth/revoke
+GET /api/me/subscription-status
+```
+
+Expected verification:
+
+- Login and register use friendly validation and sanitized errors.
+- Stored sessions attempt `GET /api/auth/me` at startup.
+- Invalid sessions are cleared and return to Login.
+- Access and refresh tokens are stored only in secure mobile storage.
+- Tokens are not logged, printed, or shown in UI.
+- Settings keeps the Backend connection card working.
+- Settings shows account email/display name from backend account data.
+- Settings shows Free, Trial, or Premium only from `GET /api/me/subscription-status`.
+- Extra subscription-status backend fields are tolerated by parsing.
+- No client-side Premium decision, payment UI, Google Play Billing, Apple billing, Paddle runtime, `/api/me/lesson-access` UI call, client-side OpenAI call, voice mode, TTS, lesson runtime, lesson history/progress, analytics, crash reporting, store release setup, backend runtime code, or database migration is implemented.
+
+Run these commands from `app/`:
+
+```bash
+flutter pub get
+dart format --set-exit-if-changed lib test
+flutter analyze
+flutter test
+```

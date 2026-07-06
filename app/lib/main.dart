@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'config/app_config.dart';
+import 'services/auth_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/lesson_screen.dart';
 import 'screens/login_screen.dart';
@@ -12,7 +13,10 @@ void main() {
 }
 
 class LanguageVoiceTutorApp extends StatelessWidget {
-  const LanguageVoiceTutorApp({super.key});
+  const LanguageVoiceTutorApp({super.key, AuthService? authService})
+      : _authService = authService;
+
+  final AuthService? _authService;
 
   @override
   Widget build(BuildContext context) {
@@ -24,11 +28,12 @@ class LanguageVoiceTutorApp extends StatelessWidget {
       ),
       initialRoute: SplashScreen.routeName,
       routes: {
-        SplashScreen.routeName: (_) => const SplashScreen(),
-        LoginScreen.routeName: (_) => const LoginScreen(),
+        SplashScreen.routeName: (_) => SplashScreen(authService: _authService),
+        LoginScreen.routeName: (_) => LoginScreen(authService: _authService),
         HomeScreen.routeName: (_) => const HomeScreen(),
         LessonScreen.routeName: (_) => const LessonScreen(),
-        SettingsScreen.routeName: (_) => const SettingsScreen(),
+        SettingsScreen.routeName: (_) =>
+            SettingsScreen(authService: _authService),
       },
     );
   }
