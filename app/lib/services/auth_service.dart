@@ -19,25 +19,42 @@ class AuthService {
   }
 
   Future<AuthUser> register(String email, String password, String? displayName) async {
-    final auth = await _authenticate('/api/auth/register', RegisterRequest(email: email, password: password, displayName: displayName).toJson());
+    final auth = await _authenticate(
+      '/api/auth/register',
+      RegisterRequest(
+        email: email,
+        password: password,
+        displayName: displayName,
+      ).toJson(),
+    );
     return auth.user;
   }
 
   Future<AuthUser> loadCurrentUser() async {
     final response = await _authenticatedGet('/api/auth/me');
-    return AuthUser.fromJson(_decodeObject(response.body));
+    return AuthUser.fromJson(
+      _decodeObject(response.body, objectKeys: const ['user', 'account']),
+    );
   }
 
   Future<SubscriptionStatus> fetchSubscriptionStatus() async {
     final response = await _authenticatedGet('/api/me/subscription-status');
-    return SubscriptionStatus.fromJson(_decodeObject(response.body));
+    return SubscriptionStatus.fromJson(
+      _decodeObject(
+        response.body,
+        objectKeys: const ['subscription', 'subscriptionStatus', 'status'],
+      ),
+    );
   }
 
   Future<void> logout() async {
     final refreshToken = await _storage.readRefreshToken();
     if (refreshToken != null && refreshToken.isNotEmpty) {
       try {
-        await _apiClient.post('/api/auth/revoke', body: RevokeRefreshTokenRequest(refreshToken: refreshToken).toJson());
+        await _apiClient.post(
+          '/api/auth/revoke',
+          body: RevokeRefreshTokenRequest(refreshToken: refreshToken).toJson(),
+        );
       } catch (_) {
         // Local session is still cleared when the revoke call cannot complete.
       }
@@ -50,8 +67,13 @@ class AuthService {
     if (!_isSuccess(response.statusCode)) {
       throw const ApiException('Email or password was not accepted.');
     }
-    final auth = AuthResponse.fromJson(_decodeObject(response.body));
-    await _storage.saveTokens(accessToken: auth.accessToken, refreshToken: auth.refreshToken);
+    final auth = AuthResponse.fromJson(
+      _decodeObject(response.body, objectKeys: const ['auth', 'session']),
+    );
+    await _storage.saveTokens(
+      accessToken: auth.accessToken,
+      refreshToken: auth.refreshToken,
+    );
     return auth;
   }
 
@@ -83,10 +105,18 @@ class AuthService {
     if (refreshToken == null || refreshToken.isEmpty) return false;
 
     try {
-      final response = await _apiClient.post('/api/auth/refresh', body: RefreshTokenRequest(refreshToken: refreshToken).toJson());
+      final response = await _apiClient.post(
+        '/api/auth/refresh',
+        body: RefreshTokenRequest(refreshToken: refreshToken).toJson(),
+      );
       if (!_isSuccess(response.statusCode)) return false;
-      final auth = AuthResponse.fromJson(_decodeObject(response.body));
-      await _storage.saveTokens(accessToken: auth.accessToken, refreshToken: auth.refreshToken);
+      final auth = AuthResponse.fromJson(
+        _decodeObject(response.body, objectKeys: const ['auth', 'session']),
+      );
+      await _storage.saveTokens(
+        accessToken: auth.accessToken,
+        refreshToken: auth.refreshToken,
+      );
       return true;
     } catch (_) {
       return false;
@@ -95,10 +125,17 @@ class AuthService {
 
   static bool _isSuccess(int statusCode) => statusCode >= 200 && statusCode < 300;
 
-  static Map<String, dynamic> _decodeObject(String body) {
+  static Map<String, dynamic> _decodeObject(
+    String body, {
+    List<String> objectKeys = const [],
+  }) {
     final decoded = jsonDecode(body);
     if (decoded is! Map<String, dynamic>) {
       throw const ApiException('The service returned an unexpected response.');
+    }
+    for (final key in objectKeys) {
+      final nested = decoded[key];
+      if (nested is Map<String, dynamic>) return nested;
     }
     return decoded;
   }

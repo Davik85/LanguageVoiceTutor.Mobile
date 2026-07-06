@@ -60,13 +60,12 @@ class AuthResponse {
   final AuthUser user;
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) => AuthResponse(
-        accessToken: json['accessToken'] as String? ?? '',
-        tokenType: json['tokenType'] as String? ?? 'Bearer',
-        expiresAtUtc: DateTime.parse(json['expiresAtUtc'] as String),
-        refreshToken: json['refreshToken'] as String? ?? '',
-        refreshTokenExpiresAtUtc:
-            DateTime.parse(json['refreshTokenExpiresAtUtc'] as String),
-        user: AuthUser.fromJson(json['user'] as Map<String, dynamic>),
+        accessToken: _string(json, 'accessToken'),
+        tokenType: _string(json, 'tokenType', fallback: 'Bearer'),
+        expiresAtUtc: _date(json, 'expiresAtUtc'),
+        refreshToken: _string(json, 'refreshToken'),
+        refreshTokenExpiresAtUtc: _date(json, 'refreshTokenExpiresAtUtc'),
+        user: AuthUser.fromJson(_object(json, 'user')),
       );
 }
 
@@ -83,10 +82,41 @@ class AuthUser {
   final String? displayName;
   final DateTime createdAt;
 
-  factory AuthUser.fromJson(Map<String, dynamic> json) => AuthUser(
-        userId: json['userId'] as String? ?? '',
-        email: json['email'] as String? ?? '',
-        displayName: json['displayName'] as String?,
-        createdAt: DateTime.parse(json['createdAt'] as String),
-      );
+  factory AuthUser.fromJson(Map<String, dynamic> json) {
+    final userJson = json['user'];
+    if (userJson is Map<String, dynamic>) {
+      return AuthUser.fromJson(userJson);
+    }
+
+    return AuthUser(
+      userId: _string(json, 'userId', fallback: _string(json, 'id')),
+      email: _string(json, 'email'),
+      displayName:
+          _nullableString(json, 'displayName') ?? _nullableString(json, 'name'),
+      createdAt: _nullableDate(json, 'createdAt') ??
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+    );
+  }
+}
+
+Map<String, dynamic> _object(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  return value is Map<String, dynamic> ? value : <String, dynamic>{};
+}
+
+String _string(Map<String, dynamic> json, String key, {String fallback = ''}) =>
+    _nullableString(json, key) ?? fallback;
+
+String? _nullableString(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  return value is String ? value : null;
+}
+
+DateTime _date(Map<String, dynamic> json, String key) =>
+    _nullableDate(json, key) ??
+    DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+
+DateTime? _nullableDate(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  return value is String && value.isNotEmpty ? DateTime.tryParse(value) : null;
 }
