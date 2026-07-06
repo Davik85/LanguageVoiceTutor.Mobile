@@ -188,15 +188,15 @@ flutter analyze
 flutter test
 ```
 
-## PR 4 lesson catalog / tutor-options slice
+## PR 4 tutor options slice
 
-This slice adds only read-only lesson catalog / practice-options loading to the Flutter mobile client. The exact backend endpoint used by this slice is:
+This slice adds only read-only tutor options loading to the Flutter mobile client. The exact backend endpoint used by this slice is:
 
 ```text
 GET /api/tutor-options
 ```
 
-The Home screen now displays a small **Lesson catalog** card with loading, unavailable, and loaded summary states for minimal catalog fields such as study languages, levels, topics, scenarios, and modes when those fields are present. The Flutter model intentionally tolerates extra backend fields and does not over-model the complete backend response.
+The Home screen now displays a small **Available tutors** card with loading, unavailable, empty, and loaded states for the current tutor options response. `GET /api/tutor-options` currently returns tutor options only: `tutorId`, `displayName`, and `isActive`. It does not load a full lesson catalog, study languages, levels, topics, scenarios, or contexts. Full lesson catalog and scenario selection remain future work.
 
 Out of scope for this PR: lesson scenario loading, lesson start, lesson chat, lesson messages, voice mode, TTS, lesson history/progress, billing, Google Play Billing, Apple billing, Paddle runtime, payment UI, analytics, crash reporting, backend runtime changes, and database migrations. Mobile still does not call OpenAI directly, does not make client-side Premium or lesson-access decisions, does not expose tokens in UI or logs, and does not store provider or backend secrets.
 

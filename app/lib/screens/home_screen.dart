@@ -222,25 +222,17 @@ class TutorOptionsCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Lesson catalog',
+              'Available tutors',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             if (isLoading)
-              const Text('Loading practice options...')
-            else if (options != null && options!.hasAnyOptions) ...[
-              Text('Available option groups: ${options!.optionGroupCount}'),
-              if (options!.studyLanguages.isNotEmpty)
-                Text('Study languages: ${_preview(options!.studyLanguages)}'),
-              if (options!.levels.isNotEmpty)
-                Text('Levels: ${_preview(options!.levels)}'),
-              if (options!.topics.isNotEmpty)
-                Text('Topics: ${_preview(options!.topics)}'),
-              if (options!.scenarios.isNotEmpty)
-                Text('Scenarios: ${_preview(options!.scenarios)}'),
-              if (options!.modes.isNotEmpty)
-                Text('Modes: ${_preview(options!.modes)}'),
-            ] else if (error != null) ...[
+              const Text('Loading tutor options...')
+            else if (options != null && options!.hasActiveTutors)
+              Text(
+                'Available tutors: ${_preview(options!.activeTutors.map((tutor) => tutor.label).toList())}',
+              )
+            else if (error != null) ...[
               Text(error!),
               const SizedBox(height: 12),
               OutlinedButton(
@@ -248,7 +240,7 @@ class TutorOptionsCard extends StatelessWidget {
                 child: const Text('Retry'),
               ),
             ] else
-              const Text('No practice options are available yet.'),
+              const Text('No active tutors are available right now.'),
           ],
         ),
       ),

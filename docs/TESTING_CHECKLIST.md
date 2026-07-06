@@ -200,9 +200,9 @@ flutter analyze
 flutter test
 ```
 
-## PR 4 lesson catalog / tutor-options loading only
+## PR 4 tutor-options loading only
 
-This slice verifies only read-only mobile lesson catalog / practice-options loading. The exact backend endpoint used by the mobile client is:
+This slice verifies only read-only mobile tutor options loading. The exact backend endpoint used by the mobile client is:
 
 ```text
 GET /api/tutor-options
@@ -210,12 +210,14 @@ GET /api/tutor-options
 
 Expected behavior:
 
-- Home shows a **Lesson catalog** card.
+- Home shows an **Available tutors** card.
 - The card shows a loading state while `GET /api/tutor-options` is in progress.
 - The card shows a friendly unavailable state if tutor options cannot be loaded.
-- The card shows a small summary of available study languages, levels, topics, scenarios, and modes when the backend returns those fields.
-- The parser tolerates extra backend fields and intentionally models only the minimal fields needed for read-only display.
+- The card shows active tutors from `tutorId`, `displayName`, and `isActive`.
+- Empty or all-inactive responses show a friendly empty state.
+- The parser tolerates extra backend fields and intentionally models only tutor options.
 - The request does not require an auth token unless the backend contract later changes.
+- `GET /api/tutor-options` does not currently load a full lesson catalog, study languages, levels, topics, scenarios, or contexts; full lesson catalog and scenario selection remain future work.
 
 Out of scope and intentionally not verified in this slice:
 
