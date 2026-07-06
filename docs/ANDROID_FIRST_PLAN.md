@@ -31,7 +31,7 @@ flutter test
 flutter run -d emulator-5554
 ```
 
-The app remains a placeholder skeleton with Splash, Login, Home, Lesson, and Settings screens. No real backend auth, API integration, billing, voice, TTS, analytics, crash reporting, or store release setup has been implemented.
+Latest known commit `fcecef5` fixes the mobile Settings parity foundation. The current green baseline has `dart format --set-exit-if-changed lib test`, `flutter analyze`, and `flutter test` passing. Settings has stable **Account**, **Learning**, **Audio**, and **Backend diagnostics** sections, **Save settings** is visible and tested, user level is not in Settings, and **Open Lesson** remains a placeholder. Lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, and store release setup are not implemented by this documentation update.
 
 ## Planned phases
 
@@ -49,13 +49,18 @@ The app remains a placeholder skeleton with Splash, Login, Home, Lesson, and Set
 - Linting, tests, and placeholder navigation are present.
 - Backend base URL exists only as non-secret configuration placeholder.
 
-### Phase 2: Auth, account, and subscription-status shell — next
+### Phase 2: Auth, account, subscription-status, and settings baseline — in progress
 
 - Implement login/session flow against the existing backend account system.
 - Implement secure token/session storage.
 - Fetch `/api/me`, account settings, and backend-owned subscription/entitlement status.
 - Add logout and expired-session handling.
 - Display Premium/subscription status only from backend responses; do not compute entitlement locally.
+- Continue from the green Settings baseline with small, mobile-only changes unless an API gap is explicitly approved.
+
+### Desktop parity guidance
+
+The reviewed Windows desktop client walkthrough presentation is a product source model. Mobile should preserve product flow and behavior while using phone-first layouts. The desktop source flow is `Start -> Settings/preferences -> Choose level -> Pick topic -> Pick situation -> Practice`; level selection remains a lesson-start step before topic/situation selection, not a Settings field.
 
 ### Phase 3: Lessons and progress
 

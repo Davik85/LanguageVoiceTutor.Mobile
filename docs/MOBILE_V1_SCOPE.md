@@ -6,7 +6,7 @@ Mobile V1 establishes an Android-first Flutter client for Language Voice Tutor t
 
 ## Current verified baseline
 
-The Flutter Android skeleton under `app/` builds, installs, and runs on Android Emulator with package/application id `com.languagevoicetutor.mobile`. It contains placeholder Splash, Login, Home, Lesson, and Settings screens only.
+Latest known commit: `fcecef5` (`Fix mobile settings parity foundation`). The Flutter Android client under `app/` has a green Settings parity foundation baseline. Settings has stable visible **Account**, **Learning**, **Audio**, and **Backend diagnostics** sections, **Save settings** is visible and tested, user level is not in Settings, and **Open Lesson** remains a placeholder.
 
 Verified commands from `app/`:
 
@@ -40,9 +40,17 @@ This separation is intended to keep mobile concerns isolated:
 
 The repository must not duplicate backend business logic or become a fork of backend behavior.
 
+## Desktop parity source model
+
+The reviewed Windows desktop client walkthrough presentation is now a product reference source for mobile parity. Mobile must match desktop product logic, not desktop pixel layout, and should translate desktop screens into phone-first layouts. The desktop source flow is `Start -> Settings/preferences -> Choose level -> Pick topic -> Pick situation -> Practice`. Level selection must remain a separate lesson-start step before topic/situation selection, not a Settings field.
+
+Study language, native language, and interface/explanation language are separate concepts. Supported study languages remain English, French, German, Portuguese, Spanish, Italian. Release-ready interface languages remain `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `pl`, `ar`, `ja`, `ko`, `sr`, `hr`, and `bg`. The native/explanation language catalog is broader than both the study-language and interface-language catalogs.
+
+Tutor profiles currently represented by desktop are Lana, Nelli, and David. Tutor choice is product-significant because it affects display name, profile/persona, and preferred voice behavior in lessons.
+
 ## Next implementation priority
 
-The next safe implementation slice is backend connection, authentication, account retrieval, and subscription-status display from backend-owned entitlement state. Billing, voice recording, TTS, analytics, crash reporting, and store release setup should remain later phases until the account/session/subscription-status path is working against confirmed backend contracts.
+The next safe implementation work should continue from the green Settings baseline. Keep slices small and mobile-only unless an API gap is explicitly approved. Billing, voice recording, TTS, analytics, crash reporting, Google Play Billing, Apple billing, and store release setup remain later phases.
 
 This priority preserves the product boundary:
 
