@@ -27,6 +27,14 @@ class _FakeApiClient implements ApiClient {
       const ApiResponse(statusCode: 500, body: '{}');
 
   @override
+  Future<ApiResponse> put(
+    String path, {
+    Map<String, dynamic>? body,
+    String? accessToken,
+  }) async =>
+      const ApiResponse(statusCode: 500, body: '{}');
+
+  @override
   Future<ApiResponse> post(
     String path, {
     Map<String, dynamic>? body,

@@ -206,3 +206,29 @@ Verification commands from `app/`:
 flutter test
 flutter analyze
 ```
+
+## PR 5 settings parity foundation
+
+This slice adds the mobile Settings parity foundation using existing backend APIs only. The exact endpoints used are:
+
+```text
+GET /api/me/settings
+PUT /api/me/settings
+GET /api/tutor-options
+```
+
+Settings now load and save backend-supported fields only: `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `speechVoice`, `speechSpeed`, and `conversationModeEnabled`. Extra backend settings fields are tolerated by the mobile parser.
+
+Level is explicitly not part of Settings. To match the desktop product flow, level selection belongs after **Start lesson** in a future lesson flow, before topic/lesson selection.
+
+Tutor options are loaded from `GET /api/tutor-options`. The current settings API does not expose a selected-tutor field, so selected tutor persistence is documented as a backend/API gap instead of being faked with local-only persistence.
+
+Out of scope for this PR: backend changes, database migrations, lesson start, lesson chat, lesson runtime, topic/scenario selection, voice recording, voice runtime, TTS runtime/playback, billing, Google Play Billing, Apple billing, Paddle runtime, history/progress, analytics, crash reporting, and store release setup.
+
+Verification commands from `app/`:
+
+```bash
+dart format --set-exit-if-changed lib test
+flutter analyze
+flutter test
+```

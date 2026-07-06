@@ -18,6 +18,11 @@ class FakeApiClient implements ApiClient {
   }
 
   @override
+  Future<ApiResponse> put(String path,
+          {Map<String, dynamic>? body, String? accessToken}) =>
+      throw UnimplementedError();
+
+  @override
   Future<ApiResponse> post(String path,
       {Map<String, dynamic>? body, String? accessToken}) async {
     calls.add('POST $path');
