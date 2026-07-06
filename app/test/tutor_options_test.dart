@@ -98,47 +98,47 @@ class _MemoryStorage implements SessionStorage {
 }
 
 void main() {
-  test('tutor options response parsing tolerates extra fields', () {
-    final options = TutorOptions.fromJson({
-      'studyLanguages': [
-        {'code': 'es', 'name': 'Spanish', 'extra': 'ignored'},
-        {'code': 'fr', 'displayName': 'French'}
-      ],
-      'levels': [
-        'Beginner',
-        {'level': 'Intermediate'}
-      ],
-      'topics': [
-        {'topicId': 'travel', 'topicTitle': 'Travel'}
-      ],
-      'scenarios': [
-        {'scenarioKey': 'restaurant', 'scenarioTitle': 'Restaurant'}
-      ],
-      'contexts': [
-        {'selectedContextId': 'casual', 'contextTitle': 'Casual'}
-      ],
-      'tutors': [
-        {'id': 'maria', 'name': 'Maria'}
-      ],
-      'modes': ['Guided'],
-      'futureField': {'anything': true},
-    });
+  test('tutor options response parsing supports top-level array', () {
+    final options = TutorOptions.fromJsonList([
+      {
+        'tutorId': 'lana',
+        'displayName': 'Lana',
+        'isActive': true,
+        'extra': 'ignored',
+      },
+      {
+        'tutorId': 'nelli',
+        'displayName': 'Nelli',
+        'isActive': true,
+      },
+      {
+        'tutorId': 'david',
+        'displayName': 'David',
+        'isActive': false,
+      },
+    ]);
 
-    expect(options.studyLanguages, ['Spanish', 'French']);
-    expect(options.levels, ['Beginner', 'Intermediate']);
-    expect(options.topics, ['Travel']);
-    expect(options.scenarios, ['Restaurant']);
-    expect(options.contexts, ['Casual']);
-    expect(options.tutors, ['Maria']);
-    expect(options.modes, ['Guided']);
-    expect(options.hasAnyOptions, isTrue);
+    expect(options.tutors, hasLength(3));
+    expect(options.activeTutors.map((tutor) => tutor.displayName), [
+      'Lana',
+      'Nelli',
+    ]);
+    expect(options.hasActiveTutors, isTrue);
+  });
+
+  test('tutor options response parsing supports empty top-level array', () {
+    final options = TutorOptions.fromJsonList([]);
+
+    expect(options.tutors, isEmpty);
+    expect(options.activeTutors, isEmpty);
+    expect(options.hasActiveTutors, isFalse);
   });
 
   test('service calls public tutor options endpoint without auth token',
       () async {
     final apiClient = RecordingApiClient(const ApiResponse(
       statusCode: 200,
-      body: '{"studyLanguages":["Spanish"],"levels":["Beginner"]}',
+      body: '[{"tutorId":"lana","displayName":"Lana","isActive":true}]',
     ));
 
     final options =
@@ -146,7 +146,7 @@ void main() {
 
     expect(apiClient.requestedPath, '/api/tutor-options');
     expect(apiClient.accessToken, isNull);
-    expect(options.studyLanguages, ['Spanish']);
+    expect(options.activeTutors.single.displayName, 'Lana');
   });
 
   test('service returns sanitized failure on non-success', () async {
@@ -166,29 +166,56 @@ void main() {
     );
   });
 
-  testWidgets('home widget displays loaded catalog summary', (tester) async {
+  testWidgets('home widget displays available tutors', (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: HomeScreen(
         authService: FakeAuthService(),
         tutorOptionsService: FakeTutorOptionsService(
           options: const TutorOptions(
-            studyLanguages: ['Spanish', 'French'],
-            levels: ['Beginner'],
-            topics: ['Travel', 'Food'],
-            scenarios: ['Restaurant'],
-            contexts: [],
-            tutors: [],
-            modes: ['Guided'],
+            tutors: [
+              TutorOption(
+                tutorId: 'lana',
+                displayName: 'Lana',
+                isActive: true,
+              ),
+              TutorOption(
+                tutorId: 'nelli',
+                displayName: 'Nelli',
+                isActive: true,
+              ),
+              TutorOption(
+                tutorId: 'david',
+                displayName: 'David',
+                isActive: false,
+              ),
+            ],
           ),
         ),
       ),
     ));
     await tester.pumpAndSettle();
 
-    expect(find.text('Lesson catalog'), findsOneWidget);
-    expect(find.text('Study languages: Spanish, French'), findsOneWidget);
-    expect(find.text('Levels: Beginner'), findsOneWidget);
-    expect(find.text('Topics: Travel, Food'), findsOneWidget);
+    expect(find.text('Available tutors'), findsOneWidget);
+    expect(find.text('Available tutors: Lana, Nelli'), findsOneWidget);
+    expect(find.textContaining('David'), findsNothing);
+  });
+
+  testWidgets('home widget displays friendly empty state', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: HomeScreen(
+        authService: FakeAuthService(),
+        tutorOptionsService: FakeTutorOptionsService(
+          options: const TutorOptions(tutors: []),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Available tutors'), findsOneWidget);
+    expect(
+      find.text('No active tutors are available right now.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('home widget displays friendly unavailable state',
@@ -203,7 +230,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    expect(find.text('Lesson catalog'), findsOneWidget);
+    expect(find.text('Available tutors'), findsOneWidget);
     expect(
       find.text(
         'Practice options are unavailable right now. Please try again later.',

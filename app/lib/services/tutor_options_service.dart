@@ -17,11 +17,11 @@ class TutorOptionsService {
 
     try {
       final decoded = jsonDecode(response.body);
-      if (decoded is! Map<String, dynamic>) {
+      if (decoded is! List) {
         throw const ApiException(
             'The service returned an unexpected response.');
       }
-      return TutorOptions.fromJson(decoded);
+      return TutorOptions.fromJsonList(decoded);
     } on ApiException {
       rethrow;
     } catch (_) {
