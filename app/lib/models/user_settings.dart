@@ -55,9 +55,10 @@ class UserSettings {
 
   static bool _bool(Object? value) => value is bool ? value : false;
 
-  static double _double(Object? value, {required double fallback}) => value is num
-      ? value.toDouble()
-      : value is String
-          ? double.tryParse(value) ?? fallback
-          : fallback;
+  static double _double(Object? value, {required double fallback}) =>
+      value is num
+          ? value.toDouble()
+          : value is String
+              ? double.tryParse(value) ?? fallback
+              : fallback;
 }
