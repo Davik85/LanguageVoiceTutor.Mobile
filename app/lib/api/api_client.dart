@@ -35,7 +35,8 @@ class HttpApiClient implements ApiClient {
     );
     final request = await _httpClient.getUrl(requestUri).timeout(_timeout);
     final response = await request.close().timeout(_timeout);
-    final body = await response.transform(utf8.decoder).join().timeout(_timeout);
+    final body =
+        await response.transform(utf8.decoder).join().timeout(_timeout);
 
     return ApiResponse(statusCode: response.statusCode, body: body);
   }

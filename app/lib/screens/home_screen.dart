@@ -21,13 +21,15 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           FilledButton.icon(
-            onPressed: () => Navigator.pushNamed(context, LessonScreen.routeName),
+            onPressed: () =>
+                Navigator.pushNamed(context, LessonScreen.routeName),
             icon: const Icon(Icons.school),
             label: const Text('Open Lesson'),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
-            onPressed: () => Navigator.pushNamed(context, SettingsScreen.routeName),
+            onPressed: () =>
+                Navigator.pushNamed(context, SettingsScreen.routeName),
             icon: const Icon(Icons.settings),
             label: const Text('Open Settings'),
           ),

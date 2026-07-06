@@ -12,12 +12,14 @@ class BackendHealthService {
   Future<BackendHealthStatus> checkHealth() async {
     final response = await _apiClient.get('/health');
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw const FormatException('Health endpoint returned an unsuccessful status.');
+      throw const FormatException(
+          'Health endpoint returned an unsuccessful status.');
     }
 
     final decoded = jsonDecode(response.body);
     if (decoded is! Map<String, dynamic>) {
-      throw const FormatException('Health endpoint returned an invalid response.');
+      throw const FormatException(
+          'Health endpoint returned an invalid response.');
     }
 
     return BackendHealthStatus.fromJson(decoded);

@@ -71,10 +71,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text(_connectionMessage),
                     const SizedBox(height: 12),
                     FilledButton(
-                      onPressed: _connectionState ==
-                              BackendConnectionState.checking
-                          ? null
-                          : _checkBackendConnection,
+                      onPressed:
+                          _connectionState == BackendConnectionState.checking
+                              ? null
+                              : _checkBackendConnection,
                       child: const Text('Check connection'),
                     ),
                   ],

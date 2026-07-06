@@ -14,12 +14,14 @@ class FakeApiClient implements ApiClient {
 }
 
 void main() {
-  testWidgets('settings screen shows connected after a successful health check', (tester) async {
+  testWidgets('settings screen shows connected after a successful health check',
+      (tester) async {
     final service = BackendHealthService(
       apiClient: FakeApiClient(
         (_) async => const ApiResponse(
           statusCode: 200,
-          body: '{"status":"ok","environment":"production","checkedAtUtc":"2026-07-06T12:00:00Z"}',
+          body:
+              '{"status":"ok","environment":"production","checkedAtUtc":"2026-07-06T12:00:00Z"}',
         ),
       ),
     );

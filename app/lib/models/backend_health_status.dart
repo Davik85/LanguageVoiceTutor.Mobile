@@ -14,7 +14,9 @@ class BackendHealthStatus {
     final environment = json['environment'];
     final checkedAtUtc = json['checkedAtUtc'];
 
-    if (status is! String || environment is! String || checkedAtUtc is! String) {
+    if (status is! String ||
+        environment is! String ||
+        checkedAtUtc is! String) {
       throw const FormatException('Invalid health response.');
     }
 

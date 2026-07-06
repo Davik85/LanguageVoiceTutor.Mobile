@@ -21,7 +21,8 @@ void main() {
       final apiClient = FakeApiClient(
         (_) async => const ApiResponse(
           statusCode: 200,
-          body: '{"status":"ok","environment":"production","checkedAtUtc":"2026-07-06T12:00:00Z"}',
+          body:
+              '{"status":"ok","environment":"production","checkedAtUtc":"2026-07-06T12:00:00Z"}',
         ),
       );
       final service = BackendHealthService(apiClient: apiClient);
