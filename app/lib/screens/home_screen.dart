@@ -2,18 +2,26 @@ import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
 import '../models/lesson_access_decision.dart';
+import '../models/tutor_options.dart';
 import '../services/auth_service.dart';
 import '../services/service_factory.dart';
+import '../services/tutor_options_service.dart';
 import 'lesson_screen.dart';
 import 'login_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, AuthService? authService})
-      : _authService = authService;
+  const HomeScreen({
+    super.key,
+    AuthService? authService,
+    TutorOptionsService? tutorOptionsService,
+  })
+      : _authService = authService,
+        _tutorOptionsService = tutorOptionsService;
 
   static const String routeName = '/home';
   final AuthService? _authService;
+  final TutorOptionsService? _tutorOptionsService;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -21,14 +29,44 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final AuthService _authService;
+  late final TutorOptionsService _tutorOptionsService;
   LessonAccessDecision? _lessonAccess;
   bool _isCheckingLessonAccess = false;
   String? _lessonAccessError;
+  TutorOptions? _tutorOptions;
+  bool _isLoadingTutorOptions = true;
+  String? _tutorOptionsError;
 
   @override
   void initState() {
     super.initState();
     _authService = widget._authService ?? createAuthService();
+    _tutorOptionsService = widget._tutorOptionsService ??
+        TutorOptionsService(apiClient: HttpApiClient());
+    _loadTutorOptions();
+  }
+
+  Future<void> _loadTutorOptions() async {
+    setState(() {
+      _isLoadingTutorOptions = true;
+      _tutorOptionsError = null;
+    });
+
+    try {
+      final options = await _tutorOptionsService.fetchTutorOptions();
+      if (!mounted) return;
+      setState(() => _tutorOptions = options);
+    } on ApiException {
+      if (!mounted) return;
+      setState(() => _tutorOptionsError =
+          'Practice options are unavailable right now. Please try again later.');
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _tutorOptionsError =
+          'Practice options are unavailable right now. Please try again later.');
+    } finally {
+      if (mounted) setState(() => _isLoadingTutorOptions = false);
+    }
   }
 
   Future<void> _checkLessonAccess() async {
@@ -72,6 +110,13 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             'Welcome to the Language Voice Tutor mobile shell.',
             style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 16),
+          TutorOptionsCard(
+            options: _tutorOptions,
+            error: _tutorOptionsError,
+            isLoading: _isLoadingTutorOptions,
+            onRetry: _loadTutorOptions,
           ),
           const SizedBox(height: 16),
           LessonAccessCard(
@@ -152,5 +197,68 @@ class LessonAccessCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class TutorOptionsCard extends StatelessWidget {
+  const TutorOptionsCard({
+    super.key,
+    required this.options,
+    required this.error,
+    required this.isLoading,
+    required this.onRetry,
+  });
+
+  final TutorOptions? options;
+  final String? error;
+  final bool isLoading;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Lesson catalog',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            if (isLoading)
+              const Text('Loading practice options...')
+            else if (options != null && options!.hasAnyOptions) ...[
+              Text('Available option groups: ${options!.optionGroupCount}'),
+              if (options!.studyLanguages.isNotEmpty)
+                Text('Study languages: ${_preview(options!.studyLanguages)}'),
+              if (options!.levels.isNotEmpty)
+                Text('Levels: ${_preview(options!.levels)}'),
+              if (options!.topics.isNotEmpty)
+                Text('Topics: ${_preview(options!.topics)}'),
+              if (options!.scenarios.isNotEmpty)
+                Text('Scenarios: ${_preview(options!.scenarios)}'),
+              if (options!.modes.isNotEmpty)
+                Text('Modes: ${_preview(options!.modes)}'),
+            ] else if (error != null) ...[
+              Text(error!),
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: onRetry,
+                child: const Text('Retry'),
+              ),
+            ] else
+              const Text('No practice options are available yet.'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _preview(List<String> values) {
+    final shown = values.take(3).join(', ');
+    final remaining = values.length - 3;
+    return remaining > 0 ? '$shown, +$remaining more' : shown;
   }
 }

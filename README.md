@@ -187,3 +187,22 @@ dart format --set-exit-if-changed lib test
 flutter analyze
 flutter test
 ```
+
+## PR 4 lesson catalog / tutor-options slice
+
+This slice adds only read-only lesson catalog / practice-options loading to the Flutter mobile client. The exact backend endpoint used by this slice is:
+
+```text
+GET /api/tutor-options
+```
+
+The Home screen now displays a small **Lesson catalog** card with loading, unavailable, and loaded summary states for minimal catalog fields such as study languages, levels, topics, scenarios, and modes when those fields are present. The Flutter model intentionally tolerates extra backend fields and does not over-model the complete backend response.
+
+Out of scope for this PR: lesson scenario loading, lesson start, lesson chat, lesson messages, voice mode, TTS, lesson history/progress, billing, Google Play Billing, Apple billing, Paddle runtime, payment UI, analytics, crash reporting, backend runtime changes, and database migrations. Mobile still does not call OpenAI directly, does not make client-side Premium or lesson-access decisions, does not expose tokens in UI or logs, and does not store provider or backend secrets.
+
+Verification commands from `app/`:
+
+```bash
+flutter test
+flutter analyze
+```

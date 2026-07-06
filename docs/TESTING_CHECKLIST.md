@@ -199,3 +199,38 @@ dart format --set-exit-if-changed lib test
 flutter analyze
 flutter test
 ```
+
+## PR 4 lesson catalog / tutor-options loading only
+
+This slice verifies only read-only mobile lesson catalog / practice-options loading. The exact backend endpoint used by the mobile client is:
+
+```text
+GET /api/tutor-options
+```
+
+Expected behavior:
+
+- Home shows a **Lesson catalog** card.
+- The card shows a loading state while `GET /api/tutor-options` is in progress.
+- The card shows a friendly unavailable state if tutor options cannot be loaded.
+- The card shows a small summary of available study languages, levels, topics, scenarios, and modes when the backend returns those fields.
+- The parser tolerates extra backend fields and intentionally models only the minimal fields needed for read-only display.
+- The request does not require an auth token unless the backend contract later changes.
+
+Out of scope and intentionally not verified in this slice:
+
+- Lesson scenario loading.
+- Lesson start and `POST /api/me/lesson-sessions`.
+- Lesson chat and lesson messages.
+- Voice mode and TTS.
+- Lesson history/progress.
+- Billing, Google Play Billing, Apple billing, Paddle runtime, and payment UI.
+- Analytics and crash reporting.
+- Backend runtime code and database migrations.
+
+Run these commands from `app/` to verify the slice:
+
+```bash
+flutter test
+flutter analyze
+```
