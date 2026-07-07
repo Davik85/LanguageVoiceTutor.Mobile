@@ -131,7 +131,8 @@ void main() {
     expect(find.text('Save settings'), findsOneWidget);
     expect(find.textContaining('level', findRichText: true), findsNothing);
   });
-  testWidgets('selecting tutor and saving sends selectedTutorId', (tester) async {
+  testWidgets('selecting tutor and saving sends selectedTutorId',
+      (tester) async {
     final auth = FakeAuthService();
     await tester.pumpWidget(_screen(auth));
     await tester.pumpAndSettle();
