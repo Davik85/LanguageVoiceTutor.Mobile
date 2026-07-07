@@ -4,6 +4,7 @@ import 'config/app_config.dart';
 import 'services/auth_service.dart';
 import 'services/service_factory.dart';
 import 'services/tutor_options_service.dart';
+import 'screens/choose_level_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/lesson_screen.dart';
 import 'screens/login_screen.dart';
@@ -41,6 +42,7 @@ class LanguageVoiceTutorApp extends StatelessWidget {
               authService: _authService,
               tutorOptionsService: _tutorOptionsService,
             ),
+        ChooseLevelScreen.routeName: (_) => const ChooseLevelScreen(),
         LessonScreen.routeName: (_) => const LessonScreen(),
         SettingsScreen.routeName: (_) =>
             SettingsScreen(authService: _authService),

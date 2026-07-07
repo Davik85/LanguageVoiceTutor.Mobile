@@ -6,7 +6,7 @@ import '../models/tutor_options.dart';
 import '../services/auth_service.dart';
 import '../services/service_factory.dart';
 import '../services/tutor_options_service.dart';
-import 'lesson_screen.dart';
+import 'choose_level_screen.dart';
 import 'login_screen.dart';
 import 'settings_screen.dart';
 
@@ -126,10 +126,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 16),
           FilledButton.icon(
-            onPressed: () =>
-                Navigator.pushNamed(context, LessonScreen.routeName),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ChooseLevelScreen()),
+            ),
             icon: const Icon(Icons.school),
-            label: const Text('Open Lesson'),
+            label: const Text('Start lesson'),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(

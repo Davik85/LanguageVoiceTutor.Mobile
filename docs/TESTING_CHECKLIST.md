@@ -294,7 +294,7 @@ Settings checks for this baseline:
 - **Save settings** is visible.
 - No level selector is shown in Settings.
 - `selectedTutorId` is not sent to `PUT /api/me/settings`.
-- **Open Lesson** remains a placeholder.
+- **Start lesson** opens the lesson-start skeleton and still ends at a placeholder Lesson screen.
 
 Desktop parity checks:
 
@@ -304,3 +304,24 @@ Desktop parity checks:
 - Selected tutor avatar persistence remains documented as an API gap unless an existing backend-supported endpoint is confirmed.
 
 Still out of scope for the current documentation update: lesson runtime, voice recording, TTS playback, billing, analytics, Google Play Billing, Apple billing, backend changes, desktop changes, and store release metadata.
+
+## Lesson-start navigation skeleton checks
+
+This mobile slice adds a phone-first lesson-start navigation skeleton that follows the desktop product order: **Home -> Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder**.
+
+Expected behavior:
+
+- Home shows **Start lesson** instead of using **Open Lesson** as the primary direct lesson jump.
+- **Start lesson** opens **Choose Level** with A1 Beginner, A2 Elementary, B1 Intermediate, and B2 Upper-Intermediate.
+- Selecting a level opens **Choose Topic** with Daily Life, Travel, Work & Business, Job Interview, Restaurant & Cafe, and Free Conversation.
+- Selecting Travel opens **Choose Situation** with Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage.
+- Selecting a situation opens the existing Lesson placeholder and displays the selected level, topic, and situation.
+- Lesson runtime remains out of scope. Voice recording, TTS playback, AI tutor calls, Conversation Mode runtime, billing, analytics, crash reporting, backend changes, and desktop changes remain out of scope.
+
+Verification commands from `app/`:
+
+```bash
+dart format --set-exit-if-changed lib test
+flutter analyze
+flutter test
+```
