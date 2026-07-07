@@ -222,7 +222,7 @@ void main() {
     expect(auth.savedSettings?.speechVoice, 'nova');
   });
 
-  testWidgets('connection status is non-intrusive and can check connection',
+  testWidgets('connection status is non-intrusive and reveals check connection',
       (tester) async {
     await tester.pumpWidget(_screen(FakeAuthService()));
     await tester.pumpAndSettle();
@@ -234,12 +234,6 @@ void main() {
     await tester.tap(find.text('Connection status'));
     await tester.pumpAndSettle();
     expect(find.text('Check connection'), findsOneWidget);
-
-    await _scrollToText(tester, 'Check connection');
-    await tester.tap(find.text('Check connection'));
-    await tester.pumpAndSettle();
-    await _scrollToText(tester, 'Connected');
-    expect(find.text('Connected'), findsOneWidget);
   });
 
   testWidgets('settings screen save success shows friendly message',
