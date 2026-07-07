@@ -185,7 +185,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
         children: [
           _AccountCard(
             user: _user,
@@ -212,16 +212,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: _settings == null || _isSaving ? null : _saveSettings,
             child: Text(_isSaving ? 'Saving...' : 'Save settings'),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           _DiagnosticsCard(
             connectionLabel: _connectionLabel,
             connectionMessage: _connectionMessage,
             checking: _connectionState == BackendConnectionState.checking,
             onCheck: _checkBackendConnection,
           ),
-          const SizedBox(height: 12),
-          const Text(
-              'Auth tokens are stored securely and are never shown here.'),
         ],
       ),
     );
@@ -452,16 +449,26 @@ class _DiagnosticsCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Backend diagnostics',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(connectionLabel),
-            const SizedBox(height: 8),
-            Text(connectionMessage),
-            const SizedBox(height: 12),
-            FilledButton(
-                onPressed: checking ? null : onCheck,
-                child: const Text('Check connection')),
+            ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: const EdgeInsets.only(top: 8),
+              title: Text('Connection status',
+                  style: Theme.of(context).textTheme.titleMedium),
+              subtitle: Text(connectionLabel),
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(connectionMessage),
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: FilledButton(
+                      onPressed: checking ? null : onCheck,
+                      child: const Text('Check connection')),
+                ),
+              ],
+            ),
           ])));
 }
 
