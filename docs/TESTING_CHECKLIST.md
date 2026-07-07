@@ -157,7 +157,7 @@ Expected verification:
 - Invalid sessions are cleared and return to Login.
 - Access and refresh tokens are stored only in secure mobile storage.
 - Tokens are not logged, printed, or shown in UI.
-- Settings keeps the Backend connection card working.
+- Settings keeps connection checking working from the non-intrusive Connection status area.
 - Settings shows account email/display name from backend account data.
 - Settings shows Free, Trial, or Premium only from `GET /api/me/subscription-status`.
 - Extra subscription-status backend fields are tolerated by parsing.
@@ -293,7 +293,7 @@ Settings checks for this baseline:
 - **Account** section is visible.
 - **Learning** section is visible.
 - **Audio** section is visible.
-- **Backend diagnostics** section is visible.
+- **Connection status** is available in a non-intrusive advanced area and can reveal **Check connection**.
 - **Save settings** is visible.
 - No level selector is shown in Settings.
 - `selectedTutorId` is sent to `PUT /api/me/settings` and remains separate from `speechVoice`.
@@ -334,7 +334,7 @@ flutter test
 
 ## Home polish checks
 
-This mobile slice keeps Home learner-facing and leaves lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, backend changes, desktop changes, and store release work out of scope.
+This mobile slice keeps Home and Settings learner-facing while backend account/access decisions remain backend-owned; real lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, backend changes, desktop changes, and store release work remain out of scope.
 
 Expected behavior:
 
