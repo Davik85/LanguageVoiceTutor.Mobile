@@ -75,8 +75,51 @@ Widget _home() => MaterialApp(
       home: HomeScreen(authService: FakeAuthService()),
     );
 
+Future<void> _expectVisibleAfterScroll(WidgetTester tester, String text) async {
+  final finder = find.text(text);
+  if (!tester.any(finder)) {
+    await tester.scrollUntilVisible(
+      finder,
+      500,
+      scrollable: find.byType(Scrollable),
+    );
+  }
+  expect(finder, findsOneWidget);
+}
+
+Future<void> _scrollToVisible(WidgetTester tester, String text) async {
+  final finder = find.text(text);
+  if (tester.any(finder)) {
+    await tester.ensureVisible(finder);
+    await tester.pumpAndSettle();
+    return;
+  }
+
+  await tester.scrollUntilVisible(
+    finder,
+    -500,
+    scrollable: find.byType(Scrollable),
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
   test('lesson situation catalog uses product-friendly labels', () {
+    expect(lessonLevels.map((level) => level.id), [
+      'a1',
+      'a2',
+      'b1',
+      'b2',
+    ]);
+    expect(lessonTopics.map((topic) => topic.id), [
+      'daily_life',
+      'travel',
+      'work_business',
+      'job_interview',
+      'restaurant_cafe',
+      'free_conversation',
+    ]);
+
     for (final topic in lessonTopics) {
       final situations = lessonSituationsByTopic[topic.label];
       expect(situations, isNotNull, reason: topic.label);
@@ -95,6 +138,20 @@ void main() {
     ]);
   });
 
+  test('situation card styles inherit the selected topic family', () {
+    for (final topic in lessonTopics) {
+      final topicStyle = lessonCardStyleForTopic(topic);
+      final situationStyle = lessonCardStyleForSituationTopic(topic.label);
+
+      expect(situationStyle.familyId, topicStyle.familyId, reason: topic.label);
+    }
+
+    expect(
+      lessonCardStyleForSituationTopic('Travel').familyId,
+      'topic-travel',
+    );
+  });
+
   testWidgets('home starts lesson selection skeleton', (tester) async {
     await tester.pumpWidget(_home());
     await tester.pumpAndSettle();
@@ -110,6 +167,7 @@ void main() {
     expect(find.text('A2 Elementary'), findsOneWidget);
     expect(find.text('B1 Intermediate'), findsOneWidget);
     expect(find.text('B2 Upper-Intermediate'), findsOneWidget);
+    expect(find.byKey(const Key('lesson-level-card-a1')), findsOneWidget);
   });
 
   testWidgets('travel lesson skeleton reaches placeholder with selections',
@@ -123,22 +181,29 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Choose Topic'), findsOneWidget);
-    expect(find.text('Daily Life'), findsOneWidget);
-    expect(find.text('Travel'), findsOneWidget);
-    expect(find.text('Work & Business'), findsOneWidget);
-    expect(find.text('Job Interview'), findsOneWidget);
-    expect(find.text('Restaurant & Cafe'), findsOneWidget);
-    expect(find.text('Free Conversation'), findsOneWidget);
+    await _expectVisibleAfterScroll(tester, 'Daily Life');
+    await _expectVisibleAfterScroll(tester, 'Travel');
+    await _expectVisibleAfterScroll(tester, 'Work & Business');
+    await _expectVisibleAfterScroll(tester, 'Job Interview');
+    await _expectVisibleAfterScroll(tester, 'Restaurant & Cafe');
+    await _expectVisibleAfterScroll(tester, 'Free Conversation');
+    await _scrollToVisible(tester, 'Travel');
+    expect(find.byKey(const Key('lesson-topic-card-travel')), findsOneWidget);
 
     await tester.tap(find.text('Travel'));
     await tester.pumpAndSettle();
 
     expect(find.text('Choose Situation'), findsOneWidget);
-    expect(find.text('Airport check-in'), findsOneWidget);
-    expect(find.text('Hotel check-in'), findsOneWidget);
-    expect(find.text('Asking for directions'), findsOneWidget);
-    expect(find.text('Ordering transport'), findsOneWidget);
-    expect(find.text('Lost luggage'), findsOneWidget);
+    await _expectVisibleAfterScroll(tester, 'Airport check-in');
+    await _expectVisibleAfterScroll(tester, 'Hotel check-in');
+    await _expectVisibleAfterScroll(tester, 'Asking for directions');
+    await _expectVisibleAfterScroll(tester, 'Ordering transport');
+    await _expectVisibleAfterScroll(tester, 'Lost luggage');
+    await _scrollToVisible(tester, 'Airport check-in');
+    expect(
+      find.byKey(const Key('lesson-situation-card-airport_check_in')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('Airport check-in'));
     await tester.pumpAndSettle();

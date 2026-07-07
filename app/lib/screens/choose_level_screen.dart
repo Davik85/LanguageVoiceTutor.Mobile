@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/lesson_start_selection.dart';
+import '../widgets/lesson_option_card.dart';
 import 'choose_topic_screen.dart';
 
 class ChooseLevelScreen extends StatelessWidget {
@@ -12,28 +13,32 @@ class ChooseLevelScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Choose Level')),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(24),
-        itemCount: lessonLevels.length + 1,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            return Text(
-              'Choose a practice level to start the lesson skeleton.',
-              style: Theme.of(context).textTheme.titleMedium,
-            );
-          }
-          final level = lessonLevels[index - 1].label;
-          return FilledButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ChooseTopicScreen(selectedLevel: level),
+      body: SafeArea(
+        child: ListView.separated(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          itemCount: lessonLevels.length + 1,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return const LessonSelectionIntro(
+                title: 'Start with your level',
+                subtitle: 'Choose a practice level for today.',
+              );
+            }
+            final level = lessonLevels[index - 1];
+            return LessonOptionCard(
+              kind: 'level',
+              option: level,
+              style: lessonCardStyleForLevel(level),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ChooseTopicScreen(selectedLevel: level.label),
+                ),
               ),
-            ),
-            child: Text(level),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

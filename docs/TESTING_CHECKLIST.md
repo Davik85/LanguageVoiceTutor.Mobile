@@ -300,6 +300,8 @@ Settings checks for this baseline:
 - Language dropdowns display user-friendly names while saving and sending backend IDs.
 - Selected tutor persists after app/emulator restart.
 - **Start lesson** opens the lesson-start skeleton and still ends at a placeholder Lesson screen.
+- Home keeps the logo next to an accessible branded **Language Voice Tutor** title.
+- Lesson-start cards use soft level/topic colors, and situation cards follow the selected topic color family.
 
 Desktop parity checks:
 
@@ -317,9 +319,10 @@ This mobile slice adds a phone-first lesson-start navigation skeleton that follo
 Expected behavior:
 
 - Home shows **Start lesson** instead of using **Open Lesson** as the primary direct lesson jump.
-- **Start lesson** opens **Choose Level** with A1 Beginner, A2 Elementary, B1 Intermediate, and B2 Upper-Intermediate.
-- Selecting a level opens **Choose Topic** with Daily Life, Travel, Work & Business, Job Interview, Restaurant & Cafe, and Free Conversation.
-- Selecting Travel opens **Choose Situation** with Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage.
+- **Start lesson** opens **Choose Level** with soft level-specific cards for A1 Beginner, A2 Elementary, B1 Intermediate, and B2 Upper-Intermediate.
+- Selecting a level opens **Choose Topic** with soft topic-specific cards for Daily Life, Travel, Work & Business, Job Interview, Restaurant & Cafe, and Free Conversation.
+- Selecting Travel opens **Choose Situation** with Travel-colored cards for Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage.
+- Selecting any non-Travel topic still opens **Choose Situation**, and those situation cards use the selected topic color family.
 - Every current topic has at least one product-friendly situation option, and no Choose Situation label contains `Placeholder:`.
 - Selecting a situation opens the existing Lesson placeholder and displays the selected level, topic, and situation.
 - Lesson runtime remains out of scope. Voice recording, TTS playback, AI tutor calls, Conversation Mode runtime, billing, analytics, crash reporting, backend changes, and desktop changes remain out of scope.
@@ -340,7 +343,8 @@ Expected behavior:
 
 - The mobile logo source exists at `app/assets/brand/source/lvt-logo-source.png`.
 - The app logo asset exists at `app/assets/brand/lvt-logo.png` and is derived only from the provided source logo.
-- Home shows the Language Voice Tutor logo next to the **Language Voice Tutor** title.
+- Home shows the Language Voice Tutor logo next to a branded, accessible **Language Voice Tutor** title.
+- The branded title remains text, is findable by tests, and is not converted into an image.
 - The logo is registered as a Flutter asset and is preloaded during startup before Home is displayed.
 - The in-app loading screen shows only the centered app logo, with no loading text, slogans, diagnostics, captions, or progress wording.
 - Android launcher icons exist under `app/android/app/src/main/res/mipmap-mdpi`, `mipmap-hdpi`, `mipmap-xhdpi`, `mipmap-xxhdpi`, and `mipmap-xxxhdpi`, derived from the same provided source logo.

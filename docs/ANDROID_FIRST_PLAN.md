@@ -31,7 +31,7 @@ flutter test
 flutter run -d emulator-5554
 ```
 
-The current green baseline has `dart format --set-exit-if-changed lib test`, `flutter analyze`, and `flutter test` passing. Settings has stable **Account**, **Learning**, **Audio**, and **Connection status** advanced area, **Save settings** is visible and tested, and user level is not in Settings. Settings selected tutor persistence is complete through `/api/me/settings`: mobile reads and sends `selectedTutorId`, selection survives app/emulator restart, and tutor voice remains a separate setting. Tutor selection belongs in Settings, and Home no longer shows tutor diagnostics or an **Available tutors** card. Home now shows the provided Language Voice Tutor logo/title, preloads the logo during startup before Home is displayed, shows learner-friendly signed-in, account, and plan status while keeping account/access decisions backend-owned, and uses **Start lesson** to open the completed lesson-start navigation skeleton before reaching the Lesson placeholder. The mobile logo source is `app/assets/brand/source/lvt-logo-source.png`; the app logo is `app/assets/brand/lvt-logo.png`; the loading screen shows only the centered logo; and Android launcher icons under `app/android/app/src/main/res/mipmap-*` are derived from the same provided source logo. Product-friendly situation labels are in place for all six topics, Travel includes Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage, and situation labels no longer show `Placeholder:`. Settings language dropdowns show friendly names while still storing and sending backend IDs. Real lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, and store release setup are not implemented by this documentation update.
+The current green baseline has `dart format --set-exit-if-changed lib test`, `flutter analyze`, and `flutter test` passing. Settings has stable **Account**, **Learning**, **Audio**, and **Connection status** advanced area, **Save settings** is visible and tested, and user level is not in Settings. Settings selected tutor persistence is complete through `/api/me/settings`: mobile reads and sends `selectedTutorId`, selection survives app/emulator restart, and tutor voice remains a separate setting. Tutor selection belongs in Settings, and Home no longer shows tutor diagnostics or an **Available tutors** card. Home now shows the provided Language Voice Tutor logo next to a more branded, accessible title, preloads the logo during startup before Home is displayed, shows learner-friendly signed-in, account, and plan status while keeping account/access decisions backend-owned, and uses **Start lesson** to open the completed lesson-start navigation skeleton before reaching the Lesson placeholder. Choose Level uses soft level-specific cards, Choose Topic uses soft topic-specific cards, and Choose Situation uses the selected topic color family. The mobile logo source is `app/assets/brand/source/lvt-logo-source.png`; the app logo is `app/assets/brand/lvt-logo.png`; the loading screen shows only the centered logo; and Android launcher icons under `app/android/app/src/main/res/mipmap-*` are derived from the same provided source logo. Product-friendly situation labels are in place for all six topics, Travel includes Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage, and situation labels no longer show `Placeholder:`. Settings language dropdowns show friendly names while still storing and sending backend IDs. Real lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, and store release setup are not implemented by this documentation update.
 
 ## Planned phases
 
@@ -57,7 +57,7 @@ The current green baseline has `dart format --set-exit-if-changed lib test`, `fl
 - Add logout and expired-session handling.
 - Display Premium/subscription status only from backend responses; do not compute entitlement locally.
 - Continue from the green Settings baseline with small, mobile-only changes unless an API gap is explicitly approved.
-- Completed within this phase: Settings selected tutor persistence, product-friendly catalog labels, and friendly language labels.
+- Completed within this phase: Settings selected tutor persistence, product-friendly catalog labels, friendly language labels, Home title/logo polish, and soft colored lesson-selection cards.
 
 ### Desktop parity guidance
 
@@ -65,7 +65,7 @@ The reviewed Windows desktop client walkthrough presentation is a product source
 
 ### Phase 3: Lessons and progress
 
-- Completed as UI-only foundation: lesson-start skeleton from Home to Choose Level, Choose Topic, Choose Situation, and Lesson placeholder.
+- Completed as UI-only foundation: lesson-start skeleton from Home to soft colored Choose Level, Choose Topic, Choose Situation screens, and Lesson placeholder.
 - Next safe phase: Settings UX polish or lesson runtime planning by inspecting backend lesson/session APIs before implementation.
 - Implement lesson access checks.
 - Implement lesson start/resume only after the backend lesson/session contract is confirmed.

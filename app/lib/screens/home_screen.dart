@@ -137,8 +137,18 @@ class _HomeScreenState extends State<HomeScreen> {
 class _HomeTitle extends StatelessWidget {
   const _HomeTitle();
 
+  static const _languageColor = Color(0xFF173A63);
+  static const _voiceColor = Color(0xFF128776);
+  static const _tutorColor = Color(0xFFD6633C);
+
   @override
   Widget build(BuildContext context) {
+    final titleStyle = Theme.of(context).textTheme.headlineSmall?.copyWith(
+          fontWeight: FontWeight.w700,
+          height: 1.06,
+          letterSpacing: 0,
+        );
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -155,9 +165,32 @@ class _HomeTitle extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            AppConfig.appName,
-            style: Theme.of(context).textTheme.headlineSmall,
+          child: Semantics(
+            label: AppConfig.appName,
+            header: true,
+            child: ExcludeSemantics(
+              child: Text.rich(
+                TextSpan(
+                  style: titleStyle,
+                  children: const [
+                    TextSpan(
+                      text: 'Language',
+                      style: TextStyle(color: _languageColor),
+                    ),
+                    TextSpan(
+                      text: ' Voice',
+                      style: TextStyle(color: _voiceColor),
+                    ),
+                    TextSpan(
+                      text: ' Tutor',
+                      style: TextStyle(color: _tutorColor),
+                    ),
+                  ],
+                ),
+                key: const Key('home-branded-title'),
+                softWrap: true,
+              ),
+            ),
           ),
         ),
       ],

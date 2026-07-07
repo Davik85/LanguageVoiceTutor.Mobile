@@ -114,7 +114,12 @@ void main() {
     await tester.pumpWidget(_home());
     await tester.pumpAndSettle();
 
-    expect(find.text('Language Voice Tutor'), findsOneWidget);
+    expect(find.byKey(const Key('home-branded-title')), findsOneWidget);
+    expect(
+      find.text('Language Voice Tutor', findRichText: true),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('Language Voice Tutor'), findsOneWidget);
     expect(find.byKey(const Key('app-logo')), findsOneWidget);
     expect(find.bySemanticsLabel('Language Voice Tutor logo'), findsOneWidget);
   });
