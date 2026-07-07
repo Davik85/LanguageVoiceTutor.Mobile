@@ -338,13 +338,18 @@ This mobile slice keeps Home learner-facing and leaves lesson runtime, voice rec
 
 Expected behavior:
 
+- The mobile logo source exists at `app/assets/brand/source/lvt-logo-source.png`.
+- The app logo asset exists at `app/assets/brand/lvt-logo.png` and is derived only from the provided source logo.
 - Home shows the Language Voice Tutor logo next to the **Language Voice Tutor** title.
 - The logo is registered as a Flutter asset and is preloaded during startup before Home is displayed.
+- The in-app loading screen shows only the centered app logo, with no loading text, slogans, diagnostics, captions, or progress wording.
+- Android launcher icons exist under `app/android/app/src/main/res/mipmap-mdpi`, `mipmap-hdpi`, `mipmap-xhdpi`, `mipmap-xxhdpi`, and `mipmap-xxxhdpi`, derived from the same provided source logo.
 - Home does not show **Available tutors** or `Available tutors: Lana, Nelli, David`.
 - Home shows friendly signed-in account status when account data is available.
 - Home shows a friendly sign-in/sync prompt when account data is unavailable.
 - **Start lesson** opens **Choose Level**.
 - **Open Settings** opens Settings.
 - Lesson still ends at the placeholder screen; real lesson runtime remains out of scope.
+- No backend, desktop, website, billing, voice, TTS, AI runtime, analytics, store metadata, signing, or package id changes are included in this branding slice.
 
 Verification commands are the standard current baseline commands from `app/`: `dart format --set-exit-if-changed lib test`, `flutter analyze`, and `flutter test`.
