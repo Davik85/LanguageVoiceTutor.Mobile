@@ -145,6 +145,27 @@ void main() {
     expect(find.text('Please sign in again.'), findsNothing);
   });
 
+  testWidgets('home uses learner-friendly account and plan wording',
+      (tester) async {
+    await tester.pumpWidget(_home());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Your account'), findsOneWidget);
+    expect(find.text('Free plan'), findsOneWidget);
+    expect(find.text('Refresh status'), findsOneWidget);
+    expect(find.text('Account / access'), findsNothing);
+    expect(find.text('Refresh access'), findsNothing);
+  });
+
+  testWidgets('home does not show backend or debug wording', (tester) async {
+    await tester.pumpWidget(_home());
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Backend'), findsNothing);
+    expect(find.textContaining('diagnostics'), findsNothing);
+    expect(find.textContaining('debug'), findsNothing);
+  });
+
   testWidgets('start lesson opens choose level', (tester) async {
     await tester.pumpWidget(_home());
     await tester.pumpAndSettle();
@@ -159,6 +180,8 @@ void main() {
     await tester.pumpWidget(_home());
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.text('Open Settings'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Open Settings'));
     await tester.pumpAndSettle();
 

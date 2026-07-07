@@ -246,7 +246,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Refresh access'));
+    await tester.tap(find.text('Refresh status'));
     await tester.pumpAndSettle();
 
     expect(find.text('You can start a lesson'), findsOneWidget);
@@ -276,7 +276,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Refresh access'));
+    await tester.tap(find.text('Refresh status'));
     await tester.pumpAndSettle();
 
     expect(

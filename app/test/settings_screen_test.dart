@@ -14,7 +14,11 @@ import 'package:language_voice_tutor_mobile/services/tutor_options_service.dart'
 class FakeApiClient implements ApiClient {
   @override
   Future<ApiResponse> get(String path, {String? accessToken}) async =>
-      const ApiResponse(statusCode: 200, body: '{}');
+      const ApiResponse(
+        statusCode: 200,
+        body:
+            '{"status":"ok","environment":"test","checkedAtUtc":"2026-07-06T12:00:00Z"}',
+      );
   @override
   Future<ApiResponse> post(String path,
           {Map<String, dynamic>? body, String? accessToken}) async =>
@@ -128,8 +132,9 @@ void main() {
     await _scrollToText(tester, 'Audio');
     expect(find.text('Audio'), findsOneWidget);
     expect(find.text('Conversation mode enabled'), findsOneWidget);
-    await _scrollToText(tester, 'Backend diagnostics');
-    expect(find.text('Backend diagnostics'), findsOneWidget);
+    await _scrollToText(tester, 'Connection status');
+    expect(find.text('Connection status'), findsOneWidget);
+    expect(find.text('Backend diagnostics'), findsNothing);
     expect(find.text('Save settings'), findsOneWidget);
     expect(find.textContaining('level', findRichText: true), findsNothing);
   });
@@ -215,6 +220,26 @@ void main() {
     await tester.pumpAndSettle();
     expect(auth.savedSettings?.selectedTutorId, 'lana');
     expect(auth.savedSettings?.speechVoice, 'nova');
+  });
+
+  testWidgets('connection status is non-intrusive and can check connection',
+      (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+
+    await _scrollToText(tester, 'Connection status');
+    expect(find.text('Connection status'), findsOneWidget);
+    expect(find.text('Check connection'), findsNothing);
+
+    await tester.tap(find.text('Connection status'));
+    await tester.pumpAndSettle();
+    expect(find.text('Check connection'), findsOneWidget);
+
+    await _scrollToText(tester, 'Check connection');
+    await tester.tap(find.text('Check connection'));
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Connected');
+    expect(find.text('Connected'), findsOneWidget);
   });
 
   testWidgets('settings screen save success shows friendly message',

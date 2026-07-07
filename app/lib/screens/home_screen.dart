@@ -91,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Home')),
       body: ListView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
         children: [
           const _HomeTitle(),
           const SizedBox(height: 12),
@@ -112,7 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.school),
             label: const Text('Start lesson'),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           AccountAccessCard(
             user: _currentUser,
             isLoadingAccount: _isLoadingAccount,
@@ -222,12 +222,12 @@ class AccountAccessCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Account / access',
+              'Your account',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
@@ -254,7 +254,7 @@ class AccountAccessCard extends StatelessWidget {
             Text(_lessonRemainingLabel),
             if (isChecking) ...[
               const SizedBox(height: 8),
-              const Text('Checking lesson access...'),
+              const Text('Refreshing your lesson status...'),
             ] else if (error != null) ...[
               const SizedBox(height: 8),
               Text(error!),
@@ -269,7 +269,7 @@ class AccountAccessCard extends StatelessWidget {
             const SizedBox(height: 12),
             TextButton(
               onPressed: isChecking ? null : onCheckLessonAccess,
-              child: const Text('Refresh access'),
+              child: const Text('Refresh status'),
             ),
           ],
         ),
