@@ -108,7 +108,7 @@ Selected tutor persistence is supported by `/api/me/settings`. Tutor voice remai
 
 ## Lesson-start skeleton
 
-Mobile keeps the desktop product order as a phone-first skeleton: **Home -> Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder**. The six current topics are Daily Life, Travel, Work & Business, Job Interview, Restaurant & Cafe, and Free Conversation. Choose Situation uses product-friendly desktop-aligned labels, including Travel options Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage. Real lesson runtime remains out of scope.
+Mobile keeps the desktop product order as a phone-first skeleton: **Home -> Start lesson -> Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder**. The six current topics are Daily Life, Travel, Work & Business, Job Interview, Restaurant & Cafe, and Free Conversation. Choose Situation uses product-friendly desktop-aligned labels, including Travel options Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage. Real lesson runtime remains out of scope.
 
 ## Backend-owned state boundaries
 

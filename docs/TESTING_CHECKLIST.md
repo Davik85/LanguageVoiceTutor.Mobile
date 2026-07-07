@@ -256,10 +256,11 @@ Expected behavior:
 - Account email/display name and subscription status continue to come from the existing authenticated account/subscription flow.
 - Tutor options come from `GET /api/tutor-options`.
 - Selected tutor is persisted through `/api/me/settings` when a valid `selectedTutorId` is supplied.
-- Study, native, and interface/explanation language dropdowns show user-friendly labels and save backend IDs.
+- Selected tutor persists after app/emulator restart because Settings reloads `selectedTutorId` from `GET /api/me/settings`.
+- Study, native, and interface/explanation language dropdowns show user-friendly labels and save/send backend IDs rather than display labels.
 - Study language choices remain limited to English, French, German, Portuguese, Spanish, and Italian.
 - Native language and interface/explanation language remain separate settings with separate option catalogs.
-- Level is not shown in Settings. Level selection belongs after **Start lesson** in a future lesson flow.
+- Level is not shown in Settings. Level selection belongs after **Start lesson** in the lesson-start skeleton.
 - Friendly success/error messages are shown; raw backend exceptions, stack traces, and tokens are not displayed.
 
 Still out of scope: backend changes, database migrations, lesson start, lesson chat, lesson runtime, topic/scenario selection, voice recording, voice runtime, TTS runtime/playback, billing, Google Play Billing, Apple billing, Paddle runtime, history/progress, analytics, crash reporting, and store release setup.
@@ -297,7 +298,8 @@ Settings checks for this baseline:
 - **Save settings** is visible.
 - No level selector is shown in Settings.
 - `selectedTutorId` is sent to `PUT /api/me/settings` and remains separate from `speechVoice`.
-- Language dropdowns display user-friendly names while saving backend IDs.
+- Language dropdowns display user-friendly names while saving and sending backend IDs.
+- Selected tutor persists after app/emulator restart.
 - **Start lesson** opens the lesson-start skeleton and still ends at a placeholder Lesson screen.
 
 Desktop parity checks:
