@@ -6,6 +6,7 @@ class UserSettings {
     required this.speechVoice,
     required this.speechSpeed,
     required this.conversationModeEnabled,
+    required this.selectedTutorId,
   });
 
   final String nativeLanguage;
@@ -14,6 +15,7 @@ class UserSettings {
   final String speechVoice;
   final double speechSpeed;
   final bool conversationModeEnabled;
+  final String selectedTutorId;
 
   factory UserSettings.fromJson(Map<String, dynamic> json) => UserSettings(
         nativeLanguage: _string(json['nativeLanguage']),
@@ -22,6 +24,7 @@ class UserSettings {
         speechVoice: _string(json['speechVoice']),
         speechSpeed: _double(json['speechSpeed'], fallback: 1.0),
         conversationModeEnabled: _bool(json['conversationModeEnabled']),
+        selectedTutorId: _selectedTutorId(json['selectedTutorId']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -31,6 +34,7 @@ class UserSettings {
         'speechVoice': speechVoice,
         'speechSpeed': speechSpeed,
         'conversationModeEnabled': conversationModeEnabled,
+        'selectedTutorId': selectedTutorId,
       };
 
   UserSettings copyWith({
@@ -40,6 +44,7 @@ class UserSettings {
     String? speechVoice,
     double? speechSpeed,
     bool? conversationModeEnabled,
+    String? selectedTutorId,
   }) =>
       UserSettings(
         nativeLanguage: nativeLanguage ?? this.nativeLanguage,
@@ -49,9 +54,18 @@ class UserSettings {
         speechSpeed: speechSpeed ?? this.speechSpeed,
         conversationModeEnabled:
             conversationModeEnabled ?? this.conversationModeEnabled,
+        selectedTutorId: selectedTutorId ?? this.selectedTutorId,
       );
 
+  static const defaultTutorId = 'lana';
+
   static String _string(Object? value) => value is String ? value : '';
+
+  static String _selectedTutorId(Object? value) {
+    if (value is! String) return defaultTutorId;
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? defaultTutorId : trimmed;
+  }
 
   static bool _bool(Object? value) => value is bool ? value : false;
 
