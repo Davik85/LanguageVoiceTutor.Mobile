@@ -107,24 +107,19 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.all(24),
         children: [
           Text(
-            'Welcome to the Language Voice Tutor mobile shell.',
+            'Language Voice Tutor',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Practice real conversations by text and voice.',
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          const SizedBox(height: 16),
-          TutorOptionsCard(
-            options: _tutorOptions,
-            error: _tutorOptionsError,
-            isLoading: _isLoadingTutorOptions,
-            onRetry: _loadTutorOptions,
+          const SizedBox(height: 8),
+          const Text(
+            'Choose your level, topic, and situation, then start a guided lesson.',
           ),
-          const SizedBox(height: 16),
-          LessonAccessCard(
-            lessonAccess: _lessonAccess,
-            error: _lessonAccessError,
-            isChecking: _isCheckingLessonAccess,
-            onCheckLessonAccess: _checkLessonAccess,
-          ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: () => Navigator.push(
               context,
@@ -133,12 +128,26 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.school),
             label: const Text('Start lesson'),
           ),
+          const SizedBox(height: 16),
+          LessonAccessCard(
+            lessonAccess: _lessonAccess,
+            error: _lessonAccessError,
+            isChecking: _isCheckingLessonAccess,
+            onCheckLessonAccess: _checkLessonAccess,
+          ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: () =>
                 Navigator.pushNamed(context, SettingsScreen.routeName),
             icon: const Icon(Icons.settings),
             label: const Text('Open Settings'),
+          ),
+          const SizedBox(height: 16),
+          TutorOptionsCard(
+            options: _tutorOptions,
+            error: _tutorOptionsError,
+            isLoading: _isLoadingTutorOptions,
+            onRetry: _loadTutorOptions,
           ),
         ],
       ),
@@ -160,6 +169,19 @@ class LessonAccessCard extends StatelessWidget {
   final bool isChecking;
   final VoidCallback onCheckLessonAccess;
 
+  String get _planLabel {
+    if (lessonAccess == null) return 'Free plan';
+    if (lessonAccess!.premiumActive) return 'Premium plan';
+    if (lessonAccess!.trialActive) return 'Trial access';
+    return 'Free plan';
+  }
+
+  String get _lessonRemainingLabel {
+    final remaining = lessonAccess?.freeLessonRemainingToday ?? 1;
+    final lesson = remaining == 1 ? 'lesson' : 'lessons';
+    return '$remaining free $lesson remaining today';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -169,30 +191,31 @@ class LessonAccessCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Lesson access',
+              'Account / access',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
-            if (isChecking)
-              const Text('Checking lesson access...')
-            else if (lessonAccess != null) ...[
+            Text(_planLabel),
+            const SizedBox(height: 4),
+            Text(_lessonRemainingLabel),
+            if (isChecking) ...[
+              const SizedBox(height: 8),
+              const Text('Checking lesson access...'),
+            ] else if (error != null) ...[
+              const SizedBox(height: 8),
+              Text(error!),
+            ] else if (lessonAccess != null) ...[
+              const SizedBox(height: 8),
               Text(lessonAccess!.canStartNewLesson
                   ? 'You can start a lesson'
                   : 'You cannot start a new lesson right now'),
               const SizedBox(height: 4),
               Text(lessonAccess!.displayReason),
-              const SizedBox(height: 4),
-              Text(
-                  'Free lessons remaining today: ${lessonAccess!.freeLessonRemainingToday}'),
-            ] else if (error != null)
-              Text(error!)
-            else
-              const Text(
-                  'Check with the backend before starting a new lesson.'),
+            ],
             const SizedBox(height: 12),
-            FilledButton(
+            TextButton(
               onPressed: isChecking ? null : onCheckLessonAccess,
-              child: const Text('Check lesson access'),
+              child: const Text('Refresh access'),
             ),
           ],
         ),

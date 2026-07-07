@@ -246,12 +246,12 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Check lesson access'));
+    await tester.tap(find.text('Refresh access'));
     await tester.pumpAndSettle();
 
     expect(find.text('You can start a lesson'), findsOneWidget);
     expect(find.text('Trial access is active.'), findsOneWidget);
-    expect(find.text('Free lessons remaining today: 1'), findsOneWidget);
+    expect(find.text('1 free lesson remaining today'), findsOneWidget);
   });
 
   testWidgets('home screen shows blocked lesson access', (tester) async {
@@ -276,12 +276,12 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Check lesson access'));
+    await tester.tap(find.text('Refresh access'));
     await tester.pumpAndSettle();
 
     expect(
         find.text('You cannot start a new lesson right now'), findsOneWidget);
     expect(find.text('Daily free lesson limit reached.'), findsOneWidget);
-    expect(find.text('Free lessons remaining today: 0'), findsOneWidget);
+    expect(find.text('0 free lessons remaining today'), findsOneWidget);
   });
 }
