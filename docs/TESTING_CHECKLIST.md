@@ -210,11 +210,10 @@ GET /api/tutor-options
 
 Expected behavior:
 
-- Home shows an **Available tutors** card.
-- The card shows a loading state while `GET /api/tutor-options` is in progress.
-- The card shows a friendly unavailable state if tutor options cannot be loaded.
-- The card shows active tutors from `tutorId`, `displayName`, and `isActive`.
-- Empty or all-inactive responses show a friendly empty state.
+- Home does not show an **Available tutors** card.
+- Home does not show tutor diagnostics such as `Available tutors: Lana, Nelli, David`.
+- Tutor selection belongs in Settings.
+- Settings uses `GET /api/tutor-options` for tutor choices.
 - The parser tolerates extra backend fields and intentionally models only tutor options.
 - The request does not require an auth token unless the backend contract later changes.
 - `GET /api/tutor-options` does not currently load a full lesson catalog, study languages, levels, topics, scenarios, or contexts; full lesson catalog and scenario selection remain future work.
@@ -332,3 +331,20 @@ dart format --set-exit-if-changed lib test
 flutter analyze
 flutter test
 ```
+
+## Home polish checks
+
+This mobile slice keeps Home learner-facing and leaves lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, backend changes, desktop changes, and store release work out of scope.
+
+Expected behavior:
+
+- Home shows the Language Voice Tutor logo next to the **Language Voice Tutor** title.
+- The logo is registered as a Flutter asset and is preloaded during startup before Home is displayed.
+- Home does not show **Available tutors** or `Available tutors: Lana, Nelli, David`.
+- Home shows friendly signed-in account status when account data is available.
+- Home shows a friendly sign-in/sync prompt when account data is unavailable.
+- **Start lesson** opens **Choose Level**.
+- **Open Settings** opens Settings.
+- Lesson still ends at the placeholder screen; real lesson runtime remains out of scope.
+
+Verification commands are the standard current baseline commands from `app/`: `dart format --set-exit-if-changed lib test`, `flutter analyze`, and `flutter test`.

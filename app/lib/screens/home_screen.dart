@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
+import '../config/app_config.dart';
+import '../models/auth_models.dart';
 import '../models/lesson_access_decision.dart';
-import '../models/tutor_options.dart';
 import '../services/auth_service.dart';
 import '../services/service_factory.dart';
-import '../services/tutor_options_service.dart';
 import 'choose_level_screen.dart';
 import 'login_screen.dart';
 import 'settings_screen.dart';
@@ -14,13 +14,10 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     AuthService? authService,
-    TutorOptionsService? tutorOptionsService,
-  })  : _authService = authService,
-        _tutorOptionsService = tutorOptionsService;
+  }) : _authService = authService;
 
   static const String routeName = '/home';
   final AuthService? _authService;
-  final TutorOptionsService? _tutorOptionsService;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -28,43 +25,33 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final AuthService _authService;
-  late final TutorOptionsService _tutorOptionsService;
+  AuthUser? _currentUser;
+  bool _isLoadingAccount = true;
   LessonAccessDecision? _lessonAccess;
   bool _isCheckingLessonAccess = false;
   String? _lessonAccessError;
-  TutorOptions? _tutorOptions;
-  bool _isLoadingTutorOptions = true;
-  String? _tutorOptionsError;
 
   @override
   void initState() {
     super.initState();
     _authService = widget._authService ?? createAuthService();
-    _tutorOptionsService = widget._tutorOptionsService ??
-        TutorOptionsService(apiClient: HttpApiClient());
-    _loadTutorOptions();
+    _loadAccount();
   }
 
-  Future<void> _loadTutorOptions() async {
-    setState(() {
-      _isLoadingTutorOptions = true;
-      _tutorOptionsError = null;
-    });
-
+  Future<void> _loadAccount() async {
     try {
-      final options = await _tutorOptionsService.fetchTutorOptions();
+      final user = await _authService.loadCurrentUser();
       if (!mounted) return;
-      setState(() => _tutorOptions = options);
-    } on ApiException {
-      if (!mounted) return;
-      setState(() => _tutorOptionsError =
-          'Practice options are unavailable right now. Please try again later.');
+      setState(() {
+        _currentUser = user;
+        _isLoadingAccount = false;
+      });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _tutorOptionsError =
-          'Practice options are unavailable right now. Please try again later.');
-    } finally {
-      if (mounted) setState(() => _isLoadingTutorOptions = false);
+      setState(() {
+        _currentUser = null;
+        _isLoadingAccount = false;
+      });
     }
   }
 
@@ -106,10 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          Text(
-            'Language Voice Tutor',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
+          const _HomeTitle(),
           const SizedBox(height: 12),
           Text(
             'Practice real conversations by text and voice.',
@@ -129,7 +113,9 @@ class _HomeScreenState extends State<HomeScreen> {
             label: const Text('Start lesson'),
           ),
           const SizedBox(height: 16),
-          LessonAccessCard(
+          AccountAccessCard(
+            user: _currentUser,
+            isLoadingAccount: _isLoadingAccount,
             lessonAccess: _lessonAccess,
             error: _lessonAccessError,
             isChecking: _isCheckingLessonAccess,
@@ -142,28 +128,56 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.settings),
             label: const Text('Open Settings'),
           ),
-          const SizedBox(height: 16),
-          TutorOptionsCard(
-            options: _tutorOptions,
-            error: _tutorOptionsError,
-            isLoading: _isLoadingTutorOptions,
-            onRetry: _loadTutorOptions,
-          ),
         ],
       ),
     );
   }
 }
 
-class LessonAccessCard extends StatelessWidget {
-  const LessonAccessCard({
+class _HomeTitle extends StatelessWidget {
+  const _HomeTitle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.asset(
+            AppConfig.logoAsset,
+            key: const Key('app-logo'),
+            semanticLabel: AppConfig.logoSemanticLabel,
+            width: 64,
+            height: 64,
+            fit: BoxFit.contain,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            AppConfig.appName,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class AccountAccessCard extends StatelessWidget {
+  const AccountAccessCard({
     super.key,
+    required this.user,
+    required this.isLoadingAccount,
     required this.lessonAccess,
     required this.error,
     required this.isChecking,
     required this.onCheckLessonAccess,
   });
 
+  final AuthUser? user;
+  final bool isLoadingAccount;
   final LessonAccessDecision? lessonAccess;
   final String? error;
   final bool isChecking;
@@ -182,6 +196,28 @@ class LessonAccessCard extends StatelessWidget {
     return '$remaining free $lesson remaining today';
   }
 
+  String get _signedInLabel {
+    final name = _accountName;
+    return name == null ? 'Signed in' : 'Signed in as $name';
+  }
+
+  String? get _accountName {
+    final displayName = user?.displayName?.trim();
+    if (displayName != null && displayName.isNotEmpty) return displayName;
+
+    final email = user?.email.trim() ?? '';
+    if (email.isEmpty) return null;
+
+    final atIndex = email.indexOf('@');
+    final localPart = atIndex > 0 ? email.substring(0, atIndex) : email;
+    return localPart.isEmpty ? null : localPart;
+  }
+
+  String get _email {
+    final email = user?.email.trim() ?? '';
+    return email;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -195,6 +231,24 @@ class LessonAccessCard extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
+            if (isLoadingAccount)
+              const Text('Checking your account...')
+            else if (user != null) ...[
+              Text(
+                _signedInLabel,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              if (_email.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(_email),
+              ],
+            ] else
+              const Text(
+                'Sign in to keep your settings and progress synced.',
+              ),
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
             Text(_planLabel),
             const SizedBox(height: 4),
             Text(_lessonRemainingLabel),
@@ -221,60 +275,5 @@ class LessonAccessCard extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class TutorOptionsCard extends StatelessWidget {
-  const TutorOptionsCard({
-    super.key,
-    required this.options,
-    required this.error,
-    required this.isLoading,
-    required this.onRetry,
-  });
-
-  final TutorOptions? options;
-  final String? error;
-  final bool isLoading;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Available tutors',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            if (isLoading)
-              const Text('Loading tutor options...')
-            else if (options != null && options!.hasActiveTutors)
-              Text(
-                'Available tutors: ${_preview(options!.activeTutors.map((tutor) => tutor.label).toList())}',
-              )
-            else if (error != null) ...[
-              Text(error!),
-              const SizedBox(height: 12),
-              OutlinedButton(
-                onPressed: onRetry,
-                child: const Text('Retry'),
-              ),
-            ] else
-              const Text('No active tutors are available right now.'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static String _preview(List<String> values) {
-    final shown = values.take(3).join(', ');
-    final remaining = values.length - 3;
-    return remaining > 0 ? '$shown, +$remaining more' : shown;
   }
 }

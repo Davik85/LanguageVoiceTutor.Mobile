@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'config/app_config.dart';
 import 'services/auth_service.dart';
 import 'services/service_factory.dart';
-import 'services/tutor_options_service.dart';
 import 'screens/choose_level_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/lesson_screen.dart';
@@ -19,12 +18,9 @@ class LanguageVoiceTutorApp extends StatelessWidget {
   LanguageVoiceTutorApp({
     super.key,
     AuthService? authService,
-    TutorOptionsService? tutorOptionsService,
-  })  : _authService = authService ?? createAuthService(),
-        _tutorOptionsService = tutorOptionsService;
+  }) : _authService = authService ?? createAuthService();
 
   final AuthService _authService;
-  final TutorOptionsService? _tutorOptionsService;
 
   @override
   Widget build(BuildContext context) {
@@ -38,10 +34,7 @@ class LanguageVoiceTutorApp extends StatelessWidget {
       routes: {
         SplashScreen.routeName: (_) => SplashScreen(authService: _authService),
         LoginScreen.routeName: (_) => LoginScreen(authService: _authService),
-        HomeScreen.routeName: (_) => HomeScreen(
-              authService: _authService,
-              tutorOptionsService: _tutorOptionsService,
-            ),
+        HomeScreen.routeName: (_) => HomeScreen(authService: _authService),
         ChooseLevelScreen.routeName: (_) => const ChooseLevelScreen(),
         LessonScreen.routeName: (_) => const LessonScreen(),
         SettingsScreen.routeName: (_) =>

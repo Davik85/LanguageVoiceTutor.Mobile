@@ -6,7 +6,7 @@ Mobile V1 establishes an Android-first Flutter client for Language Voice Tutor t
 
 ## Current verified baseline
 
-Latest known commit: `fcecef5` (`Fix mobile settings parity foundation`). The Flutter Android client under `app/` has a green Settings parity foundation baseline. Settings has stable visible **Account**, **Learning**, **Audio**, and **Backend diagnostics** sections, **Save settings** is visible and tested, user level is not in Settings, selected tutor persists through the backend settings API, and Home now starts a lesson-start navigation skeleton before reaching the Lesson placeholder.
+Latest known commit: `fcecef5` (`Fix mobile settings parity foundation`). The Flutter Android client under `app/` has a green Settings parity foundation and Home polish baseline. Settings has stable visible **Account**, **Learning**, **Audio**, and **Backend diagnostics** sections, **Save settings** is visible and tested, user level is not in Settings, and selected tutor persists through the backend settings API. Tutor selection belongs in Settings; Home no longer shows tutor diagnostics. Home shows the Language Voice Tutor logo/title with startup logo preloading, friendly account/access status, and starts a lesson-start navigation skeleton before reaching the Lesson placeholder.
 
 Verified commands from `app/`:
 
@@ -52,9 +52,11 @@ Tutor profiles currently represented by desktop are Lana, Nelli, and David. Tuto
 
 Mobile now includes a UI-only lesson-start skeleton that follows the desktop product order: `Home -> Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder`. The screens are phone-first adaptations and do not copy the Windows layout pixel-by-pixel. Choose Situation uses product-friendly desktop-aligned labels instead of placeholder wording. The Lesson placeholder displays the selected level, topic, and situation. Real lesson runtime, lesson chat, voice recording, TTS playback, AI tutor calls, Conversation Mode runtime, and mobile-only backend lesson state remain out of scope for this skeleton.
 
+Home is intentionally learner-facing: it shows the app logo/title, short product promise, primary **Start lesson** action, friendly account/access status, and secondary Settings entrypoint. Tutor diagnostics are not shown on Home; selected tutor remains a Settings concern.
+
 ## Next implementation priority
 
-The next safe implementation work should continue from the green Settings baseline and lesson-start navigation skeleton. Keep slices small and mobile-only unless an API gap is explicitly approved. Recommended small next steps are Home UX polish, Settings UX polish, and lesson runtime planning by inspecting backend lesson/session APIs before implementation. Billing, voice recording, TTS, analytics, crash reporting, Google Play Billing, Apple billing, and store release setup remain later phases and should not be started without a separate plan.
+The next safe implementation work should continue from the green Settings baseline, Home polish, and lesson-start navigation skeleton. Keep slices small and mobile-only unless an API gap is explicitly approved. Recommended small next steps are Settings UX polish and lesson runtime planning by inspecting backend lesson/session APIs before implementation. Billing, voice recording, TTS, analytics, crash reporting, Google Play Billing, Apple billing, and store release setup remain later phases and should not be started without a separate plan.
 
 This priority preserves the product boundary:
 

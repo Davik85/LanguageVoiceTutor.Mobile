@@ -21,17 +21,27 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   late final AuthService _authService;
   String? _message;
+  bool _startedLoading = false;
 
   @override
   void initState() {
     super.initState();
     _authService = widget._authService ?? createAuthService();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_startedLoading) return;
+    _startedLoading = true;
     _loadSession();
   }
 
   Future<void> _loadSession() async {
     try {
       await _authService.loadCurrentUser();
+      if (!mounted) return;
+      await precacheImage(const AssetImage(AppConfig.logoAsset), context);
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, HomeScreen.routeName);
     } on ApiException catch (error) {
@@ -52,7 +62,14 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.record_voice_over, size: 72),
+              Image.asset(
+                AppConfig.logoAsset,
+                key: const Key('splash-app-logo'),
+                semanticLabel: AppConfig.logoSemanticLabel,
+                width: 96,
+                height: 96,
+                fit: BoxFit.contain,
+              ),
               const SizedBox(height: 16),
               Text(AppConfig.appName,
                   style: Theme.of(context).textTheme.headlineMedium,

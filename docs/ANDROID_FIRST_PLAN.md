@@ -31,7 +31,7 @@ flutter test
 flutter run -d emulator-5554
 ```
 
-The current green baseline has `dart format --set-exit-if-changed lib test`, `flutter analyze`, and `flutter test` passing. Settings has stable **Account**, **Learning**, **Audio**, and **Backend diagnostics** sections, **Save settings** is visible and tested, and user level is not in Settings. Settings selected tutor persistence is complete through `/api/me/settings`: mobile reads and sends `selectedTutorId`, selection survives app/emulator restart, and tutor voice remains a separate setting. Home uses **Start lesson** to open the completed lesson-start navigation skeleton before reaching the Lesson placeholder. Product-friendly situation labels are in place for all six topics, Travel includes Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage, and situation labels no longer show `Placeholder:`. Settings language dropdowns show friendly names while still storing and sending backend IDs. Lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, and store release setup are not implemented by this documentation update.
+The current green baseline has `dart format --set-exit-if-changed lib test`, `flutter analyze`, and `flutter test` passing. Settings has stable **Account**, **Learning**, **Audio**, and **Backend diagnostics** sections, **Save settings** is visible and tested, and user level is not in Settings. Settings selected tutor persistence is complete through `/api/me/settings`: mobile reads and sends `selectedTutorId`, selection survives app/emulator restart, and tutor voice remains a separate setting. Tutor selection belongs in Settings, and Home no longer shows tutor diagnostics or an **Available tutors** card. Home now shows the Language Voice Tutor logo/title, preloads the logo during startup before Home is displayed, shows friendly signed-in or sign-in/sync account status, and uses **Start lesson** to open the completed lesson-start navigation skeleton before reaching the Lesson placeholder. Product-friendly situation labels are in place for all six topics, Travel includes Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage, and situation labels no longer show `Placeholder:`. Settings language dropdowns show friendly names while still storing and sending backend IDs. Lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, and store release setup are not implemented by this documentation update.
 
 ## Planned phases
 
@@ -66,7 +66,7 @@ The reviewed Windows desktop client walkthrough presentation is a product source
 ### Phase 3: Lessons and progress
 
 - Completed as UI-only foundation: lesson-start skeleton from Home to Choose Level, Choose Topic, Choose Situation, and Lesson placeholder.
-- Next safe phase: Home UX polish or lesson runtime planning by inspecting backend lesson/session APIs before implementation.
+- Next safe phase: Settings UX polish or lesson runtime planning by inspecting backend lesson/session APIs before implementation.
 - Implement lesson access checks.
 - Implement lesson start/resume only after the backend lesson/session contract is confirmed.
 - Implement tutor message exchange through backend.

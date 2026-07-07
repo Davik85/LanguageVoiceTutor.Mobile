@@ -65,7 +65,7 @@ void main() {
     await tester.pumpWidget(
       LanguageVoiceTutorApp(authService: FakeAuthService()),
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('Language Voice Tutor'), findsOneWidget);
     expect(find.text('Please sign in to continue.'), findsOneWidget);

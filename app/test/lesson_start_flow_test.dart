@@ -4,11 +4,9 @@ import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_start_selection.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
-import 'package:language_voice_tutor_mobile/models/tutor_options.dart';
 import 'package:language_voice_tutor_mobile/screens/home_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
-import 'package:language_voice_tutor_mobile/services/tutor_options_service.dart';
 
 class FakeApiClient implements ApiClient {
   @override
@@ -56,15 +54,6 @@ class FakeAuthService extends AuthService {
       );
 }
 
-class FakeTutorOptionsService extends TutorOptionsService {
-  FakeTutorOptionsService() : super(apiClient: FakeApiClient());
-
-  @override
-  Future<TutorOptions> fetchTutorOptions() async => const TutorOptions(tutors: [
-        TutorOption(tutorId: 'nelli', displayName: 'Nelli', isActive: true),
-      ]);
-}
-
 class MemoryStorage implements SessionStorage {
   @override
   Future<void> clear() async {}
@@ -83,10 +72,7 @@ class MemoryStorage implements SessionStorage {
 }
 
 Widget _home() => MaterialApp(
-      home: HomeScreen(
-        authService: FakeAuthService(),
-        tutorOptionsService: FakeTutorOptionsService(),
-      ),
+      home: HomeScreen(authService: FakeAuthService()),
     );
 
 void main() {
