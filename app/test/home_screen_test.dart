@@ -180,6 +180,8 @@ void main() {
     await tester.pumpWidget(_home());
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.text('Open Settings'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Open Settings'));
     await tester.pumpAndSettle();
 

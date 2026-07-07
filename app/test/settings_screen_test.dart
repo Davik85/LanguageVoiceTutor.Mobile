@@ -235,8 +235,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Check connection'), findsOneWidget);
 
+    await _scrollToText(tester, 'Check connection');
     await tester.tap(find.text('Check connection'));
     await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Connected');
     expect(find.text('Connected'), findsOneWidget);
   });
 
