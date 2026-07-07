@@ -31,6 +31,7 @@ class FakeAuthService extends AuthService {
   final ApiException? settingsFailure;
   final ApiException? saveFailure;
   bool saved = false;
+  UserSettings? savedSettings;
   @override
   Future<AuthUser> loadCurrentUser() async => AuthUser(
       userId: 'u1',
@@ -57,13 +58,15 @@ class FakeAuthService extends AuthService {
         explanationLanguage: 'English',
         speechVoice: 'nova',
         speechSpeed: 1.0,
-        conversationModeEnabled: true);
+        conversationModeEnabled: true,
+        selectedTutorId: 'nelli');
   }
 
   @override
   Future<UserSettings> updateUserSettings(UserSettings settings) async {
     if (saveFailure != null) throw saveFailure!;
     saved = true;
+    savedSettings = settings;
     return settings;
   }
 }
@@ -113,8 +116,13 @@ void main() {
     expect(find.text('Premium Monthly'), findsOneWidget);
     expect(find.text('Learning'), findsOneWidget);
     expect(find.text('Study language'), findsOneWidget);
-    expect(find.text('Lana, Nelli'), findsOneWidget);
+    expect(find.text('Selected tutor'), findsOneWidget);
+    expect(find.text('Nelli'), findsOneWidget);
     expect(find.text('Tutor voice'), findsOneWidget);
+    expect(
+        find.text(
+            'Selected tutor persistence is not available in the current settings API yet.'),
+        findsNothing);
     await _scrollToText(tester, 'Audio');
     expect(find.text('Audio'), findsOneWidget);
     expect(find.text('Conversation mode enabled'), findsOneWidget);
@@ -123,6 +131,21 @@ void main() {
     expect(find.text('Save settings'), findsOneWidget);
     expect(find.textContaining('level', findRichText: true), findsNothing);
   });
+  testWidgets('selecting tutor and saving sends selectedTutorId', (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButtonFormField<String>).at(3));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lana').last);
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Save settings');
+    await tester.tap(find.text('Save settings'));
+    await tester.pumpAndSettle();
+    expect(auth.savedSettings?.selectedTutorId, 'lana');
+    expect(auth.savedSettings?.speechVoice, 'nova');
+  });
+
   testWidgets('settings screen save success shows friendly message',
       (tester) async {
     final auth = FakeAuthService();

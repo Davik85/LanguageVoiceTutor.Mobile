@@ -53,6 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   SubscriptionStatus? _subscription;
   UserSettings? _settings;
   TutorOptions? _tutorOptions;
+  String? _tutorOptionsError;
   String? _accountError;
   String? _settingsError;
   bool _isSaving = false;
@@ -93,14 +94,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     try {
-      final results = await Future.wait<dynamic>([
-        _authService.fetchUserSettings(),
-        _tutorOptionsService.fetchTutorOptions(),
-      ]);
+      final settings = await _authService.fetchUserSettings();
+      TutorOptions? tutorOptions;
+      String? tutorOptionsError;
+      try {
+        tutorOptions = await _tutorOptionsService.fetchTutorOptions();
+      } catch (_) {
+        tutorOptionsError =
+            'Tutor choices are unavailable right now. You can still review and save your other settings.';
+      }
       if (!mounted) return;
       setState(() {
-        _settings = results[0] as UserSettings;
-        _tutorOptions = results[1] as TutorOptions;
+        _settings = settings;
+        _tutorOptions = tutorOptions;
+        _tutorOptionsError = tutorOptionsError;
         _settingsError = null;
       });
     } on ApiException catch (error) {
@@ -118,7 +125,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (settings == null) return;
     setState(() => _isSaving = true);
     try {
-      final saved = await _authService.updateUserSettings(settings);
+      final saved = await _authService.updateUserSettings(
+        _settingsWithSupportedTutor(settings),
+      );
       if (!mounted) return;
       setState(() {
         _settings = saved;
@@ -167,6 +176,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         (_) => false,
       );
 
+  UserSettings _settingsWithSupportedTutor(UserSettings settings) {
+    final activeTutors = _tutorOptions?.activeTutors ?? const <TutorOption>[];
+    if (activeTutors.isEmpty) return settings;
+    final supportedIds = activeTutors.map((t) => t.tutorId).toSet();
+    if (supportedIds.contains(settings.selectedTutorId)) return settings;
+    return settings.copyWith(selectedTutorId: activeTutors.first.tutorId);
+  }
+
   void _updateSettings(UserSettings settings) =>
       setState(() => _settings = settings);
 
@@ -187,6 +204,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _LearningCard(
             settings: _settings,
             tutorOptions: _tutorOptions,
+            tutorOptionsError: _tutorOptionsError,
             error: _settingsError,
             studyLanguages: _studyLanguages,
             interfaceLanguages: _interfaceLanguages,
@@ -271,6 +289,7 @@ class _LearningCard extends StatelessWidget {
   const _LearningCard(
       {required this.settings,
       required this.tutorOptions,
+      required this.tutorOptionsError,
       required this.error,
       required this.studyLanguages,
       required this.interfaceLanguages,
@@ -278,6 +297,7 @@ class _LearningCard extends StatelessWidget {
       required this.onChanged});
   final UserSettings? settings;
   final TutorOptions? tutorOptions;
+  final String? tutorOptionsError;
   final String? error;
   final List<String> studyLanguages;
   final List<String> interfaceLanguages;
@@ -315,12 +335,13 @@ class _LearningCard extends StatelessWidget {
                   onChanged: (v) =>
                       onChanged(settings!.copyWith(explanationLanguage: v))),
               const SizedBox(height: 8),
-              Text('Tutor avatar / available tutors',
-                  style: Theme.of(context).textTheme.labelLarge),
-              Text(tutorOptions?.activeTutors.map((t) => t.label).join(', ') ??
-                  'Loading tutors...'),
-              const Text(
-                  'Selected tutor persistence is not available in the current settings API yet.'),
+              _TutorDropdown(
+                selectedTutorId: settings!.selectedTutorId,
+                tutorOptions: tutorOptions,
+                error: tutorOptionsError,
+                onChanged: (v) =>
+                    onChanged(settings!.copyWith(selectedTutorId: v)),
+              ),
               _Dropdown(
                   label: 'Tutor voice',
                   value: settings!.speechVoice,
@@ -329,6 +350,59 @@ class _LearningCard extends StatelessWidget {
                       onChanged(settings!.copyWith(speechVoice: v))),
             ],
           ])));
+}
+
+class _TutorDropdown extends StatelessWidget {
+  const _TutorDropdown({
+    required this.selectedTutorId,
+    required this.tutorOptions,
+    required this.error,
+    required this.onChanged,
+  });
+
+  final String selectedTutorId;
+  final TutorOptions? tutorOptions;
+  final String? error;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final tutors = tutorOptions?.activeTutors ?? const <TutorOption>[];
+    if (error != null) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(error!),
+      );
+    }
+    if (tutorOptions == null) {
+      return const Padding(
+        padding: EdgeInsets.only(bottom: 8),
+        child: Text('Loading tutors...'),
+      );
+    }
+    if (tutors.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.only(bottom: 8),
+        child: Text('No tutors are available right now.'),
+      );
+    }
+
+    final supportedIds = tutors.map((t) => t.tutorId).toSet();
+    final value = supportedIds.contains(selectedTutorId)
+        ? selectedTutorId
+        : tutors.first.tutorId;
+
+    return DropdownButtonFormField<String>(
+      decoration: const InputDecoration(labelText: 'Selected tutor'),
+      initialValue: value,
+      items: tutors
+          .map((t) => DropdownMenuItem(value: t.tutorId, child: Text(t.label)))
+          .toList(),
+      onChanged: (v) {
+        if (v != null) onChanged(v);
+      },
+    );
+  }
 }
 
 class _AudioCard extends StatelessWidget {
