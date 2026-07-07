@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
+import 'package:language_voice_tutor_mobile/models/lesson_start_selection.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
 import 'package:language_voice_tutor_mobile/models/tutor_options.dart';
 import 'package:language_voice_tutor_mobile/screens/home_screen.dart';
@@ -89,6 +90,25 @@ Widget _home() => MaterialApp(
     );
 
 void main() {
+  test('lesson situation catalog uses product-friendly labels', () {
+    for (final topic in lessonTopics) {
+      final situations = lessonSituationsByTopic[topic.label];
+      expect(situations, isNotNull, reason: topic.label);
+      expect(situations, isNotEmpty, reason: topic.label);
+      for (final situation in situations!) {
+        expect(situation.label, isNot(contains('Placeholder:')));
+      }
+    }
+
+    expect(travelSituations.map((situation) => situation.label), [
+      'Airport check-in',
+      'Hotel check-in',
+      'Asking for directions',
+      'Ordering transport',
+      'Lost luggage',
+    ]);
+  });
+
   testWidgets('home starts lesson selection skeleton', (tester) async {
     await tester.pumpWidget(_home());
     await tester.pumpAndSettle();
@@ -147,5 +167,31 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('non-travel lesson skeleton uses friendly situations',
+      (tester) async {
+    await tester.pumpWidget(_home());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Start lesson'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('A2 Elementary'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Daily Life'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Choose Situation'), findsOneWidget);
+    expect(find.text('Introductions'), findsOneWidget);
+    expect(find.text('Asking for help'), findsOneWidget);
+    expect(find.textContaining('Placeholder:'), findsNothing);
+
+    await tester.tap(find.text('Introductions'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lesson placeholder'), findsOneWidget);
+    expect(find.text('Level: A2 Elementary'), findsOneWidget);
+    expect(find.text('Topic: Daily Life'), findsOneWidget);
+    expect(find.text('Situation: Introductions'), findsOneWidget);
   });
 }

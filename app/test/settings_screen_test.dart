@@ -53,9 +53,9 @@ class FakeAuthService extends AuthService {
   Future<UserSettings> fetchUserSettings() async {
     if (settingsFailure != null) throw settingsFailure!;
     return const UserSettings(
-        nativeLanguage: 'English',
-        studyLanguage: 'Spanish',
-        explanationLanguage: 'English',
+        nativeLanguage: 'en',
+        studyLanguage: 'es',
+        explanationLanguage: 'en',
         speechVoice: 'nova',
         speechSpeed: 1.0,
         conversationModeEnabled: true,
@@ -116,6 +116,8 @@ void main() {
     expect(find.text('Premium Monthly'), findsOneWidget);
     expect(find.text('Learning'), findsOneWidget);
     expect(find.text('Study language'), findsOneWidget);
+    expect(find.text('Spanish'), findsOneWidget);
+    expect(find.text('es'), findsNothing);
     expect(find.text('Selected tutor'), findsOneWidget);
     expect(find.text('Nelli'), findsOneWidget);
     expect(find.text('Tutor voice'), findsOneWidget);
@@ -131,6 +133,74 @@ void main() {
     expect(find.text('Save settings'), findsOneWidget);
     expect(find.textContaining('level', findRichText: true), findsNothing);
   });
+
+  testWidgets('study language dropdown shows labels and saves backend IDs',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButtonFormField<String>).at(0));
+    await tester.pumpAndSettle();
+
+    expect(find.text('French'), findsWidgets);
+    expect(find.text('Russian'), findsNothing);
+
+    await tester.tap(find.text('French').last);
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Save settings');
+    await tester.tap(find.text('Save settings'));
+    await tester.pumpAndSettle();
+
+    expect(auth.savedSettings?.studyLanguage, 'fr');
+    expect(auth.savedSettings?.nativeLanguage, 'en');
+    expect(auth.savedSettings?.explanationLanguage, 'en');
+  });
+
+  testWidgets('native language dropdown shows labels and saves backend IDs',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButtonFormField<String>).at(1));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Russian'), findsOneWidget);
+
+    await tester.tap(find.text('Russian').last);
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Save settings');
+    await tester.tap(find.text('Save settings'));
+    await tester.pumpAndSettle();
+
+    expect(auth.savedSettings?.nativeLanguage, 'ru');
+    expect(auth.savedSettings?.studyLanguage, 'es');
+    expect(auth.savedSettings?.explanationLanguage, 'en');
+  });
+
+  testWidgets('interface language dropdown shows labels and saves backend IDs',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButtonFormField<String>).at(2));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Polish'), findsOneWidget);
+
+    await tester.tap(find.text('Polish').last);
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Save settings');
+    await tester.tap(find.text('Save settings'));
+    await tester.pumpAndSettle();
+
+    expect(auth.savedSettings?.explanationLanguage, 'pl');
+    expect(auth.savedSettings?.nativeLanguage, 'en');
+    expect(auth.savedSettings?.studyLanguage, 'es');
+  });
+
   testWidgets('selecting tutor and saving sends selectedTutorId',
       (tester) async {
     final auth = FakeAuthService();

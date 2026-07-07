@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
 import '../models/auth_models.dart';
+import '../models/language_option.dart';
+import '../models/language_options.dart';
 import '../models/subscription_status.dart';
 import '../models/tutor_options.dart';
 import '../models/user_settings.dart';
@@ -34,15 +36,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  static const _studyLanguages = [
-    'English',
-    'French',
-    'German',
-    'Portuguese',
-    'Spanish',
-    'Italian',
-  ];
-  static const _interfaceLanguages = ['English', 'Spanish', 'French', 'German'];
   static const _voices = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
 
   late final BackendHealthService _healthService;
@@ -206,8 +199,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             tutorOptions: _tutorOptions,
             tutorOptionsError: _tutorOptionsError,
             error: _settingsError,
-            studyLanguages: _studyLanguages,
-            interfaceLanguages: _interfaceLanguages,
+            studyLanguageOptions: LanguageOptions.studyLanguages,
+            nativeLanguageOptions: LanguageOptions.nativeLanguages,
+            interfaceLanguageOptions: LanguageOptions.interfaceLanguages,
             voices: _voices,
             onChanged: _updateSettings,
           ),
@@ -291,16 +285,18 @@ class _LearningCard extends StatelessWidget {
       required this.tutorOptions,
       required this.tutorOptionsError,
       required this.error,
-      required this.studyLanguages,
-      required this.interfaceLanguages,
+      required this.studyLanguageOptions,
+      required this.nativeLanguageOptions,
+      required this.interfaceLanguageOptions,
       required this.voices,
       required this.onChanged});
   final UserSettings? settings;
   final TutorOptions? tutorOptions;
   final String? tutorOptionsError;
   final String? error;
-  final List<String> studyLanguages;
-  final List<String> interfaceLanguages;
+  final List<LanguageOption> studyLanguageOptions;
+  final List<LanguageOption> nativeLanguageOptions;
+  final List<LanguageOption> interfaceLanguageOptions;
   final List<String> voices;
   final ValueChanged<UserSettings> onChanged;
   @override
@@ -316,22 +312,22 @@ class _LearningCard extends StatelessWidget {
             else if (settings == null)
               Text(error!)
             else ...[
-              _Dropdown(
+              _LanguageDropdown(
                   label: 'Study language',
                   value: settings!.studyLanguage,
-                  values: studyLanguages,
+                  options: studyLanguageOptions,
                   onChanged: (v) =>
                       onChanged(settings!.copyWith(studyLanguage: v))),
-              _Dropdown(
+              _LanguageDropdown(
                   label: 'Native language',
                   value: settings!.nativeLanguage,
-                  values: interfaceLanguages,
+                  options: nativeLanguageOptions,
                   onChanged: (v) =>
                       onChanged(settings!.copyWith(nativeLanguage: v))),
-              _Dropdown(
+              _LanguageDropdown(
                   label: 'Interface / explanation language',
                   value: settings!.explanationLanguage,
-                  values: interfaceLanguages,
+                  options: interfaceLanguageOptions,
                   onChanged: (v) =>
                       onChanged(settings!.copyWith(explanationLanguage: v))),
               const SizedBox(height: 8),
@@ -467,6 +463,33 @@ class _DiagnosticsCard extends StatelessWidget {
                 onPressed: checking ? null : onCheck,
                 child: const Text('Check connection')),
           ])));
+}
+
+class _LanguageDropdown extends StatelessWidget {
+  const _LanguageDropdown(
+      {required this.label,
+      required this.value,
+      required this.options,
+      required this.onChanged});
+  final String label;
+  final String value;
+  final List<LanguageOption> options;
+  final ValueChanged<String> onChanged;
+  @override
+  Widget build(BuildContext context) {
+    final supportedIds = options.map((option) => option.id).toSet();
+    return DropdownButtonFormField<String>(
+      decoration: InputDecoration(labelText: label),
+      initialValue: supportedIds.contains(value) ? value : null,
+      items: options
+          .map((option) =>
+              DropdownMenuItem(value: option.id, child: Text(option.label)))
+          .toList(),
+      onChanged: (v) {
+        if (v != null) onChanged(v);
+      },
+    );
+  }
 }
 
 class _Dropdown extends StatelessWidget {

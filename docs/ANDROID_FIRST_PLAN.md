@@ -31,7 +31,7 @@ flutter test
 flutter run -d emulator-5554
 ```
 
-Latest known commit `fcecef5` fixes the mobile Settings parity foundation. The current green baseline has `dart format --set-exit-if-changed lib test`, `flutter analyze`, and `flutter test` passing. Settings has stable **Account**, **Learning**, **Audio**, and **Backend diagnostics** sections, **Save settings** is visible and tested, user level is not in Settings, and **Open Lesson** remains a placeholder. Lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, and store release setup are not implemented by this documentation update.
+Latest known commit `fcecef5` fixes the mobile Settings parity foundation. The current green baseline has `dart format --set-exit-if-changed lib test`, `flutter analyze`, and `flutter test` passing. Settings has stable **Account**, **Learning**, **Audio**, and **Backend diagnostics** sections, **Save settings** is visible and tested, user level is not in Settings, and Home starts the lesson-start skeleton before reaching the Lesson placeholder. Lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, and store release setup are not implemented by this documentation update.
 
 ## Planned phases
 

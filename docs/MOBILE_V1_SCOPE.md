@@ -6,7 +6,7 @@ Mobile V1 establishes an Android-first Flutter client for Language Voice Tutor t
 
 ## Current verified baseline
 
-Latest known commit: `fcecef5` (`Fix mobile settings parity foundation`). The Flutter Android client under `app/` has a green Settings parity foundation baseline. Settings has stable visible **Account**, **Learning**, **Audio**, and **Backend diagnostics** sections, **Save settings** is visible and tested, user level is not in Settings, and Home now starts a lesson-start navigation skeleton before reaching the Lesson placeholder.
+Latest known commit: `fcecef5` (`Fix mobile settings parity foundation`). The Flutter Android client under `app/` has a green Settings parity foundation baseline. Settings has stable visible **Account**, **Learning**, **Audio**, and **Backend diagnostics** sections, **Save settings** is visible and tested, user level is not in Settings, selected tutor persists through the backend settings API, and Home now starts a lesson-start navigation skeleton before reaching the Lesson placeholder.
 
 Verified commands from `app/`:
 
@@ -44,13 +44,13 @@ The repository must not duplicate backend business logic or become a fork of bac
 
 The reviewed Windows desktop client walkthrough presentation is now a product reference source for mobile parity. Mobile must match desktop product logic, not desktop pixel layout, and should translate desktop screens into phone-first layouts. The desktop source flow is `Start -> Settings/preferences -> Choose level -> Pick topic -> Pick situation -> Practice`. Level selection must remain a separate lesson-start step before topic/situation selection, not a Settings field.
 
-Study language, native language, and interface/explanation language are separate concepts. Supported study languages remain English, French, German, Portuguese, Spanish, Italian. Release-ready interface languages remain `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `pl`, `ar`, `ja`, `ko`, `sr`, `hr`, and `bg`. The native/explanation language catalog is broader than both the study-language and interface-language catalogs.
+Study language, native language, and interface/explanation language are separate concepts. Supported study languages remain English, French, German, Portuguese, Spanish, Italian. Release-ready interface languages remain `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `pl`, `ar`, `ja`, `ko`, `sr`, `hr`, and `bg`. The native/explanation language catalog is broader than both the study-language and interface-language catalogs. Mobile Settings shows user-friendly language names while storing and sending backend language IDs.
 
 Tutor profiles currently represented by desktop are Lana, Nelli, and David. Tutor choice is product-significant because it affects display name, profile/persona, and preferred voice behavior in lessons.
 
 ## Current lesson-start skeleton
 
-Mobile now includes a UI-only lesson-start skeleton that follows the desktop product order: `Home -> Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder`. The screens are phone-first adaptations and do not copy the Windows layout pixel-by-pixel. The Lesson placeholder displays the selected level, topic, and situation. Real lesson runtime, lesson chat, voice recording, TTS playback, AI tutor calls, Conversation Mode runtime, and mobile-only backend lesson state remain out of scope for this skeleton.
+Mobile now includes a UI-only lesson-start skeleton that follows the desktop product order: `Home -> Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder`. The screens are phone-first adaptations and do not copy the Windows layout pixel-by-pixel. Choose Situation uses product-friendly desktop-aligned labels instead of placeholder wording. The Lesson placeholder displays the selected level, topic, and situation. Real lesson runtime, lesson chat, voice recording, TTS playback, AI tutor calls, Conversation Mode runtime, and mobile-only backend lesson state remain out of scope for this skeleton.
 
 ## Next implementation priority
 

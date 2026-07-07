@@ -251,11 +251,14 @@ Expected behavior:
 
 - Settings loads current backend settings when the screen opens.
 - Settings saves backend-supported fields through `PUT /api/me/settings`.
-- Supported settings fields are `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `speechVoice`, `speechSpeed`, and `conversationModeEnabled`.
+- Supported settings fields are `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `speechVoice`, `speechSpeed`, `conversationModeEnabled`, and `selectedTutorId`.
 - Extra backend fields are tolerated.
 - Account email/display name and subscription status continue to come from the existing authenticated account/subscription flow.
 - Tutor options come from `GET /api/tutor-options`.
-- Selected tutor is not persisted locally because the current settings contract does not expose a selected-tutor field; this remains a backend/API gap.
+- Selected tutor is persisted through `/api/me/settings` when a valid `selectedTutorId` is supplied.
+- Study, native, and interface/explanation language dropdowns show user-friendly labels and save backend IDs.
+- Study language choices remain limited to English, French, German, Portuguese, Spanish, and Italian.
+- Native language and interface/explanation language remain separate settings with separate option catalogs.
 - Level is not shown in Settings. Level selection belongs after **Start lesson** in a future lesson flow.
 - Friendly success/error messages are shown; raw backend exceptions, stack traces, and tokens are not displayed.
 
@@ -293,15 +296,16 @@ Settings checks for this baseline:
 - **Backend diagnostics** section is visible.
 - **Save settings** is visible.
 - No level selector is shown in Settings.
-- `selectedTutorId` is not sent to `PUT /api/me/settings`.
+- `selectedTutorId` is sent to `PUT /api/me/settings` and remains separate from `speechVoice`.
+- Language dropdowns display user-friendly names while saving backend IDs.
 - **Start lesson** opens the lesson-start skeleton and still ends at a placeholder Lesson screen.
 
 Desktop parity checks:
 
 - Mobile preserves desktop product flow and behavior without copying the Windows layout directly.
 - Level selection remains a separate lesson-start step before topic/situation selection.
-- Settings uses backend-supported `/api/me/settings` fields only: `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `speechVoice`, `speechSpeed`, and `conversationModeEnabled`.
-- Selected tutor avatar persistence remains documented as an API gap unless an existing backend-supported endpoint is confirmed.
+- Settings uses backend-supported `/api/me/settings` fields only: `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `speechVoice`, `speechSpeed`, `conversationModeEnabled`, and `selectedTutorId`.
+- Selected tutor persistence remains backend-owned, and tutor voice remains separate from selected tutor.
 
 Still out of scope for the current documentation update: lesson runtime, voice recording, TTS playback, billing, analytics, Google Play Billing, Apple billing, backend changes, desktop changes, and store release metadata.
 
@@ -315,6 +319,7 @@ Expected behavior:
 - **Start lesson** opens **Choose Level** with A1 Beginner, A2 Elementary, B1 Intermediate, and B2 Upper-Intermediate.
 - Selecting a level opens **Choose Topic** with Daily Life, Travel, Work & Business, Job Interview, Restaurant & Cafe, and Free Conversation.
 - Selecting Travel opens **Choose Situation** with Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage.
+- Every current topic has at least one product-friendly situation option, and no Choose Situation label contains `Placeholder:`.
 - Selecting a situation opens the existing Lesson placeholder and displays the selected level, topic, and situation.
 - Lesson runtime remains out of scope. Voice recording, TTS playback, AI tutor calls, Conversation Mode runtime, billing, analytics, crash reporting, backend changes, and desktop changes remain out of scope.
 

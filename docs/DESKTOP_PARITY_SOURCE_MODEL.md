@@ -13,9 +13,9 @@ Latest known mobile baseline after commit `fcecef5` (`Fix mobile settings parity
 - Settings has stable visible sections: **Account**, **Learning**, **Audio**, and **Backend diagnostics**.
 - **Save settings** is visible and tested.
 - User level is not in Settings.
-- **Open Lesson** remains a placeholder.
-- `selectedTutorId` is not sent to `PUT /api/me/settings`.
-- Selected tutor avatar persistence remains a backend/API gap unless an existing backend-supported API is later confirmed.
+- Home starts the lesson-start skeleton and still ends at a Lesson placeholder.
+- `selectedTutorId` is persisted through `GET /api/me/settings` and `PUT /api/me/settings`.
+- Study, native, and interface/explanation language selectors show user-friendly names while storing backend IDs.
 
 ## Product parity rule
 
@@ -53,6 +53,7 @@ Current backend-supported mobile settings fields from `GET /api/me/settings` and
 - `speechVoice`
 - `speechSpeed`
 - `conversationModeEnabled`
+- `selectedTutorId`
 
 Current visible mobile Settings sections are:
 
@@ -61,7 +62,7 @@ Current visible mobile Settings sections are:
 - **Audio**
 - **Backend diagnostics**
 
-`selectedTutorId` is not part of the current settings contract. `GET /api/tutor-options` can provide available tutors, but mobile must not document or implement fake local selected-tutor persistence as the source of truth.
+`selectedTutorId` is part of the current settings contract. `GET /api/tutor-options` provides available tutors, and `PUT /api/me/settings` persists a valid selected tutor ID. Tutor voice remains a separate `speechVoice` setting and must not be overwritten automatically when the selected tutor changes.
 
 ## Language catalogs
 
@@ -91,7 +92,7 @@ Release-ready interface languages remain:
 - `hr`
 - `bg`
 
-The native/explanation language catalog is broader than the study-language catalog and broader than the release-ready interface-language catalog.
+The native/explanation language catalog is broader than the study-language catalog and broader than the release-ready interface-language catalog. Mobile Settings must display friendly names for these choices while sending IDs such as `en`, `es`, or `pl` to the backend.
 
 ## Tutor model
 
@@ -103,7 +104,11 @@ Tutor profiles currently represented by desktop are:
 
 Tutor choice is product-significant. It affects display name, profile/persona, and preferred voice behavior in lessons.
 
-Selected tutor avatar persistence is not currently supported by `/api/me/settings`; it remains an API/product gap unless another existing backend-supported endpoint is confirmed.
+Selected tutor persistence is supported by `/api/me/settings`. Tutor voice remains separate from tutor selection.
+
+## Lesson-start skeleton
+
+Mobile keeps the desktop product order as a phone-first skeleton: **Home -> Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder**. The six current topics are Daily Life, Travel, Work & Business, Job Interview, Restaurant & Cafe, and Free Conversation. Choose Situation uses product-friendly desktop-aligned labels, including Travel options Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage. Real lesson runtime remains out of scope.
 
 ## Backend-owned state boundaries
 

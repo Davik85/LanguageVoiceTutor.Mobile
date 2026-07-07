@@ -1,3 +1,5 @@
+import 'language_options.dart';
+
 class UserSettings {
   const UserSettings({
     required this.nativeLanguage,
@@ -18,9 +20,12 @@ class UserSettings {
   final String selectedTutorId;
 
   factory UserSettings.fromJson(Map<String, dynamic> json) => UserSettings(
-        nativeLanguage: _string(json['nativeLanguage']),
-        studyLanguage: _string(json['studyLanguage']),
-        explanationLanguage: _string(json['explanationLanguage']),
+        nativeLanguage:
+            LanguageOptions.nativeLanguageIdFor(json['nativeLanguage']),
+        studyLanguage:
+            LanguageOptions.studyLanguageIdFor(json['studyLanguage']),
+        explanationLanguage:
+            LanguageOptions.interfaceLanguageIdFor(json['explanationLanguage']),
         speechVoice: _string(json['speechVoice']),
         speechSpeed: _double(json['speechSpeed'], fallback: 1.0),
         conversationModeEnabled: _bool(json['conversationModeEnabled']),

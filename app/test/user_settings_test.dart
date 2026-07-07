@@ -54,29 +54,31 @@ class MemoryStorage implements SessionStorage {
 }
 
 const settingsJson =
-    '{"nativeLanguage":"English","studyLanguage":"Spanish","explanationLanguage":"English","speechVoice":"nova","speechSpeed":1.1,"conversationModeEnabled":true,"selectedTutorId":"nelli","extra":"ignored"}';
+    '{"nativeLanguage":"en","studyLanguage":"es","explanationLanguage":"en","speechVoice":"nova","speechSpeed":1.1,"conversationModeEnabled":true,"selectedTutorId":"nelli","extra":"ignored"}';
 void main() {
   test('user settings response parsing tolerates extra fields', () {
     final settings = UserSettings.fromJson({
-      'nativeLanguage': 'English',
+      'nativeLanguage': 'Russian',
       'studyLanguage': 'Spanish',
-      'explanationLanguage': 'English',
+      'explanationLanguage': 'German',
       'speechVoice': 'nova',
       'speechSpeed': 1.2,
       'conversationModeEnabled': true,
       'selectedTutorId': 'david',
       'extra': 'ignored'
     });
-    expect(settings.studyLanguage, 'Spanish');
+    expect(settings.nativeLanguage, 'ru');
+    expect(settings.studyLanguage, 'es');
+    expect(settings.explanationLanguage, 'de');
     expect(settings.speechSpeed, 1.2);
     expect(settings.conversationModeEnabled, isTrue);
     expect(settings.selectedTutorId, 'david');
   });
   test('user settings response tolerates missing selected tutor', () {
     final settings = UserSettings.fromJson({
-      'nativeLanguage': 'English',
-      'studyLanguage': 'Spanish',
-      'explanationLanguage': 'English',
+      'nativeLanguage': 'en',
+      'studyLanguage': 'es',
+      'explanationLanguage': 'en',
       'speechVoice': 'nova',
       'speechSpeed': 1.2,
       'conversationModeEnabled': true,
@@ -86,9 +88,9 @@ void main() {
 
   test('update settings request JSON includes backend supported fields', () {
     final json = const UserSettings(
-            nativeLanguage: 'English',
-            studyLanguage: 'Spanish',
-            explanationLanguage: 'English',
+            nativeLanguage: 'ru',
+            studyLanguage: 'es',
+            explanationLanguage: 'pl',
             speechVoice: 'nova',
             speechSpeed: 1.0,
             conversationModeEnabled: false,
@@ -105,6 +107,9 @@ void main() {
           'conversationModeEnabled',
           'selectedTutorId'
         ]));
+    expect(json['nativeLanguage'], 'ru');
+    expect(json['studyLanguage'], 'es');
+    expect(json['explanationLanguage'], 'pl');
     expect(json['selectedTutorId'], 'lana');
   });
   test('settings service GET and PUT success with fakes', () async {
@@ -117,9 +122,9 @@ void main() {
         apiClient: api, storage: MemoryStorage(accessToken: 'token'));
     await service.fetchUserSettings();
     await service.updateUserSettings(const UserSettings(
-        nativeLanguage: 'English',
-        studyLanguage: 'Spanish',
-        explanationLanguage: 'English',
+        nativeLanguage: 'en',
+        studyLanguage: 'es',
+        explanationLanguage: 'en',
         speechVoice: 'nova',
         speechSpeed: 1.0,
         conversationModeEnabled: false,
