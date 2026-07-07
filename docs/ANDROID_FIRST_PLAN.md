@@ -31,7 +31,7 @@ flutter test
 flutter run -d emulator-5554
 ```
 
-Latest known commit `fcecef5` fixes the mobile Settings parity foundation. The current green baseline has `dart format --set-exit-if-changed lib test`, `flutter analyze`, and `flutter test` passing. Settings has stable **Account**, **Learning**, **Audio**, and **Backend diagnostics** sections, **Save settings** is visible and tested, user level is not in Settings, and Home starts the lesson-start skeleton before reaching the Lesson placeholder. Lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, and store release setup are not implemented by this documentation update.
+The current green baseline has `dart format --set-exit-if-changed lib test`, `flutter analyze`, and `flutter test` passing. Settings has stable **Account**, **Learning**, **Audio**, and **Backend diagnostics** sections, **Save settings** is visible and tested, and user level is not in Settings. Settings selected tutor persistence is complete through `/api/me/settings`: mobile reads and sends `selectedTutorId`, selection survives app/emulator restart, and tutor voice remains a separate setting. Home uses **Start lesson** to open the completed lesson-start navigation skeleton before reaching the Lesson placeholder. Product-friendly situation labels are in place for all six topics, Travel includes Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage, and situation labels no longer show `Placeholder:`. Settings language dropdowns show friendly names while still storing and sending backend IDs. Lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, and store release setup are not implemented by this documentation update.
 
 ## Planned phases
 
@@ -57,6 +57,7 @@ Latest known commit `fcecef5` fixes the mobile Settings parity foundation. The c
 - Add logout and expired-session handling.
 - Display Premium/subscription status only from backend responses; do not compute entitlement locally.
 - Continue from the green Settings baseline with small, mobile-only changes unless an API gap is explicitly approved.
+- Completed within this phase: Settings selected tutor persistence, product-friendly catalog labels, and friendly language labels.
 
 ### Desktop parity guidance
 
@@ -64,19 +65,21 @@ The reviewed Windows desktop client walkthrough presentation is a product source
 
 ### Phase 3: Lessons and progress
 
+- Completed as UI-only foundation: lesson-start skeleton from Home to Choose Level, Choose Topic, Choose Situation, and Lesson placeholder.
+- Next safe phase: Home UX polish or lesson runtime planning by inspecting backend lesson/session APIs before implementation.
 - Implement lesson access checks.
-- Implement lesson start/resume.
+- Implement lesson start/resume only after the backend lesson/session contract is confirmed.
 - Implement tutor message exchange through backend.
 - Implement lesson history and progress screens.
 
-### Phase 4: Voice and TTS
+### Phase 4: Voice and TTS — later, after lesson runtime planning
 
 - Implement Android recording permissions.
 - Implement backend voice upload.
 - Implement TTS playback using backend-provided responses.
 - Add timeout, retry, and error-state handling.
 
-### Phase 5: Google Play Billing bridge — later, after backend auth/account/subscription status
+### Phase 5: Google Play Billing bridge — later, not the next safe phase
 
 - Add Google Play Billing runtime integration.
 - Send purchase tokens to backend for verification.

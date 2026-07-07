@@ -54,7 +54,7 @@ Mobile now includes a UI-only lesson-start skeleton that follows the desktop pro
 
 ## Next implementation priority
 
-The next safe implementation work should continue from the green Settings baseline and lesson-start navigation skeleton. Keep slices small and mobile-only unless an API gap is explicitly approved. Billing, voice recording, TTS, analytics, crash reporting, Google Play Billing, Apple billing, and store release setup remain later phases.
+The next safe implementation work should continue from the green Settings baseline and lesson-start navigation skeleton. Keep slices small and mobile-only unless an API gap is explicitly approved. Recommended small next steps are Home UX polish, Settings UX polish, and lesson runtime planning by inspecting backend lesson/session APIs before implementation. Billing, voice recording, TTS, analytics, crash reporting, Google Play Billing, Apple billing, and store release setup remain later phases and should not be started without a separate plan.
 
 This priority preserves the product boundary:
 

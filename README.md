@@ -4,12 +4,12 @@ Language Voice Tutor Mobile is the Android-first Flutter client for the existing
 
 ## Current repository state
 
-This repository now contains a minimal Flutter mobile client skeleton under `app/`. The Android skeleton has been verified locally on an Android Emulator: it builds, installs, and runs. The current implementation includes placeholder UI with Splash, Login, Home, Lesson, and Settings screens plus a small backend health-check slice. The Settings screen can call the production backend public `GET /health` endpoint and display a friendly connection state. It does not include real login, account loading, subscription or Premium logic, lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, secrets, database migrations, store release setup, or backend runtime code.
+This repository contains the Android-first Flutter mobile client under `app/`. The current verified mobile baseline includes authenticated account/settings slices, backend health and subscription display foundations, tutor options loading, Settings parity work, and a phone-first lesson-start navigation skeleton. Mobile Settings reads and saves backend-owned settings through `/api/me/settings`, including `selectedTutorId`; selected tutor persistence survives app/emulator restart when the backend returns the saved ID. Tutor voice remains a separate setting and is not automatically changed by tutor selection. Home uses **Start lesson** as the primary lesson action and navigates through **Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder**. The placeholder displays the chosen level, topic, and situation. Real lesson runtime, lesson chat, voice recording, TTS playback, AI tutor calls, Conversation Mode runtime, billing, analytics, crash reporting, secrets, database migrations, store release setup, and backend runtime code remain intentionally out of scope.
 
 
 ## Current verified mobile baseline
 
-Latest known commit: `fcecef5` (`Fix mobile settings parity foundation`). The mobile Settings parity foundation is fixed and verified with a green baseline from `app/`:
+The mobile Settings, selected tutor, lesson-start skeleton, catalog labels, and language selector parity baseline is verified from `app/`:
 
 ```bash
 dart format --set-exit-if-changed lib test
@@ -17,7 +17,7 @@ flutter analyze
 flutter test
 ```
 
-`flutter analyze` returned `No issues found`, and `flutter test` returned `All tests passed`. Settings now has stable visible **Account**, **Learning**, **Audio**, and **Backend diagnostics** sections, with **Save settings** visible and tested. User level is not in Settings. **Open Lesson** remains a placeholder. `selectedTutorId` is not sent to `/api/me/settings`, and selected tutor avatar persistence remains a backend/API gap unless an existing backend-supported endpoint is confirmed.
+`flutter analyze` returned `No issues found`, and `flutter test` passed with 39 tests. Settings has stable visible **Account**, **Learning**, **Audio**, and **Backend diagnostics** sections, with **Save settings** visible and tested. User level is not in Settings. Settings reads `selectedTutorId` from `GET /api/me/settings` and sends it in `PUT /api/me/settings`; `/api/tutor-options` remains the source for available tutor choices. Selected tutor is editable in the **Learning** section, persists after app/emulator restart, and remains independent from the separate tutor voice setting. Language dropdowns display friendly names while storing and sending backend IDs. Study language remains limited to English, French, German, Portuguese, Spanish, and Italian. Home uses **Start lesson** to open the navigation skeleton: **Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder**. Situation labels are product-friendly, no longer use `Placeholder:`, and all six topics have options; Travel includes Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage.
 
 ## Desktop parity source model
 
@@ -129,7 +129,7 @@ flutter test
 
 ## Next safe implementation focus
 
-The next implementation focus should build on the existing health-check foundation with authentication, account loading, and subscription-status display from backend-owned entitlement state. Do this before billing, voice recording, TTS playback, analytics, crash reporting, or store release setup.
+The next safe implementation focus should be Home UX polish, Settings UX polish, or lesson runtime planning. Home can become less technical and closer to a real learner start screen. Settings can reduce debug wording, improve spacing, and later move Backend diagnostics out of the normal user flow. Lesson runtime planning should inspect backend lesson/session APIs before any real lesson start is implemented. Do not jump directly into voice recording, TTS playback, billing, Google Play Billing, Apple billing, analytics, or real AI lesson runtime without a separate plan.
 
 The first runtime integration slice should preserve the product boundary:
 
@@ -241,11 +241,11 @@ PUT /api/me/settings
 GET /api/tutor-options
 ```
 
-Settings now load and save backend-supported fields only: `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `speechVoice`, `speechSpeed`, and `conversationModeEnabled`. Extra backend settings fields are tolerated by the mobile parser.
+Settings now load and save backend-supported fields only: `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `speechVoice`, `speechSpeed`, `conversationModeEnabled`, and `selectedTutorId`. Extra backend settings fields are tolerated by the mobile parser.
 
-Level is explicitly not part of Settings. To match the desktop product flow, level selection belongs after **Start lesson** in a future lesson flow, before topic/lesson selection.
+Level is explicitly not part of Settings. To match the desktop product flow, level selection belongs after **Start lesson** in the lesson-start skeleton, before topic/situation selection.
 
-Tutor options are loaded from `GET /api/tutor-options`. The current settings API does not expose a selected-tutor field, so selected tutor persistence is documented as a backend/API gap instead of being faked with local-only persistence.
+Tutor options are loaded from `GET /api/tutor-options`. The current settings API supports `selectedTutorId`, so selected tutor persistence is backend-owned through `/api/me/settings` instead of being faked with local-only persistence. Tutor voice remains separate from selected tutor.
 
 Out of scope for this PR: backend changes, database migrations, lesson start, lesson chat, lesson runtime, topic/scenario selection, voice recording, voice runtime, TTS runtime/playback, billing, Google Play Billing, Apple billing, Paddle runtime, history/progress, analytics, crash reporting, and store release setup.
 

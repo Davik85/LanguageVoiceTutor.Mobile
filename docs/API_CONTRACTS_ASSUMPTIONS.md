@@ -49,7 +49,8 @@ Expected settings behavior:
 Confirmed current settings contract:
 
 - `GET /api/me/settings` and `PUT /api/me/settings` support backend-owned settings fields: `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `speechVoice`, `speechSpeed`, `conversationModeEnabled`, and `selectedTutorId`.
-- Mobile sends backend language IDs for `nativeLanguage`, `studyLanguage`, and `explanationLanguage` even when Settings displays user-friendly labels.
+- Mobile sends backend language IDs, not display labels, for `nativeLanguage`, `studyLanguage`, and `explanationLanguage` even when Settings displays user-friendly labels.
+- `studyLanguage`, `nativeLanguage`, and `explanationLanguage` remain separate backend fields and must not be collapsed into one language preference.
 - Mobile may send `selectedTutorId` to `/api/me/settings` when the user chooses a valid tutor from `GET /api/tutor-options`.
 - Mobile must not document fake local selected-tutor persistence as the source of truth.
 - `speechVoice` remains separate from `selectedTutorId`.
@@ -66,7 +67,7 @@ Possible `/api/me` data fields:
 
 Confirmed current tutor options contract:
 
-- `GET /api/tutor-options` can provide available tutors.
+- `GET /api/tutor-options` remains the source for available tutor options.
 - Current mobile documentation treats desktop tutor profiles as Lana, Nelli, and David.
 - Tutor choice is product-significant because it affects display name, profile/persona, and preferred voice behavior in lessons.
 - Available tutor options are not the same as persisted selected tutor state; selected tutor persistence remains backend-owned through `/api/me/settings`.
