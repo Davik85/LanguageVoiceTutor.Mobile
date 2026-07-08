@@ -71,6 +71,31 @@ class AuthService {
     }
   }
 
+  Future<LessonSessionReplyResult> sendLessonSessionReply({
+    required String sessionId,
+    required String messageText,
+  }) async {
+    if (messageText.trim().isEmpty) {
+      return LessonSessionReplyResult.validation();
+    }
+
+    try {
+      final response = await _authenticatedPost(
+        '/api/me/lesson-sessions/$sessionId/reply',
+        body: LessonSessionReplyRequest(messageText: messageText).toJson(),
+        failureMessageForResponse: _lessonSessionReplyFailureMessage,
+      );
+      final body = _tryDecodeObject(response.body);
+      return LessonSessionReplyResult.success(
+        body == null ? null : LessonSessionReplyResponse.fromJson(body),
+      );
+    } on ApiException catch (error) {
+      return _safeLessonSessionReplyResult(error);
+    } catch (_) {
+      return LessonSessionReplyResult.failed();
+    }
+  }
+
   Future<UserSettings> fetchUserSettings() async {
     final response = await _authenticatedGet('/api/me/settings');
     return UserSettings.fromJson(_decodeObject(response.body));
@@ -301,12 +326,44 @@ class AuthService {
 
     final code = _lessonSessionErrorCode(response.body);
     if (code == 'lesson_access_denied') {
-      return 'You have used today’s free lesson. Please try again tomorrow or upgrade.';
+      return 'You have used today\'s free lesson. Please try again tomorrow or upgrade.';
     }
     if (code == 'active_lesson_exists') {
       return 'You already have an active lesson on another device. Finish it there before starting a new one.';
     }
     return 'Could not start the lesson. Please try again.';
+  }
+
+  static String _lessonSessionReplyFailureMessage(ApiResponse response) {
+    if (response.statusCode == 400) {
+      return 'Please enter a message.';
+    }
+    if (response.statusCode == 401) {
+      return 'Please sign in again to continue the lesson.';
+    }
+    if (response.statusCode == 404) {
+      return 'This lesson session is no longer available.';
+    }
+    if (response.statusCode == 429) {
+      return 'You have used today\'s free lesson. Please try again tomorrow or upgrade.';
+    }
+    if (response.statusCode >= 500) {
+      return 'Could not send the message. Please check your connection and try again.';
+    }
+
+    final code = _lessonSessionErrorCode(response.body);
+    if (code == 'mobile_lesson_reply_not_implemented') {
+      return 'Text chat is not available yet.';
+    }
+    if (code == 'lesson_ended' ||
+        code == 'lesson_session_ended' ||
+        code == 'session_conflict') {
+      return 'This lesson has already ended.';
+    }
+    if (response.statusCode == 409) {
+      return 'This lesson has already ended.';
+    }
+    return 'Could not send the message. Please try again.';
   }
 
   static String _safePasswordResetRequestExceptionMessage(ApiException error) {
@@ -352,7 +409,7 @@ class AuthService {
       return LessonSessionStartResult.authRequired();
     }
     if (error.message ==
-        'You have used today’s free lesson. Please try again tomorrow or upgrade.') {
+        'You have used today\'s free lesson. Please try again tomorrow or upgrade.') {
       return LessonSessionStartResult.blocked();
     }
     if (error.message ==
@@ -366,6 +423,37 @@ class AuthService {
       return LessonSessionStartResult.unavailable();
     }
     return LessonSessionStartResult.failed();
+  }
+
+  static LessonSessionReplyResult _safeLessonSessionReplyResult(
+      ApiException error) {
+    if (error.message == 'Please enter a message.') {
+      return LessonSessionReplyResult.validation();
+    }
+    if (error.message == 'Please sign in again.' ||
+        error.message == 'Please sign in again to continue the lesson.') {
+      return LessonSessionReplyResult.authRequired();
+    }
+    if (error.message == 'This lesson session is no longer available.') {
+      return LessonSessionReplyResult.notFound();
+    }
+    if (error.message == 'Text chat is not available yet.') {
+      return LessonSessionReplyResult.notImplemented();
+    }
+    if (error.message == 'This lesson has already ended.') {
+      return LessonSessionReplyResult.conflict();
+    }
+    if (error.message ==
+        'You have used today\'s free lesson. Please try again tomorrow or upgrade.') {
+      return LessonSessionReplyResult.limited();
+    }
+    if (error.message ==
+            'Could not send the message. Please check your connection and try again.' ||
+        error.message == 'The service took too long to respond.' ||
+        error.message == 'Unable to reach the service.') {
+      return LessonSessionReplyResult.unavailable();
+    }
+    return LessonSessionReplyResult.failed();
   }
 
   static String _lessonSessionErrorCode(String body) {
@@ -395,5 +483,11 @@ class AuthService {
       throw const ApiException('The service returned an unexpected response.');
     }
     return decoded;
+  }
+
+  static Map<String, dynamic>? _tryDecodeObject(String body) {
+    if (body.trim().isEmpty) return null;
+    final decoded = jsonDecode(body);
+    return decoded is Map<String, dynamic> ? decoded : null;
   }
 }

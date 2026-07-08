@@ -288,7 +288,7 @@ void main() {
 
     expect(result.status, LessonSessionStartStatus.blocked);
     expect(result.message,
-        'You have used today’s free lesson. Please try again tomorrow or upgrade.');
+        'You have used today\'s free lesson. Please try again tomorrow or upgrade.');
   });
 
   test('startLessonSession maps active lesson to friendly conflict result',
@@ -357,6 +357,245 @@ void main() {
     await service.startLessonSession(
       lessonContentId: 'travel-airport',
       studyLanguage: 'es',
+    );
+
+    expect(api.calls, isNot(contains('POST /api/lesson-chat/reply')));
+  });
+
+  test('lesson session reply request serializes exactly messageText', () {
+    const request = LessonSessionReplyRequest(messageText: 'Hola');
+
+    expect(request.toJson(), {'messageText': 'Hola'});
+    expect(request.toJson().keys, ['messageText']);
+  });
+
+  test('sendLessonSessionReply sends authenticated lesson session reply POST',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
+      const ApiResponse(
+          statusCode: 200,
+          body:
+              '{"reply":{"messageText":"Hola, viajero.","lessonSessionId":"session-1"}}')
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.sendLessonSessionReply(
+      sessionId: 'session-1',
+      messageText: 'Hola',
+    );
+
+    expect(result.status, LessonSessionReplyStatus.success);
+    expect(result.message, 'Message sent.');
+    expect(result.reply?.messageText, 'Hola, viajero.');
+    expect(result.reply?.sessionId, 'session-1');
+    expect(api.calls, contains('POST /api/me/lesson-sessions/session-1/reply'));
+    expect(api.tokens.last, 'access');
+    expect(api.bodies.last, {'messageText': 'Hola'});
+    expect(api.bodies.last!.keys, ['messageText']);
+  });
+
+  test('sendLessonSessionReply refreshes and retries after 401', () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+      const ApiResponse(statusCode: 200, body: '{}'),
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.sendLessonSessionReply(
+      sessionId: 'session-1',
+      messageText: 'Hola',
+    );
+
+    expect(result.status, LessonSessionReplyStatus.success);
+    expect(
+        api.calls,
+        containsAllInOrder([
+          'POST /api/me/lesson-sessions/session-1/reply',
+          'POST /api/auth/refresh',
+          'POST /api/me/lesson-sessions/session-1/reply',
+        ]));
+    expect(api.tokens.where((token) => token != null).toList(),
+        ['access', 'new-access']);
+  });
+
+  test('sendLessonSessionReply maps failed refresh to auth result', () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+    ];
+    api.responses['/api/auth/refresh'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.sendLessonSessionReply(
+      sessionId: 'session-1',
+      messageText: 'Hola',
+    );
+
+    expect(result.status, LessonSessionReplyStatus.authRequired);
+    expect(result.message, 'Please sign in again to continue the lesson.');
+  });
+
+  test(
+      'sendLessonSessionReply maps blank message to friendly validation result',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
+      const ApiResponse(
+          statusCode: 400, body: '{"message":"provider raw blank detail"}'),
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.sendLessonSessionReply(
+      sessionId: 'session-1',
+      messageText: 'Hola',
+    );
+
+    expect(result.status, LessonSessionReplyStatus.validation);
+    expect(result.message, 'Please enter a message.');
+  });
+
+  test('sendLessonSessionReply rejects blank message locally', () async {
+    final api = FakeApiClient();
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.sendLessonSessionReply(
+      sessionId: 'session-1',
+      messageText: '   ',
+    );
+
+    expect(result.status, LessonSessionReplyStatus.validation);
+    expect(result.message, 'Please enter a message.');
+    expect(api.calls, isEmpty);
+  });
+
+  test('sendLessonSessionReply maps 404 to friendly session unavailable result',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
+      const ApiResponse(
+          statusCode: 404, body: '{"message":"raw ownership detail"}'),
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.sendLessonSessionReply(
+      sessionId: 'session-1',
+      messageText: 'Hola',
+    );
+
+    expect(result.status, LessonSessionReplyStatus.notFound);
+    expect(result.message, 'This lesson session is no longer available.');
+  });
+
+  test(
+      'sendLessonSessionReply maps mobile_lesson_reply_not_implemented to friendly notImplemented result',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
+      const ApiResponse(
+          statusCode: 409,
+          body:
+              '{"code":"mobile_lesson_reply_not_implemented","message":"raw backend placeholder"}'),
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.sendLessonSessionReply(
+      sessionId: 'session-1',
+      messageText: 'Hola',
+    );
+
+    expect(result.status, LessonSessionReplyStatus.notImplemented);
+    expect(result.message, 'Text chat is not available yet.');
+  });
+
+  test('sendLessonSessionReply maps ended conflict to friendly conflict result',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
+      const ApiResponse(
+          statusCode: 409,
+          body: '{"code":"lesson_session_ended","message":"raw ended detail"}'),
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.sendLessonSessionReply(
+      sessionId: 'session-1',
+      messageText: 'Hola',
+    );
+
+    expect(result.status, LessonSessionReplyStatus.conflict);
+    expect(result.message, 'This lesson has already ended.');
+  });
+
+  test('sendLessonSessionReply maps 429 to friendly limited result', () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
+      const ApiResponse(
+          statusCode: 429, body: '{"message":"raw rate limit detail"}'),
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.sendLessonSessionReply(
+      sessionId: 'session-1',
+      messageText: 'Hola',
+    );
+
+    expect(result.status, LessonSessionReplyStatus.limited);
+    expect(result.message,
+        'You have used today\'s free lesson. Please try again tomorrow or upgrade.');
+  });
+
+  test('sendLessonSessionReply maps 5xx to friendly unavailable result',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
+      const ApiResponse(
+          statusCode: 503, body: '{"message":"raw backend stack trace"}'),
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.sendLessonSessionReply(
+      sessionId: 'session-1',
+      messageText: 'Hola',
+    );
+
+    expect(result.status, LessonSessionReplyStatus.unavailable);
+    expect(result.message,
+        'Could not send the message. Please check your connection and try again.');
+  });
+
+  test('sendLessonSessionReply does not surface raw backend error text',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
+      const ApiResponse(
+          statusCode: 400, body: '{"message":"raw provider secret stack"}'),
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.sendLessonSessionReply(
+      sessionId: 'session-1',
+      messageText: 'Hola',
+    );
+
+    expect(result.message, 'Please enter a message.');
+    expect(result.message, isNot(contains('raw provider secret stack')));
+  });
+
+  test('sendLessonSessionReply does not call lesson chat reply endpoint',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
+      const ApiResponse(statusCode: 200, body: '{}')
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    await service.sendLessonSessionReply(
+      sessionId: 'session-1',
+      messageText: 'Hola',
     );
 
     expect(api.calls, isNot(contains('POST /api/lesson-chat/reply')));
