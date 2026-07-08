@@ -49,11 +49,12 @@ class FakeAuthService extends AuthService {
     if (keepUserLoading) return Completer<AuthUser>().future;
     if (!signedIn) throw const ApiException('Please sign in again.');
     return AuthUser(
-      userId: 'u1',
-      email: 'user@example.com',
-      displayName: 'User',
-      createdAt: DateTime.parse('2026-07-01T12:00:00Z'));
+        userId: 'u1',
+        email: 'user@example.com',
+        displayName: 'User',
+        createdAt: DateTime.parse('2026-07-01T12:00:00Z'));
   }
+
   @override
   Future<SubscriptionStatus> fetchSubscriptionStatus() async =>
       SubscriptionStatus(
@@ -79,15 +80,16 @@ class FakeAuthService extends AuthService {
   }
 
   @override
-  Future<String> requestPasswordReset(String email) async => resetRequestMessage;
+  Future<String> requestPasswordReset(String email) async =>
+      resetRequestMessage;
 
   @override
   Future<String> confirmPasswordReset(String token, String newPassword) async =>
       resetConfirmMessage;
 
   @override
-  Future<String> changePassword(
-          String currentPassword, String newPassword, String confirmNewPassword) async =>
+  Future<String> changePassword(String currentPassword, String newPassword,
+          String confirmNewPassword) async =>
       changePasswordMessage;
 
   @override
@@ -121,13 +123,13 @@ class _MemoryStorage implements SessionStorage {
 }
 
 Widget _screen(FakeAuthService auth) => MaterialApp(
-    routes: {
-      '/login': (_) => const Scaffold(body: Text('Login')),
-    },
-    home: SettingsScreen(
-        healthService: BackendHealthService(apiClient: FakeApiClient()),
-        authService: auth,
-        tutorOptionsService: FakeTutorOptionsService()));
+        routes: {
+          '/login': (_) => const Scaffold(body: Text('Login')),
+        },
+        home: SettingsScreen(
+            healthService: BackendHealthService(apiClient: FakeApiClient()),
+            authService: auth,
+            tutorOptionsService: FakeTutorOptionsService()));
 
 Finder get _settingsScrollable => find.byType(Scrollable).first;
 
@@ -186,7 +188,6 @@ void main() {
     expect(find.textContaining('level', findRichText: true), findsNothing);
   });
 
-
   testWidgets('password recovery section is visible', (tester) async {
     await tester.pumpWidget(_screen(FakeAuthService()));
     await tester.pumpAndSettle();
@@ -206,7 +207,8 @@ void main() {
     expect(find.text('Email is required.'), findsOneWidget);
   });
 
-  testWidgets('reset request success shows friendly accepted message', (tester) async {
+  testWidgets('reset request success shows friendly accepted message',
+      (tester) async {
     await tester.pumpWidget(_screen(FakeAuthService()));
     await tester.pumpAndSettle();
     await _expandPasswordRecovery(tester);
@@ -214,7 +216,8 @@ void main() {
     await tester.tap(find.text('Forgot password'));
     await tester.pumpAndSettle();
     expect(
-        find.text('Password reset instructions were sent if this email is registered.'),
+        find.text(
+            'Password reset instructions were sent if this email is registered.'),
         findsOneWidget);
   });
 
@@ -223,7 +226,8 @@ void main() {
     await tester.pumpAndSettle();
     await _expandPasswordRecovery(tester);
     await _scrollToAndTap(tester, 'Reset password');
-    expect(find.text('Reset code and new password are required.'), findsOneWidget);
+    expect(
+        find.text('Reset code and new password are required.'), findsOneWidget);
   });
 
   testWidgets('reset confirm validates password mismatch', (tester) async {
@@ -234,7 +238,8 @@ void main() {
     await tester.enterText(find.byType(TextField).at(2), 'one');
     await tester.enterText(find.byType(TextField).at(3), 'two');
     await _scrollToAndTap(tester, 'Reset password');
-    expect(find.text('New password and confirmation must match.'), findsOneWidget);
+    expect(
+        find.text('New password and confirmation must match.'), findsOneWidget);
   });
 
   testWidgets('reset confirm success shows Password updated.', (tester) async {
@@ -254,10 +259,12 @@ void main() {
     await tester.pumpAndSettle();
     await _expandPasswordRecovery(tester);
     await _scrollToAndTap(tester, 'Change password');
-    expect(find.text('Please sign in to change your password.'), findsOneWidget);
+    expect(
+        find.text('Please sign in to change your password.'), findsOneWidget);
   });
 
-  testWidgets('change password validates missing current password', (tester) async {
+  testWidgets('change password validates missing current password',
+      (tester) async {
     await tester.pumpWidget(_screen(FakeAuthService()));
     await tester.pumpAndSettle();
     await _expandPasswordRecovery(tester);
@@ -273,10 +280,12 @@ void main() {
     await tester.enterText(find.byType(TextField).at(5), 'one');
     await tester.enterText(find.byType(TextField).at(6), 'two');
     await _scrollToAndTap(tester, 'Change password');
-    expect(find.text('New password and confirmation must match.'), findsOneWidget);
+    expect(
+        find.text('New password and confirmation must match.'), findsOneWidget);
   });
 
-  testWidgets('change password success shows Password updated.', (tester) async {
+  testWidgets('change password success shows Password updated.',
+      (tester) async {
     await tester.pumpWidget(_screen(FakeAuthService()));
     await tester.pumpAndSettle();
     await _expandPasswordRecovery(tester);
