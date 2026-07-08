@@ -216,17 +216,31 @@ class AccountAccessCard extends StatelessWidget {
   final bool isChecking;
   final VoidCallback onCheckLessonAccess;
 
+  bool get _hasPremiumAccess => lessonAccess?.premiumActive ?? false;
+
+  bool get _hasTrialAccess => lessonAccess?.trialActive ?? false;
+
+  bool get _hasPaidOrTrialAccess => _hasPremiumAccess || _hasTrialAccess;
+
   String get _planLabel {
-    if (lessonAccess == null) return 'Free plan';
-    if (lessonAccess!.premiumActive) return 'Premium plan';
-    if (lessonAccess!.trialActive) return 'Trial access';
+    if (_hasPremiumAccess) return 'Premium plan';
+    if (_hasTrialAccess) return 'Premium trial';
     return 'Free plan';
   }
 
-  String get _lessonRemainingLabel {
+  String get _accessSummaryLabel {
+    if (_hasPremiumAccess) return 'Unlimited lessons';
+    if (_hasTrialAccess) return 'Unlimited lessons during trial';
+
     final remaining = lessonAccess?.freeLessonRemainingToday ?? 1;
     final lesson = remaining == 1 ? 'lesson' : 'lessons';
     return '$remaining free $lesson remaining today';
+  }
+
+  String? get _accessStatusLabel {
+    if (_hasPremiumAccess) return 'Premium access is active';
+    if (_hasTrialAccess) return 'Trial access is active';
+    return null;
   }
 
   String get _signedInLabel {
@@ -284,14 +298,18 @@ class AccountAccessCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(_planLabel),
             const SizedBox(height: 4),
-            Text(_lessonRemainingLabel),
+            Text(_accessSummaryLabel),
+            if (_accessStatusLabel != null) ...[
+              const SizedBox(height: 4),
+              Text(_accessStatusLabel!),
+            ],
             if (isChecking) ...[
               const SizedBox(height: 8),
               const Text('Refreshing your lesson status...'),
             ] else if (error != null) ...[
               const SizedBox(height: 8),
               Text(error!),
-            ] else if (lessonAccess != null) ...[
+            ] else if (lessonAccess != null && !_hasPaidOrTrialAccess) ...[
               const SizedBox(height: 8),
               Text(lessonAccess!.canStartNewLesson
                   ? 'You can start a lesson'

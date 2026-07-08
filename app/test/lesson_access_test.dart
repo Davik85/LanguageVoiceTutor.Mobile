@@ -224,7 +224,7 @@ void main() {
     expect(storage.cleared, isTrue);
   });
 
-  testWidgets('home screen shows allowed lesson access', (tester) async {
+  testWidgets('home screen shows trial lesson access', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: HomeScreen(
@@ -249,9 +249,73 @@ void main() {
     await tester.tap(find.text('Refresh status'));
     await tester.pumpAndSettle();
 
-    expect(find.text('You can start a lesson'), findsOneWidget);
-    expect(find.text('Trial access is active.'), findsOneWidget);
+    expect(find.text('Premium trial'), findsOneWidget);
+    expect(find.text('Unlimited lessons during trial'), findsOneWidget);
+    expect(find.text('Trial access is active'), findsOneWidget);
+    expect(find.text('1 free lesson remaining today'), findsNothing);
+  });
+
+  testWidgets('home screen shows premium lesson access', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          authService: FakeAuthService(
+            lessonAccess: LessonAccessDecision.fromJson({
+              'userId': 'u1',
+              'canStartNewLesson': true,
+              'premiumActive': true,
+              'trialActive': false,
+              'freeLessonUsedToday': false,
+              'freeLessonRemainingToday': 1,
+              'enforcementEnabled': true,
+              'decision': 'allowed',
+              'reason': 'Premium access is active.',
+              'checkedAtUtc': '2026-07-06T12:00:00Z',
+            }),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Refresh status'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Premium plan'), findsOneWidget);
+    expect(find.text('Unlimited lessons'), findsOneWidget);
+    expect(find.text('Premium access is active'), findsOneWidget);
+    expect(find.text('1 free lesson remaining today'), findsNothing);
+    expect(find.text('0 free lessons remaining today'), findsNothing);
+  });
+
+  testWidgets('home screen shows free lesson allowance', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          authService: FakeAuthService(
+            lessonAccess: LessonAccessDecision.fromJson({
+              'userId': 'u1',
+              'canStartNewLesson': true,
+              'premiumActive': false,
+              'trialActive': false,
+              'freeLessonUsedToday': false,
+              'freeLessonRemainingToday': 1,
+              'enforcementEnabled': true,
+              'decision': 'allowed',
+              'reason': 'Free lesson is available.',
+              'checkedAtUtc': '2026-07-06T12:00:00Z',
+            }),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Refresh status'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Free plan'), findsOneWidget);
     expect(find.text('1 free lesson remaining today'), findsOneWidget);
+    expect(find.text('You can start a lesson'), findsOneWidget);
+    expect(find.text('Free lesson is available.'), findsOneWidget);
   });
 
   testWidgets('home screen shows blocked lesson access', (tester) async {
