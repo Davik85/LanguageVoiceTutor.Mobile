@@ -263,3 +263,68 @@ void main() {
     expect(result.message, isNot(contains('raw active')));
   });
 }
+
+test('start lesson session posts authenticated backend session request only', () async {
+  final api = FakeApiClient();
+  api.responses['/api/me/lesson-sessions'] = [
+    const ApiResponse(statusCode: 200, body: '{"lessonSessionId":"s1","status":"ready"}')
+  ];
+  final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+  final result = await service.startLessonSession('airport_check_in', 'English');
+
+  expect(result.isReady, isTrue);
+  expect(api.calls, contains('POST /api/me/lesson-sessions'));
+  expect(api.tokens.last, 'access');
+  expect(api.bodies.last, {
+    'lessonContentId': 'airport_check_in',
+    'studyLanguage': 'English',
+  });
+  expect(api.bodies.last!.keys, ['lessonContentId', 'studyLanguage']);
+  expect(api.calls, isNot(contains('POST /api/lesson-chat/reply')));
+});
+
+test('start lesson session refreshes and retries after 401', () async {
+  final api = FakeApiClient();
+  api.responses['/api/me/lesson-sessions'] = [
+    const ApiResponse(statusCode: 401, body: '{}'),
+    const ApiResponse(statusCode: 200, body: '{"lessonSessionId":"s1","status":"ready"}'),
+  ];
+  final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+  final result = await service.startLessonSession('airport_check_in', 'English');
+
+  expect(result.isReady, isTrue);
+  expect(api.calls, containsAllInOrder([
+    'POST /api/me/lesson-sessions',
+    'POST /api/auth/refresh',
+    'POST /api/me/lesson-sessions',
+  ]));
+  expect(api.tokens.where((token) => token != null).toList(), ['access', 'new-access']);
+});
+
+test('start lesson session maps access denied to friendly blocked result', () async {
+  final api = FakeApiClient();
+  api.responses['/api/me/lesson-sessions'] = [
+    const ApiResponse(statusCode: 403, body: '{"code":"lesson_access_denied","message":"raw backend plan detail"}')
+  ];
+  final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+  final result = await service.startLessonSession('airport_check_in', 'English');
+
+  expect(result.message, 'You have used today’s free lesson. Please try again tomorrow or upgrade.');
+  expect(result.message, isNot(contains('raw backend')));
+});
+
+test('start lesson session maps active lesson conflict to friendly result', () async {
+  final api = FakeApiClient();
+  api.responses['/api/me/lesson-sessions'] = [
+    const ApiResponse(statusCode: 409, body: '{"code":"active_lesson_exists","message":"raw active id s1"}')
+  ];
+  final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+  final result = await service.startLessonSession('airport_check_in', 'English');
+
+  expect(result.message, 'You already have an active lesson on another device. Finish it there before starting a new one.');
+  expect(result.message, isNot(contains('raw active')));
+});
