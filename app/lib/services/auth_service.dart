@@ -3,7 +3,6 @@ import 'dart:convert';
 import '../api/api_client.dart';
 import '../models/auth_models.dart';
 import '../models/lesson_access_decision.dart';
-import '../models/lesson_session_models.dart';
 import '../models/subscription_status.dart';
 import '../models/user_settings.dart';
 import 'session_storage.dart';
@@ -53,40 +52,6 @@ class AuthService {
     return UserSettings.fromJson(_decodeObject(response.body));
   }
 
-  Future<LessonSessionStartResult> startLessonSession(
-    String lessonContentId,
-    String studyLanguage,
-  ) async {
-    try {
-      final response = await _authenticatedPost(
-        '/api/me/lesson-sessions',
-        body: StartLessonSessionRequest(
-          lessonContentId: lessonContentId,
-          studyLanguage: studyLanguage,
-        ).toJson(),
-        failureMessageForResponse: _lessonSessionStartFailureMessage,
-      );
-      return LessonSessionStartResult.ready(
-        LessonSessionResponse.fromJson(_decodeObject(response.body)),
-      );
-    } on ApiException catch (error) {
-      switch (error.message) {
-        case _lessonAccessDeniedCode:
-          return LessonSessionStartResult.accessDenied;
-        case _activeLessonExistsCode:
-          return LessonSessionStartResult.activeLessonExists;
-        case 'Please sign in again.':
-          return LessonSessionStartResult.unauthorized;
-        case _lessonStartUnavailableCode:
-          return LessonSessionStartResult.unavailable;
-        default:
-          return LessonSessionStartResult.failure;
-      }
-    } catch (_) {
-      return LessonSessionStartResult.failure;
-    }
-  }
-
   Future<UserSettings> updateUserSettings(UserSettings settings) async {
     final response =
         await _authenticatedPut('/api/me/settings', body: settings.toJson());
@@ -110,7 +75,8 @@ class AuthService {
     } on ApiException catch (error) {
       throw ApiException(_safePasswordResetRequestExceptionMessage(error));
     } catch (_) {
-      throw const ApiException('Could not request password reset. Please try again.');
+      throw const ApiException(
+          'Could not request password reset. Please try again.');
     }
   }
 
@@ -118,8 +84,9 @@ class AuthService {
     try {
       final response = await _apiClient.post(
         '/api/auth/password-reset/confirm',
-        body: PasswordResetConfirmRequest(token: token, newPassword: newPassword)
-            .toJson(),
+        body:
+            PasswordResetConfirmRequest(token: token, newPassword: newPassword)
+                .toJson(),
       );
       if (_isSuccess(response.statusCode)) {
         return _passwordMessage(response.body, fallback: 'Password updated.');
@@ -259,28 +226,6 @@ class AuthService {
     }
   }
 
-  static const _lessonAccessDeniedCode = 'lesson_access_denied';
-  static const _activeLessonExistsCode = 'active_lesson_exists';
-  static const _lessonStartUnavailableCode = 'lesson_start_unavailable';
-
-  static String _lessonSessionStartFailureMessage(ApiResponse response) {
-    if (response.statusCode >= 500) return _lessonStartUnavailableCode;
-    final code = _backendErrorCode(response.body);
-    if (code == _lessonAccessDeniedCode) return _lessonAccessDeniedCode;
-    if (code == _activeLessonExistsCode) return _activeLessonExistsCode;
-    return 'lesson_start_failed';
-  }
-
-  static String? _backendErrorCode(String body) {
-    try {
-      final json = _decodeObject(body);
-      final code = json['code'] ?? json['errorCode'] ?? json['reason'];
-      if (code is String && code.trim().isNotEmpty) return code.trim();
-    } catch (_) {}
-    return null;
-  }
-
-
   static String _passwordMessage(String body, {required String fallback}) {
     try {
       final parsed = PasswordOperationResponse.fromJson(_decodeObject(body));
@@ -295,7 +240,8 @@ class AuthService {
     if (response.statusCode == 429) {
       return 'Too many password reset requests. Please wait before trying again.';
     }
-    if (body.contains('delivery') || body.contains('email') && body.contains('configured')) {
+    if (body.contains('delivery') ||
+        body.contains('email') && body.contains('configured')) {
       return 'Password reset email delivery is not configured. Please contact support.';
     }
     return 'Could not request password reset. Please try again.';

@@ -170,8 +170,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-
-
   Future<void> _requestPasswordReset() async {
     if (_resetEmailController.text.trim().isEmpty) {
       setState(() => _resetRequestMessage = 'Email is required.');
@@ -182,8 +180,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _resetRequestMessage = null;
     });
     try {
-      final message =
-          await _authService.requestPasswordReset(_resetEmailController.text.trim());
+      final message = await _authService
+          .requestPasswordReset(_resetEmailController.text.trim());
       if (!mounted) return;
       setState(() => _resetRequestMessage = message);
     } on ApiException catch (error) {
@@ -197,11 +195,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _confirmPasswordReset() async {
     if (_resetCodeController.text.trim().isEmpty ||
         _resetNewPasswordController.text.isEmpty) {
-      setState(() => _resetConfirmMessage = 'Reset code and new password are required.');
+      setState(() =>
+          _resetConfirmMessage = 'Reset code and new password are required.');
       return;
     }
-    if (_resetNewPasswordController.text != _resetConfirmPasswordController.text) {
-      setState(() => _resetConfirmMessage = 'New password and confirmation must match.');
+    if (_resetNewPasswordController.text !=
+        _resetConfirmPasswordController.text) {
+      setState(() =>
+          _resetConfirmMessage = 'New password and confirmation must match.');
       return;
     }
     setState(() {
@@ -225,15 +226,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _changePassword() async {
     if (_user == null) {
-      setState(() => _changePasswordMessage = 'Please sign in to change your password.');
+      setState(() =>
+          _changePasswordMessage = 'Please sign in to change your password.');
       return;
     }
     if (_currentPasswordController.text.isEmpty) {
       setState(() => _changePasswordMessage = 'Current password is required.');
       return;
     }
-    if (_changeNewPasswordController.text != _changeConfirmPasswordController.text) {
-      setState(() => _changePasswordMessage = 'New password and confirmation must match.');
+    if (_changeNewPasswordController.text !=
+        _changeConfirmPasswordController.text) {
+      setState(() =>
+          _changePasswordMessage = 'New password and confirmation must match.');
       return;
     }
     setState(() {
@@ -406,7 +410,6 @@ class _AccountCard extends StatelessWidget {
           ])));
 }
 
-
 class _PasswordRecoveryCard extends StatelessWidget {
   const _PasswordRecoveryCard({
     required this.resetEmailController,
@@ -446,12 +449,12 @@ class _PasswordRecoveryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-      child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          title: Text('Password & recovery',
-              style: Theme.of(context).textTheme.titleMedium),
-          children: [
+          child: ExpansionTile(
+              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+              childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              title: Text('Password & recovery',
+                  style: Theme.of(context).textTheme.titleMedium),
+              children: [
             TextField(
               controller: resetEmailController,
               decoration: const InputDecoration(labelText: 'Account email'),

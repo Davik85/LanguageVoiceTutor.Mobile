@@ -39,7 +39,6 @@ class FakeApiClient implements ApiClient {
   }
 }
 
-
 class MemoryStorage implements SessionStorage {
   String? access = 'access';
   String? refresh = 'refresh';
@@ -91,7 +90,8 @@ void main() {
     expect(storage.refresh, 'new-refresh');
   });
 
-  test('password reset request posts without bearer token and parses message', () async {
+  test('password reset request posts without bearer token and parses message',
+      () async {
     final api = FakeApiClient();
     api.responses['/api/auth/password-reset/request'] = [
       const ApiResponse(
@@ -106,28 +106,34 @@ void main() {
     expect(api.calls, contains('POST /api/auth/password-reset/request'));
     expect(api.tokens.last, isNull);
     expect(api.bodies.last, {'email': 'user@example.com'});
-    expect(message, 'Password reset instructions were sent if this email is registered.');
+    expect(message,
+        'Password reset instructions were sent if this email is registered.');
   });
 
-  test('password reset confirm posts without bearer token and parses message', () async {
+  test('password reset confirm posts without bearer token and parses message',
+      () async {
     final api = FakeApiClient();
     api.responses['/api/auth/password-reset/confirm'] = [
-      const ApiResponse(statusCode: 200, body: '{"message":"Password updated."}')
+      const ApiResponse(
+          statusCode: 200, body: '{"message":"Password updated."}')
     ];
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
-    final message = await service.confirmPasswordReset('reset-code', 'new-password');
+    final message =
+        await service.confirmPasswordReset('reset-code', 'new-password');
 
     expect(api.calls, contains('POST /api/auth/password-reset/confirm'));
     expect(api.tokens.last, isNull);
-    expect(api.bodies.last, {'token': 'reset-code', 'newPassword': 'new-password'});
+    expect(api.bodies.last,
+        {'token': 'reset-code', 'newPassword': 'new-password'});
     expect(message, 'Password updated.');
   });
 
   test('change password posts with bearer token', () async {
     final api = FakeApiClient();
     api.responses['/api/auth/password/change'] = [
-      const ApiResponse(statusCode: 200, body: '{"message":"Password updated."}')
+      const ApiResponse(
+          statusCode: 200, body: '{"message":"Password updated."}')
     ];
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
@@ -147,184 +153,36 @@ void main() {
     final api = FakeApiClient();
     api.responses['/api/auth/password/change'] = [
       const ApiResponse(statusCode: 401, body: '{}'),
-      const ApiResponse(statusCode: 200, body: '{"message":"Password updated."}'),
+      const ApiResponse(
+          statusCode: 200, body: '{"message":"Password updated."}'),
     ];
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
     await service.changePassword('old', 'new', 'new');
 
-    expect(api.calls, containsAllInOrder([
-      'POST /api/auth/password/change',
-      'POST /api/auth/refresh',
-      'POST /api/auth/password/change',
-    ]));
-    expect(api.tokens.where((token) => token != null).toList(), ['access', 'new-access']);
+    expect(
+        api.calls,
+        containsAllInOrder([
+          'POST /api/auth/password/change',
+          'POST /api/auth/refresh',
+          'POST /api/auth/password/change',
+        ]));
+    expect(api.tokens.where((token) => token != null).toList(),
+        ['access', 'new-access']);
   });
 
   test('password operations do not surface raw backend errors', () async {
     final api = FakeApiClient();
     api.responses['/api/auth/password-reset/confirm'] = [
-      const ApiResponse(statusCode: 500, body: '{"message":"raw token secret stack"}')
+      const ApiResponse(
+          statusCode: 500, body: '{"message":"raw token secret stack"}')
     ];
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
     expect(
       () => service.confirmPasswordReset('bad', 'new'),
-      throwsA(isA<ApiException>().having(
-          (e) => e.message, 'message', 'Something went wrong. Please try again.')),
+      throwsA(isA<ApiException>().having((e) => e.message, 'message',
+          'Something went wrong. Please try again.')),
     );
   });
-
-  test('start lesson session posts authenticated backend session request only',
-      () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions'] = [
-      const ApiResponse(
-        statusCode: 200,
-        body: '{"lessonSessionId":"s1","status":"ready"}',
-      )
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result =
-        await service.startLessonSession('airport_check_in', 'English');
-
-    expect(result.isReady, isTrue);
-    expect(api.calls, contains('POST /api/me/lesson-sessions'));
-    expect(api.tokens.last, 'access');
-    expect(api.bodies.last, {
-      'lessonContentId': 'airport_check_in',
-      'studyLanguage': 'English',
-    });
-    expect(api.bodies.last!.keys, ['lessonContentId', 'studyLanguage']);
-    expect(api.calls, isNot(contains('POST /api/lesson-chat/reply')));
-  });
-
-  test('start lesson session refreshes and retries after 401', () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions'] = [
-      const ApiResponse(statusCode: 401, body: '{}'),
-      const ApiResponse(
-        statusCode: 200,
-        body: '{"lessonSessionId":"s1","status":"ready"}',
-      ),
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result =
-        await service.startLessonSession('airport_check_in', 'English');
-
-    expect(result.isReady, isTrue);
-    expect(api.calls, containsAllInOrder([
-      'POST /api/me/lesson-sessions',
-      'POST /api/auth/refresh',
-      'POST /api/me/lesson-sessions',
-    ]));
-    expect(api.tokens.where((token) => token != null).toList(),
-        ['access', 'new-access']);
-  });
-
-  test('start lesson session maps access denied to friendly blocked result',
-      () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions'] = [
-      const ApiResponse(
-        statusCode: 403,
-        body:
-            '{"code":"lesson_access_denied","message":"raw backend plan detail"}',
-      )
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result =
-        await service.startLessonSession('airport_check_in', 'English');
-
-    expect(result.message,
-        'You have used today’s free lesson. Please try again tomorrow or upgrade.');
-    expect(result.message, isNot(contains('raw backend')));
-  });
-
-  test('start lesson session maps active lesson conflict to friendly result',
-      () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions'] = [
-      const ApiResponse(
-        statusCode: 409,
-        body: '{"code":"active_lesson_exists","message":"raw active id s1"}',
-      )
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result =
-        await service.startLessonSession('airport_check_in', 'English');
-
-    expect(result.message,
-        'You already have an active lesson on another device. Finish it there before starting a new one.');
-    expect(result.message, isNot(contains('raw active')));
-  });
 }
-
-test('start lesson session posts authenticated backend session request only', () async {
-  final api = FakeApiClient();
-  api.responses['/api/me/lesson-sessions'] = [
-    const ApiResponse(statusCode: 200, body: '{"lessonSessionId":"s1","status":"ready"}')
-  ];
-  final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-  final result = await service.startLessonSession('airport_check_in', 'English');
-
-  expect(result.isReady, isTrue);
-  expect(api.calls, contains('POST /api/me/lesson-sessions'));
-  expect(api.tokens.last, 'access');
-  expect(api.bodies.last, {
-    'lessonContentId': 'airport_check_in',
-    'studyLanguage': 'English',
-  });
-  expect(api.bodies.last!.keys, ['lessonContentId', 'studyLanguage']);
-  expect(api.calls, isNot(contains('POST /api/lesson-chat/reply')));
-});
-
-test('start lesson session refreshes and retries after 401', () async {
-  final api = FakeApiClient();
-  api.responses['/api/me/lesson-sessions'] = [
-    const ApiResponse(statusCode: 401, body: '{}'),
-    const ApiResponse(statusCode: 200, body: '{"lessonSessionId":"s1","status":"ready"}'),
-  ];
-  final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-  final result = await service.startLessonSession('airport_check_in', 'English');
-
-  expect(result.isReady, isTrue);
-  expect(api.calls, containsAllInOrder([
-    'POST /api/me/lesson-sessions',
-    'POST /api/auth/refresh',
-    'POST /api/me/lesson-sessions',
-  ]));
-  expect(api.tokens.where((token) => token != null).toList(), ['access', 'new-access']);
-});
-
-test('start lesson session maps access denied to friendly blocked result', () async {
-  final api = FakeApiClient();
-  api.responses['/api/me/lesson-sessions'] = [
-    const ApiResponse(statusCode: 403, body: '{"code":"lesson_access_denied","message":"raw backend plan detail"}')
-  ];
-  final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-  final result = await service.startLessonSession('airport_check_in', 'English');
-
-  expect(result.message, 'You have used today’s free lesson. Please try again tomorrow or upgrade.');
-  expect(result.message, isNot(contains('raw backend')));
-});
-
-test('start lesson session maps active lesson conflict to friendly result', () async {
-  final api = FakeApiClient();
-  api.responses['/api/me/lesson-sessions'] = [
-    const ApiResponse(statusCode: 409, body: '{"code":"active_lesson_exists","message":"raw active id s1"}')
-  ];
-  final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-  final result = await service.startLessonSession('airport_check_in', 'English');
-
-  expect(result.message, 'You already have an active lesson on another device. Finish it there before starting a new one.');
-  expect(result.message, isNot(contains('raw active')));
-});
