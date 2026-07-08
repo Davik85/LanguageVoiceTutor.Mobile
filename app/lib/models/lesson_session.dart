@@ -2,14 +2,38 @@ class StartLessonSessionRequest {
   const StartLessonSessionRequest({
     required this.lessonContentId,
     required this.studyLanguage,
+    required this.topicId,
+    required this.topicTitle,
+    required this.subtopicId,
+    required this.subtopicTitle,
+    required this.level,
+    this.selectedContextId,
+    this.selectedContextTitle,
+    this.modeUsed = 'text',
   });
 
   final String lessonContentId;
   final String studyLanguage;
+  final String topicId;
+  final String topicTitle;
+  final String subtopicId;
+  final String subtopicTitle;
+  final String level;
+  final String? selectedContextId;
+  final String? selectedContextTitle;
+  final String modeUsed;
 
   Map<String, dynamic> toJson() => {
         'lessonContentId': lessonContentId,
         'studyLanguage': studyLanguage,
+        'topicId': topicId,
+        'topicTitle': topicTitle,
+        'subtopicId': subtopicId,
+        'subtopicTitle': subtopicTitle,
+        'level': level,
+        'selectedContextId': selectedContextId,
+        'selectedContextTitle': selectedContextTitle,
+        'modeUsed': modeUsed,
       };
 }
 

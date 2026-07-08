@@ -93,6 +93,12 @@ abstract final class LanguageOptions {
         fallbackId: defaultLanguageId,
       );
 
+  static String backendStudyLanguageNameFor(Object? value) => _labelFor(
+        value,
+        studyLanguages,
+        fallbackLabel: 'English',
+      );
+
   static String nativeLanguageIdFor(Object? value) => _idFor(
         value,
         nativeLanguages,
@@ -104,6 +110,25 @@ abstract final class LanguageOptions {
         interfaceLanguages,
         fallbackId: defaultLanguageId,
       );
+
+  static String _labelFor(
+    Object? value,
+    List<LanguageOption> options, {
+    required String fallbackLabel,
+  }) {
+    if (value is String) {
+      final normalized = value.trim();
+      if (normalized.isNotEmpty) {
+        for (final option in options) {
+          if (option.id.toLowerCase() == normalized.toLowerCase() ||
+              option.label.toLowerCase() == normalized.toLowerCase()) {
+            return option.label;
+          }
+        }
+      }
+    }
+    return fallbackLabel;
+  }
 
   static String _idFor(
     Object? value,

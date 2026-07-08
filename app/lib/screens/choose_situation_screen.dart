@@ -13,14 +13,16 @@ class ChooseSituationScreen extends StatelessWidget {
     AuthService? authService,
   }) : _authService = authService;
 
-  final String selectedLevel;
-  final String selectedTopic;
+  final LessonOption selectedLevel;
+  final LessonOption selectedTopic;
   final AuthService? _authService;
 
   @override
   Widget build(BuildContext context) {
-    final situations = lessonSituationsByTopic[selectedTopic] ?? const [];
-    final situationStyle = lessonCardStyleForSituationTopic(selectedTopic);
+    final situations = lessonSituationsByTopic[selectedTopic.label] ??
+        const <LessonSituationOption>[];
+    final situationStyle =
+        lessonCardStyleForSituationTopic(selectedTopic.label);
     return Scaffold(
       appBar: AppBar(title: const Text('Choose Situation')),
       body: SafeArea(
@@ -31,7 +33,7 @@ class ChooseSituationScreen extends StatelessWidget {
           itemBuilder: (context, index) {
             if (index == 0) {
               return LessonSelectionIntro(
-                contextLabel: '$selectedLevel / $selectedTopic',
+                contextLabel: '${selectedLevel.label} / ${selectedTopic.label}',
                 title: 'Choose a situation',
                 subtitle: 'Practice one specific moment from this topic.',
               );
@@ -47,10 +49,15 @@ class ChooseSituationScreen extends StatelessWidget {
                   builder: (_) => LessonScreen(
                     authService: _authService,
                     selection: LessonStartSelection(
-                      level: selectedLevel,
-                      topic: selectedTopic,
+                      level: selectedLevel.label,
+                      topicId: situation.topicId,
+                      topicTitle: situation.topicTitle,
+                      subtopicId: situation.subtopicId,
+                      subtopicTitle: situation.subtopicTitle,
                       situation: situation.label,
-                      lessonContentId: situation.id,
+                      lessonContentId: situation.lessonContentId,
+                      selectedContextId: situation.selectedContextId,
+                      selectedContextTitle: situation.selectedContextTitle,
                     ),
                   ),
                 ),

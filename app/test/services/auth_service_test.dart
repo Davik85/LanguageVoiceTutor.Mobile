@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
+import 'package:language_voice_tutor_mobile/models/language_options.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_session.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
@@ -68,7 +69,19 @@ class MemoryStorage implements SessionStorage {
 
 void main() {
   const lessonSessionReadyBody =
-      '{"lessonSessionId":"session-1","lessonContentId":"travel-airport","studyLanguage":"es"}';
+      '{"lessonSessionId":"session-1","lessonContentId":"travel_airport_check_in","studyLanguage":"Spanish"}';
+  const travelAirportStartRequest = StartLessonSessionRequest(
+    lessonContentId: 'travel_airport_check_in',
+    studyLanguage: 'Spanish',
+    topicId: '2',
+    topicTitle: 'Travel',
+    subtopicId: '201',
+    subtopicTitle: 'Airport check-in',
+    level: 'A1 Beginner',
+    selectedContextId: null,
+    selectedContextTitle: null,
+    modeUsed: 'text',
+  );
 
   test('loadCurrentUser sends bearer access token through client abstraction',
       () async {
@@ -191,16 +204,36 @@ void main() {
   });
 
   test('start lesson session request serializes backend fields only', () {
-    const request = StartLessonSessionRequest(
-      lessonContentId: 'travel-airport',
-      studyLanguage: 'es',
-    );
-
-    expect(request.toJson(), {
-      'lessonContentId': 'travel-airport',
-      'studyLanguage': 'es',
+    expect(travelAirportStartRequest.toJson(), {
+      'lessonContentId': 'travel_airport_check_in',
+      'studyLanguage': 'Spanish',
+      'topicId': '2',
+      'topicTitle': 'Travel',
+      'subtopicId': '201',
+      'subtopicTitle': 'Airport check-in',
+      'level': 'A1 Beginner',
+      'selectedContextId': null,
+      'selectedContextTitle': null,
+      'modeUsed': 'text',
     });
-    expect(request.toJson().keys, ['lessonContentId', 'studyLanguage']);
+    expect(travelAirportStartRequest.toJson().keys, [
+      'lessonContentId',
+      'studyLanguage',
+      'topicId',
+      'topicTitle',
+      'subtopicId',
+      'subtopicTitle',
+      'level',
+      'selectedContextId',
+      'selectedContextTitle',
+      'modeUsed',
+    ]);
+  });
+
+  test('study language values are converted to backend-compatible names', () {
+    expect(LanguageOptions.backendStudyLanguageNameFor('es'), 'Spanish');
+    expect(LanguageOptions.backendStudyLanguageNameFor('Spanish'), 'Spanish');
+    expect(LanguageOptions.backendStudyLanguageNameFor(null), 'English');
   });
 
   test('startLessonSession sends authenticated lesson session POST', () async {
@@ -211,8 +244,7 @@ void main() {
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
     final result = await service.startLessonSession(
-      lessonContentId: 'travel-airport',
-      studyLanguage: 'es',
+      request: travelAirportStartRequest,
     );
 
     expect(result.status, LessonSessionStartStatus.ready);
@@ -220,10 +252,18 @@ void main() {
     expect(api.calls, contains('POST /api/me/lesson-sessions'));
     expect(api.tokens.last, 'access');
     expect(api.bodies.last, {
-      'lessonContentId': 'travel-airport',
-      'studyLanguage': 'es',
+      'lessonContentId': 'travel_airport_check_in',
+      'studyLanguage': 'Spanish',
+      'topicId': '2',
+      'topicTitle': 'Travel',
+      'subtopicId': '201',
+      'subtopicTitle': 'Airport check-in',
+      'level': 'A1 Beginner',
+      'selectedContextId': null,
+      'selectedContextTitle': null,
+      'modeUsed': 'text',
     });
-    expect(api.bodies.last!.keys, ['lessonContentId', 'studyLanguage']);
+    expect(api.bodies.last!.keys, travelAirportStartRequest.toJson().keys);
   });
 
   test('startLessonSession refreshes and retries after 401', () async {
@@ -235,8 +275,7 @@ void main() {
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
     final result = await service.startLessonSession(
-      lessonContentId: 'travel-airport',
-      studyLanguage: 'es',
+      request: travelAirportStartRequest,
     );
 
     expect(result.status, LessonSessionStartStatus.ready);
@@ -262,8 +301,7 @@ void main() {
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
     final result = await service.startLessonSession(
-      lessonContentId: 'travel-airport',
-      studyLanguage: 'es',
+      request: travelAirportStartRequest,
     );
 
     expect(result.status, LessonSessionStartStatus.authRequired);
@@ -282,8 +320,7 @@ void main() {
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
     final result = await service.startLessonSession(
-      lessonContentId: 'travel-airport',
-      studyLanguage: 'es',
+      request: travelAirportStartRequest,
     );
 
     expect(result.status, LessonSessionStartStatus.blocked);
@@ -302,8 +339,7 @@ void main() {
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
     final result = await service.startLessonSession(
-      lessonContentId: 'travel-airport',
-      studyLanguage: 'es',
+      request: travelAirportStartRequest,
     );
 
     expect(result.status, LessonSessionStartStatus.conflict);
@@ -320,8 +356,7 @@ void main() {
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
     final result = await service.startLessonSession(
-      lessonContentId: 'travel-airport',
-      studyLanguage: 'es',
+      request: travelAirportStartRequest,
     );
 
     expect(result.status, LessonSessionStartStatus.unavailable);
@@ -338,8 +373,7 @@ void main() {
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
     final result = await service.startLessonSession(
-      lessonContentId: 'travel-airport',
-      studyLanguage: 'es',
+      request: travelAirportStartRequest,
     );
 
     expect(result.status, LessonSessionStartStatus.failed);
@@ -355,8 +389,7 @@ void main() {
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
     await service.startLessonSession(
-      lessonContentId: 'travel-airport',
-      studyLanguage: 'es',
+      request: travelAirportStartRequest,
     );
 
     expect(api.calls, isNot(contains('POST /api/lesson-chat/reply')));

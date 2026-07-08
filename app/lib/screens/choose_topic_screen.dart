@@ -12,7 +12,7 @@ class ChooseTopicScreen extends StatelessWidget {
     AuthService? authService,
   }) : _authService = authService;
 
-  final String selectedLevel;
+  final LessonOption selectedLevel;
   final AuthService? _authService;
 
   @override
@@ -27,7 +27,7 @@ class ChooseTopicScreen extends StatelessWidget {
           itemBuilder: (context, index) {
             if (index == 0) {
               return LessonSelectionIntro(
-                contextLabel: 'Level: $selectedLevel',
+                contextLabel: 'Level: ${selectedLevel.label}',
                 title: 'Choose a topic',
                 subtitle: 'Pick the kind of conversation you want to practice.',
               );
@@ -42,7 +42,7 @@ class ChooseTopicScreen extends StatelessWidget {
                 MaterialPageRoute(
                   builder: (_) => ChooseSituationScreen(
                     selectedLevel: selectedLevel,
-                    selectedTopic: topic.label,
+                    selectedTopic: topic,
                     authService: _authService,
                   ),
                 ),

@@ -49,8 +49,7 @@ class FakeAuthService extends AuthService {
   final ApiException? settingsFailure;
   final String studyLanguage;
   int startLessonSessionCallCount = 0;
-  String? lastLessonContentId;
-  String? lastStudyLanguage;
+  StartLessonSessionRequest? lastStartRequest;
 
   @override
   Future<AuthUser> loadCurrentUser() async => AuthUser(
@@ -87,12 +86,10 @@ class FakeAuthService extends AuthService {
 
   @override
   Future<LessonSessionStartResult> startLessonSession({
-    required String lessonContentId,
-    required String studyLanguage,
+    required StartLessonSessionRequest request,
   }) async {
     startLessonSessionCallCount += 1;
-    lastLessonContentId = lessonContentId;
-    lastStudyLanguage = studyLanguage;
+    lastStartRequest = request;
     return lessonStartCompleter?.future ?? lessonStartResult;
   }
 }
@@ -116,14 +113,17 @@ class MemoryStorage implements SessionStorage {
 
 const _airportLessonSelection = LessonStartSelection(
   level: 'A1 Beginner',
-  topic: 'Travel',
+  topicId: '2',
+  topicTitle: 'Travel',
+  subtopicId: '201',
+  subtopicTitle: 'Airport check-in',
   situation: 'Airport check-in',
-  lessonContentId: 'airport_check_in',
+  lessonContentId: 'travel_airport_check_in',
 );
 
 LessonSessionStartResult _readyLessonStartResult({
-  String lessonContentId = 'airport_check_in',
-  String studyLanguage = 'es',
+  String lessonContentId = 'travel_airport_check_in',
+  String studyLanguage = 'Spanish',
 }) =>
     LessonSessionStartResult.ready(
       LessonSessionResponse(
@@ -284,8 +284,14 @@ void main() {
     expect(find.text('Starting lesson...'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     expect(auth.startLessonSessionCallCount, 1);
-    expect(auth.lastLessonContentId, 'airport_check_in');
-    expect(auth.lastStudyLanguage, 'es');
+    expect(auth.lastStartRequest?.lessonContentId, 'travel_airport_check_in');
+    expect(auth.lastStartRequest?.studyLanguage, 'Spanish');
+    expect(auth.lastStartRequest?.level, 'A1 Beginner');
+    expect(auth.lastStartRequest?.topicId, '2');
+    expect(auth.lastStartRequest?.topicTitle, 'Travel');
+    expect(auth.lastStartRequest?.subtopicId, '201');
+    expect(auth.lastStartRequest?.subtopicTitle, 'Airport check-in');
+    expect(auth.lastStartRequest?.modeUsed, 'text');
 
     startCompleter.complete(_readyLessonStartResult());
     await tester.pumpAndSettle();
@@ -304,7 +310,9 @@ void main() {
 
   testWidgets('non-travel lesson skeleton uses friendly situations',
       (tester) async {
-    await tester.pumpWidget(_home());
+    final auth = FakeAuthService();
+
+    await tester.pumpWidget(_home(authService: auth));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Start lesson'));
@@ -327,6 +335,16 @@ void main() {
     expect(find.text('Level: A2 Elementary'), findsOneWidget);
     expect(find.text('Topic: Daily Life'), findsOneWidget);
     expect(find.text('Situation: Introductions'), findsOneWidget);
+    expect(
+      auth.lastStartRequest?.lessonContentId,
+      'everyday_english_introductions',
+    );
+    expect(auth.lastStartRequest?.studyLanguage, 'Spanish');
+    expect(auth.lastStartRequest?.level, 'A2 Elementary');
+    expect(auth.lastStartRequest?.topicId, '1');
+    expect(auth.lastStartRequest?.topicTitle, 'Daily Life');
+    expect(auth.lastStartRequest?.subtopicId, '101');
+    expect(auth.lastStartRequest?.subtopicTitle, 'Introductions');
   });
 
   testWidgets('access denied result shows friendly service message',

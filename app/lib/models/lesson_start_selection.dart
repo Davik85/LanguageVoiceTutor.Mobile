@@ -30,18 +30,55 @@ class LessonCardStyle {
   final Color pressedColor;
 }
 
+class LessonSituationOption extends LessonOption {
+  const LessonSituationOption({
+    required super.id,
+    required super.label,
+    required super.description,
+    required this.topicId,
+    required this.topicTitle,
+    required this.subtopicId,
+    required this.subtopicTitle,
+    required this.lessonContentId,
+    this.selectedContextId,
+    this.selectedContextTitle,
+  });
+
+  final String topicId;
+  final String topicTitle;
+  final String subtopicId;
+  final String subtopicTitle;
+  final String lessonContentId;
+  final String? selectedContextId;
+  final String? selectedContextTitle;
+}
+
 class LessonStartSelection {
   const LessonStartSelection({
     required this.level,
-    required this.topic,
+    required this.topicId,
+    required this.topicTitle,
+    required this.subtopicId,
+    required this.subtopicTitle,
     required this.situation,
     required this.lessonContentId,
+    this.selectedContextId,
+    this.selectedContextTitle,
+    this.modeUsed = 'text',
   });
 
   final String level;
-  final String topic;
+  final String topicId;
+  final String topicTitle;
+  final String subtopicId;
+  final String subtopicTitle;
   final String situation;
   final String lessonContentId;
+  final String? selectedContextId;
+  final String? selectedContextTitle;
+  final String modeUsed;
+
+  String get topic => topicTitle;
 }
 
 const lessonLevels = [
@@ -104,148 +141,278 @@ const lessonTopics = [
 ];
 
 const travelSituations = [
-  LessonOption(
+  LessonSituationOption(
     id: 'airport_check_in',
     label: 'Airport check-in',
     description: 'Check documents, luggage, seats, and gate details.',
+    topicId: '2',
+    topicTitle: 'Travel',
+    subtopicId: '201',
+    subtopicTitle: 'Airport check-in',
+    lessonContentId: 'travel_airport_check_in',
   ),
-  LessonOption(
+  LessonSituationOption(
     id: 'hotel_check_in',
     label: 'Hotel check-in',
     description: 'Confirm a reservation, room details, and arrival needs.',
+    topicId: '2',
+    topicTitle: 'Travel',
+    subtopicId: '202',
+    subtopicTitle: 'Hotel check-in',
+    lessonContentId: 'travel_hotel_check_in',
   ),
-  LessonOption(
+  LessonSituationOption(
     id: 'asking_for_directions',
     label: 'Asking for directions',
     description: 'Ask where to go and understand simple route help.',
+    topicId: '2',
+    topicTitle: 'Travel',
+    subtopicId: '203',
+    subtopicTitle: 'Asking for directions',
+    lessonContentId: 'travel_asking_for_directions',
   ),
-  LessonOption(
+  LessonSituationOption(
     id: 'ordering_transport',
     label: 'Ordering transport',
     description: 'Book a ride, explain a destination, and confirm price.',
+    topicId: '2',
+    topicTitle: 'Travel',
+    subtopicId: '204',
+    subtopicTitle: 'Ordering transport',
+    lessonContentId: 'travel_ordering_transport',
   ),
-  LessonOption(
+  LessonSituationOption(
     id: 'lost_luggage',
     label: 'Lost luggage',
     description: 'Report a missing bag and give practical details.',
+    topicId: '2',
+    topicTitle: 'Travel',
+    subtopicId: '205',
+    subtopicTitle: 'Lost luggage',
+    lessonContentId: 'travel_lost_luggage',
   ),
 ];
 
-const Map<String, List<LessonOption>> lessonSituationsByTopic = {
+const Map<String, List<LessonSituationOption>> lessonSituationsByTopic = {
   'Travel': travelSituations,
   'Daily Life': [
-    LessonOption(
+    LessonSituationOption(
       id: 'introductions',
       label: 'Introductions',
       description: 'Say who you are and ask friendly first questions.',
+      topicId: '1',
+      topicTitle: 'Daily Life',
+      subtopicId: '101',
+      subtopicTitle: 'Introductions',
+      lessonContentId: 'everyday_english_introductions',
     ),
-    LessonOption(
+    LessonSituationOption(
       id: 'asking_for_help',
       label: 'Asking for help',
       description: 'Explain what you need and respond politely.',
+      topicId: '1',
+      topicTitle: 'Daily Life',
+      subtopicId: '103',
+      subtopicTitle: 'Asking for help',
+      lessonContentId: 'everyday_english_asking_for_help',
     ),
-    LessonOption(
+    LessonSituationOption(
       id: 'small_talk_neighbor',
       label: 'Small talk with a neighbor',
       description: 'Chat about daily life, weather, and local plans.',
+      topicId: '1',
+      topicTitle: 'Daily Life',
+      subtopicId: '102',
+      subtopicTitle: 'Small talk with a neighbor',
+      lessonContentId: 'everyday_english_small_talk_with_a_neighbor',
     ),
-    LessonOption(
+    LessonSituationOption(
       id: 'talking_about_day',
       label: 'Talking about your day',
       description: 'Describe routines, timing, and what happened.',
+      topicId: '1',
+      topicTitle: 'Daily Life',
+      subtopicId: '105',
+      subtopicTitle: 'Talking about your day',
+      lessonContentId: 'everyday_english_talking_about_your_day',
     ),
-    LessonOption(
+    LessonSituationOption(
       id: 'making_plans',
       label: 'Making plans',
       description: 'Suggest a time, agree, reschedule, or decline.',
+      topicId: '1',
+      topicTitle: 'Daily Life',
+      subtopicId: '104',
+      subtopicTitle: 'Making plans',
+      lessonContentId: 'everyday_english_making_plans',
     ),
   ],
   'Work & Business': [
-    LessonOption(
+    LessonSituationOption(
       id: 'asking_for_clarification',
       label: 'Asking for clarification',
       description: 'Check meaning, next steps, and expectations.',
+      topicId: '3',
+      topicTitle: 'Work & Business',
+      subtopicId: '304',
+      subtopicTitle: 'Asking for clarification',
+      lessonContentId: 'work_business_asking_for_clarification',
     ),
-    LessonOption(
+    LessonSituationOption(
       id: 'daily_standup',
       label: 'Daily standup',
       description: 'Share progress, blockers, and priorities.',
+      topicId: '3',
+      topicTitle: 'Work & Business',
+      subtopicId: '302',
+      subtopicTitle: 'Daily standup',
+      lessonContentId: 'work_business_daily_standup',
     ),
-    LessonOption(
+    LessonSituationOption(
       id: 'client_phone_call',
       label: 'Phone call with a client',
       description: 'Open a call, ask questions, and confirm follow-up.',
+      topicId: '3',
+      topicTitle: 'Work & Business',
+      subtopicId: '303',
+      subtopicTitle: 'Phone call with a client',
+      lessonContentId: 'work_business_phone_call_with_a_client',
     ),
-    LessonOption(
+    LessonSituationOption(
       id: 'discussing_deadlines',
       label: 'Discussing deadlines',
       description: 'Negotiate timing and explain constraints.',
+      topicId: '3',
+      topicTitle: 'Work & Business',
+      subtopicId: '305',
+      subtopicTitle: 'Discussing deadlines',
+      lessonContentId: 'work_business_discussing_deadlines',
     ),
-    LessonOption(
+    LessonSituationOption(
       id: 'first_meeting',
       label: 'First meeting',
       description: 'Introduce yourself, your role, and the project.',
+      topicId: '3',
+      topicTitle: 'Work & Business',
+      subtopicId: '301',
+      subtopicTitle: 'First meeting',
+      lessonContentId: 'work_business_first_meeting',
     ),
   ],
   'Job Interview': [
-    LessonOption(
+    LessonSituationOption(
       id: 'tell_me_about_yourself',
       label: 'Tell me about yourself',
       description: 'Give a concise personal and professional answer.',
+      topicId: '4',
+      topicTitle: 'Job Interview',
+      subtopicId: '401',
+      subtopicTitle: 'Tell me about yourself',
+      lessonContentId: 'job_interview_tell_me_about_yourself',
     ),
-    LessonOption(
+    LessonSituationOption(
       id: 'questions_at_end',
       label: 'Asking questions at the end',
       description: 'Ask about the role, team, and next steps.',
+      topicId: '4',
+      topicTitle: 'Job Interview',
+      subtopicId: '405',
+      subtopicTitle: 'Asking questions at the end',
+      lessonContentId: 'job_interview_asking_questions_at_the_end',
     ),
-    LessonOption(
+    LessonSituationOption(
       id: 'work_experience',
       label: 'Work experience',
       description: 'Describe responsibilities, results, and examples.',
+      topicId: '4',
+      topicTitle: 'Job Interview',
+      subtopicId: '402',
+      subtopicTitle: 'Work experience',
+      lessonContentId: 'job_interview_work_experience',
     ),
-    LessonOption(
+    LessonSituationOption(
       id: 'why_this_job',
       label: 'Why do you want this job?',
       description: 'Explain motivation and fit naturally.',
+      topicId: '4',
+      topicTitle: 'Job Interview',
+      subtopicId: '404',
+      subtopicTitle: 'Why do you want this job?',
+      lessonContentId: 'job_interview_why_do_you_want_this_job',
     ),
-    LessonOption(
+    LessonSituationOption(
       id: 'strengths_weaknesses',
       label: 'Strengths and weaknesses',
       description: 'Talk about skills and growth areas clearly.',
+      topicId: '4',
+      topicTitle: 'Job Interview',
+      subtopicId: '403',
+      subtopicTitle: 'Strengths and weaknesses',
+      lessonContentId: 'job_interview_strengths_and_weaknesses',
     ),
   ],
   'Restaurant & Cafe': [
-    LessonOption(
+    LessonSituationOption(
       id: 'wrong_order',
       label: 'Handling a wrong order',
       description: 'Explain the issue and ask for a fix politely.',
+      topicId: '5',
+      topicTitle: 'Restaurant & Cafe',
+      subtopicId: '504',
+      subtopicTitle: 'Handling a wrong order',
+      lessonContentId: 'restaurant_and_cafe_handling_a_wrong_order',
     ),
-    LessonOption(
+    LessonSituationOption(
       id: 'booking_table',
       label: 'Booking a table',
       description: 'Reserve a table and confirm date, time, and guests.',
+      topicId: '5',
+      topicTitle: 'Restaurant & Cafe',
+      subtopicId: '501',
+      subtopicTitle: 'Booking a table',
+      lessonContentId: 'restaurant_and_cafe_booking_a_table',
     ),
-    LessonOption(
+    LessonSituationOption(
       id: 'ordering_food',
       label: 'Ordering food',
       description: 'Choose dishes, ask questions, and order clearly.',
+      topicId: '5',
+      topicTitle: 'Restaurant & Cafe',
+      subtopicId: '502',
+      subtopicTitle: 'Ordering food',
+      lessonContentId: 'restaurant_and_cafe_ordering_food',
     ),
-    LessonOption(
+    LessonSituationOption(
       id: 'asking_ingredients',
       label: 'Asking about ingredients',
       description: 'Check allergens, preferences, and preparation.',
+      topicId: '5',
+      topicTitle: 'Restaurant & Cafe',
+      subtopicId: '503',
+      subtopicTitle: 'Asking about ingredients',
+      lessonContentId: 'restaurant_and_cafe_asking_about_ingredients',
     ),
-    LessonOption(
+    LessonSituationOption(
       id: 'paying_bill',
       label: 'Paying the bill',
       description: 'Ask for the check and handle payment details.',
+      topicId: '5',
+      topicTitle: 'Restaurant & Cafe',
+      subtopicId: '505',
+      subtopicTitle: 'Paying the bill',
+      lessonContentId: 'restaurant_and_cafe_paying_the_bill',
     ),
   ],
   'Free Conversation': [
-    LessonOption(
+    LessonSituationOption(
       id: 'open_conversation',
       label: 'Open conversation',
       description: 'Practice any topic with flexible follow-up.',
+      topicId: '6',
+      topicTitle: 'Free Conversation',
+      subtopicId: '601',
+      subtopicTitle: 'Open conversation',
+      lessonContentId: 'free_conversation_open_conversation',
     ),
   ],
 };

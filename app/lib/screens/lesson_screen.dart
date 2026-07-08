@@ -65,8 +65,18 @@ class _LessonScreenState extends State<LessonScreen> {
     try {
       final studyLanguage = await _studyLanguage();
       return await _authService.startLessonSession(
-        lessonContentId: selection.lessonContentId,
-        studyLanguage: studyLanguage,
+        request: StartLessonSessionRequest(
+          lessonContentId: selection.lessonContentId,
+          studyLanguage: studyLanguage,
+          topicId: selection.topicId,
+          topicTitle: selection.topicTitle,
+          subtopicId: selection.subtopicId,
+          subtopicTitle: selection.subtopicTitle,
+          level: selection.level,
+          selectedContextId: selection.selectedContextId,
+          selectedContextTitle: selection.selectedContextTitle,
+          modeUsed: selection.modeUsed,
+        ),
       );
     } catch (_) {
       return LessonSessionStartResult.failed();
@@ -76,9 +86,11 @@ class _LessonScreenState extends State<LessonScreen> {
   Future<String> _studyLanguage() async {
     try {
       final settings = await _authService.fetchUserSettings();
-      return LanguageOptions.studyLanguageIdFor(settings.studyLanguage);
+      return LanguageOptions.backendStudyLanguageNameFor(
+        settings.studyLanguage,
+      );
     } catch (_) {
-      return LanguageOptions.defaultLanguageId;
+      return LanguageOptions.backendStudyLanguageNameFor(null);
     }
   }
 
@@ -107,7 +119,7 @@ class _LessonScreenState extends State<LessonScreen> {
                     textAlign: TextAlign.center,
                   ),
                   Text(
-                    'Topic: ${selection.topic}',
+                    'Topic: ${selection.topicTitle}',
                     textAlign: TextAlign.center,
                   ),
                   Text(

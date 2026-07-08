@@ -49,16 +49,12 @@ class AuthService {
   }
 
   Future<LessonSessionStartResult> startLessonSession({
-    required String lessonContentId,
-    required String studyLanguage,
+    required StartLessonSessionRequest request,
   }) async {
     try {
       final response = await _authenticatedPost(
         '/api/me/lesson-sessions',
-        body: StartLessonSessionRequest(
-          lessonContentId: lessonContentId,
-          studyLanguage: studyLanguage,
-        ).toJson(),
+        body: request.toJson(),
         failureMessageForResponse: _lessonSessionStartFailureMessage,
       );
       return LessonSessionStartResult.ready(

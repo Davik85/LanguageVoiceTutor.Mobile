@@ -37,7 +37,7 @@ class ChooseLevelScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (_) => ChooseTopicScreen(
-                    selectedLevel: level.label,
+                    selectedLevel: level,
                     authService: _authService,
                   ),
                 ),
