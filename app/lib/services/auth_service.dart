@@ -75,7 +75,8 @@ class AuthService {
     } on ApiException catch (error) {
       throw ApiException(_safePasswordResetRequestExceptionMessage(error));
     } catch (_) {
-      throw const ApiException('Could not request password reset. Please try again.');
+      throw const ApiException(
+          'Could not request password reset. Please try again.');
     }
   }
 
@@ -83,8 +84,9 @@ class AuthService {
     try {
       final response = await _apiClient.post(
         '/api/auth/password-reset/confirm',
-        body: PasswordResetConfirmRequest(token: token, newPassword: newPassword)
-            .toJson(),
+        body:
+            PasswordResetConfirmRequest(token: token, newPassword: newPassword)
+                .toJson(),
       );
       if (_isSuccess(response.statusCode)) {
         return _passwordMessage(response.body, fallback: 'Password updated.');
@@ -224,7 +226,6 @@ class AuthService {
     }
   }
 
-
   static String _passwordMessage(String body, {required String fallback}) {
     try {
       final parsed = PasswordOperationResponse.fromJson(_decodeObject(body));
@@ -239,7 +240,8 @@ class AuthService {
     if (response.statusCode == 429) {
       return 'Too many password reset requests. Please wait before trying again.';
     }
-    if (body.contains('delivery') || body.contains('email') && body.contains('configured')) {
+    if (body.contains('delivery') ||
+        body.contains('email') && body.contains('configured')) {
       return 'Password reset email delivery is not configured. Please contact support.';
     }
     return 'Could not request password reset. Please try again.';

@@ -39,7 +39,6 @@ class FakeApiClient implements ApiClient {
   }
 }
 
-
 class MemoryStorage implements SessionStorage {
   String? access = 'access';
   String? refresh = 'refresh';
@@ -91,7 +90,8 @@ void main() {
     expect(storage.refresh, 'new-refresh');
   });
 
-  test('password reset request posts without bearer token and parses message', () async {
+  test('password reset request posts without bearer token and parses message',
+      () async {
     final api = FakeApiClient();
     api.responses['/api/auth/password-reset/request'] = [
       const ApiResponse(
@@ -106,28 +106,34 @@ void main() {
     expect(api.calls, contains('POST /api/auth/password-reset/request'));
     expect(api.tokens.last, isNull);
     expect(api.bodies.last, {'email': 'user@example.com'});
-    expect(message, 'Password reset instructions were sent if this email is registered.');
+    expect(message,
+        'Password reset instructions were sent if this email is registered.');
   });
 
-  test('password reset confirm posts without bearer token and parses message', () async {
+  test('password reset confirm posts without bearer token and parses message',
+      () async {
     final api = FakeApiClient();
     api.responses['/api/auth/password-reset/confirm'] = [
-      const ApiResponse(statusCode: 200, body: '{"message":"Password updated."}')
+      const ApiResponse(
+          statusCode: 200, body: '{"message":"Password updated."}')
     ];
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
-    final message = await service.confirmPasswordReset('reset-code', 'new-password');
+    final message =
+        await service.confirmPasswordReset('reset-code', 'new-password');
 
     expect(api.calls, contains('POST /api/auth/password-reset/confirm'));
     expect(api.tokens.last, isNull);
-    expect(api.bodies.last, {'token': 'reset-code', 'newPassword': 'new-password'});
+    expect(api.bodies.last,
+        {'token': 'reset-code', 'newPassword': 'new-password'});
     expect(message, 'Password updated.');
   });
 
   test('change password posts with bearer token', () async {
     final api = FakeApiClient();
     api.responses['/api/auth/password/change'] = [
-      const ApiResponse(statusCode: 200, body: '{"message":"Password updated."}')
+      const ApiResponse(
+          statusCode: 200, body: '{"message":"Password updated."}')
     ];
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
@@ -147,32 +153,36 @@ void main() {
     final api = FakeApiClient();
     api.responses['/api/auth/password/change'] = [
       const ApiResponse(statusCode: 401, body: '{}'),
-      const ApiResponse(statusCode: 200, body: '{"message":"Password updated."}'),
+      const ApiResponse(
+          statusCode: 200, body: '{"message":"Password updated."}'),
     ];
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
     await service.changePassword('old', 'new', 'new');
 
-    expect(api.calls, containsAllInOrder([
-      'POST /api/auth/password/change',
-      'POST /api/auth/refresh',
-      'POST /api/auth/password/change',
-    ]));
-    expect(api.tokens.where((token) => token != null).toList(), ['access', 'new-access']);
+    expect(
+        api.calls,
+        containsAllInOrder([
+          'POST /api/auth/password/change',
+          'POST /api/auth/refresh',
+          'POST /api/auth/password/change',
+        ]));
+    expect(api.tokens.where((token) => token != null).toList(),
+        ['access', 'new-access']);
   });
 
   test('password operations do not surface raw backend errors', () async {
     final api = FakeApiClient();
     api.responses['/api/auth/password-reset/confirm'] = [
-      const ApiResponse(statusCode: 500, body: '{"message":"raw token secret stack"}')
+      const ApiResponse(
+          statusCode: 500, body: '{"message":"raw token secret stack"}')
     ];
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
     expect(
       () => service.confirmPasswordReset('bad', 'new'),
-      throwsA(isA<ApiException>().having(
-          (e) => e.message, 'message', 'Something went wrong. Please try again.')),
+      throwsA(isA<ApiException>().having((e) => e.message, 'message',
+          'Something went wrong. Please try again.')),
     );
   });
-
 }
