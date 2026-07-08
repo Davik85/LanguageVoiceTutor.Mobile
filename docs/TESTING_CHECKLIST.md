@@ -91,9 +91,9 @@ flutter analyze
 flutter test
 ```
 
-## Current verified baseline after lesson-session revert
+## Current verified lesson-session placeholder baseline
 
-The current mobile baseline is clean after reverting the broken lesson session foundation attempt. The reverted attempt combined models, AuthService changes, navigation, lesson UI, and widget tests in one large PR; future lesson runtime work must be smaller and independently verifiable.
+The current mobile baseline includes backend lesson session start from the lesson placeholder screen and service/model-only support for the session-owned reply placeholder endpoint. Real mobile AI chat is not implemented, and the reply support is not UI-wired.
 
 Run these commands from `app/` for the restored baseline:
 
@@ -105,11 +105,13 @@ flutter test
 
 Expected current results:
 
-- `dart format --set-exit-if-changed lib test` reports 0 changes.
+- `git diff --check` passes.
+- `dart format --set-exit-if-changed lib test` reports 39 files and 0 changes.
 - `flutter analyze` reports `No issues found`.
-- `flutter test` reports 64 passing tests.
+- `flutter test` reports 89 passing tests.
 - Settings/password recovery remains part of the verified baseline.
-- Lesson runtime is not implemented, and the lesson screen remains placeholder-only.
+- Lesson session start is integrated from the placeholder screen, but manual emulator verification currently shows it can fail with `Could not start the lesson. Please try again.`
+- Lesson runtime remains placeholder-only; real mobile AI chat is not implemented.
 
 Future lesson runtime implementation rule:
 
@@ -118,6 +120,34 @@ Future lesson runtime implementation rule:
 - The next PR should be UI-only using an already-tested service.
 - Mobile must not call OpenAI directly.
 - The lesson runtime foundation must not include voice, TTS, realtime, billing, analytics, history, or unrelated runtime features.
+
+
+
+## Lesson session reply placeholder service checks
+
+Mobile service/model support exists for the backend production placeholder endpoint:
+
+```http
+POST /api/me/lesson-sessions/{sessionId}/reply
+```
+
+Expected service boundary:
+
+- `AuthService.sendLessonSessionReply({required String sessionId, required String messageText})` calls only `POST /api/me/lesson-sessions/{sessionId}/reply`.
+- The JSON request body contains exactly `messageText`.
+- Mobile does not call `POST /api/lesson-chat/reply`.
+- Mobile does not call OpenAI directly.
+- Mobile does not build desktop prompt/runtime/scenario payloads.
+- Blank client input and `400` map to `Please enter a message.`
+- `401` or refresh failure maps to `Please sign in again to continue the lesson.`
+- `404` maps to `This lesson session is no longer available.`
+- `409 mobile_lesson_reply_not_implemented` maps to `Text chat is not available yet.`
+- Other `409` maps to `This lesson has already ended.`
+- `429` maps to a free/rate-limit friendly message.
+- `5xx`, network failure, or timeout maps to `Could not send the message. Please check your connection and try again.`
+- Fallback failure maps to `Could not send the message. Please try again.`
+
+Do not add or verify a lesson text input or **Send** button yet. The next check is manual diagnosis of the emulator lesson-session-start failure against production, followed by backend reply contract validation before any UI wiring is planned.
 
 ## Future Flutter checks
 
