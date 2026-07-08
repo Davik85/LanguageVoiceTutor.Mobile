@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
@@ -33,7 +35,10 @@ class FakeApiClient implements ApiClient {
 }
 
 class FakeAuthService extends AuthService {
-  FakeAuthService({LessonSessionStartResult? startResult})
+  FakeAuthService({
+    LessonSessionStartResult? startResult,
+    this.startGate,
+  })
       : startResult = startResult ??
             LessonSessionStartResult.ready(
               const LessonSessionResponse(
@@ -44,6 +49,7 @@ class FakeAuthService extends AuthService {
         super(apiClient: FakeApiClient(), storage: MemoryStorage());
 
   final LessonSessionStartResult startResult;
+  final Completer<void>? startGate;
   final startCalls = <Map<String, String>>[];
 
   @override
@@ -85,6 +91,7 @@ class FakeAuthService extends AuthService {
       'lessonContentId': lessonContentId,
       'studyLanguage': studyLanguage,
     });
+    await startGate?.future;
     return startResult;
   }
 }
@@ -207,7 +214,8 @@ void main() {
 
   testWidgets('travel lesson starts backend session and shows ready state',
       (tester) async {
-    final auth = FakeAuthService();
+    final startGate = Completer<void>();
+    final auth = FakeAuthService(startGate: startGate);
     await tester.pumpWidget(_home(authService: auth));
     await tester.pumpAndSettle();
 
@@ -246,6 +254,7 @@ void main() {
 
     expect(find.text('Starting lesson…'), findsOneWidget);
 
+    startGate.complete();
     await tester.pumpAndSettle();
 
     expect(find.text('Lesson started'), findsOneWidget);
