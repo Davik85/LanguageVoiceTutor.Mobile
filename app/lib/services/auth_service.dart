@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../api/api_client.dart';
 import '../models/auth_models.dart';
 import '../models/lesson_access_decision.dart';
+import '../models/lesson_session_models.dart';
 import '../models/subscription_status.dart';
 import '../models/user_settings.dart';
 import 'session_storage.dart';
@@ -50,6 +51,40 @@ class AuthService {
   Future<UserSettings> fetchUserSettings() async {
     final response = await _authenticatedGet('/api/me/settings');
     return UserSettings.fromJson(_decodeObject(response.body));
+  }
+
+  Future<LessonSessionStartResult> startLessonSession(
+    String lessonContentId,
+    String studyLanguage,
+  ) async {
+    try {
+      final response = await _authenticatedPost(
+        '/api/me/lesson-sessions',
+        body: StartLessonSessionRequest(
+          lessonContentId: lessonContentId,
+          studyLanguage: studyLanguage,
+        ).toJson(),
+        failureMessageForResponse: _lessonSessionStartFailureMessage,
+      );
+      return LessonSessionStartResult.ready(
+        LessonSessionResponse.fromJson(_decodeObject(response.body)),
+      );
+    } on ApiException catch (error) {
+      switch (error.message) {
+        case _lessonAccessDeniedCode:
+          return LessonSessionStartResult.accessDenied;
+        case _activeLessonExistsCode:
+          return LessonSessionStartResult.activeLessonExists;
+        case 'Please sign in again.':
+          return LessonSessionStartResult.unauthorized;
+        case _lessonStartUnavailableCode:
+          return LessonSessionStartResult.unavailable;
+        default:
+          return LessonSessionStartResult.failure;
+      }
+    } catch (_) {
+      return LessonSessionStartResult.failure;
+    }
   }
 
   Future<UserSettings> updateUserSettings(UserSettings settings) async {
@@ -222,6 +257,27 @@ class AuthService {
     } catch (_) {
       return false;
     }
+  }
+
+  static const _lessonAccessDeniedCode = 'lesson_access_denied';
+  static const _activeLessonExistsCode = 'active_lesson_exists';
+  static const _lessonStartUnavailableCode = 'lesson_start_unavailable';
+
+  static String _lessonSessionStartFailureMessage(ApiResponse response) {
+    if (response.statusCode >= 500) return _lessonStartUnavailableCode;
+    final code = _backendErrorCode(response.body);
+    if (code == _lessonAccessDeniedCode) return _lessonAccessDeniedCode;
+    if (code == _activeLessonExistsCode) return _activeLessonExistsCode;
+    return 'lesson_start_failed';
+  }
+
+  static String? _backendErrorCode(String body) {
+    try {
+      final json = _decodeObject(body);
+      final code = json['code'] ?? json['errorCode'] ?? json['reason'];
+      if (code is String && code.trim().isNotEmpty) return code.trim();
+    } catch (_) {}
+    return null;
   }
 
 
