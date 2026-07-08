@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
@@ -41,8 +43,10 @@ class FakeAuthService extends AuthService {
   String resetConfirmMessage = 'Password updated.';
   String changePasswordMessage = 'Password updated.';
   bool signedIn = true;
+  bool keepUserLoading = false;
   @override
   Future<AuthUser> loadCurrentUser() async {
+    if (keepUserLoading) return Completer<AuthUser>().future;
     if (!signedIn) throw const ApiException('Please sign in again.');
     return AuthUser(
       userId: 'u1',
@@ -117,22 +121,34 @@ class _MemoryStorage implements SessionStorage {
 }
 
 Widget _screen(FakeAuthService auth) => MaterialApp(
+    routes: {
+      '/login': (_) => const Scaffold(body: Text('Login')),
+    },
     home: SettingsScreen(
         healthService: BackendHealthService(apiClient: FakeApiClient()),
         authService: auth,
         tutorOptionsService: FakeTutorOptionsService()));
 
-Future<void> _scrollToText(WidgetTester tester, String text) async {
+Finder get _settingsScrollable => find.byType(Scrollable).first;
+
+Future<void> _scrollToFinder(WidgetTester tester, Finder finder) async {
   await tester.scrollUntilVisible(
-    find.text(text),
+    finder,
     500,
-    scrollable: find.byType(ListView),
+    scrollable: _settingsScrollable,
   );
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _scrollToText(WidgetTester tester, String text) async {
+  await _scrollToFinder(tester, find.text(text));
 }
 
 Future<void> _scrollToAndTap(WidgetTester tester, String text) async {
-  await _scrollToText(tester, text);
-  await tester.tap(find.text(text));
+  final finder = find.text(text);
+  await _scrollToFinder(tester, finder);
+  await tester.tap(finder);
   await tester.pumpAndSettle();
 }
 
@@ -175,8 +191,7 @@ void main() {
     await tester.pumpWidget(_screen(FakeAuthService()));
     await tester.pumpAndSettle();
     expect(find.text('Password & recovery'), findsOneWidget);
-    await tester.tap(find.text('Password & recovery'));
-    await tester.pumpAndSettle();
+    await _scrollToAndTap(tester, 'Password & recovery');
     expect(find.text('Forgot password'), findsOneWidget);
     expect(find.text('Reset password'), findsOneWidget);
     expect(find.text('Change password'), findsOneWidget);
@@ -234,18 +249,11 @@ void main() {
   });
 
   testWidgets('change password requires signed-in user', (tester) async {
-    final auth = FakeAuthService()..signedIn = false;
+    final auth = FakeAuthService()..keepUserLoading = true;
     await tester.pumpWidget(_screen(auth));
-    await tester.pump();
-    await tester.tap(find.text('Password & recovery'));
-    await tester.pump();
-    await tester.scrollUntilVisible(
-      find.text('Change password'),
-      500,
-      scrollable: find.byType(ListView),
-    );
-    await tester.tap(find.text('Change password'));
-    await tester.pump();
+    await tester.pumpAndSettle();
+    await _expandPasswordRecovery(tester);
+    await _scrollToAndTap(tester, 'Change password');
     expect(find.text('Please sign in to change your password.'), findsOneWidget);
   });
 
