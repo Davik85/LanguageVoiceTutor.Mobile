@@ -9,13 +9,15 @@ This repository contains the Android-first Flutter mobile client under `app/`. T
 
 ## Current verified mobile baseline
 
-The mobile Settings, selected tutor, lesson-start skeleton, catalog labels, and language selector parity baseline is verified from `app/`:
+The current verified mobile baseline is clean after reverting the broken lesson session foundation attempt. That reverted attempt was too large because it combined models, AuthService changes, navigation, lesson UI, and widget tests in one PR; future lesson runtime work must be split into much smaller, independently verifiable slices. The restored baseline was verified from `app/` with:
 
 ```bash
 dart format --set-exit-if-changed lib test
 flutter analyze
 flutter test
 ```
+
+Expected current results are: `dart format --set-exit-if-changed lib test` reports 0 changes, `flutter analyze` reports `No issues found`, and `flutter test` reports 64 passing tests. Settings/password recovery remains part of this verified baseline. Lesson runtime is still not implemented; the lesson screen remains placeholder-only after the lesson-start selection skeleton.
 
 Settings has stable visible **Account**, **Learning**, **Audio**, and **Connection status** advanced area, with **Save settings** visible and tested. User level is not in Settings. Settings reads `selectedTutorId` from `GET /api/me/settings` and sends it in `PUT /api/me/settings`; `/api/tutor-options` remains the source for available tutor choices in Settings. Selected tutor is editable in the **Learning** section, persists after app/emulator restart, and remains independent from the separate tutor voice setting. Home no longer shows tutor diagnostics or the old **Available tutors** card; tutor selection belongs in Settings. Home shows the provided app logo next to a branded, accessible **Language Voice Tutor** title, preloads that logo during startup before Home is shown, and displays friendly signed-in or sign-in/sync account status without raw tokens, backend IDs, or technical auth details. The loading screen shows only the centered app logo. Language dropdowns display friendly names while storing and sending backend IDs. Study language remains limited to English, French, German, Portuguese, Spanish, and Italian. Home uses **Start lesson** to open the navigation skeleton: **Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder**. Level cards use soft level-specific colors, topic cards use soft topic-specific colors, and situation cards use the selected topic color family. Situation labels are product-friendly, no longer use `Placeholder:`, and all six topics have options; Travel includes Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage.
 
@@ -130,6 +132,8 @@ flutter test
 ## Next safe implementation focus
 
 The next safe implementation focus should be Home UX polish, Settings UX polish, or lesson runtime planning. Home can become less technical and closer to a real learner start screen while account, entitlement, and access decisions remain backend-owned. Settings can continue improving spacing while keeping debug/backend wording out of the normal user flow. Lesson runtime planning should inspect backend lesson/session APIs before any real lesson start is implemented. Real lesson runtime remains out of scope; do not jump directly into voice recording, TTS playback, billing, Google Play Billing, Apple billing, analytics, or real AI lesson runtime without a separate plan.
+
+Future lesson runtime implementation rule: do not combine service, models, navigation, UI, and widget tests in one large PR. The first PR after planning should be read-only investigation or service-only, and the following PR should be UI-only using an already-tested service. The lesson runtime foundation must not add OpenAI calls from mobile and must not include voice, TTS, realtime, billing, analytics, history, or unrelated runtime features.
 
 The first runtime integration slice should preserve the product boundary:
 
