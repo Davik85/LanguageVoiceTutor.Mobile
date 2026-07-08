@@ -446,28 +446,33 @@ class _PasswordRecoveryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-      child: Padding(
-          padding: const EdgeInsets.all(16),
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Password & recovery',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
+      child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          title: Text('Password & recovery',
+              style: Theme.of(context).textTheme.titleMedium),
+          children: [
             TextField(
               controller: resetEmailController,
               decoration: const InputDecoration(labelText: 'Account email'),
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 8),
-            FilledButton.tonal(
-              onPressed: requestingReset ? null : onRequestReset,
-              child: Text(requestingReset
-                  ? 'Sending reset instructions...'
-                  : 'Forgot password'),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.tonal(
+                onPressed: requestingReset ? null : onRequestReset,
+                child: Text(requestingReset
+                    ? 'Sending reset instructions...'
+                    : 'Forgot password'),
+              ),
             ),
             if (resetRequestMessage != null) ...[
               const SizedBox(height: 8),
-              Text(resetRequestMessage!),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(resetRequestMessage!),
+              ),
             ],
             const Divider(height: 28),
             TextField(
@@ -486,13 +491,21 @@ class _PasswordRecoveryCard extends StatelessWidget {
               obscureText: true,
             ),
             const SizedBox(height: 8),
-            FilledButton.tonal(
-              onPressed: confirmingReset ? null : onConfirmReset,
-              child: Text(confirmingReset ? 'Updating password...' : 'Reset password'),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.tonal(
+                onPressed: confirmingReset ? null : onConfirmReset,
+                child: Text(confirmingReset
+                    ? 'Updating password...'
+                    : 'Reset password'),
+              ),
             ),
             if (resetConfirmMessage != null) ...[
               const SizedBox(height: 8),
-              Text(resetConfirmMessage!),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(resetConfirmMessage!),
+              ),
             ],
             const Divider(height: 28),
             TextField(
@@ -513,15 +526,23 @@ class _PasswordRecoveryCard extends StatelessWidget {
               obscureText: true,
             ),
             const SizedBox(height: 8),
-            FilledButton.tonal(
-              onPressed: changingPassword ? null : onChangePassword,
-              child: Text(changingPassword ? 'Changing password...' : 'Change password'),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.tonal(
+                onPressed: changingPassword ? null : onChangePassword,
+                child: Text(changingPassword
+                    ? 'Changing password...'
+                    : 'Change password'),
+              ),
             ),
             if (changePasswordMessage != null) ...[
               const SizedBox(height: 8),
-              Text(changePasswordMessage!),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(changePasswordMessage!),
+              ),
             ],
-          ])));
+          ]));
 }
 
 class _LearningCard extends StatelessWidget {
