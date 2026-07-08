@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../api/api_client.dart';
 import '../models/auth_models.dart';
 import '../models/lesson_access_decision.dart';
+import '../models/lesson_session.dart';
 import '../models/subscription_status.dart';
 import '../models/user_settings.dart';
 import 'session_storage.dart';
@@ -45,6 +46,29 @@ class AuthService {
   Future<LessonAccessDecision> fetchLessonAccessDecision() async {
     final response = await _authenticatedGet('/api/me/lesson-access');
     return LessonAccessDecision.fromJson(_decodeObject(response.body));
+  }
+
+  Future<LessonSessionStartResult> startLessonSession({
+    required String lessonContentId,
+    required String studyLanguage,
+  }) async {
+    try {
+      final response = await _authenticatedPost(
+        '/api/me/lesson-sessions',
+        body: StartLessonSessionRequest(
+          lessonContentId: lessonContentId,
+          studyLanguage: studyLanguage,
+        ).toJson(),
+        failureMessageForResponse: _lessonSessionStartFailureMessage,
+      );
+      return LessonSessionStartResult.ready(
+        LessonSessionResponse.fromJson(_decodeObject(response.body)),
+      );
+    } on ApiException catch (error) {
+      return _safeLessonSessionStartResult(error);
+    } catch (_) {
+      return LessonSessionStartResult.failed();
+    }
   }
 
   Future<UserSettings> fetchUserSettings() async {
@@ -267,6 +291,24 @@ class AuthService {
     return 'Something went wrong. Please try again.';
   }
 
+  static String _lessonSessionStartFailureMessage(ApiResponse response) {
+    if (response.statusCode == 401) {
+      return 'Please sign in again to start a lesson.';
+    }
+    if (response.statusCode >= 500) {
+      return 'Could not start the lesson. Please check your connection and try again.';
+    }
+
+    final code = _lessonSessionErrorCode(response.body);
+    if (code == 'lesson_access_denied') {
+      return 'You have used today’s free lesson. Please try again tomorrow or upgrade.';
+    }
+    if (code == 'active_lesson_exists') {
+      return 'You already have an active lesson on another device. Finish it there before starting a new one.';
+    }
+    return 'Could not start the lesson. Please try again.';
+  }
+
   static String _safePasswordResetRequestExceptionMessage(ApiException error) {
     const safe = {
       'Password reset email delivery is not configured. Please contact support.',
@@ -301,6 +343,47 @@ class AuthService {
     return safe.contains(error.message)
         ? error.message
         : 'Something went wrong. Please try again.';
+  }
+
+  static LessonSessionStartResult _safeLessonSessionStartResult(
+      ApiException error) {
+    if (error.message == 'Please sign in again.' ||
+        error.message == 'Please sign in again to start a lesson.') {
+      return LessonSessionStartResult.authRequired();
+    }
+    if (error.message ==
+        'You have used today’s free lesson. Please try again tomorrow or upgrade.') {
+      return LessonSessionStartResult.blocked();
+    }
+    if (error.message ==
+        'You already have an active lesson on another device. Finish it there before starting a new one.') {
+      return LessonSessionStartResult.conflict();
+    }
+    if (error.message ==
+            'Could not start the lesson. Please check your connection and try again.' ||
+        error.message == 'The service took too long to respond.' ||
+        error.message == 'Unable to reach the service.') {
+      return LessonSessionStartResult.unavailable();
+    }
+    return LessonSessionStartResult.failed();
+  }
+
+  static String _lessonSessionErrorCode(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is! Map<String, dynamic>) return '';
+      return _jsonString(decoded, 'code',
+          fallback: _jsonString(decoded, 'errorCode',
+              fallback: _jsonString(decoded, 'error')));
+    } catch (_) {
+      return '';
+    }
+  }
+
+  static String _jsonString(Map<String, dynamic> json, String key,
+      {String fallback = ''}) {
+    final value = json[key];
+    return value is String ? value : fallback;
   }
 
   static bool _isSuccess(int statusCode) =>

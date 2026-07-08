@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
+import 'package:language_voice_tutor_mobile/models/lesson_session.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
 
@@ -66,6 +67,9 @@ class MemoryStorage implements SessionStorage {
 }
 
 void main() {
+  const lessonSessionReadyBody =
+      '{"lessonSessionId":"session-1","lessonContentId":"travel-airport","studyLanguage":"es"}';
+
   test('loadCurrentUser sends bearer access token through client abstraction',
       () async {
     final api = FakeApiClient();
@@ -184,5 +188,177 @@ void main() {
       throwsA(isA<ApiException>().having((e) => e.message, 'message',
           'Something went wrong. Please try again.')),
     );
+  });
+
+  test('start lesson session request serializes backend fields only', () {
+    const request = StartLessonSessionRequest(
+      lessonContentId: 'travel-airport',
+      studyLanguage: 'es',
+    );
+
+    expect(request.toJson(), {
+      'lessonContentId': 'travel-airport',
+      'studyLanguage': 'es',
+    });
+    expect(request.toJson().keys, ['lessonContentId', 'studyLanguage']);
+  });
+
+  test('startLessonSession sends authenticated lesson session POST', () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions'] = [
+      const ApiResponse(statusCode: 200, body: lessonSessionReadyBody)
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.startLessonSession(
+      lessonContentId: 'travel-airport',
+      studyLanguage: 'es',
+    );
+
+    expect(result.status, LessonSessionStartStatus.ready);
+    expect(result.message, 'Lesson session is ready.');
+    expect(api.calls, contains('POST /api/me/lesson-sessions'));
+    expect(api.tokens.last, 'access');
+    expect(api.bodies.last, {
+      'lessonContentId': 'travel-airport',
+      'studyLanguage': 'es',
+    });
+    expect(api.bodies.last!.keys, ['lessonContentId', 'studyLanguage']);
+  });
+
+  test('startLessonSession refreshes and retries after 401', () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+      const ApiResponse(statusCode: 200, body: lessonSessionReadyBody),
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.startLessonSession(
+      lessonContentId: 'travel-airport',
+      studyLanguage: 'es',
+    );
+
+    expect(result.status, LessonSessionStartStatus.ready);
+    expect(
+        api.calls,
+        containsAllInOrder([
+          'POST /api/me/lesson-sessions',
+          'POST /api/auth/refresh',
+          'POST /api/me/lesson-sessions',
+        ]));
+    expect(api.tokens.where((token) => token != null).toList(),
+        ['access', 'new-access']);
+  });
+
+  test('startLessonSession maps failed refresh to auth result', () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+    ];
+    api.responses['/api/auth/refresh'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.startLessonSession(
+      lessonContentId: 'travel-airport',
+      studyLanguage: 'es',
+    );
+
+    expect(result.status, LessonSessionStartStatus.authRequired);
+    expect(result.message, 'Please sign in again to start a lesson.');
+  });
+
+  test(
+      'startLessonSession maps lesson access denied to friendly blocked result',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions'] = [
+      const ApiResponse(
+          statusCode: 403,
+          body: '{"code":"lesson_access_denied","message":"raw quota detail"}')
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.startLessonSession(
+      lessonContentId: 'travel-airport',
+      studyLanguage: 'es',
+    );
+
+    expect(result.status, LessonSessionStartStatus.blocked);
+    expect(result.message,
+        'You have used today’s free lesson. Please try again tomorrow or upgrade.');
+  });
+
+  test('startLessonSession maps active lesson to friendly conflict result',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions'] = [
+      const ApiResponse(
+          statusCode: 409,
+          body: '{"code":"active_lesson_exists","message":"raw device id"}')
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.startLessonSession(
+      lessonContentId: 'travel-airport',
+      studyLanguage: 'es',
+    );
+
+    expect(result.status, LessonSessionStartStatus.conflict);
+    expect(result.message,
+        'You already have an active lesson on another device. Finish it there before starting a new one.');
+  });
+
+  test('startLessonSession maps 5xx to friendly unavailable result', () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions'] = [
+      const ApiResponse(
+          statusCode: 503, body: '{"message":"database token stack"}')
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.startLessonSession(
+      lessonContentId: 'travel-airport',
+      studyLanguage: 'es',
+    );
+
+    expect(result.status, LessonSessionStartStatus.unavailable);
+    expect(result.message,
+        'Could not start the lesson. Please check your connection and try again.');
+  });
+
+  test('startLessonSession does not surface raw backend error text', () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions'] = [
+      const ApiResponse(
+          statusCode: 400, body: '{"message":"raw token secret stack"}')
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.startLessonSession(
+      lessonContentId: 'travel-airport',
+      studyLanguage: 'es',
+    );
+
+    expect(result.status, LessonSessionStartStatus.failed);
+    expect(result.message, 'Could not start the lesson. Please try again.');
+    expect(result.message, isNot(contains('raw token secret stack')));
+  });
+
+  test('startLessonSession does not call lesson chat reply endpoint', () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions'] = [
+      const ApiResponse(statusCode: 200, body: lessonSessionReadyBody)
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    await service.startLessonSession(
+      lessonContentId: 'travel-airport',
+      studyLanguage: 'es',
+    );
+
+    expect(api.calls, isNot(contains('POST /api/lesson-chat/reply')));
   });
 }
