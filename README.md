@@ -9,7 +9,7 @@ This repository contains the Android-first Flutter mobile client under `app/`. T
 
 ## Current verified mobile baseline
 
-The current verified mobile baseline is clean after reverting the broken lesson session foundation attempt. That reverted attempt was too large because it combined models, AuthService changes, navigation, lesson UI, and widget tests in one PR; future lesson runtime work must be split into much smaller, independently verifiable slices. The restored baseline was verified from `app/` with:
+The current verified mobile baseline includes backend lesson session start from the lesson placeholder screen and service/model support for the backend session-owned text reply placeholder endpoint. This remains service-only for replies; real mobile AI chat and text input UI are not implemented. The baseline was verified from `app/` with:
 
 ```bash
 dart format --set-exit-if-changed lib test
@@ -17,9 +17,42 @@ flutter analyze
 flutter test
 ```
 
-Expected current results are: `dart format --set-exit-if-changed lib test` reports 0 changes, `flutter analyze` reports `No issues found`, and `flutter test` reports 64 passing tests. Settings/password recovery remains part of this verified baseline. Lesson runtime is still not implemented; the lesson screen remains placeholder-only after the lesson-start selection skeleton.
+Expected current results are: `git diff --check` passes, `dart format --set-exit-if-changed lib test` reports 39 files and 0 changes, `flutter analyze` reports `No issues found`, and `flutter test` reports 89 passing tests. Settings/password recovery remains part of this verified baseline. Lesson runtime is still not implemented; the lesson screen remains placeholder-only after the lesson-start selection skeleton.
 
 Settings has stable visible **Account**, **Learning**, **Audio**, and **Connection status** advanced area, with **Save settings** visible and tested. User level is not in Settings. Settings reads `selectedTutorId` from `GET /api/me/settings` and sends it in `PUT /api/me/settings`; `/api/tutor-options` remains the source for available tutor choices in Settings. Selected tutor is editable in the **Learning** section, persists after app/emulator restart, and remains independent from the separate tutor voice setting. Home no longer shows tutor diagnostics or the old **Available tutors** card; tutor selection belongs in Settings. Home shows the provided app logo next to a branded, accessible **Language Voice Tutor** title, preloads that logo during startup before Home is shown, and displays friendly signed-in or sign-in/sync account status without raw tokens, backend IDs, or technical auth details. The loading screen shows only the centered app logo. Language dropdowns display friendly names while storing and sending backend IDs. Study language remains limited to English, French, German, Portuguese, Spanish, and Italian. Home uses **Start lesson** to open the navigation skeleton: **Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder**. Level cards use soft level-specific colors, topic cards use soft topic-specific colors, and situation cards use the selected topic color family. Situation labels are product-friendly, no longer use `Placeholder:`, and all six topics have options; Travel includes Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage.
+
+
+## Lesson session reply placeholder service support
+
+Backend production version `0.1.35-backend.110` exposes the session-owned placeholder reply endpoint:
+
+```http
+POST /api/me/lesson-sessions/{sessionId}/reply
+```
+
+Mobile has service/model support only through `AuthService.sendLessonSessionReply({required String sessionId, required String messageText})`. The mobile service calls exactly `POST /api/me/lesson-sessions/{sessionId}/reply` and sends exactly this JSON body:
+
+```json
+{
+  "messageText": "..."
+}
+```
+
+This endpoint is currently a safe backend placeholder, not real AI chat. For valid active sessions, production currently returns controlled `409 mobile_lesson_reply_not_implemented`. Mobile must not call `POST /api/lesson-chat/reply`, must not call OpenAI directly, and must not build desktop prompt/runtime/scenario payloads.
+
+Documented reply result mapping:
+
+- `200` -> success, reserved for when the backend later enables real replies.
+- Blank client input or `400` -> validation, `Please enter a message.`
+- `401` or refresh failure -> authRequired, `Please sign in again to continue the lesson.`
+- `404` -> notFound, `This lesson session is no longer available.`
+- `409 mobile_lesson_reply_not_implemented` -> notImplemented, `Text chat is not available yet.`
+- Other `409` -> conflict, `This lesson has already ended.`
+- `429` -> limited, with a free/rate-limit friendly message.
+- `5xx`, network failure, or timeout -> unavailable, `Could not send the message. Please check your connection and try again.`
+- Fallback -> failed, `Could not send the message. Please try again.`
+
+Important caveat: manual emulator verification currently shows the lesson placeholder can fail to start a lesson session with `Could not start the lesson. Please try again.` Do not document mobile text chat as usable until lesson session start is manually diagnosed and confirmed against the production backend. No text input or **Send** button should be added until session start and the backend reply contract are validated. The next implementation step is manual diagnosis of the emulator lesson-session-start failure; only after that should UI wiring for text input be planned.
 
 ## Desktop parity source model
 
