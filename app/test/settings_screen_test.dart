@@ -36,12 +36,20 @@ class FakeAuthService extends AuthService {
   final ApiException? saveFailure;
   bool saved = false;
   UserSettings? savedSettings;
+  String resetRequestMessage =
+      'Password reset instructions were sent if this email is registered.';
+  String resetConfirmMessage = 'Password updated.';
+  String changePasswordMessage = 'Password updated.';
+  bool signedIn = true;
   @override
-  Future<AuthUser> loadCurrentUser() async => AuthUser(
+  Future<AuthUser> loadCurrentUser() async {
+    if (!signedIn) throw const ApiException('Please sign in again.');
+    return AuthUser(
       userId: 'u1',
       email: 'user@example.com',
       displayName: 'User',
       createdAt: DateTime.parse('2026-07-01T12:00:00Z'));
+  }
   @override
   Future<SubscriptionStatus> fetchSubscriptionStatus() async =>
       SubscriptionStatus(
@@ -65,6 +73,18 @@ class FakeAuthService extends AuthService {
         conversationModeEnabled: true,
         selectedTutorId: 'nelli');
   }
+
+  @override
+  Future<String> requestPasswordReset(String email) async => resetRequestMessage;
+
+  @override
+  Future<String> confirmPasswordReset(String token, String newPassword) async =>
+      resetConfirmMessage;
+
+  @override
+  Future<String> changePassword(
+          String currentPassword, String newPassword, String confirmNewPassword) async =>
+      changePasswordMessage;
 
   @override
   Future<UserSettings> updateUserSettings(UserSettings settings) async {
@@ -106,8 +126,18 @@ Future<void> _scrollToText(WidgetTester tester, String text) async {
   await tester.scrollUntilVisible(
     find.text(text),
     500,
-    scrollable: find.byType(Scrollable),
+    scrollable: find.byType(ListView),
   );
+}
+
+Future<void> _scrollToAndTap(WidgetTester tester, String text) async {
+  await _scrollToText(tester, text);
+  await tester.tap(find.text(text));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _expandPasswordRecovery(WidgetTester tester) async {
+  await _scrollToAndTap(tester, 'Password & recovery');
 }
 
 void main() {
@@ -118,6 +148,7 @@ void main() {
     expect(find.text('Account'), findsOneWidget);
     expect(find.text('User'), findsOneWidget);
     expect(find.text('Premium Monthly'), findsOneWidget);
+    await _scrollToText(tester, 'Learning');
     expect(find.text('Learning'), findsOneWidget);
     expect(find.text('Study language'), findsOneWidget);
     expect(find.text('Spanish'), findsOneWidget);
@@ -139,11 +170,121 @@ void main() {
     expect(find.textContaining('level', findRichText: true), findsNothing);
   });
 
+
+  testWidgets('password recovery section is visible', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    expect(find.text('Password & recovery'), findsOneWidget);
+    await tester.tap(find.text('Password & recovery'));
+    await tester.pumpAndSettle();
+    expect(find.text('Forgot password'), findsOneWidget);
+    expect(find.text('Reset password'), findsOneWidget);
+    expect(find.text('Change password'), findsOneWidget);
+  });
+
+  testWidgets('reset request validates empty email', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    await _expandPasswordRecovery(tester);
+    await tester.tap(find.text('Forgot password'));
+    await tester.pumpAndSettle();
+    expect(find.text('Email is required.'), findsOneWidget);
+  });
+
+  testWidgets('reset request success shows friendly accepted message', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    await _expandPasswordRecovery(tester);
+    await tester.enterText(find.byType(TextField).at(0), 'user@example.com');
+    await tester.tap(find.text('Forgot password'));
+    await tester.pumpAndSettle();
+    expect(
+        find.text('Password reset instructions were sent if this email is registered.'),
+        findsOneWidget);
+  });
+
+  testWidgets('reset confirm validates missing code/password', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    await _expandPasswordRecovery(tester);
+    await _scrollToAndTap(tester, 'Reset password');
+    expect(find.text('Reset code and new password are required.'), findsOneWidget);
+  });
+
+  testWidgets('reset confirm validates password mismatch', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    await _expandPasswordRecovery(tester);
+    await tester.enterText(find.byType(TextField).at(1), 'code');
+    await tester.enterText(find.byType(TextField).at(2), 'one');
+    await tester.enterText(find.byType(TextField).at(3), 'two');
+    await _scrollToAndTap(tester, 'Reset password');
+    expect(find.text('New password and confirmation must match.'), findsOneWidget);
+  });
+
+  testWidgets('reset confirm success shows Password updated.', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    await _expandPasswordRecovery(tester);
+    await tester.enterText(find.byType(TextField).at(1), 'code');
+    await tester.enterText(find.byType(TextField).at(2), 'new');
+    await tester.enterText(find.byType(TextField).at(3), 'new');
+    await _scrollToAndTap(tester, 'Reset password');
+    expect(find.text('Password updated.'), findsOneWidget);
+  });
+
+  testWidgets('change password requires signed-in user', (tester) async {
+    final auth = FakeAuthService()..signedIn = false;
+    await tester.pumpWidget(_screen(auth));
+    await tester.pump();
+    await tester.tap(find.text('Password & recovery'));
+    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.text('Change password'),
+      500,
+      scrollable: find.byType(ListView),
+    );
+    await tester.tap(find.text('Change password'));
+    await tester.pump();
+    expect(find.text('Please sign in to change your password.'), findsOneWidget);
+  });
+
+  testWidgets('change password validates missing current password', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    await _expandPasswordRecovery(tester);
+    await _scrollToAndTap(tester, 'Change password');
+    expect(find.text('Current password is required.'), findsOneWidget);
+  });
+
+  testWidgets('change password validates password mismatch', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    await _expandPasswordRecovery(tester);
+    await tester.enterText(find.byType(TextField).at(4), 'old');
+    await tester.enterText(find.byType(TextField).at(5), 'one');
+    await tester.enterText(find.byType(TextField).at(6), 'two');
+    await _scrollToAndTap(tester, 'Change password');
+    expect(find.text('New password and confirmation must match.'), findsOneWidget);
+  });
+
+  testWidgets('change password success shows Password updated.', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    await _expandPasswordRecovery(tester);
+    await tester.enterText(find.byType(TextField).at(4), 'old');
+    await tester.enterText(find.byType(TextField).at(5), 'new');
+    await tester.enterText(find.byType(TextField).at(6), 'new');
+    await _scrollToAndTap(tester, 'Change password');
+    expect(find.text('Password updated.'), findsOneWidget);
+  });
+
   testWidgets('study language dropdown shows labels and saves backend IDs',
       (tester) async {
     final auth = FakeAuthService();
     await tester.pumpWidget(_screen(auth));
     await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Study language');
 
     await tester.tap(find.byType(DropdownButtonFormField<String>).at(0));
     await tester.pumpAndSettle();
@@ -167,6 +308,7 @@ void main() {
     final auth = FakeAuthService();
     await tester.pumpWidget(_screen(auth));
     await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Native language');
 
     await tester.tap(find.byType(DropdownButtonFormField<String>).at(1));
     await tester.pumpAndSettle();
@@ -189,6 +331,7 @@ void main() {
     final auth = FakeAuthService();
     await tester.pumpWidget(_screen(auth));
     await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Interface / explanation language');
 
     await tester.tap(find.byType(DropdownButtonFormField<String>).at(2));
     await tester.pumpAndSettle();
@@ -211,6 +354,7 @@ void main() {
     final auth = FakeAuthService();
     await tester.pumpWidget(_screen(auth));
     await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Selected tutor');
     await tester.tap(find.byType(DropdownButtonFormField<String>).at(3));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Lana').last);

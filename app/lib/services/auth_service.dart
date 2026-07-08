@@ -58,6 +58,68 @@ class AuthService {
     return UserSettings.fromJson(_decodeObject(response.body));
   }
 
+  Future<String> requestPasswordReset(String email) async {
+    try {
+      final response = await _apiClient.post(
+        '/api/auth/password-reset/request',
+        body: PasswordResetRequest(email: email).toJson(),
+      );
+      if (_isSuccess(response.statusCode)) {
+        return _passwordMessage(
+          response.body,
+          fallback:
+              'Password reset instructions were sent if this email is registered.',
+        );
+      }
+      throw ApiException(_passwordResetRequestFailureMessage(response));
+    } on ApiException catch (error) {
+      throw ApiException(_safePasswordResetRequestExceptionMessage(error));
+    } catch (_) {
+      throw const ApiException('Could not request password reset. Please try again.');
+    }
+  }
+
+  Future<String> confirmPasswordReset(String token, String newPassword) async {
+    try {
+      final response = await _apiClient.post(
+        '/api/auth/password-reset/confirm',
+        body: PasswordResetConfirmRequest(token: token, newPassword: newPassword)
+            .toJson(),
+      );
+      if (_isSuccess(response.statusCode)) {
+        return _passwordMessage(response.body, fallback: 'Password updated.');
+      }
+      throw ApiException(_passwordResetConfirmFailureMessage(response));
+    } on ApiException catch (error) {
+      throw ApiException(_safePasswordResetConfirmExceptionMessage(error));
+    } catch (_) {
+      throw const ApiException('Something went wrong. Please try again.');
+    }
+  }
+
+  Future<String> changePassword(
+    String currentPassword,
+    String newPassword,
+    String confirmNewPassword,
+  ) async {
+    try {
+      final response = await _authenticatedPost(
+        '/api/auth/password/change',
+        body: ChangePasswordRequest(
+          currentPassword: currentPassword,
+          newPassword: newPassword,
+          confirmNewPassword: confirmNewPassword,
+        ).toJson(),
+        failureMessageForResponse: _changePasswordFailureMessage,
+      );
+      return _passwordMessage(response.body, fallback: 'Password updated.');
+    } on ApiException catch (error) {
+      throw ApiException(_safeChangePasswordExceptionMessage(error));
+    } catch (_) {
+      throw const ApiException('Something went wrong. Please try again.');
+    }
+  }
+
   Future<void> logout() async {
     final refreshToken = await _storage.readRefreshToken();
     if (refreshToken != null && refreshToken.isNotEmpty) {
@@ -91,6 +153,18 @@ class AuthService {
     );
   }
 
+  Future<ApiResponse> _authenticatedPost(
+    String path, {
+    required Map<String, dynamic> body,
+    String Function(ApiResponse response)? failureMessageForResponse,
+  }) async {
+    return _authenticatedSend(
+      path,
+      (token) => _apiClient.post(path, body: body, accessToken: token),
+      failureMessageForResponse: failureMessageForResponse,
+    );
+  }
+
   Future<ApiResponse> _authenticatedPut(
     String path, {
     required Map<String, dynamic> body,
@@ -103,8 +177,9 @@ class AuthService {
 
   Future<ApiResponse> _authenticatedSend(
     String path,
-    Future<ApiResponse> Function(String accessToken) send,
-  ) async {
+    Future<ApiResponse> Function(String accessToken) send, {
+    String Function(ApiResponse response)? failureMessageForResponse,
+  }) async {
     final accessToken = await _storage.readAccessToken();
     if (accessToken == null || accessToken.isEmpty) {
       throw const ApiException('Please sign in again.');
@@ -126,7 +201,8 @@ class AuthService {
     }
 
     if (!_isSuccess(response.statusCode)) {
-      throw const ApiException('Unable to load account details right now.');
+      throw ApiException(failureMessageForResponse?.call(response) ??
+          'Unable to load account details right now.');
     }
     return response;
   }
@@ -146,6 +222,83 @@ class AuthService {
     } catch (_) {
       return false;
     }
+  }
+
+
+  static String _passwordMessage(String body, {required String fallback}) {
+    try {
+      final parsed = PasswordOperationResponse.fromJson(_decodeObject(body));
+      return parsed.message.isEmpty ? fallback : parsed.message;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  static String _passwordResetRequestFailureMessage(ApiResponse response) {
+    final body = response.body.toLowerCase();
+    if (response.statusCode == 429) {
+      return 'Too many password reset requests. Please wait before trying again.';
+    }
+    if (body.contains('delivery') || body.contains('email') && body.contains('configured')) {
+      return 'Password reset email delivery is not configured. Please contact support.';
+    }
+    return 'Could not request password reset. Please try again.';
+  }
+
+  static String _passwordResetConfirmFailureMessage(ApiResponse response) {
+    if (response.statusCode == 429) {
+      return 'Too many password reset requests. Please wait before trying again.';
+    }
+    if (response.statusCode == 400 || response.statusCode == 404) {
+      return 'Password reset code is invalid or expired.';
+    }
+    return 'Something went wrong. Please try again.';
+  }
+
+  static String _changePasswordFailureMessage(ApiResponse response) {
+    final body = response.body.toLowerCase();
+    if (response.statusCode == 400 || response.statusCode == 401) {
+      if (body.contains('current') || body.contains('incorrect')) {
+        return 'Current password is incorrect.';
+      }
+    }
+    return 'Something went wrong. Please try again.';
+  }
+
+  static String _safePasswordResetRequestExceptionMessage(ApiException error) {
+    const safe = {
+      'Password reset email delivery is not configured. Please contact support.',
+      'Too many password reset requests. Please wait before trying again.',
+      'Could not request password reset. Please try again.',
+    };
+    return safe.contains(error.message)
+        ? error.message
+        : 'Could not request password reset. Please try again.';
+  }
+
+  static String _safePasswordResetConfirmExceptionMessage(ApiException error) {
+    const safe = {
+      'Password reset code is invalid or expired.',
+      'Too many password reset requests. Please wait before trying again.',
+      'Something went wrong. Please try again.',
+    };
+    return safe.contains(error.message)
+        ? error.message
+        : 'Something went wrong. Please try again.';
+  }
+
+  static String _safeChangePasswordExceptionMessage(ApiException error) {
+    const safe = {
+      'Please sign in to change your password.',
+      'Current password is incorrect.',
+      'Something went wrong. Please try again.',
+    };
+    if (error.message == 'Please sign in again.') {
+      return 'Please sign in to change your password.';
+    }
+    return safe.contains(error.message)
+        ? error.message
+        : 'Something went wrong. Please try again.';
   }
 
   static bool _isSuccess(int statusCode) =>
