@@ -42,6 +42,53 @@ class RevokeRefreshTokenRequest {
   Map<String, dynamic> toJson() => {'refreshToken': refreshToken};
 }
 
+class PasswordResetRequest {
+  const PasswordResetRequest({required this.email});
+
+  final String email;
+
+  Map<String, dynamic> toJson() => {'email': email};
+}
+
+class PasswordResetConfirmRequest {
+  const PasswordResetConfirmRequest({
+    required this.token,
+    required this.newPassword,
+  });
+
+  final String token;
+  final String newPassword;
+
+  Map<String, dynamic> toJson() => {'token': token, 'newPassword': newPassword};
+}
+
+class ChangePasswordRequest {
+  const ChangePasswordRequest({
+    required this.currentPassword,
+    required this.newPassword,
+    required this.confirmNewPassword,
+  });
+
+  final String currentPassword;
+  final String newPassword;
+  final String confirmNewPassword;
+
+  Map<String, dynamic> toJson() => {
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+        'confirmNewPassword': confirmNewPassword,
+      };
+}
+
+class PasswordOperationResponse {
+  const PasswordOperationResponse({required this.message});
+
+  final String message;
+
+  factory PasswordOperationResponse.fromJson(Map<String, dynamic> json) =>
+      PasswordOperationResponse(message: _string(json, 'message'));
+}
+
 class AuthResponse {
   const AuthResponse({
     required this.accessToken,

@@ -50,6 +50,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _accountError;
   String? _settingsError;
   bool _isSaving = false;
+  final _resetEmailController = TextEditingController();
+  final _resetCodeController = TextEditingController();
+  final _resetNewPasswordController = TextEditingController();
+  final _resetConfirmPasswordController = TextEditingController();
+  final _currentPasswordController = TextEditingController();
+  final _changeNewPasswordController = TextEditingController();
+  final _changeConfirmPasswordController = TextEditingController();
+  String? _resetRequestMessage;
+  String? _resetConfirmMessage;
+  String? _changePasswordMessage;
+  bool _isRequestingReset = false;
+  bool _isConfirmingReset = false;
+  bool _isChangingPassword = false;
 
   @override
   void initState() {
@@ -61,6 +74,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         TutorOptionsService(apiClient: HttpApiClient());
     _loadAccount();
     _loadSettings();
+  }
+
+  @override
+  void dispose() {
+    _resetEmailController.dispose();
+    _resetCodeController.dispose();
+    _resetNewPasswordController.dispose();
+    _resetConfirmPasswordController.dispose();
+    _currentPasswordController.dispose();
+    _changeNewPasswordController.dispose();
+    _changeConfirmPasswordController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadAccount() async {
@@ -145,6 +170,92 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+
+
+  Future<void> _requestPasswordReset() async {
+    if (_resetEmailController.text.trim().isEmpty) {
+      setState(() => _resetRequestMessage = 'Email is required.');
+      return;
+    }
+    setState(() {
+      _isRequestingReset = true;
+      _resetRequestMessage = null;
+    });
+    try {
+      final message =
+          await _authService.requestPasswordReset(_resetEmailController.text.trim());
+      if (!mounted) return;
+      setState(() => _resetRequestMessage = message);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _resetRequestMessage = error.message);
+    } finally {
+      if (mounted) setState(() => _isRequestingReset = false);
+    }
+  }
+
+  Future<void> _confirmPasswordReset() async {
+    if (_resetCodeController.text.trim().isEmpty ||
+        _resetNewPasswordController.text.isEmpty) {
+      setState(() => _resetConfirmMessage = 'Reset code and new password are required.');
+      return;
+    }
+    if (_resetNewPasswordController.text != _resetConfirmPasswordController.text) {
+      setState(() => _resetConfirmMessage = 'New password and confirmation must match.');
+      return;
+    }
+    setState(() {
+      _isConfirmingReset = true;
+      _resetConfirmMessage = null;
+    });
+    try {
+      final message = await _authService.confirmPasswordReset(
+        _resetCodeController.text.trim(),
+        _resetNewPasswordController.text,
+      );
+      if (!mounted) return;
+      setState(() => _resetConfirmMessage = message);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _resetConfirmMessage = error.message);
+    } finally {
+      if (mounted) setState(() => _isConfirmingReset = false);
+    }
+  }
+
+  Future<void> _changePassword() async {
+    if (_user == null) {
+      setState(() => _changePasswordMessage = 'Please sign in to change your password.');
+      return;
+    }
+    if (_currentPasswordController.text.isEmpty) {
+      setState(() => _changePasswordMessage = 'Current password is required.');
+      return;
+    }
+    if (_changeNewPasswordController.text != _changeConfirmPasswordController.text) {
+      setState(() => _changePasswordMessage = 'New password and confirmation must match.');
+      return;
+    }
+    setState(() {
+      _isChangingPassword = true;
+      _changePasswordMessage = null;
+    });
+    try {
+      final message = await _authService.changePassword(
+        _currentPasswordController.text,
+        _changeNewPasswordController.text,
+        _changeConfirmPasswordController.text,
+      );
+      if (!mounted) return;
+      setState(() => _changePasswordMessage = message);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _changePasswordMessage = error.message);
+    } finally {
+      if (mounted) setState(() => _isChangingPassword = false);
+    }
+  }
+
   Future<void> _checkBackendConnection() async {
     setState(() => _connectionState = BackendConnectionState.checking);
     try {
@@ -192,6 +303,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subscription: _subscription,
             error: _accountError,
             onLogout: _logout,
+          ),
+          const SizedBox(height: 12),
+          _PasswordRecoveryCard(
+            resetEmailController: _resetEmailController,
+            resetCodeController: _resetCodeController,
+            resetNewPasswordController: _resetNewPasswordController,
+            resetConfirmPasswordController: _resetConfirmPasswordController,
+            currentPasswordController: _currentPasswordController,
+            changeNewPasswordController: _changeNewPasswordController,
+            changeConfirmPasswordController: _changeConfirmPasswordController,
+            resetRequestMessage: _resetRequestMessage,
+            resetConfirmMessage: _resetConfirmMessage,
+            changePasswordMessage: _changePasswordMessage,
+            requestingReset: _isRequestingReset,
+            confirmingReset: _isConfirmingReset,
+            changingPassword: _isChangingPassword,
+            onRequestReset: _requestPasswordReset,
+            onConfirmReset: _confirmPasswordReset,
+            onChangePassword: _changePassword,
           ),
           const SizedBox(height: 12),
           _LearningCard(
@@ -273,6 +403,124 @@ class _AccountCard extends StatelessWidget {
             const SizedBox(height: 12),
             FilledButton.tonal(
                 onPressed: onLogout, child: const Text('Logout')),
+          ])));
+}
+
+
+class _PasswordRecoveryCard extends StatelessWidget {
+  const _PasswordRecoveryCard({
+    required this.resetEmailController,
+    required this.resetCodeController,
+    required this.resetNewPasswordController,
+    required this.resetConfirmPasswordController,
+    required this.currentPasswordController,
+    required this.changeNewPasswordController,
+    required this.changeConfirmPasswordController,
+    required this.resetRequestMessage,
+    required this.resetConfirmMessage,
+    required this.changePasswordMessage,
+    required this.requestingReset,
+    required this.confirmingReset,
+    required this.changingPassword,
+    required this.onRequestReset,
+    required this.onConfirmReset,
+    required this.onChangePassword,
+  });
+
+  final TextEditingController resetEmailController;
+  final TextEditingController resetCodeController;
+  final TextEditingController resetNewPasswordController;
+  final TextEditingController resetConfirmPasswordController;
+  final TextEditingController currentPasswordController;
+  final TextEditingController changeNewPasswordController;
+  final TextEditingController changeConfirmPasswordController;
+  final String? resetRequestMessage;
+  final String? resetConfirmMessage;
+  final String? changePasswordMessage;
+  final bool requestingReset;
+  final bool confirmingReset;
+  final bool changingPassword;
+  final VoidCallback onRequestReset;
+  final VoidCallback onConfirmReset;
+  final VoidCallback onChangePassword;
+
+  @override
+  Widget build(BuildContext context) => Card(
+      child: Padding(
+          padding: const EdgeInsets.all(16),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Password & recovery',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            TextField(
+              controller: resetEmailController,
+              decoration: const InputDecoration(labelText: 'Account email'),
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 8),
+            FilledButton.tonal(
+              onPressed: requestingReset ? null : onRequestReset,
+              child: Text(requestingReset
+                  ? 'Sending reset instructions...'
+                  : 'Forgot password'),
+            ),
+            if (resetRequestMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(resetRequestMessage!),
+            ],
+            const Divider(height: 28),
+            TextField(
+              controller: resetCodeController,
+              decoration: const InputDecoration(labelText: 'Reset code'),
+            ),
+            TextField(
+              controller: resetNewPasswordController,
+              decoration: const InputDecoration(labelText: 'New password'),
+              obscureText: true,
+            ),
+            TextField(
+              controller: resetConfirmPasswordController,
+              decoration:
+                  const InputDecoration(labelText: 'Confirm new password'),
+              obscureText: true,
+            ),
+            const SizedBox(height: 8),
+            FilledButton.tonal(
+              onPressed: confirmingReset ? null : onConfirmReset,
+              child: Text(confirmingReset ? 'Updating password...' : 'Reset password'),
+            ),
+            if (resetConfirmMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(resetConfirmMessage!),
+            ],
+            const Divider(height: 28),
+            TextField(
+              controller: currentPasswordController,
+              decoration: const InputDecoration(labelText: 'Current password'),
+              obscureText: true,
+            ),
+            TextField(
+              controller: changeNewPasswordController,
+              decoration:
+                  const InputDecoration(labelText: 'New account password'),
+              obscureText: true,
+            ),
+            TextField(
+              controller: changeConfirmPasswordController,
+              decoration: const InputDecoration(
+                  labelText: 'Confirm new account password'),
+              obscureText: true,
+            ),
+            const SizedBox(height: 8),
+            FilledButton.tonal(
+              onPressed: changingPassword ? null : onChangePassword,
+              child: Text(changingPassword ? 'Changing password...' : 'Change password'),
+            ),
+            if (changePasswordMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(changePasswordMessage!),
+            ],
           ])));
 }
 
