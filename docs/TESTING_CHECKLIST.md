@@ -91,6 +91,34 @@ flutter analyze
 flutter test
 ```
 
+## Current verified baseline after lesson-session revert
+
+The current mobile baseline is clean after reverting the broken lesson session foundation attempt. The reverted attempt combined models, AuthService changes, navigation, lesson UI, and widget tests in one large PR; future lesson runtime work must be smaller and independently verifiable.
+
+Run these commands from `app/` for the restored baseline:
+
+```bash
+dart format --set-exit-if-changed lib test
+flutter analyze
+flutter test
+```
+
+Expected current results:
+
+- `dart format --set-exit-if-changed lib test` reports 0 changes.
+- `flutter analyze` reports `No issues found`.
+- `flutter test` reports 64 passing tests.
+- Settings/password recovery remains part of the verified baseline.
+- Lesson runtime is not implemented, and the lesson screen remains placeholder-only.
+
+Future lesson runtime implementation rule:
+
+- Do not combine service, models, navigation, UI, and widget tests in one large PR.
+- The first PR should be read-only investigation or service-only.
+- The next PR should be UI-only using an already-tested service.
+- Mobile must not call OpenAI directly.
+- The lesson runtime foundation must not include voice, TTS, realtime, billing, analytics, history, or unrelated runtime features.
+
 ## Future Flutter checks
 
 After additional runtime code exists, add checks for:
