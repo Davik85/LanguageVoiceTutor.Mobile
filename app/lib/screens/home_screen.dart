@@ -107,7 +107,9 @@ class _HomeScreenState extends State<HomeScreen> {
           FilledButton.icon(
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const ChooseLevelScreen()),
+              MaterialPageRoute(
+                builder: (_) => ChooseLevelScreen(authService: _authService),
+              ),
             ),
             icon: const Icon(Icons.school),
             label: const Text('Start lesson'),

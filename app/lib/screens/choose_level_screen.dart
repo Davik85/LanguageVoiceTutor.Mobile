@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../models/lesson_start_selection.dart';
+import '../services/auth_service.dart';
 import '../widgets/lesson_option_card.dart';
 import 'choose_topic_screen.dart';
 
 class ChooseLevelScreen extends StatelessWidget {
-  const ChooseLevelScreen({super.key});
+  const ChooseLevelScreen({super.key, this.authService});
 
   static const String routeName = '/choose-level';
+  final AuthService? authService;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +35,10 @@ class ChooseLevelScreen extends StatelessWidget {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => ChooseTopicScreen(selectedLevel: level.label),
+                  builder: (_) => ChooseTopicScreen(
+                    selectedLevel: level.label,
+                    authService: authService,
+                  ),
                 ),
               ),
             );
