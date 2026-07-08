@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/lesson_start_selection.dart';
+import '../services/auth_service.dart';
 import '../widgets/lesson_option_card.dart';
 import 'lesson_screen.dart';
 
@@ -9,10 +10,12 @@ class ChooseSituationScreen extends StatelessWidget {
     super.key,
     required this.selectedLevel,
     required this.selectedTopic,
-  });
+    AuthService? authService,
+  }) : _authService = authService;
 
   final String selectedLevel;
   final String selectedTopic;
+  final AuthService? _authService;
 
   @override
   Widget build(BuildContext context) {
@@ -42,10 +45,12 @@ class ChooseSituationScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (_) => LessonScreen(
+                    authService: _authService,
                     selection: LessonStartSelection(
                       level: selectedLevel,
                       topic: selectedTopic,
                       situation: situation.label,
+                      lessonContentId: situation.id,
                     ),
                   ),
                 ),

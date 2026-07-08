@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 
 import '../models/lesson_start_selection.dart';
+import '../services/auth_service.dart';
 import '../widgets/lesson_option_card.dart';
 import 'choose_situation_screen.dart';
 
 class ChooseTopicScreen extends StatelessWidget {
-  const ChooseTopicScreen({super.key, required this.selectedLevel});
+  const ChooseTopicScreen({
+    super.key,
+    required this.selectedLevel,
+    AuthService? authService,
+  }) : _authService = authService;
 
   final String selectedLevel;
+  final AuthService? _authService;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +43,7 @@ class ChooseTopicScreen extends StatelessWidget {
                   builder: (_) => ChooseSituationScreen(
                     selectedLevel: selectedLevel,
                     selectedTopic: topic.label,
+                    authService: _authService,
                   ),
                 ),
               ),

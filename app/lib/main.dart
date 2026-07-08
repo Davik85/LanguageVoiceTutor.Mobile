@@ -35,8 +35,9 @@ class LanguageVoiceTutorApp extends StatelessWidget {
         SplashScreen.routeName: (_) => SplashScreen(authService: _authService),
         LoginScreen.routeName: (_) => LoginScreen(authService: _authService),
         HomeScreen.routeName: (_) => HomeScreen(authService: _authService),
-        ChooseLevelScreen.routeName: (_) => const ChooseLevelScreen(),
-        LessonScreen.routeName: (_) => const LessonScreen(),
+        ChooseLevelScreen.routeName: (_) =>
+            ChooseLevelScreen(authService: _authService),
+        LessonScreen.routeName: (_) => LessonScreen(authService: _authService),
         SettingsScreen.routeName: (_) =>
             SettingsScreen(authService: _authService),
       },

@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
+import 'package:language_voice_tutor_mobile/models/lesson_session.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_start_selection.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
+import 'package:language_voice_tutor_mobile/models/user_settings.dart';
 import 'package:language_voice_tutor_mobile/screens/home_screen.dart';
+import 'package:language_voice_tutor_mobile/screens/lesson_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
 
@@ -31,8 +36,21 @@ class FakeApiClient implements ApiClient {
 }
 
 class FakeAuthService extends AuthService {
-  FakeAuthService()
-      : super(apiClient: FakeApiClient(), storage: MemoryStorage());
+  FakeAuthService({
+    this.lessonStartCompleter,
+    LessonSessionStartResult? lessonStartResult,
+    this.settingsFailure,
+    this.studyLanguage = 'es',
+  })  : lessonStartResult = lessonStartResult ?? _readyLessonStartResult(),
+        super(apiClient: FakeApiClient(), storage: MemoryStorage());
+
+  final Completer<LessonSessionStartResult>? lessonStartCompleter;
+  final LessonSessionStartResult lessonStartResult;
+  final ApiException? settingsFailure;
+  final String studyLanguage;
+  int startLessonSessionCallCount = 0;
+  String? lastLessonContentId;
+  String? lastStudyLanguage;
 
   @override
   Future<AuthUser> loadCurrentUser() async => AuthUser(
@@ -52,6 +70,31 @@ class FakeAuthService extends AuthService {
         checkedAtUtc: DateTime.parse('2026-07-06T12:00:00Z'),
         enforcementEnabled: true,
       );
+
+  @override
+  Future<UserSettings> fetchUserSettings() async {
+    if (settingsFailure != null) throw settingsFailure!;
+    return UserSettings(
+      nativeLanguage: 'en',
+      studyLanguage: studyLanguage,
+      explanationLanguage: 'en',
+      speechVoice: 'nova',
+      speechSpeed: 1.0,
+      conversationModeEnabled: true,
+      selectedTutorId: UserSettings.defaultTutorId,
+    );
+  }
+
+  @override
+  Future<LessonSessionStartResult> startLessonSession({
+    required String lessonContentId,
+    required String studyLanguage,
+  }) async {
+    startLessonSessionCallCount += 1;
+    lastLessonContentId = lessonContentId;
+    lastStudyLanguage = studyLanguage;
+    return lessonStartCompleter?.future ?? lessonStartResult;
+  }
 }
 
 class MemoryStorage implements SessionStorage {
@@ -71,8 +114,34 @@ class MemoryStorage implements SessionStorage {
   }) async {}
 }
 
-Widget _home() => MaterialApp(
-      home: HomeScreen(authService: FakeAuthService()),
+const _airportLessonSelection = LessonStartSelection(
+  level: 'A1 Beginner',
+  topic: 'Travel',
+  situation: 'Airport check-in',
+  lessonContentId: 'airport_check_in',
+);
+
+LessonSessionStartResult _readyLessonStartResult({
+  String lessonContentId = 'airport_check_in',
+  String studyLanguage = 'es',
+}) =>
+    LessonSessionStartResult.ready(
+      LessonSessionResponse(
+        lessonSessionId: 'session-1',
+        lessonContentId: lessonContentId,
+        studyLanguage: studyLanguage,
+      ),
+    );
+
+Widget _home({FakeAuthService? authService}) => MaterialApp(
+      home: HomeScreen(authService: authService ?? FakeAuthService()),
+    );
+
+Widget _lessonScreen(FakeAuthService authService) => MaterialApp(
+      home: LessonScreen(
+        authService: authService,
+        selection: _airportLessonSelection,
+      ),
     );
 
 Future<void> _expectVisibleAfterScroll(WidgetTester tester, String text) async {
@@ -170,9 +239,12 @@ void main() {
     expect(find.byKey(const Key('lesson-level-card-a1')), findsOneWidget);
   });
 
-  testWidgets('travel lesson skeleton reaches placeholder with selections',
+  testWidgets('selecting a situation starts lesson session and shows success',
       (tester) async {
-    await tester.pumpWidget(_home());
+    final startCompleter = Completer<LessonSessionStartResult>();
+    final auth = FakeAuthService(lessonStartCompleter: startCompleter);
+
+    await tester.pumpWidget(_home(authService: auth));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Start lesson'));
@@ -206,18 +278,28 @@ void main() {
     );
 
     await tester.tap(find.text('Airport check-in'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Starting lesson...'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(auth.startLessonSessionCallCount, 1);
+    expect(auth.lastLessonContentId, 'airport_check_in');
+    expect(auth.lastStudyLanguage, 'es');
+
+    startCompleter.complete(_readyLessonStartResult());
     await tester.pumpAndSettle();
 
-    expect(find.text('Lesson placeholder'), findsOneWidget);
+    expect(find.text('Lesson started'), findsOneWidget);
+    expect(find.text('Lesson session is ready.'), findsOneWidget);
     expect(find.text('Level: A1 Beginner'), findsOneWidget);
     expect(find.text('Topic: Travel'), findsOneWidget);
     expect(find.text('Situation: Airport check-in'), findsOneWidget);
-    expect(
-      find.text(
-        'Placeholder lesson screen. Lesson runtime, voice recording, TTS, and AI tutor calls are intentionally not implemented.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Text chat is coming next.'), findsOneWidget);
+    expect(find.textContaining('session-1'), findsNothing);
+    expect(find.textContaining('/api/lesson-chat/reply'), findsNothing);
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('Send'), findsNothing);
   });
 
   testWidgets('non-travel lesson skeleton uses friendly situations',
@@ -240,9 +322,49 @@ void main() {
     await tester.tap(find.text('Introductions'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Lesson placeholder'), findsOneWidget);
+    expect(find.text('Lesson started'), findsOneWidget);
+    expect(find.text('Lesson session is ready.'), findsOneWidget);
     expect(find.text('Level: A2 Elementary'), findsOneWidget);
     expect(find.text('Topic: Daily Life'), findsOneWidget);
     expect(find.text('Situation: Introductions'), findsOneWidget);
+  });
+
+  testWidgets('access denied result shows friendly service message',
+      (tester) async {
+    final result = LessonSessionStartResult.blocked();
+    final auth = FakeAuthService(lessonStartResult: result);
+
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    expect(auth.startLessonSessionCallCount, 1);
+    expect(find.text(result.message), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+  });
+
+  testWidgets('active lesson conflict result shows friendly service message',
+      (tester) async {
+    final result = LessonSessionStartResult.conflict();
+    final auth = FakeAuthService(lessonStartResult: result);
+
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    expect(auth.startLessonSessionCallCount, 1);
+    expect(find.text(result.message), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+  });
+
+  testWidgets('backend unavailable result shows friendly service message',
+      (tester) async {
+    final result = LessonSessionStartResult.unavailable();
+    final auth = FakeAuthService(lessonStartResult: result);
+
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    expect(auth.startLessonSessionCallCount, 1);
+    expect(find.text(result.message), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
   });
 }

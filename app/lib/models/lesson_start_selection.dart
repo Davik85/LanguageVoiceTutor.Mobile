@@ -35,11 +35,13 @@ class LessonStartSelection {
     required this.level,
     required this.topic,
     required this.situation,
+    required this.lessonContentId,
   });
 
   final String level;
   final String topic;
   final String situation;
+  final String lessonContentId;
 }
 
 const lessonLevels = [
