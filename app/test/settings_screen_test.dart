@@ -36,12 +36,20 @@ class FakeAuthService extends AuthService {
   final ApiException? saveFailure;
   bool saved = false;
   UserSettings? savedSettings;
+  String resetRequestMessage =
+      'Password reset instructions were sent if this email is registered.';
+  String resetConfirmMessage = 'Password updated.';
+  String changePasswordMessage = 'Password updated.';
+  bool signedIn = true;
   @override
-  Future<AuthUser> loadCurrentUser() async => AuthUser(
+  Future<AuthUser> loadCurrentUser() async {
+    if (!signedIn) throw const ApiException('Please sign in again.');
+    return AuthUser(
       userId: 'u1',
       email: 'user@example.com',
       displayName: 'User',
       createdAt: DateTime.parse('2026-07-01T12:00:00Z'));
+  }
   @override
   Future<SubscriptionStatus> fetchSubscriptionStatus() async =>
       SubscriptionStatus(
@@ -65,6 +73,18 @@ class FakeAuthService extends AuthService {
         conversationModeEnabled: true,
         selectedTutorId: 'nelli');
   }
+
+  @override
+  Future<String> requestPasswordReset(String email) async => resetRequestMessage;
+
+  @override
+  Future<String> confirmPasswordReset(String token, String newPassword) async =>
+      resetConfirmMessage;
+
+  @override
+  Future<String> changePassword(
+          String currentPassword, String newPassword, String confirmNewPassword) async =>
+      changePasswordMessage;
 
   @override
   Future<UserSettings> updateUserSettings(UserSettings settings) async {
@@ -137,6 +157,104 @@ void main() {
     expect(find.text('Backend diagnostics'), findsNothing);
     expect(find.text('Save settings'), findsOneWidget);
     expect(find.textContaining('level', findRichText: true), findsNothing);
+  });
+
+
+  testWidgets('password recovery section is visible', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    expect(find.text('Password & recovery'), findsOneWidget);
+    expect(find.text('Forgot password'), findsOneWidget);
+    expect(find.text('Reset password'), findsOneWidget);
+    expect(find.text('Change password'), findsOneWidget);
+  });
+
+  testWidgets('reset request validates empty email', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Forgot password'));
+    await tester.pumpAndSettle();
+    expect(find.text('Email is required.'), findsOneWidget);
+  });
+
+  testWidgets('reset request success shows friendly accepted message', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(0), 'user@example.com');
+    await tester.tap(find.text('Forgot password'));
+    await tester.pumpAndSettle();
+    expect(
+        find.text('Password reset instructions were sent if this email is registered.'),
+        findsOneWidget);
+  });
+
+  testWidgets('reset confirm validates missing code/password', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Reset password'));
+    await tester.pumpAndSettle();
+    expect(find.text('Reset code and new password are required.'), findsOneWidget);
+  });
+
+  testWidgets('reset confirm validates password mismatch', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(1), 'code');
+    await tester.enterText(find.byType(TextField).at(2), 'one');
+    await tester.enterText(find.byType(TextField).at(3), 'two');
+    await tester.tap(find.text('Reset password'));
+    await tester.pumpAndSettle();
+    expect(find.text('New password and confirmation must match.'), findsOneWidget);
+  });
+
+  testWidgets('reset confirm success shows Password updated.', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(1), 'code');
+    await tester.enterText(find.byType(TextField).at(2), 'new');
+    await tester.enterText(find.byType(TextField).at(3), 'new');
+    await tester.tap(find.text('Reset password'));
+    await tester.pumpAndSettle();
+    expect(find.text('Password updated.'), findsOneWidget);
+  });
+
+  testWidgets('change password requires signed-in user', (tester) async {
+    final auth = FakeAuthService()..signedIn = false;
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Change password'));
+    await tester.pumpAndSettle();
+    expect(find.text('Please sign in to change your password.'), findsOneWidget);
+  });
+
+  testWidgets('change password validates missing current password', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Change password'));
+    await tester.pumpAndSettle();
+    expect(find.text('Current password is required.'), findsOneWidget);
+  });
+
+  testWidgets('change password validates password mismatch', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(4), 'old');
+    await tester.enterText(find.byType(TextField).at(5), 'one');
+    await tester.enterText(find.byType(TextField).at(6), 'two');
+    await tester.tap(find.text('Change password'));
+    await tester.pumpAndSettle();
+    expect(find.text('New password and confirmation must match.'), findsOneWidget);
+  });
+
+  testWidgets('change password success shows Password updated.', (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(4), 'old');
+    await tester.enterText(find.byType(TextField).at(5), 'new');
+    await tester.enterText(find.byType(TextField).at(6), 'new');
+    await tester.tap(find.text('Change password'));
+    await tester.pumpAndSettle();
+    expect(find.text('Password updated.'), findsOneWidget);
   });
 
   testWidgets('study language dropdown shows labels and saves backend IDs',
