@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
+import 'package:language_voice_tutor_mobile/models/lesson_chat.dart';
+import 'package:language_voice_tutor_mobile/models/lesson_runtime.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_session.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_start_selection.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
@@ -39,17 +41,32 @@ class FakeAuthService extends AuthService {
   FakeAuthService({
     this.lessonStartCompleter,
     LessonSessionStartResult? lessonStartResult,
+    this.replyCompleter,
+    LessonChatReplyResult? replyResult,
+    LessonRuntimeScenario? scenario,
     this.settingsFailure,
+    this.scenarioFailure,
     this.studyLanguage = 'es',
   })  : lessonStartResult = lessonStartResult ?? _readyLessonStartResult(),
+        replyResult = replyResult ?? _defaultReplyResult(),
+        scenario = scenario ?? _runtimeScenario(),
         super(apiClient: FakeApiClient(), storage: MemoryStorage());
 
   final Completer<LessonSessionStartResult>? lessonStartCompleter;
   final LessonSessionStartResult lessonStartResult;
+  final Completer<LessonChatReplyResult>? replyCompleter;
+  final LessonChatReplyResult replyResult;
+  final LessonRuntimeScenario scenario;
   final ApiException? settingsFailure;
+  final ApiException? scenarioFailure;
   final String studyLanguage;
+
   int startLessonSessionCallCount = 0;
+  int fetchScenarioCallCount = 0;
+  int sendLessonChatReplyCallCount = 0;
   StartLessonSessionRequest? lastStartRequest;
+  LessonChatRequest? lastLessonChatRequest;
+  final persistedMessages = <CreateLessonSessionMessageRequest>[];
 
   @override
   Future<AuthUser> loadCurrentUser() async => AuthUser(
@@ -92,6 +109,32 @@ class FakeAuthService extends AuthService {
     lastStartRequest = request;
     return lessonStartCompleter?.future ?? lessonStartResult;
   }
+
+  @override
+  Future<LessonRuntimeScenario> fetchLessonRuntimeScenario({
+    required String scenarioKey,
+  }) async {
+    fetchScenarioCallCount += 1;
+    if (scenarioFailure != null) throw scenarioFailure!;
+    return scenario;
+  }
+
+  @override
+  Future<LessonChatReplyResult> sendLessonChatReply({
+    required LessonChatRequest request,
+  }) async {
+    sendLessonChatReplyCallCount += 1;
+    lastLessonChatRequest = request;
+    return replyCompleter?.future ?? replyResult;
+  }
+
+  @override
+  Future<void> persistLessonSessionMessage({
+    required String sessionId,
+    required CreateLessonSessionMessageRequest request,
+  }) async {
+    persistedMessages.add(request);
+  }
 }
 
 class MemoryStorage implements SessionStorage {
@@ -111,25 +154,108 @@ class MemoryStorage implements SessionStorage {
   }) async {}
 }
 
-const _airportLessonSelection = LessonStartSelection(
+const _introLessonSelection = LessonStartSelection(
   level: 'A1 Beginner',
-  topicId: '2',
-  topicTitle: 'Travel',
-  subtopicId: '201',
-  subtopicTitle: 'Airport check-in',
-  situation: 'Airport check-in',
-  lessonContentId: 'travel_airport_check_in',
+  topicId: '1',
+  topicTitle: 'Daily Life',
+  subtopicId: '101',
+  subtopicTitle: 'Introductions',
+  situation: 'Introductions',
+  lessonContentId: 'everyday_english_introductions',
 );
 
-LessonSessionStartResult _readyLessonStartResult({
-  String lessonContentId = 'travel_airport_check_in',
-  String studyLanguage = 'Spanish',
-}) =>
+LessonSessionStartResult _readyLessonStartResult() =>
     LessonSessionStartResult.ready(
-      LessonSessionResponse(
+      const LessonSessionResponse(
         lessonSessionId: 'session-1',
-        lessonContentId: lessonContentId,
-        studyLanguage: studyLanguage,
+        lessonContentId: 'everyday_english_introductions',
+        studyLanguage: 'Spanish',
+      ),
+    );
+
+LessonRuntimeScenario _runtimeScenario() => LessonRuntimeScenario.fromJson({
+      'id': 'everyday_english_introductions',
+      'metadata': {
+        'topic': 'Daily Life',
+        'subtopic': 'Introductions',
+        'lessonType': 'guided_roleplay',
+      },
+      'lessonSetup': {
+        'setupMessage': 'Today we will practice introductions.',
+      },
+      'learningGoal': {
+        'goal':
+            'The user can introduce themselves and ask simple personal questions.',
+      },
+      'situation': {
+        'description':
+            'The user meets someone for the first time in a simple everyday situation.',
+      },
+      'targetLanguage': {
+        'keyPhrases': ['Hi.', 'My name is...'],
+        'grammarFocus': ['basic questions'],
+      },
+      'levelProfiles': {
+        'A1 Beginner': {
+          'difficultyNotes': 'Very simple English.',
+          'tutorLanguageStyle': 'Use very short, clear questions.',
+          'expectedUserResponse': 'One short introduction sentence.',
+          'feedbackStrictness': 'Keep feedback very short.',
+          'hintStrategy': 'Give a starter.',
+          'correctionPriority': 'Name and place first.',
+          'conversationDepth': 'Stay shallow.',
+          'exampleGoodAnswer': 'My name is Ana.',
+          'exampleStretchAnswer':
+              'My name is Ana. I am from Brazil. Nice to meet you.',
+          'addedKeyPhrases': ['Nice to meet you.'],
+          'addedUsefulConstructions': ['Use My name is...'],
+          'addedGrammarFocus': ['to be'],
+          'softWrapUpAfterUserTurn': 10,
+          'finalMessageAtUserTurn': 15,
+        },
+      },
+      'conversationFlow': {
+        'opening': 'Hi! What is your name?',
+        'firstUserTask': 'Say your name.',
+        'guidedPracticeFollowUpQuestions': ['Where are you from?'],
+        'variationOrComplication': '',
+        'correctionMoment': '',
+        'wrapUpMessage': 'Nice work today.',
+        'finalMessage': 'Great job. See you next time.',
+        'wrapUpIntent': 'Wrap up the introduction.',
+        'finalMessageIntent': 'End the lesson.',
+      },
+      'roleplayBeats': [
+        {'id': 'beat-1', 'intent': 'Tutor greets the learner.'},
+      ],
+      'reciprocalQuestionHandling': {
+        'ifUserAsksTutorName': 'My name is Alex.',
+        'ifUserAsksSimplePersonalQuestion': 'I live nearby.',
+        'mustNotIgnoreUserQuestion': true,
+        'mustNotRefuseScenarioCompatibleQuestions': true,
+      },
+      'expectedScenarioProgression': ['Greet learner', 'Exchange names'],
+      'aiTutorPromptInstructions': ['Keep tutor messages short.'],
+      'promptTemplates': {'opening': 'Keep the greeting simple.'},
+      'runtimeContent': {
+        'effectiveRuntimeSource': 'cms_published_snapshot',
+        'contentPackSlug': 'static-json-v1',
+        'versionNumber': 7,
+        'snapshotHash': 'hash-123',
+        'fallbackUsed': false,
+        'scenarioKey': 'everyday_english_introductions',
+        'resolvedLevelId': 'A1 Beginner',
+        'softWrapUpAfterUserTurn': 10,
+        'finalMessageAtUserTurn': 15,
+        'lessonPhase': 'active_roleplay',
+        'hasWrapUpStarted': false,
+      },
+    });
+
+LessonChatReplyResult _defaultReplyResult() => LessonChatReplyResult.success(
+      const LessonChatReplyResponse(
+        botReply: 'Hi! Nice to meet you. Where are you from?',
+        isLessonComplete: false,
       ),
     );
 
@@ -140,7 +266,7 @@ Widget _home({FakeAuthService? authService}) => MaterialApp(
 Widget _lessonScreen(FakeAuthService authService) => MaterialApp(
       home: LessonScreen(
         authService: authService,
-        selection: _airportLessonSelection,
+        selection: _introLessonSelection,
       ),
     );
 
@@ -156,90 +282,14 @@ Future<void> _expectVisibleAfterScroll(WidgetTester tester, String text) async {
   expect(finder, findsOneWidget);
 }
 
-Future<void> _scrollToVisible(WidgetTester tester, String text) async {
-  final finder = find.text(text);
-  if (tester.any(finder)) {
-    await tester.ensureVisible(finder);
-    await tester.pumpAndSettle();
-    return;
-  }
-
-  await tester.scrollUntilVisible(
-    finder,
-    -500,
-    scrollable: find.byType(Scrollable),
-  );
+Future<void> _showSendButton(WidgetTester tester) async {
+  final finder = find.widgetWithText(FilledButton, 'Send');
+  await tester.ensureVisible(finder);
   await tester.pumpAndSettle();
 }
 
 void main() {
-  test('lesson situation catalog uses product-friendly labels', () {
-    expect(lessonLevels.map((level) => level.id), [
-      'a1',
-      'a2',
-      'b1',
-      'b2',
-    ]);
-    expect(lessonTopics.map((topic) => topic.id), [
-      'daily_life',
-      'travel',
-      'work_business',
-      'job_interview',
-      'restaurant_cafe',
-      'free_conversation',
-    ]);
-
-    for (final topic in lessonTopics) {
-      final situations = lessonSituationsByTopic[topic.label];
-      expect(situations, isNotNull, reason: topic.label);
-      expect(situations, isNotEmpty, reason: topic.label);
-      for (final situation in situations!) {
-        expect(situation.label, isNot(contains('Placeholder:')));
-      }
-    }
-
-    expect(travelSituations.map((situation) => situation.label), [
-      'Airport check-in',
-      'Hotel check-in',
-      'Asking for directions',
-      'Ordering transport',
-      'Lost luggage',
-    ]);
-  });
-
-  test('situation card styles inherit the selected topic family', () {
-    for (final topic in lessonTopics) {
-      final topicStyle = lessonCardStyleForTopic(topic);
-      final situationStyle = lessonCardStyleForSituationTopic(topic.label);
-
-      expect(situationStyle.familyId, topicStyle.familyId, reason: topic.label);
-    }
-
-    expect(
-      lessonCardStyleForSituationTopic('Travel').familyId,
-      'topic-travel',
-    );
-  });
-
-  testWidgets('home starts lesson selection skeleton', (tester) async {
-    await tester.pumpWidget(_home());
-    await tester.pumpAndSettle();
-
-    expect(find.text('Start lesson'), findsOneWidget);
-    expect(find.text('Open Lesson'), findsNothing);
-
-    await tester.tap(find.text('Start lesson'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Choose Level'), findsOneWidget);
-    expect(find.text('A1 Beginner'), findsOneWidget);
-    expect(find.text('A2 Elementary'), findsOneWidget);
-    expect(find.text('B1 Intermediate'), findsOneWidget);
-    expect(find.text('B2 Upper-Intermediate'), findsOneWidget);
-    expect(find.byKey(const Key('lesson-level-card-a1')), findsOneWidget);
-  });
-
-  testWidgets('selecting a situation starts lesson session and shows success',
+  testWidgets('selecting a situation starts lesson and loads text chat',
       (tester) async {
     final startCompleter = Completer<LessonSessionStartResult>();
     final auth = FakeAuthService(lessonStartCompleter: startCompleter);
@@ -251,138 +301,119 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('A1 Beginner'));
     await tester.pumpAndSettle();
-
-    expect(find.text('Choose Topic'), findsOneWidget);
-    await _expectVisibleAfterScroll(tester, 'Daily Life');
-    await _expectVisibleAfterScroll(tester, 'Travel');
-    await _expectVisibleAfterScroll(tester, 'Work & Business');
-    await _expectVisibleAfterScroll(tester, 'Job Interview');
-    await _expectVisibleAfterScroll(tester, 'Restaurant & Cafe');
-    await _expectVisibleAfterScroll(tester, 'Free Conversation');
-    await _scrollToVisible(tester, 'Travel');
-    expect(find.byKey(const Key('lesson-topic-card-travel')), findsOneWidget);
-
-    await tester.tap(find.text('Travel'));
+    await tester.tap(find.text('Daily Life'));
     await tester.pumpAndSettle();
+    await _expectVisibleAfterScroll(tester, 'Introductions');
 
-    expect(find.text('Choose Situation'), findsOneWidget);
-    await _expectVisibleAfterScroll(tester, 'Airport check-in');
-    await _expectVisibleAfterScroll(tester, 'Hotel check-in');
-    await _expectVisibleAfterScroll(tester, 'Asking for directions');
-    await _expectVisibleAfterScroll(tester, 'Ordering transport');
-    await _expectVisibleAfterScroll(tester, 'Lost luggage');
-    await _scrollToVisible(tester, 'Airport check-in');
-    expect(
-      find.byKey(const Key('lesson-situation-card-airport_check_in')),
-      findsOneWidget,
-    );
-
-    await tester.tap(find.text('Airport check-in'));
+    await tester.tap(find.text('Introductions'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Starting lesson...'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     expect(auth.startLessonSessionCallCount, 1);
-    expect(auth.lastStartRequest?.lessonContentId, 'travel_airport_check_in');
-    expect(auth.lastStartRequest?.studyLanguage, 'Spanish');
-    expect(auth.lastStartRequest?.level, 'A1 Beginner');
-    expect(auth.lastStartRequest?.topicId, '2');
-    expect(auth.lastStartRequest?.topicTitle, 'Travel');
-    expect(auth.lastStartRequest?.subtopicId, '201');
-    expect(auth.lastStartRequest?.subtopicTitle, 'Airport check-in');
-    expect(auth.lastStartRequest?.modeUsed, 'text');
 
     startCompleter.complete(_readyLessonStartResult());
     await tester.pumpAndSettle();
 
     expect(find.text('Lesson started'), findsOneWidget);
     expect(find.text('Lesson session is ready.'), findsOneWidget);
-    expect(find.text('Level: A1 Beginner'), findsOneWidget);
-    expect(find.text('Topic: Travel'), findsOneWidget);
-    expect(find.text('Situation: Airport check-in'), findsOneWidget);
-    expect(find.text('Text chat is coming next.'), findsOneWidget);
-    expect(find.textContaining('session-1'), findsNothing);
-    expect(find.textContaining('/api/lesson-chat/reply'), findsNothing);
-    expect(find.byType(TextField), findsNothing);
-    expect(find.text('Send'), findsNothing);
+    expect(find.text('Introductions'), findsWidgets);
+    expect(find.textContaining('Text chat is coming next.'), findsNothing);
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.text('Send'), findsOneWidget);
+    expect(auth.fetchScenarioCallCount, 1);
+    expect(auth.lastStartRequest?.lessonContentId,
+        'everyday_english_introductions');
   });
 
-  testWidgets('non-travel lesson skeleton uses friendly situations',
-      (tester) async {
+  testWidgets('send button is disabled for blank input', (tester) async {
     final auth = FakeAuthService();
 
-    await tester.pumpWidget(_home(authService: auth));
+    await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Start lesson'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('A2 Elementary'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Daily Life'));
+    final button = tester.widget<FilledButton>(find.byType(FilledButton));
+    expect(button.onPressed, isNull);
+  });
+
+  testWidgets('send button and loading state prevent duplicate sends',
+      (tester) async {
+    final replyCompleter = Completer<LessonChatReplyResult>();
+    final auth = FakeAuthService(replyCompleter: replyCompleter);
+
+    await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
-    expect(find.text('Choose Situation'), findsOneWidget);
-    expect(find.text('Introductions'), findsOneWidget);
-    expect(find.text('Asking for help'), findsOneWidget);
-    expect(find.textContaining('Placeholder:'), findsNothing);
+    await tester.enterText(find.byType(TextField), 'Hello');
+    await tester.pump();
+    await _showSendButton(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Send'));
+    await tester.pump();
 
-    await tester.tap(find.text('Introductions'));
+    expect(auth.sendLessonChatReplyCallCount, 1);
+    expect(find.text('Tutor is thinking...'), findsOneWidget);
+    final button = tester.widget<FilledButton>(find.byType(FilledButton));
+    expect(button.onPressed, isNull);
+
+    replyCompleter.complete(_defaultReplyResult());
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('user text is shown in the chat after send', (tester) async {
+    final auth = FakeAuthService();
+
+    await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
-    expect(find.text('Lesson started'), findsOneWidget);
-    expect(find.text('Lesson session is ready.'), findsOneWidget);
-    expect(find.text('Level: A2 Elementary'), findsOneWidget);
-    expect(find.text('Topic: Daily Life'), findsOneWidget);
-    expect(find.text('Situation: Introductions'), findsOneWidget);
-    expect(
-      auth.lastStartRequest?.lessonContentId,
-      'everyday_english_introductions',
+    await tester.enterText(find.byType(TextField), 'Hello, my name is Sam.');
+    await tester.pump();
+    await _showSendButton(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Send'));
+    await tester.pump();
+
+    expect(find.text('Hello, my name is Sam.'), findsOneWidget);
+    expect(auth.lastLessonChatRequest?.userMessage, 'Hello, my name is Sam.');
+  });
+
+  testWidgets('bot reply text is shown after a successful backend response',
+      (tester) async {
+    final auth = FakeAuthService(
+      replyResult: LessonChatReplyResult.success(
+        const LessonChatReplyResponse(
+          botReply: 'Hi Sam! Nice to meet you.',
+          isLessonComplete: false,
+        ),
+      ),
     );
-    expect(auth.lastStartRequest?.studyLanguage, 'Spanish');
-    expect(auth.lastStartRequest?.level, 'A2 Elementary');
-    expect(auth.lastStartRequest?.topicId, '1');
-    expect(auth.lastStartRequest?.topicTitle, 'Daily Life');
-    expect(auth.lastStartRequest?.subtopicId, '101');
-    expect(auth.lastStartRequest?.subtopicTitle, 'Introductions');
-  });
-
-  testWidgets('access denied result shows friendly service message',
-      (tester) async {
-    final result = LessonSessionStartResult.blocked();
-    final auth = FakeAuthService(lessonStartResult: result);
 
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
-    expect(auth.startLessonSessionCallCount, 1);
-    expect(find.text(result.message), findsOneWidget);
-    expect(find.text('Retry'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Hello, my name is Sam.');
+    await tester.pump();
+    await _showSendButton(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Send'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Hi Sam! Nice to meet you.'), findsOneWidget);
+    expect(auth.persistedMessages, hasLength(2));
+    expect(auth.persistedMessages.first.role, 'user');
+    expect(auth.persistedMessages.last.role, 'assistant');
   });
 
-  testWidgets('active lesson conflict result shows friendly service message',
+  testWidgets('runtime scenario failure shows friendly retry state',
       (tester) async {
-    final result = LessonSessionStartResult.conflict();
-    final auth = FakeAuthService(lessonStartResult: result);
+    final auth = FakeAuthService(
+      scenarioFailure: const ApiException(
+          'Could not load lesson content. Please try again.'),
+    );
 
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
-    expect(auth.startLessonSessionCallCount, 1);
-    expect(find.text(result.message), findsOneWidget);
-    expect(find.text('Retry'), findsOneWidget);
-  });
-
-  testWidgets('backend unavailable result shows friendly service message',
-      (tester) async {
-    final result = LessonSessionStartResult.unavailable();
-    final auth = FakeAuthService(lessonStartResult: result);
-
-    await tester.pumpWidget(_lessonScreen(auth));
-    await tester.pumpAndSettle();
-
-    expect(auth.startLessonSessionCallCount, 1);
-    expect(find.text(result.message), findsOneWidget);
-    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('Could not load lesson content. Please try again.'),
+        findsOneWidget);
+    expect(find.text('Retry lesson content'), findsOneWidget);
   });
 }

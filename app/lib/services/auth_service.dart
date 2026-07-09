@@ -3,6 +3,8 @@ import 'dart:convert';
 import '../api/api_client.dart';
 import '../models/auth_models.dart';
 import '../models/lesson_access_decision.dart';
+import '../models/lesson_chat.dart';
+import '../models/lesson_runtime.dart';
 import '../models/lesson_session.dart';
 import '../models/subscription_status.dart';
 import '../models/user_settings.dart';
@@ -67,29 +69,53 @@ class AuthService {
     }
   }
 
-  Future<LessonSessionReplyResult> sendLessonSessionReply({
-    required String sessionId,
-    required String messageText,
+  Future<LessonRuntimeScenario> fetchLessonRuntimeScenario({
+    required String scenarioKey,
   }) async {
-    if (messageText.trim().isEmpty) {
-      return LessonSessionReplyResult.validation();
+    final normalizedKey = scenarioKey.trim();
+    if (normalizedKey.isEmpty) {
+      throw const ApiException('Lesson content is unavailable right now.');
+    }
+
+    final response = await _authenticatedGet(
+      '/api/me/lesson-content/scenarios/${Uri.encodeComponent(normalizedKey)}',
+      failureMessageForResponse: _lessonRuntimeScenarioFailureMessage,
+    );
+    return LessonRuntimeScenario.fromJson(_decodeObject(response.body));
+  }
+
+  Future<LessonChatReplyResult> sendLessonChatReply({
+    required LessonChatRequest request,
+  }) async {
+    if (request.userMessage.trim().isEmpty) {
+      return LessonChatReplyResult.validation();
     }
 
     try {
       final response = await _authenticatedPost(
-        '/api/me/lesson-sessions/$sessionId/reply',
-        body: LessonSessionReplyRequest(messageText: messageText).toJson(),
-        failureMessageForResponse: _lessonSessionReplyFailureMessage,
+        '/api/lesson-chat/reply',
+        body: request.toJson(),
+        failureMessageForResponse: _lessonChatReplyFailureMessage,
       );
-      final body = _tryDecodeObject(response.body);
-      return LessonSessionReplyResult.success(
-        body == null ? null : LessonSessionReplyResponse.fromJson(body),
+      return LessonChatReplyResult.success(
+        LessonChatReplyResponse.fromJson(_decodeObject(response.body)),
       );
     } on ApiException catch (error) {
-      return _safeLessonSessionReplyResult(error);
+      return _safeLessonChatReplyResult(error);
     } catch (_) {
-      return LessonSessionReplyResult.failed();
+      return LessonChatReplyResult.failed();
     }
+  }
+
+  Future<void> persistLessonSessionMessage({
+    required String sessionId,
+    required CreateLessonSessionMessageRequest request,
+  }) async {
+    await _authenticatedPost(
+      '/api/me/lesson-sessions/$sessionId/messages',
+      body: request.toJson(),
+      failureMessageForResponse: _lessonSessionMessageFailureMessage,
+    );
   }
 
   Future<UserSettings> fetchUserSettings() async {
@@ -193,10 +219,14 @@ class AuthService {
     return auth;
   }
 
-  Future<ApiResponse> _authenticatedGet(String path) async {
+  Future<ApiResponse> _authenticatedGet(
+    String path, {
+    String Function(ApiResponse response)? failureMessageForResponse,
+  }) async {
     return _authenticatedSend(
       path,
       (token) => _apiClient.get(path, accessToken: token),
+      failureMessageForResponse: failureMessageForResponse,
     );
   }
 
@@ -330,7 +360,20 @@ class AuthService {
     return 'Could not start the lesson. Please try again.';
   }
 
-  static String _lessonSessionReplyFailureMessage(ApiResponse response) {
+  static String _lessonRuntimeScenarioFailureMessage(ApiResponse response) {
+    if (response.statusCode == 401) {
+      return 'Please sign in again to continue the lesson.';
+    }
+    if (response.statusCode == 404) {
+      return 'Lesson content is unavailable right now.';
+    }
+    if (response.statusCode >= 500) {
+      return 'Could not load lesson content. Please check your connection and try again.';
+    }
+    return 'Could not load lesson content. Please try again.';
+  }
+
+  static String _lessonChatReplyFailureMessage(ApiResponse response) {
     if (response.statusCode == 400) {
       return 'Please enter a message.';
     }
@@ -348,9 +391,6 @@ class AuthService {
     }
 
     final code = _lessonSessionErrorCode(response.body);
-    if (code == 'mobile_lesson_reply_not_implemented') {
-      return 'Text chat is not available yet.';
-    }
     if (code == 'lesson_ended' ||
         code == 'lesson_session_ended' ||
         code == 'session_conflict') {
@@ -360,6 +400,19 @@ class AuthService {
       return 'This lesson has already ended.';
     }
     return 'Could not send the message. Please try again.';
+  }
+
+  static String _lessonSessionMessageFailureMessage(ApiResponse response) {
+    if (response.statusCode == 401) {
+      return 'Please sign in again to continue the lesson.';
+    }
+    if (response.statusCode == 404 || response.statusCode == 409) {
+      return 'This lesson session is no longer available.';
+    }
+    if (response.statusCode >= 500) {
+      return 'Could not save the message right now.';
+    }
+    return 'Could not save the message right now.';
   }
 
   static String _safePasswordResetRequestExceptionMessage(ApiException error) {
@@ -421,35 +474,31 @@ class AuthService {
     return LessonSessionStartResult.failed();
   }
 
-  static LessonSessionReplyResult _safeLessonSessionReplyResult(
-      ApiException error) {
+  static LessonChatReplyResult _safeLessonChatReplyResult(ApiException error) {
     if (error.message == 'Please enter a message.') {
-      return LessonSessionReplyResult.validation();
+      return LessonChatReplyResult.validation();
     }
     if (error.message == 'Please sign in again.' ||
         error.message == 'Please sign in again to continue the lesson.') {
-      return LessonSessionReplyResult.authRequired();
+      return LessonChatReplyResult.authRequired();
     }
     if (error.message == 'This lesson session is no longer available.') {
-      return LessonSessionReplyResult.notFound();
-    }
-    if (error.message == 'Text chat is not available yet.') {
-      return LessonSessionReplyResult.notImplemented();
+      return LessonChatReplyResult.notFound();
     }
     if (error.message == 'This lesson has already ended.') {
-      return LessonSessionReplyResult.conflict();
+      return LessonChatReplyResult.conflict();
     }
     if (error.message ==
         'You have used today\'s free lesson. Please try again tomorrow or upgrade.') {
-      return LessonSessionReplyResult.limited();
+      return LessonChatReplyResult.limited();
     }
     if (error.message ==
             'Could not send the message. Please check your connection and try again.' ||
         error.message == 'The service took too long to respond.' ||
         error.message == 'Unable to reach the service.') {
-      return LessonSessionReplyResult.unavailable();
+      return LessonChatReplyResult.unavailable();
     }
-    return LessonSessionReplyResult.failed();
+    return LessonChatReplyResult.failed();
   }
 
   static String _lessonSessionErrorCode(String body) {
@@ -479,11 +528,5 @@ class AuthService {
       throw const ApiException('The service returned an unexpected response.');
     }
     return decoded;
-  }
-
-  static Map<String, dynamic>? _tryDecodeObject(String body) {
-    if (body.trim().isEmpty) return null;
-    final decoded = jsonDecode(body);
-    return decoded is Map<String, dynamic> ? decoded : null;
   }
 }

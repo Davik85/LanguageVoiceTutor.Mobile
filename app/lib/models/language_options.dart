@@ -105,6 +105,12 @@ abstract final class LanguageOptions {
         fallbackId: defaultLanguageId,
       );
 
+  static String backendNativeLanguageNameFor(Object? value) => _labelFor(
+        value,
+        nativeLanguages,
+        fallbackLabel: 'English',
+      );
+
   static String interfaceLanguageIdFor(Object? value) => _idFor(
         value,
         interfaceLanguages,

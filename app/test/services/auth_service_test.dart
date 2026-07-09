@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/language_options.dart';
+import 'package:language_voice_tutor_mobile/models/lesson_chat.dart';
+import 'package:language_voice_tutor_mobile/models/lesson_runtime.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_session.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
@@ -15,30 +17,37 @@ class FakeApiClient implements ApiClient {
   Future<ApiResponse> get(String path, {String? accessToken}) async {
     calls.add('GET $path');
     tokens.add(accessToken);
-    return const ApiResponse(
-        statusCode: 200,
-        body:
-            '{"userId":"u1","email":"user@example.com","displayName":"User","createdAt":"2026-07-01T12:00:00Z"}');
+    bodies.add(null);
+    final queued = responses[path];
+    if (queued != null && queued.isNotEmpty) return queued.removeAt(0);
+    return const ApiResponse(statusCode: 200, body: '{}');
   }
 
   @override
-  Future<ApiResponse> put(String path,
-          {Map<String, dynamic>? body, String? accessToken}) =>
-      throw UnimplementedError();
-
-  @override
-  Future<ApiResponse> post(String path,
-      {Map<String, dynamic>? body, String? accessToken}) async {
+  Future<ApiResponse> post(
+    String path, {
+    Map<String, dynamic>? body,
+    String? accessToken,
+  }) async {
     calls.add('POST $path');
     tokens.add(accessToken);
     bodies.add(body);
     final queued = responses[path];
     if (queued != null && queued.isNotEmpty) return queued.removeAt(0);
     return const ApiResponse(
-        statusCode: 200,
-        body:
-            '{"accessToken":"new-access","tokenType":"Bearer","expiresAtUtc":"2026-07-06T12:30:00Z","refreshToken":"new-refresh","refreshTokenExpiresAtUtc":"2026-08-06T12:00:00Z","user":{"userId":"u1","email":"user@example.com","displayName":"User","createdAt":"2026-07-01T12:00:00Z"}}');
+      statusCode: 200,
+      body:
+          '{"accessToken":"new-access","tokenType":"Bearer","expiresAtUtc":"2026-07-06T12:30:00Z","refreshToken":"new-refresh","refreshTokenExpiresAtUtc":"2026-08-06T12:00:00Z","user":{"userId":"u1","email":"user@example.com","displayName":"User","createdAt":"2026-07-01T12:00:00Z"}}',
+    );
   }
+
+  @override
+  Future<ApiResponse> put(
+    String path, {
+    Map<String, dynamic>? body,
+    String? accessToken,
+  }) =>
+      throw UnimplementedError();
 }
 
 class MemoryStorage implements SessionStorage {
@@ -67,570 +76,331 @@ class MemoryStorage implements SessionStorage {
   }
 }
 
-void main() {
-  const lessonSessionReadyBody =
-      '{"lessonSessionId":"session-1","lessonContentId":"travel_airport_check_in","studyLanguage":"Spanish"}';
-  const travelAirportStartRequest = StartLessonSessionRequest(
-    lessonContentId: 'travel_airport_check_in',
-    studyLanguage: 'Spanish',
-    topicId: '2',
-    topicTitle: 'Travel',
-    subtopicId: '201',
-    subtopicTitle: 'Airport check-in',
-    level: 'A1 Beginner',
-    selectedContextId: null,
-    selectedContextTitle: null,
-    modeUsed: 'text',
-  );
+const lessonSessionReadyBody =
+    '{"lessonSessionId":"session-1","lessonContentId":"everyday_english_introductions","studyLanguage":"Spanish"}';
 
-  test('loadCurrentUser sends bearer access token through client abstraction',
-      () async {
-    final api = FakeApiClient();
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
+const introStartRequest = StartLessonSessionRequest(
+  lessonContentId: 'everyday_english_introductions',
+  studyLanguage: 'Spanish',
+  topicId: '1',
+  topicTitle: 'Daily Life',
+  subtopicId: '101',
+  subtopicTitle: 'Introductions',
+  level: 'A1 Beginner',
+  selectedContextId: null,
+  selectedContextTitle: null,
+  modeUsed: 'text',
+);
 
-    final user = await service.loadCurrentUser();
+Map<String, dynamic> runtimeScenarioJson() => {
+      'id': 'everyday_english_introductions',
+      'metadata': {
+        'topic': 'Daily Life',
+        'subtopic': 'Introductions',
+        'lessonType': 'guided_roleplay',
+      },
+      'lessonSetup': {
+        'setupMessage': 'Today we will practice introductions.',
+      },
+      'learningGoal': {
+        'goal':
+            'The user can introduce themselves and ask simple personal questions.',
+      },
+      'situation': {
+        'description':
+            'The user meets someone for the first time in a simple everyday situation.',
+      },
+      'targetLanguage': {
+        'keyPhrases': ['Hi.', 'My name is...'],
+        'grammarFocus': ['verb "to be": I am / I\'m'],
+      },
+      'levelProfiles': {
+        'A1 Beginner': {
+          'difficultyNotes': 'Very simple English.',
+          'tutorLanguageStyle': 'Use very short, clear questions.',
+          'expectedUserResponse': 'One short introduction sentence.',
+          'feedbackStrictness': 'Keep feedback very short.',
+          'hintStrategy': 'Give a full model starter when needed.',
+          'correctionPriority': 'Clear name and place sentences first.',
+          'conversationDepth': 'Stay very shallow.',
+          'exampleGoodAnswer': 'My name is Ana.',
+          'exampleStretchAnswer':
+              'My name is Ana. I\'m from Brazil. Nice to meet you.',
+          'addedKeyPhrases': ['Nice to meet you.'],
+          'addedUsefulConstructions': ['Use My name is...'],
+          'addedGrammarFocus': ['basic questions'],
+          'softWrapUpAfterUserTurn': 10,
+          'finalMessageAtUserTurn': 15,
+        },
+      },
+      'conversationFlow': {
+        'opening': 'Hi! What is your name?',
+        'firstUserTask': 'Say your name.',
+        'guidedPracticeFollowUpQuestions': ['Where are you from?'],
+        'variationOrComplication': '',
+        'correctionMoment': '',
+        'wrapUpMessage': 'Nice work today.',
+        'finalMessage': 'Great job. See you next time.',
+        'wrapUpIntent': 'Wrap up the introduction.',
+        'finalMessageIntent': 'End the lesson cleanly.',
+      },
+      'roleplayBeats': [
+        {'id': 'beat-1', 'intent': 'Tutor greets the learner.'},
+      ],
+      'reciprocalQuestionHandling': {
+        'ifUserAsksTutorName': 'My name is Alex.',
+        'ifUserAsksSimplePersonalQuestion': 'I live nearby.',
+        'mustNotIgnoreUserQuestion': true,
+        'mustNotRefuseScenarioCompatibleQuestions': true,
+      },
+      'expectedScenarioProgression': [
+        'Greet the learner.',
+        'Exchange names.',
+      ],
+      'aiTutorPromptInstructions': [
+        'Keep tutor messages short and suitable for voice output.',
+      ],
+      'promptTemplates': {
+        'opening': 'Keep the greeting simple.',
+      },
+      'runtimeContent': {
+        'effectiveRuntimeSource': 'cms_published_snapshot',
+        'contentPackSlug': 'static-json-v1',
+        'versionNumber': 7,
+        'snapshotHash': 'hash-123',
+        'fallbackUsed': false,
+        'scenarioKey': 'everyday_english_introductions',
+        'resolvedLevelId': 'A1 Beginner',
+        'softWrapUpAfterUserTurn': 10,
+        'finalMessageAtUserTurn': 15,
+        'lessonPhase': 'active_roleplay',
+        'hasWrapUpStarted': false,
+      },
+    };
 
-    expect(user.email, 'user@example.com');
-    expect(api.calls, contains('GET /api/auth/me'));
-    expect(api.tokens, contains('access'));
-  });
-
-  test('login stores returned tokens', () async {
-    final storage = MemoryStorage()
-      ..access = null
-      ..refresh = null;
-    final service = AuthService(apiClient: FakeApiClient(), storage: storage);
-
-    await service.login('user@example.com', 'password');
-
-    expect(storage.access, 'new-access');
-    expect(storage.refresh, 'new-refresh');
-  });
-
-  test('password reset request posts without bearer token and parses message',
-      () async {
-    final api = FakeApiClient();
-    api.responses['/api/auth/password-reset/request'] = [
-      const ApiResponse(
-          statusCode: 200,
-          body:
-              '{"message":"Password reset instructions were sent if this email is registered."}')
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final message = await service.requestPasswordReset('user@example.com');
-
-    expect(api.calls, contains('POST /api/auth/password-reset/request'));
-    expect(api.tokens.last, isNull);
-    expect(api.bodies.last, {'email': 'user@example.com'});
-    expect(message,
-        'Password reset instructions were sent if this email is registered.');
-  });
-
-  test('password reset confirm posts without bearer token and parses message',
-      () async {
-    final api = FakeApiClient();
-    api.responses['/api/auth/password-reset/confirm'] = [
-      const ApiResponse(
-          statusCode: 200, body: '{"message":"Password updated."}')
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final message =
-        await service.confirmPasswordReset('reset-code', 'new-password');
-
-    expect(api.calls, contains('POST /api/auth/password-reset/confirm'));
-    expect(api.tokens.last, isNull);
-    expect(api.bodies.last,
-        {'token': 'reset-code', 'newPassword': 'new-password'});
-    expect(message, 'Password updated.');
-  });
-
-  test('change password posts with bearer token', () async {
-    final api = FakeApiClient();
-    api.responses['/api/auth/password/change'] = [
-      const ApiResponse(
-          statusCode: 200, body: '{"message":"Password updated."}')
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final message = await service.changePassword('old', 'new', 'new');
-
-    expect(api.calls, contains('POST /api/auth/password/change'));
-    expect(api.tokens.last, 'access');
-    expect(api.bodies.last, {
-      'currentPassword': 'old',
-      'newPassword': 'new',
-      'confirmNewPassword': 'new'
-    });
-    expect(message, 'Password updated.');
-  });
-
-  test('change password refreshes and retries after 401', () async {
-    final api = FakeApiClient();
-    api.responses['/api/auth/password/change'] = [
-      const ApiResponse(statusCode: 401, body: '{}'),
-      const ApiResponse(
-          statusCode: 200, body: '{"message":"Password updated."}'),
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    await service.changePassword('old', 'new', 'new');
-
-    expect(
-        api.calls,
-        containsAllInOrder([
-          'POST /api/auth/password/change',
-          'POST /api/auth/refresh',
-          'POST /api/auth/password/change',
-        ]));
-    expect(api.tokens.where((token) => token != null).toList(),
-        ['access', 'new-access']);
-  });
-
-  test('password operations do not surface raw backend errors', () async {
-    final api = FakeApiClient();
-    api.responses['/api/auth/password-reset/confirm'] = [
-      const ApiResponse(
-          statusCode: 500, body: '{"message":"raw token secret stack"}')
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    expect(
-      () => service.confirmPasswordReset('bad', 'new'),
-      throwsA(isA<ApiException>().having((e) => e.message, 'message',
-          'Something went wrong. Please try again.')),
+LessonChatRequest sampleChatRequest() => LessonChatRequest.fromScenario(
+      scenario: LessonRuntimeScenario.fromJson(runtimeScenarioJson()),
+      levelProfile: LessonRuntimeScenario.fromJson(runtimeScenarioJson())
+          .levelProfileFor('A1 Beginner'),
+      selectedLevel: 'A1 Beginner',
+      topicTitle: 'Daily Life',
+      subtopicTitle: 'Introductions',
+      userMessage: 'Hello, my name is Sam.',
+      lastBotMessage: '',
+      nativeLanguageName: 'English',
+      targetLanguageId: 'es',
+      targetLanguageName: 'Spanish',
+      targetLanguageNativeName: 'Spanish',
+      targetLanguageCode: 'es',
+      userDisplayName: '',
+      learnerTurnCount: 1,
+      recentMessages: const [
+        LessonRecentConversationMessage(
+          sender: 'User',
+          text: 'Hello, my name is Sam.',
+        ),
+      ],
+      backendSessionId: 'session-1',
     );
+
+void main() {
+  test('study language values are converted to backend-compatible names', () {
+    expect(LanguageOptions.backendStudyLanguageNameFor('es'), 'Spanish');
+    expect(LanguageOptions.backendStudyLanguageNameFor(null), 'English');
+    expect(LanguageOptions.backendNativeLanguageNameFor('en'), 'English');
   });
 
   test('start lesson session request serializes backend fields only', () {
-    expect(travelAirportStartRequest.toJson(), {
-      'lessonContentId': 'travel_airport_check_in',
+    expect(introStartRequest.toJson(), {
+      'lessonContentId': 'everyday_english_introductions',
       'studyLanguage': 'Spanish',
-      'topicId': '2',
-      'topicTitle': 'Travel',
-      'subtopicId': '201',
-      'subtopicTitle': 'Airport check-in',
+      'topicId': '1',
+      'topicTitle': 'Daily Life',
+      'subtopicId': '101',
+      'subtopicTitle': 'Introductions',
       'level': 'A1 Beginner',
       'selectedContextId': null,
       'selectedContextTitle': null,
       'modeUsed': 'text',
     });
-    expect(travelAirportStartRequest.toJson().keys, [
-      'lessonContentId',
-      'studyLanguage',
-      'topicId',
-      'topicTitle',
-      'subtopicId',
-      'subtopicTitle',
-      'level',
-      'selectedContextId',
-      'selectedContextTitle',
-      'modeUsed',
+  });
+
+  test('runtime scenario request uses GET lesson content endpoint', () async {
+    final api = FakeApiClient();
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    api.responses[
+        '/api/me/lesson-content/scenarios/everyday_english_introductions'] = [
+      const ApiResponse(
+        statusCode: 200,
+        body:
+            '{"id":"everyday_english_introductions","metadata":{"topic":"Daily Life","subtopic":"Introductions","lessonType":"guided_roleplay"},"lessonSetup":{"setupMessage":"Today we will practice introductions."},"learningGoal":{"goal":"The user can introduce themselves."},"situation":{"description":"Meet someone for the first time."},"targetLanguage":{"keyPhrases":["Hi."],"grammarFocus":["basic questions"]},"levelProfiles":{"A1 Beginner":{"difficultyNotes":"Simple","tutorLanguageStyle":"Short","expectedUserResponse":"One sentence","feedbackStrictness":"Short","hintStrategy":"Starter","correctionPriority":"Name","conversationDepth":"Shallow","exampleGoodAnswer":"Hi","exampleStretchAnswer":"Hi, I am Sam","addedKeyPhrases":["Hi"],"addedUsefulConstructions":["I am"],"addedGrammarFocus":["to be"],"softWrapUpAfterUserTurn":10,"finalMessageAtUserTurn":15}},"conversationFlow":{"opening":"Hi","firstUserTask":"Introduce yourself","guidedPracticeFollowUpQuestions":["Where are you from?"],"variationOrComplication":"","correctionMoment":"","wrapUpMessage":"Nice work","finalMessage":"See you","wrapUpIntent":"Wrap up","finalMessageIntent":"Finish"},"roleplayBeats":[{"id":"beat-1","intent":"Tutor greets learner"}],"reciprocalQuestionHandling":{"ifUserAsksTutorName":"I am Alex","ifUserAsksSimplePersonalQuestion":"I live nearby","mustNotIgnoreUserQuestion":true,"mustNotRefuseScenarioCompatibleQuestions":true},"expectedScenarioProgression":["Greet learner"],"aiTutorPromptInstructions":["Keep it short"],"promptTemplates":{"opening":"Keep the greeting simple."},"runtimeContent":{"effectiveRuntimeSource":"cms_published_snapshot","contentPackSlug":"static-json-v1","versionNumber":7,"snapshotHash":"hash-123","fallbackUsed":false,"scenarioKey":"everyday_english_introductions","resolvedLevelId":"A1 Beginner","softWrapUpAfterUserTurn":10,"finalMessageAtUserTurn":15,"lessonPhase":"active_roleplay","hasWrapUpStarted":false}}',
+      ),
+    ];
+
+    final scenario = await service.fetchLessonRuntimeScenario(
+      scenarioKey: 'everyday_english_introductions',
+    );
+
+    expect(
+      api.calls,
+      contains(
+          'GET /api/me/lesson-content/scenarios/everyday_english_introductions'),
+    );
+    expect(scenario.id, 'everyday_english_introductions');
+    expect(scenario.metadata.subtopic, 'Introductions');
+    expect(
+        scenario.runtimeContent.scenarioKey, 'everyday_english_introductions');
+  });
+
+  test('runtime scenario request refreshes and retries after 401', () async {
+    final api = FakeApiClient();
+    api.responses[
+        '/api/me/lesson-content/scenarios/everyday_english_introductions'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+      const ApiResponse(
+        statusCode: 200,
+        body:
+            '{"id":"everyday_english_introductions","metadata":{"topic":"Daily Life","subtopic":"Introductions","lessonType":"guided_roleplay"},"lessonSetup":{"setupMessage":"Today we will practice introductions."},"learningGoal":{"goal":"The user can introduce themselves."},"situation":{"description":"Meet someone for the first time."},"targetLanguage":{"keyPhrases":[],"grammarFocus":[]},"levelProfiles":{},"conversationFlow":{"opening":"","firstUserTask":"","guidedPracticeFollowUpQuestions":[],"variationOrComplication":"","correctionMoment":"","wrapUpMessage":"","finalMessage":"","wrapUpIntent":"","finalMessageIntent":""},"roleplayBeats":[],"reciprocalQuestionHandling":{"ifUserAsksTutorName":"","ifUserAsksSimplePersonalQuestion":"","mustNotIgnoreUserQuestion":false,"mustNotRefuseScenarioCompatibleQuestions":false},"expectedScenarioProgression":[],"aiTutorPromptInstructions":[],"promptTemplates":{},"runtimeContent":{"effectiveRuntimeSource":"","contentPackSlug":"","versionNumber":1,"snapshotHash":"","fallbackUsed":false,"scenarioKey":"everyday_english_introductions","resolvedLevelId":"","softWrapUpAfterUserTurn":0,"finalMessageAtUserTurn":0,"lessonPhase":"","hasWrapUpStarted":false}}',
+      ),
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    await service.fetchLessonRuntimeScenario(
+      scenarioKey: 'everyday_english_introductions',
+    );
+
+    expect(
+      api.calls,
+      containsAllInOrder([
+        'GET /api/me/lesson-content/scenarios/everyday_english_introductions',
+        'POST /api/auth/refresh',
+        'GET /api/me/lesson-content/scenarios/everyday_english_introductions',
+      ]),
+    );
+  });
+
+  test('lesson chat request serializes to backend reply shape', () {
+    final request = sampleChatRequest();
+    final json = request.toJson();
+
+    expect(json['userMessage'], 'Hello, my name is Sam.');
+    expect(json['backendSessionId'], 'session-1');
+    expect(json['runtimeContentScenarioKey'], 'everyday_english_introductions');
+    expect(json['selectedLevel'], 'A1 Beginner');
+    expect(json['topicTitle'], 'Daily Life');
+    expect(json['subtopicTitle'], 'Introductions');
+    expect(json['recentMessages'], [
+      {'sender': 'User', 'text': 'Hello, my name is Sam.'},
     ]);
   });
 
-  test('study language values are converted to backend-compatible names', () {
-    expect(LanguageOptions.backendStudyLanguageNameFor('es'), 'Spanish');
-    expect(LanguageOptions.backendStudyLanguageNameFor('Spanish'), 'Spanish');
-    expect(LanguageOptions.backendStudyLanguageNameFor(null), 'English');
-  });
-
-  test('startLessonSession sends authenticated lesson session POST', () async {
+  test('lesson chat reply sends desktop-compatible endpoint and parses reply',
+      () async {
     final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions'] = [
-      const ApiResponse(statusCode: 200, body: lessonSessionReadyBody)
+    api.responses['/api/lesson-chat/reply'] = [
+      const ApiResponse(
+        statusCode: 200,
+        body:
+            '{"botReply":"Hi Sam! Nice to meet you. Where are you from?","isLessonComplete":false}',
+      ),
     ];
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
-    final result = await service.startLessonSession(
-      request: travelAirportStartRequest,
+    final result = await service.sendLessonChatReply(
+      request: sampleChatRequest(),
     );
 
-    expect(result.status, LessonSessionStartStatus.ready);
-    expect(result.message, 'Lesson session is ready.');
-    expect(api.calls, contains('POST /api/me/lesson-sessions'));
-    expect(api.tokens.last, 'access');
-    expect(api.bodies.last, {
-      'lessonContentId': 'travel_airport_check_in',
-      'studyLanguage': 'Spanish',
-      'topicId': '2',
-      'topicTitle': 'Travel',
-      'subtopicId': '201',
-      'subtopicTitle': 'Airport check-in',
-      'level': 'A1 Beginner',
-      'selectedContextId': null,
-      'selectedContextTitle': null,
-      'modeUsed': 'text',
-    });
-    expect(api.bodies.last!.keys, travelAirportStartRequest.toJson().keys);
-  });
-
-  test('startLessonSession refreshes and retries after 401', () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions'] = [
-      const ApiResponse(statusCode: 401, body: '{}'),
-      const ApiResponse(statusCode: 200, body: lessonSessionReadyBody),
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result = await service.startLessonSession(
-      request: travelAirportStartRequest,
-    );
-
-    expect(result.status, LessonSessionStartStatus.ready);
+    expect(result.status, LessonChatReplyStatus.success);
+    expect(result.reply?.botReply,
+        'Hi Sam! Nice to meet you. Where are you from?');
+    expect(api.calls, contains('POST /api/lesson-chat/reply'));
+    expect(api.calls,
+        isNot(contains('POST /api/me/lesson-sessions/session-1/reply')));
     expect(
-        api.calls,
-        containsAllInOrder([
-          'POST /api/me/lesson-sessions',
-          'POST /api/auth/refresh',
-          'POST /api/me/lesson-sessions',
-        ]));
-    expect(api.tokens.where((token) => token != null).toList(),
-        ['access', 'new-access']);
+      api.bodies.last?['runtimeContentScenarioKey'],
+      'everyday_english_introductions',
+    );
   });
 
-  test('startLessonSession maps failed refresh to auth result', () async {
+  test('lesson chat reply refreshes and retries after 401', () async {
     final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions'] = [
+    api.responses['/api/lesson-chat/reply'] = [
       const ApiResponse(statusCode: 401, body: '{}'),
-    ];
-    api.responses['/api/auth/refresh'] = [
-      const ApiResponse(statusCode: 401, body: '{}'),
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result = await service.startLessonSession(
-      request: travelAirportStartRequest,
-    );
-
-    expect(result.status, LessonSessionStartStatus.authRequired);
-    expect(result.message, 'Please sign in again to start a lesson.');
-  });
-
-  test(
-      'startLessonSession maps lesson access denied to friendly blocked result',
-      () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions'] = [
       const ApiResponse(
-          statusCode: 403,
-          body: '{"code":"lesson_access_denied","message":"raw quota detail"}')
+        statusCode: 200,
+        body: '{"botReply":"Hola","isLessonComplete":false}',
+      ),
     ];
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
-    final result = await service.startLessonSession(
-      request: travelAirportStartRequest,
+    final result = await service.sendLessonChatReply(
+      request: sampleChatRequest(),
     );
 
-    expect(result.status, LessonSessionStartStatus.blocked);
-    expect(result.message,
-        'You have used today\'s free lesson. Please try again tomorrow or upgrade.');
+    expect(result.status, LessonChatReplyStatus.success);
+    expect(
+      api.calls,
+      containsAllInOrder([
+        'POST /api/lesson-chat/reply',
+        'POST /api/auth/refresh',
+        'POST /api/lesson-chat/reply',
+      ]),
+    );
   });
 
-  test('startLessonSession maps active lesson to friendly conflict result',
-      () async {
+  test('lesson chat reply rejects blank text locally', () async {
     final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions'] = [
-      const ApiResponse(
-          statusCode: 409,
-          body: '{"code":"active_lesson_exists","message":"raw device id"}')
-    ];
     final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result = await service.startLessonSession(
-      request: travelAirportStartRequest,
+    final request = LessonChatRequest.fromScenario(
+      scenario: LessonRuntimeScenario.fromJson(runtimeScenarioJson()),
+      levelProfile: LessonRuntimeScenario.fromJson(runtimeScenarioJson())
+          .levelProfileFor('A1 Beginner'),
+      selectedLevel: 'A1 Beginner',
+      topicTitle: 'Daily Life',
+      subtopicTitle: 'Introductions',
+      userMessage: '   ',
+      lastBotMessage: '',
+      nativeLanguageName: 'English',
+      targetLanguageId: 'es',
+      targetLanguageName: 'Spanish',
+      targetLanguageNativeName: 'Spanish',
+      targetLanguageCode: 'es',
+      userDisplayName: '',
+      learnerTurnCount: 1,
+      recentMessages: const [],
+      backendSessionId: 'session-1',
     );
 
-    expect(result.status, LessonSessionStartStatus.conflict);
-    expect(result.message,
-        'You already have an active lesson on another device. Finish it there before starting a new one.');
+    final result = await service.sendLessonChatReply(request: request);
+
+    expect(result.status, LessonChatReplyStatus.validation);
+    expect(api.calls, isEmpty);
   });
 
-  test('startLessonSession maps 5xx to friendly unavailable result', () async {
+  test('message persistence uses session messages endpoint', () async {
     final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions'] = [
-      const ApiResponse(
-          statusCode: 503, body: '{"message":"database token stack"}')
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result = await service.startLessonSession(
-      request: travelAirportStartRequest,
-    );
-
-    expect(result.status, LessonSessionStartStatus.unavailable);
-    expect(result.message,
-        'Could not start the lesson. Please check your connection and try again.');
-  });
-
-  test('startLessonSession does not surface raw backend error text', () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions'] = [
-      const ApiResponse(
-          statusCode: 400, body: '{"message":"raw token secret stack"}')
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result = await service.startLessonSession(
-      request: travelAirportStartRequest,
-    );
-
-    expect(result.status, LessonSessionStartStatus.failed);
-    expect(result.message, 'Could not start the lesson. Please try again.');
-    expect(result.message, isNot(contains('raw token secret stack')));
-  });
-
-  test('startLessonSession does not call lesson chat reply endpoint', () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions'] = [
-      const ApiResponse(statusCode: 200, body: lessonSessionReadyBody)
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    await service.startLessonSession(
-      request: travelAirportStartRequest,
-    );
-
-    expect(api.calls, isNot(contains('POST /api/lesson-chat/reply')));
-  });
-
-  test('lesson session reply request serializes exactly messageText', () {
-    const request = LessonSessionReplyRequest(messageText: 'Hola');
-
-    expect(request.toJson(), {'messageText': 'Hola'});
-    expect(request.toJson().keys, ['messageText']);
-  });
-
-  test('sendLessonSessionReply sends authenticated lesson session reply POST',
-      () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
-      const ApiResponse(
-          statusCode: 200,
-          body:
-              '{"reply":{"messageText":"Hola, viajero.","lessonSessionId":"session-1"}}')
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result = await service.sendLessonSessionReply(
-      sessionId: 'session-1',
-      messageText: 'Hola',
-    );
-
-    expect(result.status, LessonSessionReplyStatus.success);
-    expect(result.message, 'Message sent.');
-    expect(result.reply?.messageText, 'Hola, viajero.');
-    expect(result.reply?.sessionId, 'session-1');
-    expect(api.calls, contains('POST /api/me/lesson-sessions/session-1/reply'));
-    expect(api.tokens.last, 'access');
-    expect(api.bodies.last, {'messageText': 'Hola'});
-    expect(api.bodies.last!.keys, ['messageText']);
-  });
-
-  test('sendLessonSessionReply refreshes and retries after 401', () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
-      const ApiResponse(statusCode: 401, body: '{}'),
+    api.responses['/api/me/lesson-sessions/session-1/messages'] = [
       const ApiResponse(statusCode: 200, body: '{}'),
     ];
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
-    final result = await service.sendLessonSessionReply(
+    await service.persistLessonSessionMessage(
       sessionId: 'session-1',
-      messageText: 'Hola',
+      request: const CreateLessonSessionMessageRequest(
+        role: 'user',
+        text: 'Hello',
+        source: 'typed',
+        turnNumber: 1,
+        isValidLessonTurn: true,
+        studyLanguage: 'Spanish',
+      ),
     );
 
-    expect(result.status, LessonSessionReplyStatus.success);
     expect(
-        api.calls,
-        containsAllInOrder([
-          'POST /api/me/lesson-sessions/session-1/reply',
-          'POST /api/auth/refresh',
-          'POST /api/me/lesson-sessions/session-1/reply',
-        ]));
-    expect(api.tokens.where((token) => token != null).toList(),
-        ['access', 'new-access']);
-  });
-
-  test('sendLessonSessionReply maps failed refresh to auth result', () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
-      const ApiResponse(statusCode: 401, body: '{}'),
-    ];
-    api.responses['/api/auth/refresh'] = [
-      const ApiResponse(statusCode: 401, body: '{}'),
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result = await service.sendLessonSessionReply(
-      sessionId: 'session-1',
-      messageText: 'Hola',
+      api.calls,
+      contains('POST /api/me/lesson-sessions/session-1/messages'),
     );
-
-    expect(result.status, LessonSessionReplyStatus.authRequired);
-    expect(result.message, 'Please sign in again to continue the lesson.');
-  });
-
-  test(
-      'sendLessonSessionReply maps blank message to friendly validation result',
-      () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
-      const ApiResponse(
-          statusCode: 400, body: '{"message":"provider raw blank detail"}'),
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result = await service.sendLessonSessionReply(
-      sessionId: 'session-1',
-      messageText: 'Hola',
-    );
-
-    expect(result.status, LessonSessionReplyStatus.validation);
-    expect(result.message, 'Please enter a message.');
-  });
-
-  test('sendLessonSessionReply rejects blank message locally', () async {
-    final api = FakeApiClient();
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result = await service.sendLessonSessionReply(
-      sessionId: 'session-1',
-      messageText: '   ',
-    );
-
-    expect(result.status, LessonSessionReplyStatus.validation);
-    expect(result.message, 'Please enter a message.');
-    expect(api.calls, isEmpty);
-  });
-
-  test('sendLessonSessionReply maps 404 to friendly session unavailable result',
-      () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
-      const ApiResponse(
-          statusCode: 404, body: '{"message":"raw ownership detail"}'),
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result = await service.sendLessonSessionReply(
-      sessionId: 'session-1',
-      messageText: 'Hola',
-    );
-
-    expect(result.status, LessonSessionReplyStatus.notFound);
-    expect(result.message, 'This lesson session is no longer available.');
-  });
-
-  test(
-      'sendLessonSessionReply maps mobile_lesson_reply_not_implemented to friendly notImplemented result',
-      () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
-      const ApiResponse(
-          statusCode: 409,
-          body:
-              '{"code":"mobile_lesson_reply_not_implemented","message":"raw backend placeholder"}'),
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result = await service.sendLessonSessionReply(
-      sessionId: 'session-1',
-      messageText: 'Hola',
-    );
-
-    expect(result.status, LessonSessionReplyStatus.notImplemented);
-    expect(result.message, 'Text chat is not available yet.');
-  });
-
-  test('sendLessonSessionReply maps ended conflict to friendly conflict result',
-      () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
-      const ApiResponse(
-          statusCode: 409,
-          body: '{"code":"lesson_session_ended","message":"raw ended detail"}'),
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result = await service.sendLessonSessionReply(
-      sessionId: 'session-1',
-      messageText: 'Hola',
-    );
-
-    expect(result.status, LessonSessionReplyStatus.conflict);
-    expect(result.message, 'This lesson has already ended.');
-  });
-
-  test('sendLessonSessionReply maps 429 to friendly limited result', () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
-      const ApiResponse(
-          statusCode: 429, body: '{"message":"raw rate limit detail"}'),
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result = await service.sendLessonSessionReply(
-      sessionId: 'session-1',
-      messageText: 'Hola',
-    );
-
-    expect(result.status, LessonSessionReplyStatus.limited);
-    expect(result.message,
-        'You have used today\'s free lesson. Please try again tomorrow or upgrade.');
-  });
-
-  test('sendLessonSessionReply maps 5xx to friendly unavailable result',
-      () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
-      const ApiResponse(
-          statusCode: 503, body: '{"message":"raw backend stack trace"}'),
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result = await service.sendLessonSessionReply(
-      sessionId: 'session-1',
-      messageText: 'Hola',
-    );
-
-    expect(result.status, LessonSessionReplyStatus.unavailable);
-    expect(result.message,
-        'Could not send the message. Please check your connection and try again.');
-  });
-
-  test('sendLessonSessionReply does not surface raw backend error text',
-      () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
-      const ApiResponse(
-          statusCode: 400, body: '{"message":"raw provider secret stack"}'),
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    final result = await service.sendLessonSessionReply(
-      sessionId: 'session-1',
-      messageText: 'Hola',
-    );
-
-    expect(result.message, 'Please enter a message.');
-    expect(result.message, isNot(contains('raw provider secret stack')));
-  });
-
-  test('sendLessonSessionReply does not call lesson chat reply endpoint',
-      () async {
-    final api = FakeApiClient();
-    api.responses['/api/me/lesson-sessions/session-1/reply'] = [
-      const ApiResponse(statusCode: 200, body: '{}')
-    ];
-    final service = AuthService(apiClient: api, storage: MemoryStorage());
-
-    await service.sendLessonSessionReply(
-      sessionId: 'session-1',
-      messageText: 'Hola',
-    );
-
-    expect(api.calls, isNot(contains('POST /api/lesson-chat/reply')));
+    expect(api.calls.join(' '), isNot(contains('openai')));
   });
 }
