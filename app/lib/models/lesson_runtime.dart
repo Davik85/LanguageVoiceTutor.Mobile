@@ -13,6 +13,7 @@ class LessonRuntimeScenario {
     required this.expectedScenarioProgression,
     required this.aiTutorPromptInstructions,
     required this.promptTemplates,
+    required this.controlledVariation,
     required this.runtimeContent,
   });
 
@@ -29,6 +30,7 @@ class LessonRuntimeScenario {
   final List<String> expectedScenarioProgression;
   final List<String> aiTutorPromptInstructions;
   final Map<String, String> promptTemplates;
+  final LessonRuntimeControlledVariation controlledVariation;
   final LessonRuntimeContent runtimeContent;
 
   factory LessonRuntimeScenario.fromJson(Map<String, dynamic> json) =>
@@ -57,6 +59,9 @@ class LessonRuntimeScenario {
         aiTutorPromptInstructions:
             _stringList(_value(json, 'aiTutorPromptInstructions')),
         promptTemplates: _stringMap(_value(json, 'promptTemplates')),
+        controlledVariation: LessonRuntimeControlledVariation.fromJson(
+          _object(json, 'controlledVariation'),
+        ),
         runtimeContent:
             LessonRuntimeContent.fromJson(_object(json, 'runtimeContent')),
       );
@@ -317,6 +322,51 @@ class LessonRuntimeContent {
         lessonPhase: _string(json, 'lessonPhase'),
         hasWrapUpStarted: _bool(json, 'hasWrapUpStarted'),
         effectiveRuntimeSource: _string(json, 'effectiveRuntimeSource'),
+      );
+}
+
+class LessonRuntimeControlledVariation {
+  const LessonRuntimeControlledVariation({
+    required this.contextVariants,
+  });
+
+  final List<LessonRuntimeContextVariant> contextVariants;
+
+  factory LessonRuntimeControlledVariation.fromJson(
+          Map<String, dynamic> json) =>
+      LessonRuntimeControlledVariation(
+        contextVariants: _list(_value(json, 'contextVariants'))
+            .map((value) => LessonRuntimeContextVariant.fromJson(_map(value)))
+            .where((value) => value.title.isNotEmpty)
+            .toList(growable: false),
+      );
+}
+
+class LessonRuntimeContextVariant {
+  const LessonRuntimeContextVariant({
+    required this.id,
+    required this.title,
+    required this.localizedTitle,
+    required this.openingLine,
+    required this.contextConfirmationLine,
+    required this.openingIntent,
+  });
+
+  final String id;
+  final String title;
+  final String localizedTitle;
+  final String openingLine;
+  final String contextConfirmationLine;
+  final String openingIntent;
+
+  factory LessonRuntimeContextVariant.fromJson(Map<String, dynamic> json) =>
+      LessonRuntimeContextVariant(
+        id: _string(json, 'id'),
+        title: _string(json, 'title'),
+        localizedTitle: _string(json, 'localizedTitle'),
+        openingLine: _string(json, 'openingLine'),
+        contextConfirmationLine: _string(json, 'contextConfirmationLine'),
+        openingIntent: _string(json, 'openingIntent'),
       );
 }
 

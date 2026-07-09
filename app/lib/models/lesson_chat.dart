@@ -289,6 +289,7 @@ class LessonChatRequest {
     required List<LessonRecentConversationMessage> recentMessages,
     required String backendSessionId,
     String selectedContextTitle = '',
+    LessonRuntimeContextVariant? selectedContextVariant,
   }) {
     final softTurn = levelProfile.softWrapUpAfterUserTurn > 0
         ? levelProfile.softWrapUpAfterUserTurn
@@ -331,12 +332,14 @@ class LessonChatRequest {
       lessonType: scenario.metadata.lessonType,
       aiTutorPromptInstructions: scenario.aiTutorPromptInstructions,
       promptTemplates: scenario.promptTemplates,
-      selectedContextVariantId: '',
+      selectedContextVariantId: selectedContextVariant?.id ?? '',
       selectedContextTitle: selectedContextTitle,
-      selectedContextLocalizedTitle: '',
-      selectedContextOpeningLine: '',
-      selectedContextConfirmationLine: '',
-      selectedContextOpeningIntent: '',
+      selectedContextLocalizedTitle:
+          selectedContextVariant?.localizedTitle ?? '',
+      selectedContextOpeningLine: selectedContextVariant?.openingLine ?? '',
+      selectedContextConfirmationLine:
+          selectedContextVariant?.contextConfirmationLine ?? '',
+      selectedContextOpeningIntent: selectedContextVariant?.openingIntent ?? '',
       userTurnNumber: learnerTurnCount,
       softWrapUpAfterUserTurn: softTurn,
       finalMessageAtUserTurn: finalTurn,
