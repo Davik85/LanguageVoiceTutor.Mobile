@@ -9,6 +9,35 @@ import '../models/user_settings.dart';
 import '../services/auth_service.dart';
 import '../services/service_factory.dart';
 
+enum LessonTutorStatus {
+  loading,
+  ready,
+  thinking,
+  listening,
+  speaking,
+  error,
+}
+
+enum LessonMessageKind {
+  user,
+  tutor,
+  system,
+}
+
+class _LessonActionAvailability {
+  const _LessonActionAvailability({
+    required this.canSendText,
+    required this.canToggleRecordingPlaceholder,
+    required this.canUsePlaceholders,
+    required this.canFinishLesson,
+  });
+
+  final bool canSendText;
+  final bool canToggleRecordingPlaceholder;
+  final bool canUsePlaceholders;
+  final bool canFinishLesson;
+}
+
 class LessonScreen extends StatefulWidget {
   const LessonScreen({
     super.key,
@@ -26,12 +55,15 @@ class LessonScreen extends StatefulWidget {
 }
 
 class _LessonScreenState extends State<LessonScreen> {
+  static const _comingNextMessage = 'Coming next in a future lesson update.';
+
   late final AuthService _authService;
   final TextEditingController _messageController = TextEditingController();
   late bool _isStarting;
   bool _startInFlight = false;
   bool _isLoadingScenario = false;
   bool _isSending = false;
+  bool _isRecordingPlaceholderActive = false;
   LessonSessionStartResult? _startResult;
   LessonRuntimeScenario? _scenario;
   UserSettings? _settings;
@@ -82,7 +114,8 @@ class _LessonScreenState extends State<LessonScreen> {
   }
 
   Future<LessonSessionStartResult> _startSelectedLesson(
-      LessonStartSelection selection) async {
+    LessonStartSelection selection,
+  ) async {
     try {
       final studyLanguage = await _studyLanguage();
       return await _authService.startLessonSession(
@@ -115,6 +148,7 @@ class _LessonScreenState extends State<LessonScreen> {
       _sendError = null;
       _scenario = null;
       _settings = null;
+      _isRecordingPlaceholderActive = false;
       _messages.clear();
     });
 
@@ -216,6 +250,7 @@ class _LessonScreenState extends State<LessonScreen> {
     setState(() {
       _isSending = true;
       _sendError = null;
+      _isRecordingPlaceholderActive = false;
       _messages
         ..clear()
         ..addAll(updatedMessages);
@@ -317,49 +352,107 @@ class _LessonScreenState extends State<LessonScreen> {
     return fallback;
   }
 
+  LessonTutorStatus get _tutorStatus {
+    if (_lessonLoadError != null || _sendError != null) {
+      return LessonTutorStatus.error;
+    }
+    if (_isStarting || _isLoadingScenario) {
+      return LessonTutorStatus.loading;
+    }
+    if (_isSending) {
+      return LessonTutorStatus.thinking;
+    }
+    if (_isRecordingPlaceholderActive) {
+      return LessonTutorStatus.listening;
+    }
+    if (_startResult?.isReady ?? false) {
+      return LessonTutorStatus.ready;
+    }
+    return LessonTutorStatus.loading;
+  }
+
+  _LessonActionAvailability get _actionAvailability {
+    final lessonReady = (_startResult?.isReady ?? false) &&
+        !_isLoadingScenario &&
+        _scenario != null &&
+        _settings != null;
+    return _LessonActionAvailability(
+      canSendText: lessonReady && !_isSending,
+      canToggleRecordingPlaceholder: lessonReady && !_isSending,
+      canUsePlaceholders: lessonReady,
+      canFinishLesson: lessonReady,
+    );
+  }
+
+  String get _tutorDisplayName {
+    final tutorId = _settings?.selectedTutorId.trim() ?? '';
+    if (tutorId.isEmpty) return 'Tutor';
+    final words = tutorId
+        .split(RegExp(r'[_\-\s]+'))
+        .where((part) => part.trim().isNotEmpty)
+        .map((part) {
+      final lower = part.toLowerCase();
+      return '${lower[0].toUpperCase()}${lower.substring(1)}';
+    }).toList(growable: false);
+    return words.isEmpty ? 'Tutor' : words.join(' ');
+  }
+
+  void _showComingNext(String label) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text('$label: $_comingNextMessage')),
+      );
+  }
+
+  void _toggleRecordingPlaceholder() {
+    if (!_actionAvailability.canToggleRecordingPlaceholder) return;
+    setState(() {
+      _isRecordingPlaceholderActive = !_isRecordingPlaceholderActive;
+    });
+    final label = _isRecordingPlaceholderActive
+        ? 'Recording placeholder'
+        : 'Recording stopped';
+    _showComingNext(label);
+  }
+
+  void _handleFutureAction(String label) {
+    if (!_actionAvailability.canUsePlaceholders) return;
+    _showComingNext(label);
+  }
+
   @override
   Widget build(BuildContext context) {
     final selection = widget.selection;
     return Scaffold(
       appBar: AppBar(title: const Text('Lesson')),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  _statusTitle,
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                if (selection != null) ...[
-                  Text(
-                    'Level: ${selection.level}',
-                    textAlign: TextAlign.center,
-                  ),
-                  Text(
-                    'Topic: ${selection.topicTitle}',
-                    textAlign: TextAlign.center,
-                  ),
-                  Text(
-                    'Situation: ${selection.situation}',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                _SessionStartStatusView(
-                  isStarting: _isStarting,
-                  result: _startResult,
-                  hasSelection: selection != null,
-                  onRetry: _isStarting ? null : _startLessonSession,
-                ),
-                const SizedBox(height: 16),
-                if (_startResult?.isReady ?? false)
-                  _LessonChatPanel(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                _statusTitle,
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 12),
+              if (selection != null) ...[
+                Text('Level: ${selection.level}'),
+                Text('Topic: ${selection.topicTitle}'),
+                Text('Situation: ${selection.situation}'),
+                const SizedBox(height: 12),
+              ],
+              _SessionStartStatusView(
+                isStarting: _isStarting,
+                result: _startResult,
+                hasSelection: selection != null,
+                onRetry: _isStarting ? null : _startLessonSession,
+              ),
+              const SizedBox(height: 12),
+              if (_startResult?.isReady ?? false)
+                Expanded(
+                  child: _LessonChatPanel(
                     selection: selection,
                     scenario: _scenario,
                     isLoadingScenario: _isLoadingScenario,
@@ -370,9 +463,15 @@ class _LessonScreenState extends State<LessonScreen> {
                     isSending: _isSending,
                     controller: _messageController,
                     onSend: _sendMessage,
+                    tutorStatus: _tutorStatus,
+                    tutorDisplayName: _tutorDisplayName,
+                    actionAvailability: _actionAvailability,
+                    isRecordingPlaceholderActive: _isRecordingPlaceholderActive,
+                    onToggleRecordingPlaceholder: _toggleRecordingPlaceholder,
+                    onFutureAction: _handleFutureAction,
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         ),
       ),
@@ -398,6 +497,12 @@ class _LessonChatPanel extends StatelessWidget {
     required this.isSending,
     required this.controller,
     required this.onSend,
+    required this.tutorStatus,
+    required this.tutorDisplayName,
+    required this.actionAvailability,
+    required this.isRecordingPlaceholderActive,
+    required this.onToggleRecordingPlaceholder,
+    required this.onFutureAction,
   });
 
   final LessonStartSelection? selection;
@@ -410,13 +515,18 @@ class _LessonChatPanel extends StatelessWidget {
   final bool isSending;
   final TextEditingController controller;
   final Future<void> Function() onSend;
+  final LessonTutorStatus tutorStatus;
+  final String tutorDisplayName;
+  final _LessonActionAvailability actionAvailability;
+  final bool isRecordingPlaceholderActive;
+  final VoidCallback onToggleRecordingPlaceholder;
+  final void Function(String label) onFutureAction;
 
   @override
   Widget build(BuildContext context) {
     if (isLoadingScenario) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(child: CircularProgressIndicator()),
+      return const Center(
+        child: CircularProgressIndicator(key: Key('lesson-runtime-loading')),
       );
     }
 
@@ -424,14 +534,29 @@ class _LessonChatPanel extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(lessonLoadError!, textAlign: TextAlign.center),
+          _TutorHeader(
+            displayName: tutorDisplayName,
+            status: tutorStatus,
+          ),
           const SizedBox(height: 12),
-          TextButton.icon(
-            onPressed: () {
-              onRetryLoad();
-            },
-            icon: const Icon(Icons.refresh),
-            label: const Text('Retry lesson content'),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(lessonLoadError!, textAlign: TextAlign.center),
+                  const SizedBox(height: 12),
+                  TextButton.icon(
+                    onPressed: () {
+                      onRetryLoad();
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry lesson content'),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       );
@@ -444,122 +569,160 @@ class _LessonChatPanel extends StatelessWidget {
     final title = scenario!.metadata.subtopic.isNotEmpty
         ? scenario!.metadata.subtopic
         : selection!.situation;
+    final setupMessage = scenario!.lessonSetup.setupMessage;
     final goal = scenario!.learningGoal.goal;
     final lessonContext = scenario!.situation.description;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 148),
+          child: SingleChildScrollView(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(title, style: Theme.of(context).textTheme.titleMedium),
-                if (goal.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(goal),
-                ],
-                if (lessonContext.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(lessonContext),
-                ],
+                _TutorHeader(
+                  displayName: tutorDisplayName,
+                  status: tutorStatus,
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  key: const Key('lesson-scenario-card'),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        if (setupMessage.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(setupMessage),
+                        ],
+                        if (goal.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(goal),
+                        ],
+                        if (lessonContext.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(lessonContext),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        Container(
-          constraints: const BoxConstraints(minHeight: 180),
-          decoration: BoxDecoration(
-            border: Border.all(color: Theme.of(context).dividerColor),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: messages.isEmpty
-              ? const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text(
-                    'Send the first message to begin this text lesson.',
-                    textAlign: TextAlign.center,
-                  ),
-                )
-              : ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(12),
-                  itemCount: messages.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final message = messages[index];
-                    final alignment = message.isBot
-                        ? Alignment.centerLeft
-                        : Alignment.centerRight;
-                    final background = message.isBot
-                        ? Theme.of(context).colorScheme.surfaceContainerHighest
-                        : Theme.of(context).colorScheme.primaryContainer;
-                    return Align(
-                      alignment: alignment,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: background,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(message.text),
+        const SizedBox(height: 12),
+        Expanded(
+          child: Container(
+            key: const Key('lesson-chat-transcript'),
+            decoration: BoxDecoration(
+              border: Border.all(color: Theme.of(context).dividerColor),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: messages.isEmpty
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(
+                        'Send the first message to begin this text lesson.',
+                        textAlign: TextAlign.center,
                       ),
-                    );
-                  },
-                ),
-        ),
-        if (isSending) ...[
-          const SizedBox(height: 12),
-          const Text(
-            'Tutor is thinking...',
-            textAlign: TextAlign.center,
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: messages.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final message = messages[index];
+                      final alignment = message.isTutor
+                          ? Alignment.centerLeft
+                          : Alignment.centerRight;
+                      final background = message.isTutor
+                          ? Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest
+                          : Theme.of(context).colorScheme.primaryContainer;
+                      return Align(
+                        alignment: alignment,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: background,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(message.text),
+                        ),
+                      );
+                    },
+                  ),
           ),
-        ],
+        ),
+        const SizedBox(height: 12),
         if (sendError != null) ...[
-          const SizedBox(height: 12),
           Text(
             sendError!,
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 12),
         ],
-        const SizedBox(height: 16),
-        TextField(
-          controller: controller,
-          enabled: !isSending,
-          minLines: 1,
-          maxLines: 4,
-          textInputAction: TextInputAction.send,
-          onSubmitted: (_) {
-            if (!isSending) {
-              onSend();
-            }
-          },
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            hintText: 'Type your message',
-          ),
+        _LessonActionPanel(
+          actionAvailability: actionAvailability,
+          isRecordingPlaceholderActive: isRecordingPlaceholderActive,
+          onToggleRecordingPlaceholder: onToggleRecordingPlaceholder,
+          onFutureAction: onFutureAction,
         ),
         const SizedBox(height: 12),
-        ValueListenableBuilder<TextEditingValue>(
-          valueListenable: controller,
-          builder: (context, value, _) {
-            final canSend = !isSending && value.text.trim().isNotEmpty;
-            return FilledButton(
-              onPressed: canSend
-                  ? () {
-                      onSend();
-                    }
-                  : null,
-              child: Text(isSending ? 'Sending...' : 'Send'),
-            );
-          },
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: TextField(
+                key: const Key('lesson-input'),
+                controller: controller,
+                enabled: actionAvailability.canSendText,
+                minLines: 1,
+                maxLines: 4,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) {
+                  if (actionAvailability.canSendText) {
+                    onSend();
+                  }
+                },
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Type your message',
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: controller,
+              builder: (context, value, _) {
+                final canSend = actionAvailability.canSendText &&
+                    value.text.trim().isNotEmpty;
+                return FilledButton(
+                  key: const Key('lesson-send-button'),
+                  onPressed: canSend
+                      ? () {
+                          onSend();
+                        }
+                      : null,
+                  child: Text(isSending ? 'Sending...' : 'Send'),
+                );
+              },
+            ),
+          ],
         ),
       ],
     );
@@ -615,15 +778,178 @@ class _SessionStartStatusView extends StatelessWidget {
 class _LessonChatMessage {
   const _LessonChatMessage({
     required this.text,
-    required this.isBot,
+    required this.kind,
   });
 
-  const _LessonChatMessage.user(this.text) : isBot = false;
+  const _LessonChatMessage.user(this.text) : kind = LessonMessageKind.user;
 
-  const _LessonChatMessage.bot(this.text) : isBot = true;
+  const _LessonChatMessage.bot(this.text) : kind = LessonMessageKind.tutor;
 
   final String text;
-  final bool isBot;
+  final LessonMessageKind kind;
 
-  bool get isUser => !isBot;
+  bool get isUser => kind == LessonMessageKind.user;
+  bool get isTutor => kind == LessonMessageKind.tutor;
+  bool get isBot => isTutor;
+}
+
+class _TutorHeader extends StatelessWidget {
+  const _TutorHeader({
+    required this.displayName,
+    required this.status,
+  });
+
+  final String displayName;
+  final LessonTutorStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      key: const Key('lesson-tutor-header'),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              key: const Key('lesson-avatar'),
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                displayName.isNotEmpty ? displayName[0].toUpperCase() : 'T',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    displayName,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _statusLabel(status),
+                    key: const Key('lesson-tutor-status'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _statusLabel(LessonTutorStatus status) {
+    switch (status) {
+      case LessonTutorStatus.loading:
+        return 'Loading';
+      case LessonTutorStatus.ready:
+        return 'Ready';
+      case LessonTutorStatus.thinking:
+        return 'Thinking';
+      case LessonTutorStatus.listening:
+        return 'Listening';
+      case LessonTutorStatus.speaking:
+        return 'Speaking';
+      case LessonTutorStatus.error:
+        return 'Error';
+    }
+  }
+}
+
+class _LessonActionPanel extends StatelessWidget {
+  const _LessonActionPanel({
+    required this.actionAvailability,
+    required this.isRecordingPlaceholderActive,
+    required this.onToggleRecordingPlaceholder,
+    required this.onFutureAction,
+  });
+
+  final _LessonActionAvailability actionAvailability;
+  final bool isRecordingPlaceholderActive;
+  final VoidCallback onToggleRecordingPlaceholder;
+  final void Function(String label) onFutureAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      key: const Key('lesson-action-controls'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SingleChildScrollView(
+          key: const Key('lesson-action-scroll'),
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              OutlinedButton.icon(
+                key: const Key('lesson-action-record'),
+                onPressed: actionAvailability.canToggleRecordingPlaceholder
+                    ? onToggleRecordingPlaceholder
+                    : null,
+                icon: Icon(
+                  isRecordingPlaceholderActive ? Icons.stop : Icons.mic_none,
+                ),
+                label: Text(
+                  isRecordingPlaceholderActive ? 'Stop recording' : 'Record',
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                key: const Key('lesson-action-play-voice'),
+                onPressed: actionAvailability.canUsePlaceholders
+                    ? () => onFutureAction('Play voice')
+                    : null,
+                icon: const Icon(Icons.volume_up_outlined),
+                label: const Text('Play voice'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                key: const Key('lesson-action-hint'),
+                onPressed: actionAvailability.canUsePlaceholders
+                    ? () => onFutureAction('Hint')
+                    : null,
+                icon: const Icon(Icons.lightbulb_outline),
+                label: const Text('Hint'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                key: const Key('lesson-action-translation'),
+                onPressed: actionAvailability.canUsePlaceholders
+                    ? () => onFutureAction('Translation')
+                    : null,
+                icon: const Icon(Icons.translate),
+                label: const Text('Translation'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                key: const Key('lesson-action-feedback'),
+                onPressed: actionAvailability.canUsePlaceholders
+                    ? () => onFutureAction('Feedback / Review')
+                    : null,
+                icon: const Icon(Icons.rate_review_outlined),
+                label: const Text('Feedback / Review'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                key: const Key('lesson-action-finish'),
+                onPressed: actionAvailability.canFinishLesson
+                    ? () => onFutureAction('Finish lesson')
+                    : null,
+                icon: const Icon(Icons.flag_outlined),
+                label: const Text('Finish lesson'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }

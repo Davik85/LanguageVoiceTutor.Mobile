@@ -282,8 +282,9 @@ Future<void> _expectVisibleAfterScroll(WidgetTester tester, String text) async {
   expect(finder, findsOneWidget);
 }
 
-Future<void> _showSendButton(WidgetTester tester) async {
-  final finder = find.widgetWithText(FilledButton, 'Send');
+Finder _sendButton() => find.byKey(const Key('lesson-send-button'));
+
+Future<void> _showAction(WidgetTester tester, Finder finder) async {
   await tester.ensureVisible(finder);
   await tester.pumpAndSettle();
 }
@@ -319,9 +320,8 @@ void main() {
     expect(find.text('Lesson started'), findsOneWidget);
     expect(find.text('Lesson session is ready.'), findsOneWidget);
     expect(find.text('Introductions'), findsWidgets);
-    expect(find.textContaining('Text chat is coming next.'), findsNothing);
-    expect(find.byType(TextField), findsOneWidget);
-    expect(find.text('Send'), findsOneWidget);
+    expect(find.byKey(const Key('lesson-input')), findsOneWidget);
+    expect(_sendButton(), findsOneWidget);
     expect(auth.fetchScenarioCallCount, 1);
     expect(auth.lastStartRequest?.lessonContentId,
         'everyday_english_introductions');
@@ -333,7 +333,7 @@ void main() {
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
-    final button = tester.widget<FilledButton>(find.byType(FilledButton));
+    final button = tester.widget<FilledButton>(_sendButton());
     expect(button.onPressed, isNull);
   });
 
@@ -347,13 +347,14 @@ void main() {
 
     await tester.enterText(find.byType(TextField), 'Hello');
     await tester.pump();
-    await _showSendButton(tester);
-    await tester.tap(find.widgetWithText(FilledButton, 'Send'));
+    await _showAction(tester, _sendButton());
+    await tester.tap(_sendButton());
     await tester.pump();
 
     expect(auth.sendLessonChatReplyCallCount, 1);
-    expect(find.text('Tutor is thinking...'), findsOneWidget);
-    final button = tester.widget<FilledButton>(find.byType(FilledButton));
+    expect(find.text('Thinking'), findsOneWidget);
+    expect(find.text('Sending...'), findsOneWidget);
+    final button = tester.widget<FilledButton>(_sendButton());
     expect(button.onPressed, isNull);
 
     replyCompleter.complete(_defaultReplyResult());
@@ -368,8 +369,8 @@ void main() {
 
     await tester.enterText(find.byType(TextField), 'Hello, my name is Sam.');
     await tester.pump();
-    await _showSendButton(tester);
-    await tester.tap(find.widgetWithText(FilledButton, 'Send'));
+    await _showAction(tester, _sendButton());
+    await tester.tap(_sendButton());
     await tester.pump();
 
     expect(find.text('Hello, my name is Sam.'), findsOneWidget);
@@ -392,8 +393,8 @@ void main() {
 
     await tester.enterText(find.byType(TextField), 'Hello, my name is Sam.');
     await tester.pump();
-    await _showSendButton(tester);
-    await tester.tap(find.widgetWithText(FilledButton, 'Send'));
+    await _showAction(tester, _sendButton());
+    await tester.tap(_sendButton());
     await tester.pumpAndSettle();
 
     expect(find.text('Hi Sam! Nice to meet you.'), findsOneWidget);
@@ -402,11 +403,124 @@ void main() {
     expect(auth.persistedMessages.last.role, 'assistant');
   });
 
+  testWidgets('tutor header renders with avatar, name, and ready status',
+      (tester) async {
+    final auth = FakeAuthService();
+
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('lesson-tutor-header')), findsOneWidget);
+    expect(find.byKey(const Key('lesson-avatar')), findsOneWidget);
+    expect(find.text('Lana'), findsOneWidget);
+    expect(find.text('Ready'), findsOneWidget);
+  });
+
+  testWidgets(
+      'tutor status changes to thinking during reply and returns to ready',
+      (tester) async {
+    final replyCompleter = Completer<LessonChatReplyResult>();
+    final auth = FakeAuthService(replyCompleter: replyCompleter);
+
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ready'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'Hello');
+    await tester.pump();
+    await _showAction(tester, _sendButton());
+    await tester.tap(_sendButton());
+    await tester.pump();
+
+    expect(find.text('Thinking'), findsOneWidget);
+
+    replyCompleter.complete(_defaultReplyResult());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ready'), findsOneWidget);
+  });
+
+  testWidgets('future action buttons render', (tester) async {
+    final auth = FakeAuthService();
+
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('lesson-action-record')), findsOneWidget);
+    expect(find.byKey(const Key('lesson-action-play-voice')), findsOneWidget);
+    expect(find.byKey(const Key('lesson-action-hint')), findsOneWidget);
+    expect(find.byKey(const Key('lesson-action-translation')), findsOneWidget);
+    expect(find.byKey(const Key('lesson-action-feedback')), findsOneWidget);
+    expect(find.byKey(const Key('lesson-action-finish')), findsOneWidget);
+  });
+
+  testWidgets('future action buttons stay local and do not call backend',
+      (tester) async {
+    final auth = FakeAuthService();
+
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    final initialSendCount = auth.sendLessonChatReplyCallCount;
+    final initialPersistCount = auth.persistedMessages.length;
+    final initialScenarioCount = auth.fetchScenarioCallCount;
+
+    await _showAction(tester, find.byKey(const Key('lesson-action-record')));
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.pump();
+    expect(find.text('Listening'), findsOneWidget);
+    expect(find.text('Stop recording'), findsOneWidget);
+
+    await _showAction(tester, find.byKey(const Key('lesson-action-record')));
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.pump();
+
+    await _showAction(
+        tester, find.byKey(const Key('lesson-action-play-voice')));
+    await tester.tap(find.byKey(const Key('lesson-action-play-voice')));
+    await tester.pump();
+    await _showAction(tester, find.byKey(const Key('lesson-action-hint')));
+    await tester.tap(find.byKey(const Key('lesson-action-hint')));
+    await tester.pump();
+    await _showAction(
+        tester, find.byKey(const Key('lesson-action-translation')));
+    await tester.tap(find.byKey(const Key('lesson-action-translation')));
+    await tester.pump();
+    await _showAction(tester, find.byKey(const Key('lesson-action-feedback')));
+    await tester.tap(find.byKey(const Key('lesson-action-feedback')));
+    await tester.pump();
+    await _showAction(tester, find.byKey(const Key('lesson-action-finish')));
+    await tester.tap(find.byKey(const Key('lesson-action-finish')));
+    await tester.pump();
+
+    expect(find.textContaining('Coming next in a future lesson update.'),
+        findsOneWidget);
+    expect(auth.sendLessonChatReplyCallCount, initialSendCount);
+    expect(auth.persistedMessages.length, initialPersistCount);
+    expect(auth.fetchScenarioCallCount, initialScenarioCount);
+  });
+
+  testWidgets('layout foundation widgets are present', (tester) async {
+    final auth = FakeAuthService();
+
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('lesson-tutor-header')), findsOneWidget);
+    expect(find.byKey(const Key('lesson-scenario-card')), findsOneWidget);
+    expect(find.byKey(const Key('lesson-chat-transcript')), findsOneWidget);
+    expect(find.byKey(const Key('lesson-action-controls')), findsOneWidget);
+    expect(find.byKey(const Key('lesson-input')), findsOneWidget);
+    expect(_sendButton(), findsOneWidget);
+  });
+
   testWidgets('runtime scenario failure shows friendly retry state',
       (tester) async {
     final auth = FakeAuthService(
       scenarioFailure: const ApiException(
-          'Could not load lesson content. Please try again.'),
+        'Could not load lesson content. Please try again.',
+      ),
     );
 
     await tester.pumpWidget(_lessonScreen(auth));
@@ -415,5 +529,6 @@ void main() {
     expect(find.text('Could not load lesson content. Please try again.'),
         findsOneWidget);
     expect(find.text('Retry lesson content'), findsOneWidget);
+    expect(find.text('Error'), findsOneWidget);
   });
 }
