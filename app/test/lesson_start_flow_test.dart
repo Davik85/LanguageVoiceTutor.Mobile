@@ -352,25 +352,25 @@ void main() {
         'everyday_english_introductions');
   });
 
-  testWidgets('tutor header renders name status and compact metadata',
+  testWidgets('tutor header renders large avatar area and compact metadata',
       (tester) async {
     final auth = FakeAuthService();
 
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('lesson-avatar')), findsOneWidget);
-    expect(find.text('Lana'), findsOneWidget);
-    expect(find.text('Ready'), findsOneWidget);
-    expect(find.byKey(const Key('lesson-meta-level')), findsOneWidget);
-    expect(find.text('A1'), findsOneWidget);
-    expect(find.byKey(const Key('lesson-meta-topic')), findsOneWidget);
-    expect(find.text('Daily Life'), findsOneWidget);
-    expect(find.byKey(const Key('lesson-meta-situation')), findsOneWidget);
-    expect(find.text('Introductions'), findsWidgets);
+    final avatarFinder = find.byKey(const Key('lesson-avatar'));
+    expect(avatarFinder, findsOneWidget);
+    expect(tester.getSize(avatarFinder).height, greaterThan(150));
+    expect(find.textContaining('Lana'), findsOneWidget);
+    expect(find.byKey(const Key('lesson-avatar-placeholder')), findsOneWidget);
+    expect(find.byKey(const Key('lesson-meta-summary')), findsOneWidget);
+    expect(find.text('A1 · Daily Life'), findsOneWidget);
+    expect(find.text('Ready'), findsNothing);
+    expect(find.byKey(const Key('lesson-meta-situation')), findsNothing);
   });
 
-  testWidgets('cms opening and scenario choices render at lesson start',
+  testWidgets('cms opening renders plain text scenario choices only',
       (tester) async {
     final auth = FakeAuthService();
 
@@ -384,29 +384,34 @@ void main() {
         findsOneWidget);
     expect(find.textContaining('Introduce yourself in one short sentence.'),
         findsOneWidget);
-    expect(find.text('Meet a new neighbor'), findsOneWidget);
-    expect(find.text('First day at class'), findsOneWidget);
+    expect(find.textContaining('Try one of these situations:'), findsOneWidget);
+    expect(find.textContaining('- Meet a new neighbor'), findsOneWidget);
+    expect(find.textContaining('- First day at class'), findsOneWidget);
+    expect(
+        find.textContaining('Or choose your own situation in Introductions.'),
+        findsOneWidget);
+    expect(find.byType(ActionChip), findsNothing);
+    expect(find.text('Tutor greets the learner.'), findsNothing);
+    expect(find.text('Keep tutor messages short.'), findsNothing);
+    expect(find.text('Keep the greeting simple.'), findsNothing);
   });
 
-  testWidgets('tapping a scenario choice sends it through lesson chat reply',
+  testWidgets('typed scenario choice still sends through lesson chat reply',
       (tester) async {
     final auth = FakeAuthService();
 
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
-    await _showWidget(tester, find.text('Meet a new neighbor'));
-    await tester.tap(find.text('Meet a new neighbor'));
+    await tester.enterText(find.byType(TextField), 'Meet a new neighbor');
+    await tester.pump();
+    await tester.tap(_sendButton());
     await tester.pumpAndSettle();
 
     expect(auth.sendLessonChatReplyCallCount, 1);
     expect(auth.lastLessonChatRequest?.userMessage, 'Meet a new neighbor');
-    expect(
-        auth.lastLessonChatRequest?.selectedContextVariantId, 'new_neighbor');
-    expect(
-      auth.lastLessonChatRequest?.selectedContextOpeningLine,
-      'Hi! I\'m Lana. I live next door. What\'s your name?',
-    );
+    expect(auth.lastLessonChatRequest?.selectedContextVariantId, isEmpty);
+    expect(auth.lastLessonChatRequest?.selectedContextOpeningLine, isEmpty);
   });
 
   testWidgets('send button is disabled for blank input', (tester) async {
@@ -433,7 +438,6 @@ void main() {
     await tester.pump();
 
     expect(auth.sendLessonChatReplyCallCount, 1);
-    expect(find.text('Thinking'), findsOneWidget);
     expect(find.text('Sending...'), findsOneWidget);
     final button = tester.widget<FilledButton>(_sendButton());
     expect(button.onPressed, isNull);
@@ -538,7 +542,6 @@ void main() {
     await tester
         .tap(find.byKey(const Key('lesson-message-action-tutor-voice')));
     await tester.pump();
-    expect(find.text('Speaking'), findsOneWidget);
     await tester.tap(find.byKey(const Key('lesson-action-hint')));
     await tester.pump();
 
@@ -562,7 +565,6 @@ void main() {
     await tester.tap(find.byKey(const Key('lesson-action-record')));
     await tester.pump();
 
-    expect(find.text('Listening'), findsOneWidget);
     expect(find.textContaining('Coming next in a future lesson update.'),
         findsOneWidget);
     expect(auth.sendLessonChatReplyCallCount, initialSendCount);
@@ -611,6 +613,5 @@ void main() {
     expect(find.text('Could not load lesson content. Please try again.'),
         findsOneWidget);
     expect(find.text('Retry lesson content'), findsOneWidget);
-    expect(find.text('Error'), findsOneWidget);
   });
 }

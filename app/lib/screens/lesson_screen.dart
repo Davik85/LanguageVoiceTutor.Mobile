@@ -27,14 +27,12 @@ class _LessonActionAvailability {
     required this.canSendText,
     required this.canToggleRecordingPlaceholder,
     required this.canUsePlaceholders,
-    required this.canSelectScenarioChoice,
     required this.canUseHintPlaceholder,
   });
 
   final bool canSendText;
   final bool canToggleRecordingPlaceholder;
   final bool canUsePlaceholders;
-  final bool canSelectScenarioChoice;
   final bool canUseHintPlaceholder;
 }
 
@@ -70,7 +68,6 @@ class _LessonScreenState extends State<LessonScreen> {
   LessonSessionStartResult? _startResult;
   LessonRuntimeScenario? _scenario;
   UserSettings? _settings;
-  LessonRuntimeContextVariant? _selectedContextVariant;
   String? _lessonLoadError;
   String? _sendError;
   final List<_LessonChatMessage> _messages = [];
@@ -153,7 +150,6 @@ class _LessonScreenState extends State<LessonScreen> {
       _sendError = null;
       _scenario = null;
       _settings = null;
-      _selectedContextVariant = null;
       _isRecordingPlaceholderActive = false;
       _isSpeakingPlaceholderActive = false;
       _messages.clear();
@@ -196,34 +192,31 @@ class _LessonScreenState extends State<LessonScreen> {
       scenario.lessonSetup.setupMessage.trim(),
       scenario.conversationFlow.opening.trim(),
       scenario.conversationFlow.firstUserTask.trim(),
-    ].where((value) => value.isNotEmpty).toList(growable: false);
+    ].where((value) => value.isNotEmpty).toList();
+    final scenarioChoices = scenario.controlledVariation.contextVariants
+        .map((variant) => variant.title.trim())
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
+
+    if (scenarioChoices.isNotEmpty) {
+      openingParts.add(
+        [
+          'Try one of these situations:',
+          ...scenarioChoices.map((choice) => '- $choice'),
+        ].join('\n'),
+      );
+    }
+
+    final subtopicTitle = scenario.metadata.subtopic.trim();
+    if (subtopicTitle.isNotEmpty) {
+      openingParts.add('Or choose your own situation in $subtopicTitle.');
+    }
+
     final openingText = openingParts.isEmpty
         ? _neutralOpeningFallback
         : openingParts.join('\n\n');
 
-    final choices = scenario.controlledVariation.contextVariants
-        .map(
-          (variant) => variant.copyWith(
-            openingLine: _resolveTutorName(
-              variant.openingLine,
-              tutorDisplayName,
-            ),
-            contextConfirmationLine: _resolveTutorName(
-              variant.contextConfirmationLine,
-              tutorDisplayName,
-            ),
-            openingIntent: _resolveTutorName(
-              variant.openingIntent,
-              tutorDisplayName,
-            ),
-          ),
-        )
-        .toList(growable: false);
-
-    return _LessonChatMessage.tutor(
-      openingText,
-      choices: choices,
-    );
+    return _LessonChatMessage.tutor(openingText);
   }
 
   Future<String> _studyLanguage() async {
@@ -295,10 +288,7 @@ class _LessonScreenState extends State<LessonScreen> {
       learnerTurnCount: learnerTurnCount,
       recentMessages: _recentConversationMessages(updatedMessages),
       backendSessionId: session.lessonSessionId,
-      selectedContextTitle: _selectedContextVariant?.title ??
-          selection.selectedContextTitle ??
-          '',
-      selectedContextVariant: _selectedContextVariant,
+      selectedContextTitle: selection.selectedContextTitle ?? '',
     );
 
     setState(() {
@@ -434,7 +424,6 @@ class _LessonScreenState extends State<LessonScreen> {
       canSendText: lessonReady && !_isSending,
       canToggleRecordingPlaceholder: lessonReady && !_isSending,
       canUsePlaceholders: lessonReady,
-      canSelectScenarioChoice: lessonReady && !_isSending,
       canUseHintPlaceholder: lessonReady && !_isSending,
     );
   }
@@ -510,15 +499,6 @@ class _LessonScreenState extends State<LessonScreen> {
     _showComingNext(label);
   }
 
-  Future<void> _handleScenarioChoice(
-      LessonRuntimeContextVariant variant) async {
-    if (!_actionAvailability.canSelectScenarioChoice) return;
-    setState(() {
-      _selectedContextVariant = variant;
-    });
-    await _sendMessage(variant.title);
-  }
-
   @override
   Widget build(BuildContext context) {
     final selection = widget.selection;
@@ -561,7 +541,6 @@ class _LessonScreenState extends State<LessonScreen> {
                             _isStarting ? null : () => _startLessonSession(),
                         onRetryLoad: _retryLessonRuntime,
                         transcriptController: _transcriptController,
-                        onScenarioChoice: _handleScenarioChoice,
                         onMessageAction: _handleFutureAction,
                         onToggleRecordingPlaceholder:
                             _toggleRecordingPlaceholder,
@@ -575,9 +554,6 @@ class _LessonScreenState extends State<LessonScreen> {
       ),
     );
   }
-
-  static String _resolveTutorName(String value, String tutorDisplayName) =>
-      value.replaceAll('{tutorName}', tutorDisplayName).trim();
 }
 
 class _LessonWorkspace extends StatelessWidget {
@@ -601,7 +577,6 @@ class _LessonWorkspace extends StatelessWidget {
     required this.onBack,
     required this.onRetryStart,
     required this.onRetryLoad,
-    required this.onScenarioChoice,
     required this.onMessageAction,
     required this.onToggleRecordingPlaceholder,
     required this.onHint,
@@ -627,8 +602,6 @@ class _LessonWorkspace extends StatelessWidget {
   final VoidCallback onBack;
   final VoidCallback? onRetryStart;
   final Future<void> Function() onRetryLoad;
-  final Future<void> Function(LessonRuntimeContextVariant variant)
-      onScenarioChoice;
   final void Function(String label, {bool speaking}) onMessageAction;
   final VoidCallback onToggleRecordingPlaceholder;
   final VoidCallback onHint;
@@ -652,9 +625,6 @@ class _LessonWorkspace extends StatelessWidget {
             topic: scenario?.metadata.topic.isNotEmpty ?? false
                 ? scenario!.metadata.topic
                 : selection.topicTitle,
-            situation: scenario?.metadata.subtopic.isNotEmpty ?? false
-                ? scenario!.metadata.subtopic
-                : selection.situation,
             onBack: onBack,
           ),
           Expanded(
@@ -678,7 +648,6 @@ class _LessonWorkspace extends StatelessWidget {
                       transcriptController: transcriptController,
                       messages: messages,
                       actionAvailability: actionAvailability,
-                      onScenarioChoice: onScenarioChoice,
                       onMessageAction: onMessageAction,
                     ),
                   ),
@@ -725,7 +694,6 @@ class _LessonBody extends StatelessWidget {
     required this.transcriptController,
     required this.messages,
     required this.actionAvailability,
-    required this.onScenarioChoice,
     required this.onMessageAction,
   });
 
@@ -738,8 +706,6 @@ class _LessonBody extends StatelessWidget {
   final ScrollController transcriptController;
   final List<_LessonChatMessage> messages;
   final _LessonActionAvailability actionAvailability;
-  final Future<void> Function(LessonRuntimeContextVariant variant)
-      onScenarioChoice;
   final void Function(String label, {bool speaking}) onMessageAction;
 
   @override
@@ -752,10 +718,9 @@ class _LessonBody extends StatelessWidget {
 
     final start = startResult;
     if (start != null && !start.isReady) {
-      return Padding(
+      return SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(start.message, textAlign: TextAlign.center),
             const SizedBox(height: 16),
@@ -776,10 +741,9 @@ class _LessonBody extends StatelessWidget {
     }
 
     if (lessonLoadError != null) {
-      return Padding(
+      return SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(lessonLoadError!, textAlign: TextAlign.center),
             const SizedBox(height: 16),
@@ -799,7 +763,6 @@ class _LessonBody extends StatelessWidget {
       controller: transcriptController,
       messages: messages,
       actionAvailability: actionAvailability,
-      onScenarioChoice: onScenarioChoice,
       onMessageAction: onMessageAction,
     );
   }
@@ -810,15 +773,12 @@ class _LessonTranscript extends StatelessWidget {
     required this.controller,
     required this.messages,
     required this.actionAvailability,
-    required this.onScenarioChoice,
     required this.onMessageAction,
   });
 
   final ScrollController controller;
   final List<_LessonChatMessage> messages;
   final _LessonActionAvailability actionAvailability;
-  final Future<void> Function(LessonRuntimeContextVariant variant)
-      onScenarioChoice;
   final void Function(String label, {bool speaking}) onMessageAction;
 
   @override
@@ -846,7 +806,6 @@ class _LessonTranscript extends StatelessWidget {
         return _LessonMessageBubble(
           message: message,
           actionAvailability: actionAvailability,
-          onScenarioChoice: onScenarioChoice,
           onMessageAction: onMessageAction,
         );
       },
@@ -858,14 +817,11 @@ class _LessonMessageBubble extends StatelessWidget {
   const _LessonMessageBubble({
     required this.message,
     required this.actionAvailability,
-    required this.onScenarioChoice,
     required this.onMessageAction,
   });
 
   final _LessonChatMessage message;
   final _LessonActionAvailability actionAvailability;
-  final Future<void> Function(LessonRuntimeContextVariant variant)
-      onScenarioChoice;
   final void Function(String label, {bool speaking}) onMessageAction;
 
   @override
@@ -896,24 +852,6 @@ class _LessonMessageBubble extends StatelessWidget {
                 message.text,
                 style: TextStyle(color: textColor),
               ),
-              if (message.choices.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: message.choices.map((choice) {
-                    return ActionChip(
-                      key: Key('lesson-scenario-choice-${choice.id}'),
-                      label: Text(choice.title),
-                      onPressed: actionAvailability.canSelectScenarioChoice
-                          ? () {
-                              onScenarioChoice(choice);
-                            }
-                          : null,
-                    );
-                  }).toList(growable: false),
-                ),
-              ],
               const SizedBox(height: 8),
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -1078,18 +1016,12 @@ class _LessonComposer extends StatelessWidget {
 }
 
 class _LessonChatMessage {
-  const _LessonChatMessage.user(this.text)
-      : kind = LessonMessageKind.user,
-        choices = const [];
+  const _LessonChatMessage.user(this.text) : kind = LessonMessageKind.user;
 
-  const _LessonChatMessage.tutor(
-    this.text, {
-    this.choices = const [],
-  }) : kind = LessonMessageKind.tutor;
+  const _LessonChatMessage.tutor(this.text) : kind = LessonMessageKind.tutor;
 
   final String text;
   final LessonMessageKind kind;
-  final List<LessonRuntimeContextVariant> choices;
 
   bool get isUser => kind == LessonMessageKind.user;
   bool get isTutor => kind == LessonMessageKind.tutor;
@@ -1102,7 +1034,6 @@ class _TutorHeader extends StatelessWidget {
     required this.status,
     required this.compactLevel,
     required this.topic,
-    required this.situation,
     required this.onBack,
   });
 
@@ -1110,15 +1041,22 @@ class _TutorHeader extends StatelessWidget {
   final LessonTutorStatus status;
   final String compactLevel;
   final String topic;
-  final String situation;
   final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final statusColor = switch (status) {
+      LessonTutorStatus.ready => colorScheme.onSurfaceVariant,
+      LessonTutorStatus.thinking => colorScheme.primary,
+      LessonTutorStatus.listening => colorScheme.tertiary,
+      LessonTutorStatus.speaking => colorScheme.secondary,
+      LessonTutorStatus.error => colorScheme.error,
+    };
     return Container(
       key: const Key('lesson-tutor-header'),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         gradient: LinearGradient(
@@ -1130,112 +1068,125 @@ class _TutorHeader extends StatelessWidget {
           ],
         ),
       ),
-      child: Column(
+      child: Stack(
         children: [
-          Row(
-            children: [
-              IconButton(
-                key: const Key('lesson-back-button'),
-                onPressed: onBack,
-                icon: const Icon(Icons.arrow_back),
-              ),
-              const Spacer(),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                key: const Key('lesson-avatar'),
-                width: 112,
-                height: 112,
-                decoration: BoxDecoration(
-                  color: colorScheme.surface.withValues(alpha: 0.72),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: colorScheme.outlineVariant),
-                ),
-                alignment: Alignment.center,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.account_circle_outlined,
-                      size: 52,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Avatar',
-                      style: Theme.of(context).textTheme.labelSmall,
-                    ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0, -0.35),
+                  radius: 0.95,
+                  colors: [
+                    colorScheme.surface.withValues(alpha: 0.88),
+                    colorScheme.surface.withValues(alpha: 0.22),
+                    Colors.transparent,
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      displayName,
-                      style: Theme.of(context).textTheme.headlineSmall,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface.withValues(alpha: 0.78),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    const SizedBox(height: 6),
-                    Container(
-                      key: const Key('lesson-tutor-status'),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface.withValues(alpha: 0.72),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(_statusLabel(status)),
+                    child: IconButton(
+                      key: const Key('lesson-back-button'),
+                      onPressed: onBack,
+                      icon: const Icon(Icons.arrow_back),
                     ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 176,
+                  child: Container(
+                    key: const Key('lesson-avatar'),
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface.withValues(alpha: 0.62),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: colorScheme.outlineVariant),
+                    ),
+                    child: Stack(
                       children: [
-                        _HeaderMetaChip(
-                          key: const Key('lesson-meta-level'),
-                          label: compactLevel,
+                        Positioned(
+                          right: 20,
+                          top: 18,
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: statusColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
                         ),
-                        _HeaderMetaChip(
-                          key: const Key('lesson-meta-topic'),
-                          label: topic,
+                        Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircleAvatar(
+                                radius: 38,
+                                backgroundColor:
+                                    colorScheme.primary.withValues(alpha: 0.12),
+                                child: Text(
+                                  displayName.isEmpty
+                                      ? 'T'
+                                      : displayName.substring(0, 1),
+                                  style: textTheme.headlineMedium?.copyWith(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Text(
+                                '$displayName avatar area',
+                                style: textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Future animated GIF placeholder',
+                                key: const Key('lesson-avatar-placeholder'),
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        _HeaderMetaChip(
-                          key: const Key('lesson-meta-situation'),
-                          label: situation,
+                        Positioned(
+                          left: 18,
+                          right: 18,
+                          bottom: 18,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _HeaderMetaChip(
+                                key: const Key('lesson-meta-summary'),
+                                label: '$compactLevel · $topic',
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
     );
-  }
-
-  static String _statusLabel(LessonTutorStatus status) {
-    switch (status) {
-      case LessonTutorStatus.ready:
-        return 'Ready';
-      case LessonTutorStatus.thinking:
-        return 'Thinking';
-      case LessonTutorStatus.listening:
-        return 'Listening';
-      case LessonTutorStatus.speaking:
-        return 'Speaking';
-      case LessonTutorStatus.error:
-        return 'Error';
-    }
   }
 }
 
@@ -1256,27 +1207,6 @@ class _HeaderMetaChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(label),
-    );
-  }
-}
-
-extension on LessonRuntimeContextVariant {
-  LessonRuntimeContextVariant copyWith({
-    String? id,
-    String? title,
-    String? localizedTitle,
-    String? openingLine,
-    String? contextConfirmationLine,
-    String? openingIntent,
-  }) {
-    return LessonRuntimeContextVariant(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      localizedTitle: localizedTitle ?? this.localizedTitle,
-      openingLine: openingLine ?? this.openingLine,
-      contextConfirmationLine:
-          contextConfirmationLine ?? this.contextConfirmationLine,
-      openingIntent: openingIntent ?? this.openingIntent,
     );
   }
 }
