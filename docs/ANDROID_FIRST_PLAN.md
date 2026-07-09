@@ -31,7 +31,7 @@ flutter test
 flutter run -d emulator-5554
 ```
 
-The current green baseline includes backend lesson session start from the lesson placeholder screen plus service/model-only support for the backend session-owned text reply placeholder endpoint. It has `git diff --check`, `dart format --set-exit-if-changed lib test`, `flutter analyze`, and `flutter test` passing: diff check passes, format reports 39 files and 0 changes, analyze reports `No issues found`, and tests report 89 passing tests. Settings/password recovery remains part of this verified baseline. Lesson runtime is still not implemented, and the lesson screen remains placeholder-only. Settings has stable **Account**, **Learning**, **Audio**, and **Connection status** advanced area, **Save settings** is visible and tested, and user level is not in Settings. Settings selected tutor persistence is complete through `/api/me/settings`: mobile reads and sends `selectedTutorId`, selection survives app/emulator restart, and tutor voice remains a separate setting. Tutor selection belongs in Settings, and Home no longer shows tutor diagnostics or an **Available tutors** card. Home now shows the provided Language Voice Tutor logo next to a more branded, accessible title, preloads the logo during startup before Home is displayed, shows learner-friendly signed-in, account, and plan status while keeping account/access decisions backend-owned, and uses **Start lesson** to open the completed lesson-start navigation skeleton before reaching the Lesson placeholder. Choose Level uses soft level-specific cards, Choose Topic uses soft topic-specific cards, and Choose Situation uses the selected topic color family. The mobile logo source is `app/assets/brand/source/lvt-logo-source.png`; the app logo is `app/assets/brand/lvt-logo.png`; the loading screen shows only the centered logo; and Android launcher icons under `app/android/app/src/main/res/mipmap-*` are derived from the same provided source logo. Product-friendly situation labels are in place for all six topics, Travel includes Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage, and situation labels no longer show `Placeholder:`. Settings language dropdowns show friendly names while still storing and sending backend IDs. Real lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, and store release setup are not implemented by this documentation update.
+The current green baseline includes backend lesson session start from the lesson placeholder screen plus service/model-only support for the backend session-owned text reply placeholder endpoint. It has `git diff --check`, `dart format --set-exit-if-changed lib test`, `flutter analyze`, and `flutter test` passing: diff check passes, format reports 39 files and 0 changes, analyze reports `No issues found`, and tests report 90 passing tests. Settings/password recovery remains part of this verified baseline. Lesson runtime is still not implemented, and the lesson screen remains placeholder-only. Settings has stable **Account**, **Learning**, **Audio**, and **Connection status** advanced area, **Save settings** is visible and tested, and user level is not in Settings. Settings selected tutor persistence is complete through `/api/me/settings`: mobile reads and sends `selectedTutorId`, selection survives app/emulator restart, and tutor voice remains a separate setting. Tutor selection belongs in Settings, and Home no longer shows tutor diagnostics or an **Available tutors** card. Home now shows the provided Language Voice Tutor logo next to a more branded, accessible title, preloads the logo during startup before Home is displayed, shows learner-friendly signed-in, account, and plan status while keeping account/access decisions backend-owned, and uses **Start lesson** to open the completed lesson-start navigation skeleton before reaching the Lesson placeholder. Choose Level uses soft level-specific cards, Choose Topic uses soft topic-specific cards, and Choose Situation uses the selected topic color family. The mobile logo source is `app/assets/brand/source/lvt-logo-source.png`; the app logo is `app/assets/brand/lvt-logo.png`; the loading screen shows only the centered logo; and Android launcher icons under `app/android/app/src/main/res/mipmap-*` are derived from the same provided source logo. Product-friendly situation labels are in place for all six topics, Travel includes Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage, and situation labels no longer show `Placeholder:`. Settings language dropdowns show friendly names while still storing and sending backend IDs. Real lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, and store release setup are not implemented by this documentation update.
 
 ## Planned phases
 
@@ -76,13 +76,46 @@ The reviewed Windows desktop client walkthrough presentation is a product source
 - Implement lesson history and progress screens.
 
 
-### Current lesson session reply placeholder boundary
+### Current lesson-runtime boundary
 
-Mobile now has service-only support for the production backend placeholder endpoint `POST /api/me/lesson-sessions/{sessionId}/reply` through `AuthService.sendLessonSessionReply({required String sessionId, required String messageText})`. The request body is limited to `{ "messageText": "..." }`. This is intentionally not UI-wired yet: real mobile AI chat is still not implemented, and no lesson text input or **Send** button should be added until manual production validation is complete.
+Mobile starts backend lesson sessions from the lesson placeholder screen using the backend-compatible `POST /api/me/lesson-sessions` request shape. Real mobile AI chat is not implemented. The next lesson implementation must mirror the existing desktop/CMS/backend runtime instead of creating a separate mobile runtime.
 
-Backend `0.1.35-backend.110` currently treats the endpoint as a safe placeholder. Valid active sessions return controlled `409 mobile_lesson_reply_not_implemented`, which mobile maps to `Text chat is not available yet.` Mobile must not call `POST /api/lesson-chat/reply`, must not call OpenAI directly, and must not build desktop prompt/runtime/scenario payloads.
+Use this flow for mobile alignment:
 
-Current manual caveat: the emulator lesson placeholder can fail to start a lesson session with `Could not start the lesson. Please try again.` The next implementation step is to manually diagnose that lesson-session-start failure against production. Only after session start and the backend reply contract are validated should UI wiring for text input be planned.
+```http
+GET /api/me/lesson-access
+GET /api/me/subscription-status
+GET /api/me/lesson-content/scenarios/{scenarioKey}
+POST /api/me/lesson-sessions
+POST /api/lesson-chat/reply
+POST /api/me/lesson-sessions/{sessionId}/messages
+```
+
+Current mobile session-start request shape:
+
+```json
+{
+  "lessonContentId": "everyday_english_introductions",
+  "studyLanguage": "Spanish",
+  "topicId": "1",
+  "topicTitle": "Daily Life",
+  "subtopicId": "101",
+  "subtopicTitle": "Introductions",
+  "level": "A1 Beginner",
+  "selectedContextId": null,
+  "selectedContextTitle": null,
+  "modeUsed": "text"
+}
+```
+
+Do not use `POST /api/me/lesson-sessions/{sessionId}/reply` for real lessons at this stage; it is a premature placeholder, not the real desktop lesson reply path. Do not call OpenAI directly from mobile and do not hardcode CMS lesson behavior in Flutter. CMS/backend published runtime content is the source of truth for tutor instructions, level behavior, prompt templates, scenario rules, wrap-up behavior, feedback guidance, and lesson methodology. Desktop is the reference client for orchestration, not the owner of lesson behavior.
+
+Next implementation step: Mobile text lesson Phase 1 should load backend/CMS runtime scenario content and call `POST /api/lesson-chat/reply`, then persist messages through `POST /api/me/lesson-sessions/{sessionId}/messages` according to the existing desktop/backend flow.
+
+Explicit no-go items for that step: no temporary mobile-only backend endpoints, no new safe/catalog endpoints for intermediate convenience, no duplicate mobile prompt/runtime system, no backend changes unless a real final shared lesson-runtime design is approved, and no voice/TTS/realtime/hints/feedback/summary/history/billing.
+
+Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
+
 
 ### Phase 4: Voice and TTS — later, after lesson runtime planning
 

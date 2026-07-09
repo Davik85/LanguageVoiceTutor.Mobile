@@ -108,7 +108,7 @@ Expected current results:
 - `git diff --check` passes.
 - `dart format --set-exit-if-changed lib test` reports 39 files and 0 changes.
 - `flutter analyze` reports `No issues found`.
-- `flutter test` reports 89 passing tests.
+- `flutter test` reports 90 passing tests.
 - Settings/password recovery remains part of the verified baseline.
 - Lesson session start is integrated from the placeholder screen, but manual emulator verification currently shows it can fail with `Could not start the lesson. Please try again.`
 - Lesson runtime remains placeholder-only; real mobile AI chat is not implemented.
@@ -123,31 +123,49 @@ Future lesson runtime implementation rule:
 
 
 
-## Lesson session reply placeholder service checks
+## Lesson runtime contract checks
 
-Mobile service/model support exists for the backend production placeholder endpoint:
+Current mobile lesson-session start should use the existing backend session-start contract, including this request shape for `POST /api/me/lesson-sessions`:
 
-```http
-POST /api/me/lesson-sessions/{sessionId}/reply
+```json
+{
+  "lessonContentId": "everyday_english_introductions",
+  "studyLanguage": "Spanish",
+  "topicId": "1",
+  "topicTitle": "Daily Life",
+  "subtopicId": "101",
+  "subtopicTitle": "Introductions",
+  "level": "A1 Beginner",
+  "selectedContextId": null,
+  "selectedContextTitle": null,
+  "modeUsed": "text"
+}
 ```
 
-Expected service boundary:
+Before implementing mobile text lesson Phase 1, verify the client mirrors the existing desktop/CMS/backend flow:
 
-- `AuthService.sendLessonSessionReply({required String sessionId, required String messageText})` calls only `POST /api/me/lesson-sessions/{sessionId}/reply`.
-- The JSON request body contains exactly `messageText`.
-- Mobile does not call `POST /api/lesson-chat/reply`.
+```http
+GET /api/me/lesson-access
+GET /api/me/subscription-status
+GET /api/me/lesson-content/scenarios/{scenarioKey}
+POST /api/me/lesson-sessions
+POST /api/lesson-chat/reply
+POST /api/me/lesson-sessions/{sessionId}/messages
+```
+
+Expected boundary checks:
+
+- Mobile does not invent a separate lesson runtime.
 - Mobile does not call OpenAI directly.
-- Mobile does not build desktop prompt/runtime/scenario payloads.
-- Blank client input and `400` map to `Please enter a message.`
-- `401` or refresh failure maps to `Please sign in again to continue the lesson.`
-- `404` maps to `This lesson session is no longer available.`
-- `409 mobile_lesson_reply_not_implemented` maps to `Text chat is not available yet.`
-- Other `409` maps to `This lesson has already ended.`
-- `429` maps to a free/rate-limit friendly message.
-- `5xx`, network failure, or timeout maps to `Could not send the message. Please check your connection and try again.`
-- Fallback failure maps to `Could not send the message. Please try again.`
+- Mobile does not hardcode CMS tutor instructions, level behavior, prompt templates, scenario rules, wrap-up behavior, feedback guidance, or lesson methodology in Flutter.
+- Mobile does not use `POST /api/me/lesson-sessions/{sessionId}/reply` for real lessons at this stage.
+- Desktop is used as the orchestration reference client, while CMS/backend published runtime content remains the behavior source of truth.
+- The next text-chat step loads backend/CMS runtime scenario content and calls the existing desktop/backend reply flow.
+- No temporary mobile-only backend endpoints, new safe/catalog endpoints, duplicate mobile prompt/runtime system, or backend changes are introduced without an approved final shared lesson-runtime design.
+- No voice, TTS, realtime, hints, feedback, summary, history, or billing is added in the next text-chat step.
 
-Do not add or verify a lesson text input or **Send** button yet. The next check is manual diagnosis of the emulator lesson-session-start failure against production, followed by backend reply contract validation before any UI wiring is planned.
+Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
+
 
 ## Future Flutter checks
 

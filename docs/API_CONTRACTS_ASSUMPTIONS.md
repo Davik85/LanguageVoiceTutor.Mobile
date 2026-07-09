@@ -110,24 +110,72 @@ Possible response concepts:
 
 Desktop parity source flow: `Start -> Settings/preferences -> Choose level -> Pick topic -> Pick situation -> Practice`. Level selection is part of lesson start and must not be a Settings field.
 
+Mobile must follow the existing desktop/CMS/backend lesson flow as a second client. It must not invent a separate lesson runtime, call OpenAI directly, hardcode CMS lesson behavior in Flutter, or duplicate backend-owned prompt/runtime logic. Desktop is a reference client for orchestration, not the owner of lesson behavior. CMS/backend published runtime content is the source of truth for tutor instructions, level behavior, prompt templates, scenario rules, wrap-up behavior, feedback guidance, and lesson methodology.
+
+Confirmed lesson-flow endpoints for mobile alignment:
+
+```http
+GET /api/me/lesson-access
+GET /api/me/subscription-status
+GET /api/me/lesson-content/scenarios/{scenarioKey}
+POST /api/me/lesson-sessions
+POST /api/lesson-chat/reply
+POST /api/me/lesson-sessions/{sessionId}/messages
+```
+
+Current mobile session-start request shape for `POST /api/me/lesson-sessions`:
+
+```json
+{
+  "lessonContentId": "everyday_english_introductions",
+  "studyLanguage": "Spanish",
+  "topicId": "1",
+  "topicTitle": "Daily Life",
+  "subtopicId": "101",
+  "subtopicTitle": "Introductions",
+  "level": "A1 Beginner",
+  "selectedContextId": null,
+  "selectedContextTitle": null,
+  "modeUsed": "text"
+}
+```
+
+Real desktop lesson replies use:
+
+```http
+POST /api/lesson-chat/reply
+```
+
+Persisted lesson messages use:
+
+```http
+POST /api/me/lesson-sessions/{sessionId}/messages
+```
+
+Do not use the premature placeholder endpoint below for real mobile lessons at this stage:
+
+```http
+POST /api/me/lesson-sessions/{sessionId}/reply
+```
+
 Expected behavior:
 
-- Lesson start creates or resumes a backend-owned lesson session.
-- Tutor messages are sent to backend APIs.
-- Backend orchestrates AI tutor behavior.
-- Backend stores lesson history and progress.
-- Mobile retrieves history and progress from backend APIs.
+- Lesson access, subscription status, scenario runtime content, session start, replies, and message persistence go through existing backend APIs.
+- Backend/CMS runtime content owns tutor behavior, level behavior, prompt rules, lesson methodology, scenario progression, wrap-up rules, and feedback rules.
+- Mobile retrieves and displays backend-owned lesson state, then sends user text or voice inputs to backend APIs when those phases are approved.
+- Backend orchestrates AI tutor behavior and stores lesson history and progress.
+- Mobile retrieves history and progress from backend APIs when those phases are approved.
 
-Possible operations:
+Explicit no-go items for the next text-chat step:
 
-- Start lesson.
-- Send text message.
-- Send voice message or reference an uploaded voice asset.
-- Fetch lesson history.
-- Fetch progress summary.
-- Mark lesson milestones or completion when backend allows it.
+- No temporary mobile-only backend endpoints.
+- No new safe/catalog endpoints for intermediate convenience.
+- No duplicate mobile prompt/runtime system.
+- No backend changes unless a real final shared lesson-runtime design is approved.
+- No voice, TTS, realtime, hints, feedback, summary, history, or billing.
 
-The mobile app must not directly call OpenAI or embed tutor prompts/secrets that belong on the backend.
+Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
+
 
 ## Voice upload and TTS expectations
 

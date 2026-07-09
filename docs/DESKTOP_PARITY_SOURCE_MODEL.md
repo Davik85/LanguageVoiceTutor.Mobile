@@ -10,7 +10,7 @@ Latest known mobile baseline after commit `fcecef5` (`Fix mobile settings parity
 - `dart format --set-exit-if-changed lib test` passed.
 - `flutter analyze` returned `No issues found`.
 - `flutter test` returned `All tests passed`.
-- Settings has stable visible sections: **Account**, **Learning**, **Audio**, and **Backend diagnostics**.
+- Settings has stable visible sections: **Account**, **Learning**, **Audio**, and **Connection status**.
 - **Save settings** is visible and tested.
 - User level is not in Settings.
 - Home starts the lesson-start skeleton and still ends at a Lesson placeholder.
@@ -60,7 +60,7 @@ Current visible mobile Settings sections are:
 - **Account**
 - **Learning**
 - **Audio**
-- **Backend diagnostics**
+- **Connection status**
 
 `selectedTutorId` is part of the current settings contract. `GET /api/tutor-options` provides available tutors, and `PUT /api/me/settings` persists a valid selected tutor ID. Tutor voice remains a separate `speechVoice` setting and must not be overwritten automatically when the selected tutor changes.
 
@@ -113,6 +113,55 @@ Mobile keeps the desktop product order as a phone-first skeleton: **Home -> Star
 ## Backend-owned state boundaries
 
 Account, subscription, and progress must remain backend-owned. Mobile must not create mobile-only Premium, limits, history, progress, or subscription state.
+
+
+## CMS/backend lesson-runtime source of truth
+
+Desktop is the existing working reference client for orchestration, not the owner of lesson behavior. Mobile should inspect and mirror the desktop/CMS/backend lesson flow as a second client, but lesson behavior itself belongs to CMS-authored and backend-published runtime content.
+
+CMS/backend published runtime content is the source of truth for:
+
+- Tutor instructions.
+- Level behavior.
+- Prompt templates.
+- Scenario rules.
+- Wrap-up behavior.
+- Feedback guidance.
+- Lesson methodology.
+
+Mobile must not invent a separate lesson runtime, call OpenAI directly, hardcode CMS lesson behavior in Flutter, duplicate prompts or scenario progression, or use `POST /api/me/lesson-sessions/{sessionId}/reply` for real lessons at this stage.
+
+Existing desktop/CMS/backend lesson flow for mobile to mirror:
+
+```http
+GET /api/me/lesson-access
+GET /api/me/subscription-status
+GET /api/me/lesson-content/scenarios/{scenarioKey}
+POST /api/me/lesson-sessions
+POST /api/lesson-chat/reply
+POST /api/me/lesson-sessions/{sessionId}/messages
+```
+
+Current mobile session-start request shape:
+
+```json
+{
+  "lessonContentId": "everyday_english_introductions",
+  "studyLanguage": "Spanish",
+  "topicId": "1",
+  "topicTitle": "Daily Life",
+  "subtopicId": "101",
+  "subtopicTitle": "Introductions",
+  "level": "A1 Beginner",
+  "selectedContextId": null,
+  "selectedContextTitle": null,
+  "modeUsed": "text"
+}
+```
+
+Next implementation step: Mobile text lesson Phase 1 should load backend/CMS runtime scenario content and call the existing desktop/backend reply flow. Do not add temporary mobile-only backend endpoints, new safe/catalog endpoints for convenience, a duplicate mobile prompt/runtime system, backend changes without an approved final shared lesson-runtime design, or voice/TTS/realtime/hints/feedback/summary/history/billing in that next text-chat step.
+
+Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
 
 ## Lesson Chat parity target
 

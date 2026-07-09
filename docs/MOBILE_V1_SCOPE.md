@@ -6,7 +6,7 @@ Mobile V1 establishes an Android-first Flutter client for Language Voice Tutor t
 
 ## Current verified baseline
 
-Latest known commit: `fcecef5` (`Fix mobile settings parity foundation`). The Flutter Android client under `app/` has a green Settings parity foundation and Home polish baseline. Settings has stable visible **Account**, **Learning**, **Audio**, and **Backend diagnostics** sections, **Save settings** is visible and tested, user level is not in Settings, and selected tutor persists through the backend settings API. Tutor selection belongs in Settings; Home no longer shows tutor diagnostics. Home shows the Language Voice Tutor logo/title with startup logo preloading, friendly account/access status, and starts a lesson-start navigation skeleton before reaching the Lesson placeholder.
+Latest known commit: `fcecef5` (`Fix mobile settings parity foundation`). The Flutter Android client under `app/` has a green Settings parity foundation and Home polish baseline. Settings has stable visible **Account**, **Learning**, **Audio**, and **Connection status** sections, **Save settings** is visible and tested, user level is not in Settings, and selected tutor persists through the backend settings API. Tutor selection belongs in Settings; Home no longer shows tutor diagnostics. Home shows the Language Voice Tutor logo/title with startup logo preloading, friendly account/access status, and starts a lesson-start navigation skeleton before reaching the Lesson placeholder.
 
 Verified commands from `app/`:
 
@@ -53,6 +53,45 @@ Tutor profiles currently represented by desktop are Lana, Nelli, and David. Tuto
 Mobile now includes a UI-only lesson-start skeleton that follows the desktop product order: `Home -> Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder`. The screens are phone-first adaptations and do not copy the Windows layout pixel-by-pixel. Choose Situation uses product-friendly desktop-aligned labels instead of placeholder wording. The Lesson placeholder displays the selected level, topic, and situation. Real lesson runtime, lesson chat, voice recording, TTS playback, AI tutor calls, Conversation Mode runtime, and mobile-only backend lesson state remain out of scope for this skeleton.
 
 Home is intentionally learner-facing: it shows the app logo/title, short product promise, primary **Start lesson** action, friendly account/access status, and secondary Settings entrypoint. Tutor diagnostics are not shown on Home; selected tutor remains a Settings concern.
+
+
+## Lesson runtime source of truth
+
+Mobile must not invent a separate lesson runtime. It must follow the existing desktop/CMS/backend lesson flow as a second client while adapting the experience to phone-first UI. Desktop is a reference client for orchestration, not the owner of lesson behavior. CMS/backend published runtime content is the source of truth for tutor instructions, level behavior, prompt templates, scenario rules, wrap-up behavior, feedback guidance, and lesson methodology.
+
+Mobile must not call OpenAI directly, hardcode CMS lesson behavior in Flutter, duplicate a mobile prompt/runtime system, or use `POST /api/me/lesson-sessions/{sessionId}/reply` for real lessons at this stage. The placeholder endpoint is not the real lesson reply path.
+
+The existing desktop/CMS/backend lesson flow for mobile to mirror is:
+
+```http
+GET /api/me/lesson-access
+GET /api/me/subscription-status
+GET /api/me/lesson-content/scenarios/{scenarioKey}
+POST /api/me/lesson-sessions
+POST /api/lesson-chat/reply
+POST /api/me/lesson-sessions/{sessionId}/messages
+```
+
+Current mobile `POST /api/me/lesson-sessions` request shape:
+
+```json
+{
+  "lessonContentId": "everyday_english_introductions",
+  "studyLanguage": "Spanish",
+  "topicId": "1",
+  "topicTitle": "Daily Life",
+  "subtopicId": "101",
+  "subtopicTitle": "Introductions",
+  "level": "A1 Beginner",
+  "selectedContextId": null,
+  "selectedContextTitle": null,
+  "modeUsed": "text"
+}
+```
+
+Next implementation step: Mobile text lesson Phase 1 should load backend/CMS runtime scenario content and call the existing desktop/backend reply flow. For that step, do not add temporary mobile-only backend endpoints, new safe/catalog endpoints for convenience, backend changes without an approved final shared lesson-runtime design, voice, TTS, realtime, hints, feedback, summary, history, or billing.
+
+Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
 
 ## Next implementation priority
 
