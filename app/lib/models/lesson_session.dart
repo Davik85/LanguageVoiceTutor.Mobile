@@ -65,6 +65,102 @@ class LessonSessionResponse {
   }
 }
 
+class FinishLessonSessionRequest {
+  const FinishLessonSessionRequest({required this.validTurnCount});
+
+  final int validTurnCount;
+
+  Map<String, dynamic> toJson() => {'validTurnCount': validTurnCount};
+}
+
+class LessonSummaryResponse {
+  const LessonSummaryResponse({
+    required this.status,
+    this.studyLanguage,
+    this.topicTitle,
+    this.subtopicTitle,
+    this.level,
+    this.summary,
+    this.strengths = const [],
+    this.improvements = const [],
+    this.vocabulary = const [],
+    this.grammar = const [],
+    this.nextSteps = const [],
+  });
+
+  final String status;
+  final String? studyLanguage;
+  final String? topicTitle;
+  final String? subtopicTitle;
+  final String? level;
+  final String? summary;
+  final List<String> strengths;
+  final List<String> improvements;
+  final List<String> vocabulary;
+  final List<String> grammar;
+  final List<String> nextSteps;
+
+  bool get isReady => status == 'ready';
+  bool get isUnavailable => status == 'unavailable';
+
+  factory LessonSummaryResponse.fromJson(Map<String, dynamic> json) =>
+      LessonSummaryResponse(
+        status: _firstString(json, const ['status']).toLowerCase(),
+        studyLanguage: _nullableString(json, 'studyLanguage'),
+        topicTitle: _nullableString(json, 'topicTitle'),
+        subtopicTitle: _nullableString(json, 'subtopicTitle'),
+        level: _nullableString(json, 'level'),
+        summary: _nullableString(json, 'summary'),
+        strengths: _stringList(json['strengths']),
+        improvements: _stringList(json['improvements']),
+        vocabulary: _stringList(json['vocabulary']),
+        grammar: _stringList(json['grammar']),
+        nextSteps: _stringList(json['nextSteps']),
+      );
+}
+
+enum LessonCompletionStatus {
+  summaryReady,
+  summaryUnavailable,
+  authRequired,
+  notFound,
+  summaryLoadError,
+  unavailable,
+  failed,
+}
+
+class LessonCompletionResult {
+  const LessonCompletionResult._({required this.status, this.summary});
+
+  final LessonCompletionStatus status;
+  final LessonSummaryResponse? summary;
+
+  bool get isCompleted =>
+      status == LessonCompletionStatus.summaryReady ||
+      status == LessonCompletionStatus.summaryUnavailable ||
+      status == LessonCompletionStatus.summaryLoadError;
+
+  factory LessonCompletionResult.summaryReady(LessonSummaryResponse summary) =>
+      LessonCompletionResult._(
+          status: LessonCompletionStatus.summaryReady, summary: summary);
+  factory LessonCompletionResult.summaryUnavailable() =>
+      const LessonCompletionResult._(
+          status: LessonCompletionStatus.summaryUnavailable);
+  factory LessonCompletionResult.authRequired() =>
+      const LessonCompletionResult._(
+          status: LessonCompletionStatus.authRequired);
+  factory LessonCompletionResult.notFound() =>
+      const LessonCompletionResult._(status: LessonCompletionStatus.notFound);
+  factory LessonCompletionResult.summaryLoadError() =>
+      const LessonCompletionResult._(
+          status: LessonCompletionStatus.summaryLoadError);
+  factory LessonCompletionResult.unavailable() =>
+      const LessonCompletionResult._(
+          status: LessonCompletionStatus.unavailable);
+  factory LessonCompletionResult.failed() =>
+      const LessonCompletionResult._(status: LessonCompletionStatus.failed);
+}
+
 enum LessonSessionStartStatus {
   ready,
   blocked,
@@ -139,3 +235,16 @@ String _firstString(Map<String, dynamic> json, List<String> keys) {
   }
   return '';
 }
+
+String? _nullableString(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  return value is String && value.trim().isNotEmpty ? value : null;
+}
+
+List<String> _stringList(dynamic value) => value is List
+    ? value
+        .whereType<String>()
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false)
+    : const [];

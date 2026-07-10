@@ -64,6 +64,8 @@ class _LessonScreenState extends State<LessonScreen> {
   bool _startInFlight = false;
   bool _isLoadingScenario = false;
   bool _isSending = false;
+  bool _isFinishing = false;
+  bool _isCompleted = false;
   bool _isRecordingPlaceholderActive = false;
   bool _isSpeakingPlaceholderActive = false;
   LessonSessionStartResult? _startResult;
@@ -71,7 +73,11 @@ class _LessonScreenState extends State<LessonScreen> {
   UserSettings? _settings;
   String? _lessonLoadError;
   String? _sendError;
+  String? _finishError;
+  LessonSummaryResponse? _lessonSummary;
+  LessonCompletionStatus? _summaryStatus;
   final List<_LessonChatMessage> _messages = [];
+  final Set<Future<void>> _pendingMessagePersistence = {};
 
   @override
   void initState() {
@@ -259,7 +265,9 @@ class _LessonScreenState extends State<LessonScreen> {
         session == null ||
         scenario == null ||
         settings == null ||
-        _isSending) {
+        _isSending ||
+        _isFinishing ||
+        _isCompleted) {
       return;
     }
 
@@ -337,13 +345,28 @@ class _LessonScreenState extends State<LessonScreen> {
     });
     _scrollTranscriptToBottom();
 
-    await _persistChatMessages(
+    _trackMessagePersistence(_persistChatMessages(
       sessionId: session.lessonSessionId,
       studyLanguage: session.studyLanguage,
       userText: text,
       botText: botText,
       turnNumber: learnerTurnCount,
-    );
+    ));
+  }
+
+  void _trackMessagePersistence(Future<void> operation) {
+    _pendingMessagePersistence.add(operation);
+    operation.whenComplete(() => _pendingMessagePersistence.remove(operation));
+  }
+
+  Future<void> _waitForPendingMessagePersistence() async {
+    final pending = List<Future<void>>.of(_pendingMessagePersistence);
+    if (pending.isEmpty) return;
+    // Persistence is best-effort during live chat. Before finish, wait only
+    // for writes already started; failures and a bounded timeout never retry
+    // or duplicate writes, and backend completion remains authoritative.
+    await Future.wait(pending)
+        .timeout(const Duration(seconds: 5), onTimeout: () => <void>[]);
   }
 
   Future<void> _persistChatMessages({
@@ -433,11 +456,79 @@ class _LessonScreenState extends State<LessonScreen> {
         _scenario != null &&
         _settings != null;
     return _LessonActionAvailability(
-      canSendText: lessonReady && !_isSending,
-      canToggleRecordingPlaceholder: lessonReady && !_isSending,
-      canUsePlaceholders: lessonReady,
-      canUseHintPlaceholder: lessonReady && !_isSending,
+      canSendText: lessonReady && !_isSending && !_isFinishing && !_isCompleted,
+      canToggleRecordingPlaceholder:
+          lessonReady && !_isSending && !_isFinishing && !_isCompleted,
+      canUsePlaceholders: lessonReady && !_isFinishing && !_isCompleted,
+      canUseHintPlaceholder:
+          lessonReady && !_isSending && !_isFinishing && !_isCompleted,
     );
+  }
+
+  bool get _canFinish =>
+      (_startResult?.isReady ?? false) &&
+      !_isLoadingScenario &&
+      !_isSending &&
+      !_isRecordingPlaceholderActive &&
+      !_isFinishing &&
+      !_isCompleted;
+
+  Future<void> _confirmFinishLesson() async {
+    if (!_canFinish) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Finish lesson?'),
+        content: const Text('Finish this lesson and view your summary?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Continue lesson'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Finish lesson'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await _finishLesson();
+  }
+
+  Future<void> _finishLesson() async {
+    final session = _startResult?.session;
+    if (session == null || !_canFinish) return;
+    setState(() {
+      _isFinishing = true;
+      _finishError = null;
+      _isRecordingPlaceholderActive = false;
+      _isSpeakingPlaceholderActive = false;
+    });
+    await _waitForPendingMessagePersistence();
+    if (!mounted) return;
+    final turns = _messages.where((message) => message.isUser).length;
+    final result = await _authService.finishLessonSession(
+      sessionId: session.lessonSessionId,
+      validTurnCount: turns,
+    );
+    if (!mounted) return;
+    if (result.isCompleted) {
+      setState(() {
+        _isFinishing = false;
+        _isCompleted = true;
+        _lessonSummary = result.summary;
+        _summaryStatus = result.status;
+      });
+      return;
+    }
+    setState(() {
+      _isFinishing = false;
+      _finishError = result.status == LessonCompletionStatus.authRequired
+          ? 'Please sign in again to finish the lesson.'
+          : result.status == LessonCompletionStatus.notFound
+              ? 'This lesson session is no longer available.'
+              : 'Could not finish the lesson. Please check your connection and try again.';
+    });
   }
 
   String get _tutorDisplayName =>
@@ -526,45 +617,70 @@ class _LessonScreenState extends State<LessonScreen> {
                   ),
                 ),
               )
-            : Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: _LessonWorkspace(
-                        selection: selection,
-                        scenario: _scenario,
-                        tutorDisplayName: _tutorDisplayName,
-                        tutorStatus: _tutorStatus,
-                        compactLevel: _compactLevel,
-                        isStarting: _isStarting,
-                        startResult: _startResult,
-                        lessonLoadError: _lessonLoadError,
-                        isLoadingScenario: _isLoadingScenario,
-                        messages: _messages,
-                        sendError: _sendError,
-                        isSending: _isSending,
-                        controller: _messageController,
-                        actionAvailability: _actionAvailability,
-                        isRecordingPlaceholderActive:
-                            _isRecordingPlaceholderActive,
-                        onBack: () => Navigator.of(context).maybePop(),
-                        onRetryStart:
-                            _isStarting ? null : () => _startLessonSession(),
-                        onRetryLoad: _retryLessonRuntime,
-                        transcriptController: _transcriptController,
-                        onMessageAction: _handleFutureAction,
-                        onToggleRecordingPlaceholder:
-                            _toggleRecordingPlaceholder,
-                        onHint: () => _handleFutureAction('Hint'),
-                        onSend: _sendMessage,
-                      ),
+            : _isCompleted
+                ? _LessonSummaryView(
+                    summary: _lessonSummary,
+                    status: _summaryStatus ??
+                        LessonCompletionStatus.summaryLoadError,
+                    onDone: () => Navigator.of(context).maybePop(),
+                    onRetrySummary: _retrySummary,
+                  )
+                : Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: _LessonWorkspace(
+                            selection: selection,
+                            scenario: _scenario,
+                            tutorDisplayName: _tutorDisplayName,
+                            tutorStatus: _tutorStatus,
+                            compactLevel: _compactLevel,
+                            isStarting: _isStarting,
+                            startResult: _startResult,
+                            lessonLoadError: _lessonLoadError,
+                            isLoadingScenario: _isLoadingScenario,
+                            messages: _messages,
+                            sendError: _sendError,
+                            isSending: _isSending,
+                            controller: _messageController,
+                            actionAvailability: _actionAvailability,
+                            isRecordingPlaceholderActive:
+                                _isRecordingPlaceholderActive,
+                            isFinishing: _isFinishing,
+                            canFinish: _canFinish,
+                            finishError: _finishError,
+                            onBack: () => Navigator.of(context).maybePop(),
+                            onFinish: _confirmFinishLesson,
+                            onRetryStart: _isStarting
+                                ? null
+                                : () => _startLessonSession(),
+                            onRetryLoad: _retryLessonRuntime,
+                            transcriptController: _transcriptController,
+                            onMessageAction: _handleFutureAction,
+                            onToggleRecordingPlaceholder:
+                                _toggleRecordingPlaceholder,
+                            onHint: () => _handleFutureAction('Hint'),
+                            onSend: _sendMessage,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
       ),
     );
+  }
+
+  Future<void> _retrySummary() async {
+    final session = _startResult?.session;
+    if (session == null) return;
+    final result = await _authService.loadLessonSummary(
+        sessionId: session.lessonSessionId);
+    if (!mounted) return;
+    setState(() {
+      _lessonSummary = result.summary;
+      _summaryStatus = result.status;
+    });
   }
 }
 
@@ -586,7 +702,11 @@ class _LessonWorkspace extends StatelessWidget {
     required this.controller,
     required this.actionAvailability,
     required this.isRecordingPlaceholderActive,
+    required this.isFinishing,
+    required this.canFinish,
+    required this.finishError,
     required this.onBack,
+    required this.onFinish,
     required this.onRetryStart,
     required this.onRetryLoad,
     required this.onMessageAction,
@@ -611,7 +731,11 @@ class _LessonWorkspace extends StatelessWidget {
   final TextEditingController controller;
   final _LessonActionAvailability actionAvailability;
   final bool isRecordingPlaceholderActive;
+  final bool isFinishing;
+  final bool canFinish;
+  final String? finishError;
   final VoidCallback onBack;
+  final VoidCallback onFinish;
   final VoidCallback? onRetryStart;
   final Future<void> Function() onRetryLoad;
   final void Function(String label, {bool speaking}) onMessageAction;
@@ -638,6 +762,8 @@ class _LessonWorkspace extends StatelessWidget {
                 ? scenario!.metadata.topic
                 : selection.topicTitle,
             onBack: onBack,
+            canFinish: canFinish,
+            onFinish: onFinish,
           ),
           Expanded(
             child: Container(
@@ -674,12 +800,25 @@ class _LessonWorkspace extends StatelessWidget {
                       ),
                     ),
                   ],
+                  if (finishError != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: Text(finishError!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: colorScheme.error)),
+                    ),
+                  if (isFinishing)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 8),
+                      child: Text('Finishing lesson...',
+                          key: Key('lesson-finishing-label')),
+                    ),
                   _LessonComposer(
                     controller: controller,
                     canSendText: actionAvailability.canSendText,
                     canRecord: actionAvailability.canToggleRecordingPlaceholder,
                     canHint: actionAvailability.canUseHintPlaceholder,
-                    isSending: isSending,
+                    isSending: isSending || isFinishing,
                     isRecordingPlaceholderActive: isRecordingPlaceholderActive,
                     onToggleRecordingPlaceholder: onToggleRecordingPlaceholder,
                     onHint: onHint,
@@ -1047,6 +1186,8 @@ class _TutorHeader extends StatelessWidget {
     required this.compactLevel,
     required this.topic,
     required this.onBack,
+    required this.canFinish,
+    required this.onFinish,
   });
 
   final String displayName;
@@ -1054,6 +1195,8 @@ class _TutorHeader extends StatelessWidget {
   final String compactLevel;
   final String topic;
   final VoidCallback onBack;
+  final bool canFinish;
+  final VoidCallback onFinish;
 
   @override
   Widget build(BuildContext context) {
@@ -1124,6 +1267,22 @@ class _TutorHeader extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: const SizedBox(width: 140, height: 140),
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface.withValues(alpha: 0.78),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: IconButton(
+                        key: const Key('lesson-action-finish'),
+                        tooltip: 'Finish lesson',
+                        onPressed: canFinish ? onFinish : null,
+                        icon: const Icon(Icons.flag_outlined),
+                      ),
                     ),
                   ),
                   Positioned(
@@ -1205,6 +1364,118 @@ class _TutorHeader extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _LessonSummaryView extends StatelessWidget {
+  const _LessonSummaryView({
+    required this.summary,
+    required this.status,
+    required this.onDone,
+    required this.onRetrySummary,
+  });
+
+  final LessonSummaryResponse? summary;
+  final LessonCompletionStatus status;
+  final VoidCallback onDone;
+  final Future<void> Function() onRetrySummary;
+
+  @override
+  Widget build(BuildContext context) {
+    final ready = status == LessonCompletionStatus.summaryReady &&
+        (summary?.isReady ?? false);
+    final unavailable = status == LessonCompletionStatus.summaryUnavailable;
+    final canRetrySummary = status == LessonCompletionStatus.summaryLoadError;
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: SingleChildScrollView(
+            key: const Key('lesson-summary-scroll'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Lesson summary',
+                    style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(height: 16),
+                if (!ready) ...[
+                  const Text('Lesson completed',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  Text(unavailable
+                      ? 'Your lesson was saved, but a summary could not be created for this lesson.'
+                      : status == LessonCompletionStatus.authRequired
+                          ? 'Please sign in again to load your lesson summary.'
+                          : 'Your lesson was saved, but we could not load the summary right now.'),
+                  const SizedBox(height: 20),
+                  if (canRetrySummary)
+                    OutlinedButton.icon(
+                      onPressed: onRetrySummary,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry summary'),
+                    ),
+                ] else ...[
+                  _SummaryContext(summary: summary!),
+                  if (summary!.summary?.trim().isNotEmpty ?? false) ...[
+                    const SizedBox(height: 20),
+                    Text(summary!.summary!),
+                  ],
+                  _SummarySection('Strengths', summary!.strengths),
+                  _SummarySection('Improvements', summary!.improvements),
+                  _SummarySection('Vocabulary', summary!.vocabulary),
+                  _SummarySection('Grammar', summary!.grammar),
+                  _SummarySection('Next steps', summary!.nextSteps),
+                ],
+                const SizedBox(height: 28),
+                FilledButton(onPressed: onDone, child: const Text('Done')),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryContext extends StatelessWidget {
+  const _SummaryContext({required this.summary});
+  final LessonSummaryResponse summary;
+  @override
+  Widget build(BuildContext context) {
+    final parts = [summary.level, summary.topicTitle, summary.subtopicTitle]
+        .whereType<String>()
+        .where((value) => value.trim().isNotEmpty)
+        .toList();
+    return parts.isEmpty ? const SizedBox.shrink() : Text(parts.join(' · '));
+  }
+}
+
+class _SummarySection extends StatelessWidget {
+  const _SummarySection(this.title, this.items);
+  final String title;
+  final List<String> items;
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        ...items.map(
+          (item) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('• '),
+                Expanded(child: Text(item)),
+              ],
+            ),
+          ),
+        ),
+      ]),
     );
   }
 }

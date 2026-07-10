@@ -118,6 +118,54 @@ class AuthService {
     );
   }
 
+  Future<LessonCompletionResult> finishLessonSession({
+    required String sessionId,
+    required int validTurnCount,
+  }) async {
+    final normalizedId = sessionId.trim();
+    if (normalizedId.isEmpty || validTurnCount < 0) {
+      return LessonCompletionResult.failed();
+    }
+    try {
+      await _authenticatedPut(
+        '/api/me/lesson-sessions/$normalizedId/finish',
+        body:
+            FinishLessonSessionRequest(validTurnCount: validTurnCount).toJson(),
+        failureMessageForResponse: _lessonFinishFailureMessage,
+      );
+      final summaryResult = await loadLessonSummary(sessionId: normalizedId);
+      return summaryResult;
+    } on ApiException catch (error) {
+      return _safeLessonCompletionResult(error);
+    } catch (_) {
+      return LessonCompletionResult.failed();
+    }
+  }
+
+  Future<LessonCompletionResult> loadLessonSummary({
+    required String sessionId,
+  }) async {
+    final normalizedId = sessionId.trim();
+    if (normalizedId.isEmpty) return LessonCompletionResult.failed();
+    try {
+      final response = await _authenticatedGet(
+        '/api/me/lesson-sessions/$normalizedId/summary',
+        failureMessageForResponse: _lessonSummaryFailureMessage,
+      );
+      final summary =
+          LessonSummaryResponse.fromJson(_decodeObject(response.body));
+      if (summary.isReady) return LessonCompletionResult.summaryReady(summary);
+      if (summary.isUnavailable) {
+        return LessonCompletionResult.summaryUnavailable();
+      }
+      return LessonCompletionResult.summaryLoadError();
+    } on ApiException catch (error) {
+      return _safeLessonSummaryResult(error);
+    } catch (_) {
+      return LessonCompletionResult.summaryLoadError();
+    }
+  }
+
   Future<UserSettings> fetchUserSettings() async {
     final response = await _authenticatedGet('/api/me/settings');
     return UserSettings.fromJson(_decodeObject(response.body));
@@ -245,10 +293,12 @@ class AuthService {
   Future<ApiResponse> _authenticatedPut(
     String path, {
     required Map<String, dynamic> body,
+    String Function(ApiResponse response)? failureMessageForResponse,
   }) async {
     return _authenticatedSend(
       path,
       (token) => _apiClient.put(path, body: body, accessToken: token),
+      failureMessageForResponse: failureMessageForResponse,
     );
   }
 
@@ -415,6 +465,32 @@ class AuthService {
     return 'Could not save the message right now.';
   }
 
+  static String _lessonFinishFailureMessage(ApiResponse response) {
+    if (response.statusCode == 401) {
+      return 'Please sign in again to finish the lesson.';
+    }
+    if (response.statusCode == 404 || response.statusCode == 403) {
+      return 'This lesson session is no longer available.';
+    }
+    if (response.statusCode >= 500) {
+      return 'Could not finish the lesson. Please check your connection and try again.';
+    }
+    return 'Could not finish the lesson. Please check your connection and try again.';
+  }
+
+  static String _lessonSummaryFailureMessage(ApiResponse response) {
+    if (response.statusCode == 401) {
+      return 'Please sign in again to finish the lesson.';
+    }
+    if (response.statusCode == 404 || response.statusCode == 403) {
+      return 'This lesson session is no longer available.';
+    }
+    if (response.statusCode >= 500) {
+      return 'The summary is unavailable right now.';
+    }
+    return 'The summary is unavailable right now.';
+  }
+
   static String _safePasswordResetRequestExceptionMessage(ApiException error) {
     const safe = {
       'Password reset email delivery is not configured. Please contact support.',
@@ -499,6 +575,36 @@ class AuthService {
       return LessonChatReplyResult.unavailable();
     }
     return LessonChatReplyResult.failed();
+  }
+
+  static LessonCompletionResult _safeLessonCompletionResult(
+      ApiException error) {
+    if (error.message == 'Please sign in again.' ||
+        error.message == 'Please sign in again to finish the lesson.') {
+      return LessonCompletionResult.authRequired();
+    }
+    if (error.message == 'This lesson session is no longer available.') {
+      return LessonCompletionResult.notFound();
+    }
+    if (error.message ==
+            'Could not finish the lesson. Please check your connection and try again.' ||
+        error.message == 'The summary is unavailable right now.' ||
+        error.message == 'The service took too long to respond.' ||
+        error.message == 'Unable to reach the service.') {
+      return LessonCompletionResult.unavailable();
+    }
+    return LessonCompletionResult.failed();
+  }
+
+  static LessonCompletionResult _safeLessonSummaryResult(ApiException error) {
+    if (error.message == 'Please sign in again.' ||
+        error.message == 'Please sign in again to finish the lesson.') {
+      return LessonCompletionResult.authRequired();
+    }
+    // Only a successful response with status == "unavailable" is allowed to
+    // enter the completed-safe unavailable state. HTTP and transport failures
+    // remain retryable summary-load errors without exposing server details.
+    return LessonCompletionResult.summaryLoadError();
   }
 
   static String _lessonSessionErrorCode(String body) {

@@ -12,6 +12,7 @@ class FakeApiClient implements ApiClient {
   final tokens = <String?>[];
   final bodies = <Map<String, dynamic>?>[];
   final responses = <String, List<ApiResponse>>{};
+  final errors = <String, List<Object>>{};
 
   @override
   Future<ApiResponse> get(String path, {String? accessToken}) async {
@@ -19,6 +20,10 @@ class FakeApiClient implements ApiClient {
     tokens.add(accessToken);
     bodies.add(null);
     final queued = responses[path];
+    final errorsForPath = errors[path];
+    if (errorsForPath != null && errorsForPath.isNotEmpty) {
+      throw errorsForPath.removeAt(0);
+    }
     if (queued != null && queued.isNotEmpty) return queued.removeAt(0);
     return const ApiResponse(statusCode: 200, body: '{}');
   }
@@ -33,6 +38,10 @@ class FakeApiClient implements ApiClient {
     tokens.add(accessToken);
     bodies.add(body);
     final queued = responses[path];
+    final errorsForPath = errors[path];
+    if (errorsForPath != null && errorsForPath.isNotEmpty) {
+      throw errorsForPath.removeAt(0);
+    }
     if (queued != null && queued.isNotEmpty) return queued.removeAt(0);
     return const ApiResponse(
       statusCode: 200,
@@ -46,8 +55,18 @@ class FakeApiClient implements ApiClient {
     String path, {
     Map<String, dynamic>? body,
     String? accessToken,
-  }) =>
-      throw UnimplementedError();
+  }) async {
+    calls.add('PUT $path');
+    tokens.add(accessToken);
+    bodies.add(body);
+    final queued = responses[path];
+    final errorsForPath = errors[path];
+    if (errorsForPath != null && errorsForPath.isNotEmpty) {
+      throw errorsForPath.removeAt(0);
+    }
+    if (queued != null && queued.isNotEmpty) return queued.removeAt(0);
+    return const ApiResponse(statusCode: 200, body: '{}');
+  }
 }
 
 class MemoryStorage implements SessionStorage {
@@ -402,5 +421,130 @@ void main() {
       contains('POST /api/me/lesson-sessions/session-1/messages'),
     );
     expect(api.calls.join(' '), isNot(contains('openai')));
+  });
+
+  test('finish uses authenticated production PUT then reads ready summary',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions/session-1/finish'] = [
+      const ApiResponse(statusCode: 200, body: '{"status":"finished"}'),
+    ];
+    api.responses['/api/me/lesson-sessions/session-1/summary'] = [
+      const ApiResponse(
+          statusCode: 200,
+          body:
+              '{"status":"ready","level":"A1","topicTitle":"Daily Life","summary":"Good work.","strengths":["Greeting"],"improvements":null,"vocabulary":[],"grammar":[],"nextSteps":["Practice again"]}'),
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final result = await service.finishLessonSession(
+        sessionId: 'session-1', validTurnCount: 2);
+
+    expect(result.status, LessonCompletionStatus.summaryReady);
+    expect(result.summary?.summary, 'Good work.');
+    expect(
+        api.calls,
+        containsAllInOrder([
+          'PUT /api/me/lesson-sessions/session-1/finish',
+          'GET /api/me/lesson-sessions/session-1/summary',
+        ]));
+    expect(api.bodies.first, {'validTurnCount': 2});
+    expect(api.tokens.first, 'access');
+    expect(api.calls.join(' '), isNot(contains('/api/dev')));
+    expect(api.calls.join(' '), isNot(contains('/reply')));
+  });
+
+  test('finish refreshes once after 401 and accepts unavailable summary',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions/session-1/finish'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+      const ApiResponse(statusCode: 200, body: '{}'),
+    ];
+    api.responses['/api/me/lesson-sessions/session-1/summary'] = [
+      const ApiResponse(statusCode: 200, body: '{"status":"unavailable"}'),
+    ];
+    final result = await AuthService(apiClient: api, storage: MemoryStorage())
+        .finishLessonSession(sessionId: 'session-1', validTurnCount: 0);
+    expect(result.status, LessonCompletionStatus.summaryUnavailable);
+    expect(
+        api.calls,
+        containsAllInOrder([
+          'PUT /api/me/lesson-sessions/session-1/finish',
+          'POST /api/auth/refresh',
+          'PUT /api/me/lesson-sessions/session-1/finish',
+          'GET /api/me/lesson-sessions/session-1/summary',
+        ]));
+  });
+
+  test('summary maps only exact ready and unavailable statuses as completed',
+      () async {
+    final api = FakeApiClient();
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+    api.responses['/api/me/lesson-sessions/session-1/summary'] = [
+      const ApiResponse(statusCode: 200, body: '{"status":"ready"}'),
+      const ApiResponse(statusCode: 200, body: '{"status":"unavailable"}'),
+      const ApiResponse(statusCode: 200, body: '{"status":"pending"}'),
+      const ApiResponse(statusCode: 200, body: '{}'),
+      const ApiResponse(statusCode: 200, body: 'not-json'),
+    ];
+    expect((await service.loadLessonSummary(sessionId: 'session-1')).status,
+        LessonCompletionStatus.summaryReady);
+    expect((await service.loadLessonSummary(sessionId: 'session-1')).status,
+        LessonCompletionStatus.summaryUnavailable);
+    for (var i = 0; i < 3; i++) {
+      expect((await service.loadLessonSummary(sessionId: 'session-1')).status,
+          LessonCompletionStatus.summaryLoadError);
+    }
+  });
+
+  test('summary HTTP and transport failures are retryable load errors',
+      () async {
+    final api = FakeApiClient();
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+    api.responses['/api/me/lesson-sessions/session-1/summary'] = [
+      const ApiResponse(statusCode: 404, body: '{}'),
+      const ApiResponse(statusCode: 409, body: '{}'),
+      const ApiResponse(statusCode: 500, body: '{}'),
+    ];
+    for (var i = 0; i < 3; i++) {
+      expect((await service.loadLessonSummary(sessionId: 'session-1')).status,
+          LessonCompletionStatus.summaryLoadError);
+    }
+    api.errors['/api/me/lesson-sessions/session-1/summary'] = [
+      const ApiException('The service took too long to respond.'),
+      const ApiException('Unable to reach the service.'),
+    ];
+    for (var i = 0; i < 2; i++) {
+      expect((await service.loadLessonSummary(sessionId: 'session-1')).status,
+          LessonCompletionStatus.summaryLoadError);
+    }
+  });
+
+  test('summary refreshes after 401 and requires sign-in after failed refresh',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/lesson-sessions/session-1/summary'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+      const ApiResponse(statusCode: 200, body: '{"status":"ready"}'),
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+    expect((await service.loadLessonSummary(sessionId: 'session-1')).status,
+        LessonCompletionStatus.summaryReady);
+    expect(api.calls, contains('POST /api/auth/refresh'));
+
+    final failedRefreshApi = FakeApiClient();
+    failedRefreshApi.responses['/api/me/lesson-sessions/session-1/summary'] = [
+      const ApiResponse(statusCode: 401, body: '{}')
+    ];
+    failedRefreshApi.responses['/api/auth/refresh'] = [
+      const ApiResponse(statusCode: 401, body: '{}')
+    ];
+    expect(
+        (await AuthService(
+                    apiClient: failedRefreshApi, storage: MemoryStorage())
+                .loadLessonSummary(sessionId: 'session-1'))
+            .status,
+        LessonCompletionStatus.authRequired);
   });
 }

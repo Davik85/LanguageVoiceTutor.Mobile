@@ -46,9 +46,20 @@ class FakeAuthService extends AuthService {
     LessonRuntimeScenario? scenario,
     this.settingsFailure,
     this.scenarioFailure,
+    this.finishCompleter,
+    LessonCompletionResult? finishResult,
+    LessonCompletionResult? summaryResult,
+    List<Completer<void>>? persistenceCompleters,
+    this.persistenceFailure,
     this.studyLanguage = 'es',
   })  : lessonStartResult = lessonStartResult ?? _readyLessonStartResult(),
         replyResult = replyResult ?? _defaultReplyResult(),
+        finishResult =
+            finishResult ?? LessonCompletionResult.summaryUnavailable(),
+        summaryResult = summaryResult ??
+            finishResult ??
+            LessonCompletionResult.summaryUnavailable(),
+        persistenceCompleters = persistenceCompleters ?? [],
         scenario = scenario ?? _runtimeScenario(),
         super(apiClient: FakeApiClient(), storage: MemoryStorage());
 
@@ -59,11 +70,19 @@ class FakeAuthService extends AuthService {
   final LessonRuntimeScenario scenario;
   final ApiException? settingsFailure;
   final ApiException? scenarioFailure;
+  final Completer<LessonCompletionResult>? finishCompleter;
+  final LessonCompletionResult finishResult;
+  final LessonCompletionResult summaryResult;
+  final List<Completer<void>> persistenceCompleters;
+  final Object? persistenceFailure;
   final String studyLanguage;
 
   int startLessonSessionCallCount = 0;
   int fetchScenarioCallCount = 0;
   int sendLessonChatReplyCallCount = 0;
+  int finishLessonSessionCallCount = 0;
+  int loadLessonSummaryCallCount = 0;
+  int? lastValidTurnCount;
   StartLessonSessionRequest? lastStartRequest;
   LessonChatRequest? lastLessonChatRequest;
   final persistedMessages = <CreateLessonSessionMessageRequest>[];
@@ -134,6 +153,27 @@ class FakeAuthService extends AuthService {
     required CreateLessonSessionMessageRequest request,
   }) async {
     persistedMessages.add(request);
+    if (persistenceFailure != null) throw persistenceFailure!;
+    if (persistenceCompleters.isNotEmpty) {
+      await persistenceCompleters.removeAt(0).future;
+    }
+  }
+
+  @override
+  Future<LessonCompletionResult> finishLessonSession({
+    required String sessionId,
+    required int validTurnCount,
+  }) async {
+    finishLessonSessionCallCount += 1;
+    lastValidTurnCount = validTurnCount;
+    return finishCompleter?.future ?? finishResult;
+  }
+
+  @override
+  Future<LessonCompletionResult> loadLessonSummary(
+      {required String sessionId}) async {
+    loadLessonSummaryCallCount += 1;
+    return summaryResult;
   }
 }
 
@@ -302,6 +342,17 @@ Widget _lessonScreen(FakeAuthService authService) => MaterialApp(
         authService: authService,
         selection: _introLessonSelection,
       ),
+    );
+
+Widget _lessonScreenWithHome(FakeAuthService authService) => MaterialApp(
+      initialRoute: '/lesson',
+      routes: {
+        '/': (_) => const Scaffold(body: Text('Home')),
+        '/lesson': (_) => LessonScreen(
+              authService: authService,
+              selection: _introLessonSelection,
+            ),
+      },
     );
 
 Future<void> _expectVisibleAfterScroll(WidgetTester tester, String text) async {
@@ -536,7 +587,7 @@ void main() {
     expect(find.byKey(const Key('lesson-action-play-voice')), findsNothing);
     expect(find.byKey(const Key('lesson-action-translation')), findsNothing);
     expect(find.byKey(const Key('lesson-action-feedback')), findsNothing);
-    expect(find.byKey(const Key('lesson-action-finish')), findsNothing);
+    expect(find.byKey(const Key('lesson-action-finish')), findsOneWidget);
     expect(find.byKey(const Key('lesson-action-record')), findsOneWidget);
     expect(find.byKey(const Key('lesson-action-hint')), findsOneWidget);
   });
@@ -633,5 +684,227 @@ void main() {
     expect(find.text('Could not load lesson content. Please try again.'),
         findsOneWidget);
     expect(find.text('Retry lesson content'), findsOneWidget);
+  });
+
+  testWidgets('finish asks for confirmation and continues without a request',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('lesson-action-finish')));
+    await tester.pumpAndSettle();
+    expect(find.text('Finish lesson?'), findsOneWidget);
+    await tester.tap(find.text('Continue lesson'));
+    await tester.pumpAndSettle();
+    expect(auth.finishLessonSessionCallCount, 0);
+  });
+
+  testWidgets('finish sends once and shows unavailable completed state',
+      (tester) async {
+    final completer = Completer<LessonCompletionResult>();
+    final auth = FakeAuthService(finishCompleter: completer);
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('lesson-action-finish')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Finish lesson'));
+    await tester.pump();
+    expect(auth.finishLessonSessionCallCount, 1);
+    expect(find.text('Finishing lesson...'), findsOneWidget);
+    expect(tester.widget<FilledButton>(_sendButton()).onPressed, isNull);
+    completer.complete(LessonCompletionResult.summaryUnavailable());
+    await tester.pumpAndSettle();
+    expect(find.text('Lesson completed'), findsOneWidget);
+    expect(
+        find.text(
+            'Your lesson was saved, but a summary could not be created for this lesson.'),
+        findsOneWidget);
+    expect(find.text('Retry summary'), findsNothing);
+    expect(find.text('Done'), findsOneWidget);
+  });
+
+  testWidgets('summary-load error shows retry and loads the summary again',
+      (tester) async {
+    final auth = FakeAuthService(
+      finishResult: LessonCompletionResult.summaryLoadError(),
+      summaryResult: LessonCompletionResult.summaryLoadError(),
+    );
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('lesson-action-finish')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Finish lesson'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Retry summary'), findsOneWidget);
+    expect(auth.loadLessonSummaryCallCount, 0);
+    await tester.tap(find.text('Retry summary'));
+    await tester.pumpAndSettle();
+    expect(auth.loadLessonSummaryCallCount, 1);
+  });
+
+  testWidgets('Done exits the completed lesson', (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_lessonScreenWithHome(auth));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('lesson-action-finish')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Finish lesson'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+    expect(find.text('Home'), findsOneWidget);
+  });
+
+  testWidgets('scenario selection only finishes with zero valid learner turns',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('lesson-action-finish')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Finish lesson'));
+    await tester.pumpAndSettle();
+    expect(auth.lastValidTurnCount, 0);
+  });
+
+  testWidgets('finish waits for pending user and tutor persistence',
+      (tester) async {
+    final userPersisted = Completer<void>();
+    final tutorPersisted = Completer<void>();
+    final auth = FakeAuthService(
+      persistenceCompleters: [userPersisted, tutorPersisted],
+    );
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('lesson-input')), 'Hello');
+    await tester.pump();
+    await tester.tap(_sendButton());
+    await tester.pumpAndSettle();
+    expect(auth.persistedMessages.length, 1);
+    await tester.tap(find.byKey(const Key('lesson-action-finish')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Finish lesson'));
+    await tester.pump();
+    expect(auth.finishLessonSessionCallCount, 0);
+    userPersisted.complete();
+    await tester.pump();
+    expect(auth.persistedMessages.length, 2);
+    expect(auth.finishLessonSessionCallCount, 0);
+    tutorPersisted.complete();
+    await tester.pumpAndSettle();
+    expect(auth.finishLessonSessionCallCount, 1);
+    expect(auth.lastValidTurnCount, 1);
+    expect(auth.persistedMessages.map((message) => message.role),
+        ['user', 'assistant']);
+  });
+
+  testWidgets('failed best-effort message persistence does not block finish',
+      (tester) async {
+    final auth = FakeAuthService(persistenceFailure: Exception('offline'));
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('lesson-input')), 'Hello');
+    await tester.tap(_sendButton());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('lesson-action-finish')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Finish lesson'));
+    await tester.pumpAndSettle();
+    expect(auth.finishLessonSessionCallCount, 1);
+  });
+
+  testWidgets('ready summary renders backend learner content', (tester) async {
+    final auth = FakeAuthService(
+      finishResult:
+          LessonCompletionResult.summaryReady(const LessonSummaryResponse(
+        status: 'ready',
+        level: 'A1',
+        topicTitle: 'Daily Life',
+        summary: 'You communicated clearly.',
+        strengths: ['Clear greeting'],
+        improvements: ['Use longer answers'],
+        vocabulary: ['introduce'],
+        grammar: ['I am from...'],
+        nextSteps: ['Practice questions'],
+      )),
+    );
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('lesson-action-finish')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Finish lesson'));
+    await tester.pumpAndSettle();
+    expect(find.text('Lesson summary'), findsOneWidget);
+    expect(find.text('You communicated clearly.'), findsOneWidget);
+    final summarySurface = find.byKey(const Key('lesson-summary-scroll'));
+    final summaryScrollable = find.descendant(
+      of: summarySurface,
+      matching: find.byType(Scrollable),
+    );
+    expect(summarySurface, findsOneWidget);
+    expect(summaryScrollable, findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Clear greeting'),
+      200,
+      scrollable: summaryScrollable,
+    );
+    expect(find.text('Clear greeting'), findsOneWidget);
+    expect(find.text('Use longer answers'), findsOneWidget);
+    expect(find.text('introduce'), findsOneWidget);
+    expect(find.text('I am from...'), findsOneWidget);
+    expect(find.text('Practice questions'), findsOneWidget);
+  });
+
+  testWidgets('empty ready-summary sections are omitted', (tester) async {
+    final auth = FakeAuthService(
+      finishResult:
+          LessonCompletionResult.summaryReady(const LessonSummaryResponse(
+        status: 'ready',
+        summary: 'Nice work.',
+        strengths: ['Good effort'],
+      )),
+    );
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('lesson-action-finish')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Finish lesson'));
+    await tester.pumpAndSettle();
+    expect(find.text('Strengths'), findsOneWidget);
+    expect(find.text('Improvements'), findsNothing);
+    expect(find.text('Vocabulary'), findsNothing);
+    expect(find.text('Grammar'), findsNothing);
+    expect(find.text('Next steps'), findsNothing);
+  });
+
+  testWidgets('finish failure restores the active lesson controls',
+      (tester) async {
+    final auth = FakeAuthService(finishResult: LessonCompletionResult.failed());
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('lesson-input')), 'Hello');
+    await tester.tap(find.byKey(const Key('lesson-action-finish')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Finish lesson'));
+    await tester.pumpAndSettle();
+    expect(
+        find.text(
+            'Could not finish the lesson. Please check your connection and try again.'),
+        findsOneWidget);
+    expect(tester.widget<FilledButton>(_sendButton()).onPressed, isNotNull);
+  });
+
+  testWidgets('completed lesson cannot send another message', (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('lesson-action-finish')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Finish lesson'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('lesson-input')), findsNothing);
+    expect(find.byKey(const Key('lesson-send-button')), findsNothing);
   });
 }

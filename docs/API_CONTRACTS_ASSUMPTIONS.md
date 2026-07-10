@@ -121,6 +121,8 @@ GET /api/me/lesson-content/scenarios/{scenarioKey}
 POST /api/me/lesson-sessions
 POST /api/lesson-chat/reply
 POST /api/me/lesson-sessions/{sessionId}/messages
+PUT /api/me/lesson-sessions/{sessionId}/finish
+GET /api/me/lesson-sessions/{sessionId}/summary
 ```
 
 Current mobile session-start request shape for `POST /api/me/lesson-sessions`:
@@ -158,6 +160,13 @@ Do not use the premature placeholder endpoint below for real mobile lessons at t
 POST /api/me/lesson-sessions/{sessionId}/reply
 ```
 
+## Confirmed finish and summary contract
+
+- `PUT /api/me/lesson-sessions/{sessionId}/finish` is authenticated and accepts `{ "validTurnCount": 0 }` (or the actual non-negative typed learner turn count). It returns the finished lesson-session response and is idempotent.
+- On successful finish, mobile reads `GET /api/me/lesson-sessions/{sessionId}/summary`. The learner-safe response has `status: "ready"` or `status: "unavailable"`.
+- For `ready`, mobile displays only the backend-owned learner fields: optional context (`level`, `topicTitle`, `subtopicTitle`) plus `summary`, `strengths`, `improvements`, `vocabulary`, `grammar`, and `nextSteps`.
+- For `unavailable`, completion remains successful and mobile presents a safe fallback with a summary retry action. Mobile never generates a summary from the transcript, uploads a summary, calls a `/api/dev` route, uses the diagnostic summary PUT route, or calls OpenAI directly.
+
 Expected behavior:
 
 - Lesson access, subscription status, scenario runtime content, session start, replies, and message persistence go through existing backend APIs.
@@ -172,7 +181,7 @@ Explicit no-go items for the next text-chat step:
 - No new safe/catalog endpoints for intermediate convenience.
 - No duplicate mobile prompt/runtime system.
 - No backend changes unless a real final shared lesson-runtime design is approved.
-- No voice, TTS, realtime, hints, feedback, summary, history, or billing.
+- No voice, TTS, realtime, hints, feedback, history, or billing.
 
 Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
 
