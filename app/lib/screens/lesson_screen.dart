@@ -55,6 +55,7 @@ class LessonScreen extends StatefulWidget {
 class _LessonScreenState extends State<LessonScreen> {
   static const _comingNextMessage = 'Coming next in a future lesson update.';
   static const _neutralOpeningFallback = 'Your lesson is ready.';
+  static const _initialContextVariantLimit = 3;
 
   late final AuthService _authService;
   final TextEditingController _messageController = TextEditingController();
@@ -162,7 +163,6 @@ class _LessonScreenState extends State<LessonScreen> {
       );
       final openingMessage = _buildInitialTutorMessage(
         scenario: scenario,
-        tutorDisplayName: _displayNameForTutorId(settings.selectedTutorId),
       );
       if (!mounted) return;
       setState(() {
@@ -186,14 +186,22 @@ class _LessonScreenState extends State<LessonScreen> {
 
   _LessonChatMessage _buildInitialTutorMessage({
     required LessonRuntimeScenario scenario,
-    required String tutorDisplayName,
   }) {
-    final openingParts = <String>[
-      scenario.lessonSetup.setupMessage.trim(),
-      scenario.conversationFlow.opening.trim(),
-      scenario.conversationFlow.firstUserTask.trim(),
-    ].where((value) => value.isNotEmpty).toList();
+    final openingParts = <String>[];
+    final openingLine = scenario.conversationFlow.opening.trim().isNotEmpty
+        ? scenario.conversationFlow.opening.trim()
+        : scenario.lessonSetup.setupMessage.trim();
+    final goal = scenario.learningGoal.goal.trim();
+
+    if (openingLine.isNotEmpty) {
+      openingParts.add(openingLine);
+    }
+    if (goal.isNotEmpty) {
+      openingParts.add('Goal: $goal');
+    }
+
     final scenarioChoices = scenario.controlledVariation.contextVariants
+        .take(_initialContextVariantLimit)
         .map((variant) => variant.title.trim())
         .where((value) => value.isNotEmpty)
         .toList(growable: false);
@@ -201,15 +209,19 @@ class _LessonScreenState extends State<LessonScreen> {
     if (scenarioChoices.isNotEmpty) {
       openingParts.add(
         [
-          'Try one of these situations:',
-          ...scenarioChoices.map((choice) => '- $choice'),
+          'Choose a situation:',
+          ...scenarioChoices.indexed.map(
+            (entry) => '${entry.$1 + 1}. ${entry.$2}',
+          ),
         ].join('\n'),
       );
     }
 
     final subtopicTitle = scenario.metadata.subtopic.trim();
     if (subtopicTitle.isNotEmpty) {
-      openingParts.add('Or choose your own situation in $subtopicTitle.');
+      openingParts.add(
+        'Or suggest your own situation about ${subtopicTitle.toLowerCase()}.',
+      );
     }
 
     final openingText = openingParts.isEmpty
@@ -1047,6 +1059,8 @@ class _TutorHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final tutorInitial =
+        displayName.isEmpty ? 'T' : displayName.substring(0, 1);
     final statusColor = switch (status) {
       LessonTutorStatus.ready => colorScheme.onSurfaceVariant,
       LessonTutorStatus.thinking => colorScheme.primary,
@@ -1057,6 +1071,7 @@ class _TutorHeader extends StatelessWidget {
     return Container(
       key: const Key('lesson-tutor-header'),
       clipBehavior: Clip.antiAlias,
+      height: 240,
       decoration: BoxDecoration(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         gradient: LinearGradient(
@@ -1085,103 +1100,107 @@ class _TutorHeader extends StatelessWidget {
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Align(
-                  alignment: Alignment.topLeft,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface.withValues(alpha: 0.78),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: IconButton(
-                      key: const Key('lesson-back-button'),
-                      onPressed: onBack,
-                      icon: const Icon(Icons.arrow_back),
+          Positioned.fill(
+            child: Container(
+              key: const Key('lesson-avatar'),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    colorScheme.primaryContainer.withValues(alpha: 0.24),
+                    colorScheme.surface.withValues(alpha: 0.08),
+                  ],
+                ),
+              ),
+              child: Stack(
+                children: [
+                  Positioned(
+                    right: -36,
+                    top: 28,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const SizedBox(width: 140, height: 140),
                     ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 176,
-                  child: Container(
-                    key: const Key('lesson-avatar'),
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface.withValues(alpha: 0.62),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: colorScheme.outlineVariant),
+                  Positioned(
+                    left: 28,
+                    bottom: -32,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface.withValues(alpha: 0.16),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const SizedBox(width: 128, height: 128),
                     ),
-                    child: Stack(
+                  ),
+                  Center(
+                    child: Text(
+                      tutorInitial,
+                      key: const Key('lesson-avatar-placeholder'),
+                      style: textTheme.displayLarge?.copyWith(
+                        color: colorScheme.onSurface.withValues(alpha: 0.88),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface.withValues(alpha: 0.78),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: IconButton(
+                        key: const Key('lesson-back-button'),
+                        onPressed: onBack,
+                        icon: const Icon(Icons.arrow_back),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Row(
                       children: [
-                        Positioned(
-                          right: 20,
-                          top: 18,
-                          child: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: statusColor,
-                              shape: BoxShape.circle,
+                        _HeaderMetaChip(
+                          key: const Key('lesson-meta-summary'),
+                          label: '$compactLevel · $topic',
+                        ),
+                        if (displayName.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          _HeaderMetaChip(
+                            key: const Key('lesson-meta-tutor'),
+                            label: displayName,
+                            trailing: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: statusColor,
+                                shape: BoxShape.circle,
+                              ),
                             ),
                           ),
-                        ),
-                        Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              CircleAvatar(
-                                radius: 38,
-                                backgroundColor:
-                                    colorScheme.primary.withValues(alpha: 0.12),
-                                child: Text(
-                                  displayName.isEmpty
-                                      ? 'T'
-                                      : displayName.substring(0, 1),
-                                  style: textTheme.headlineMedium?.copyWith(
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-                              Text(
-                                '$displayName avatar area',
-                                style: textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'Future animated GIF placeholder',
-                                key: const Key('lesson-avatar-placeholder'),
-                                style: textTheme.bodyMedium?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Positioned(
-                          left: 18,
-                          right: 18,
-                          bottom: 18,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _HeaderMetaChip(
-                                key: const Key('lesson-meta-summary'),
-                                label: '$compactLevel · $topic',
-                              ),
-                            ],
-                          ),
-                        ),
+                        ],
                       ],
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -1194,9 +1213,11 @@ class _HeaderMetaChip extends StatelessWidget {
   const _HeaderMetaChip({
     super.key,
     required this.label,
+    this.trailing,
   });
 
   final String label;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -1206,7 +1227,16 @@ class _HeaderMetaChip extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.78),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(label),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label),
+          if (trailing != null) ...[
+            const SizedBox(width: 8),
+            trailing!,
+          ],
+        ],
+      ),
     );
   }
 }

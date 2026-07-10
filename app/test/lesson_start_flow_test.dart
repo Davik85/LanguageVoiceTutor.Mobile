@@ -181,11 +181,11 @@ LessonRuntimeScenario _runtimeScenario() => LessonRuntimeScenario.fromJson({
         'lessonType': 'guided_roleplay',
       },
       'lessonSetup': {
-        'setupMessage': 'Today we will practice introductions.',
+        'setupMessage': 'Tutor starts by greeting the learner.',
       },
       'learningGoal': {
         'goal':
-            'The user can introduce themselves and ask simple personal questions.',
+            'you will learn to say your name, where you are from, and ask simple questions.',
       },
       'situation': {
         'description':
@@ -215,8 +215,8 @@ LessonRuntimeScenario _runtimeScenario() => LessonRuntimeScenario.fromJson({
         },
       },
       'conversationFlow': {
-        'opening': 'Choose a situation and then answer in English.',
-        'firstUserTask': 'Introduce yourself in one short sentence.',
+        'opening': 'Today we\'ll practice introductions.',
+        'firstUserTask': 'Learner gives a short introduction.',
         'guidedPracticeFollowUpQuestions': ['Where are you from?'],
         'variationOrComplication': '',
         'correctionMoment': '',
@@ -241,7 +241,7 @@ LessonRuntimeScenario _runtimeScenario() => LessonRuntimeScenario.fromJson({
         'contextVariants': [
           {
             'id': 'new_neighbor',
-            'title': 'Meet a new neighbor',
+            'title': 'Meeting a new neighbor',
             'openingLine':
                 'Hi! I\'m {tutorName}. I live next door. What\'s your name?',
             'contextConfirmationLine':
@@ -251,13 +251,23 @@ LessonRuntimeScenario _runtimeScenario() => LessonRuntimeScenario.fromJson({
           },
           {
             'id': 'first_day_class',
-            'title': 'First day at class',
+            'title': 'First day at a language school',
             'openingLine':
                 'Hi! I\'m {tutorName}. I\'m in this class too. What\'s your name?',
             'contextConfirmationLine':
                 'Great! Let\'s imagine it is the first day at a language school.',
             'openingIntent':
                 'Tutor plays a friendly classmate who is meeting the learner on the first day of class.',
+          },
+          {
+            'id': 'hobby_club',
+            'title': 'Meeting someone at a hobby club',
+            'openingLine':
+                'Hi! I\'m {tutorName}. Is this your first time at the club?',
+            'contextConfirmationLine':
+                'Great! Let\'s imagine you are meeting someone at a hobby club.',
+            'openingIntent':
+                'Tutor plays a friendly club member meeting the learner for the first time.',
           },
         ],
       },
@@ -361,13 +371,18 @@ void main() {
 
     final avatarFinder = find.byKey(const Key('lesson-avatar'));
     expect(avatarFinder, findsOneWidget);
-    expect(tester.getSize(avatarFinder).height, greaterThan(150));
-    expect(find.textContaining('Lana'), findsOneWidget);
+    expect(tester.getSize(avatarFinder).height, greaterThanOrEqualTo(220));
+    expect(find.text('Lana'), findsOneWidget);
     expect(find.byKey(const Key('lesson-avatar-placeholder')), findsOneWidget);
     expect(find.byKey(const Key('lesson-meta-summary')), findsOneWidget);
     expect(find.text('A1 · Daily Life'), findsOneWidget);
     expect(find.text('Ready'), findsNothing);
+    expect(find.text('Introductions'), findsNothing);
     expect(find.byKey(const Key('lesson-meta-situation')), findsNothing);
+    expect(find.byType(CircleAvatar), findsNothing);
+    expect(find.text('Lana avatar area'), findsNothing);
+    expect(find.text('Future animated GIF placeholder'), findsNothing);
+    expect(find.text('Avatar'), findsNothing);
   });
 
   testWidgets('cms opening renders plain text scenario choices only',
@@ -377,23 +392,28 @@ void main() {
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Today we will practice introductions.'),
+    expect(find.textContaining('Today we\'ll practice introductions.'),
+        findsOneWidget);
+    expect(find.textContaining('Goal:'), findsOneWidget);
+    expect(find.textContaining('Choose a situation:'), findsOneWidget);
+    expect(find.textContaining('1. Meeting a new neighbor'), findsOneWidget);
+    expect(find.textContaining('2. First day at a language school'),
+        findsOneWidget);
+    expect(find.textContaining('3. Meeting someone at a hobby club'),
         findsOneWidget);
     expect(
-        find.textContaining('Choose a situation and then answer in English.'),
-        findsOneWidget);
-    expect(find.textContaining('Introduce yourself in one short sentence.'),
-        findsOneWidget);
-    expect(find.textContaining('Try one of these situations:'), findsOneWidget);
-    expect(find.textContaining('- Meet a new neighbor'), findsOneWidget);
-    expect(find.textContaining('- First day at class'), findsOneWidget);
-    expect(
-        find.textContaining('Or choose your own situation in Introductions.'),
+        find.textContaining(
+            'Or suggest your own situation about introductions.'),
         findsOneWidget);
     expect(find.byType(ActionChip), findsNothing);
     expect(find.text('Tutor greets the learner.'), findsNothing);
     expect(find.text('Keep tutor messages short.'), findsNothing);
     expect(find.text('Keep the greeting simple.'), findsNothing);
+    expect(find.textContaining('Tutor starts'), findsNothing);
+    expect(find.textContaining('Learner gives'), findsNothing);
+    expect(find.textContaining('roleplay'), findsNothing);
+    expect(find.textContaining('opening intent'), findsNothing);
+    expect(find.textContaining('expected scenario progression'), findsNothing);
   });
 
   testWidgets('typed scenario choice still sends through lesson chat reply',
@@ -403,13 +423,13 @@ void main() {
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField), 'Meet a new neighbor');
+    await tester.enterText(find.byType(TextField), 'Meeting a new neighbor');
     await tester.pump();
     await tester.tap(_sendButton());
     await tester.pumpAndSettle();
 
     expect(auth.sendLessonChatReplyCallCount, 1);
-    expect(auth.lastLessonChatRequest?.userMessage, 'Meet a new neighbor');
+    expect(auth.lastLessonChatRequest?.userMessage, 'Meeting a new neighbor');
     expect(auth.lastLessonChatRequest?.selectedContextVariantId, isEmpty);
     expect(auth.lastLessonChatRequest?.selectedContextOpeningLine, isEmpty);
   });
