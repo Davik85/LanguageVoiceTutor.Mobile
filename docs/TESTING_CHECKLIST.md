@@ -170,10 +170,22 @@ Expected boundary checks:
 - Network/backend abandon failures keep the learner on the lesson screen and allow retry; authentication failures use the existing authentication-required behavior.
 - The backend stale active-session interval remains two minutes, with no backend timeout change and no mobile heartbeat. Confirmed Back releases the session immediately; force-close or termination without confirmed leave falls back to the existing backend timeout.
 - No temporary mobile-only backend endpoints, new safe/catalog endpoints, duplicate mobile prompt/runtime system, or backend changes are introduced without an approved final shared lesson-runtime design.
-- Translation, per-message Feedback, TTS/tutor voice, microphone recording, speech-to-text, GIF avatar states, fullscreen Conversation mode, history/progress screen, mobile billing, analytics, crash reporting, and store release remain future work. Heartbeat or timeout reduction is optional future reliability work only if real user feedback requires it.
+- Per-message Translation is complete. Per-message Feedback, TTS/tutor voice, microphone recording, speech-to-text, GIF avatar states, fullscreen Conversation mode, history/progress screen, mobile billing, analytics, crash reporting, and store release remain future work. Per-message Feedback is the next isolated functional block. Heartbeat or timeout reduction is optional future reliability work only if real user feedback requires it.
 
 Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
 
+
+## Current Translation and settings-language validation baseline
+
+Confirmed results for the completed Translation and settings-language persistence baseline:
+
+- Dart formatting passed.
+- `flutter analyze` passed with zero issues.
+- Focused AuthService and Settings tests passed with 52 tests.
+- Direct UserSettings tests passed with 5 tests.
+- The complete Flutter suite passed.
+- Android debug APK built successfully.
+- Manual verification confirmed native-language saving and Translation in the selected language.
 
 ## Future Flutter checks
 
@@ -510,6 +522,6 @@ flutter build apk --debug
 
 Expected current result: analyze reports zero issues, focused AuthService and lesson screen tests pass, the complete Flutter suite passes with 101 tests, and the Android debug APK build passes.
 
-Still unimplemented unless a later repository change proves otherwise: real Translation, real per-message Feedback, TTS/tutor voice playback, microphone recording, speech-to-text, GIF avatar state integration, fullscreen Conversation mode, history/progress screen, mobile billing, analytics, crash reporting, and store release.
+Real Translation is complete in functional commit `9d2476b` (`Add mobile message translation`). Still unimplemented unless a later repository change proves otherwise: real per-message Feedback, TTS/tutor voice playback, microphone recording, speech-to-text, GIF avatar state integration, fullscreen Conversation mode, history/progress screen, mobile billing, analytics, crash reporting, and store release. Per-message Feedback is the next isolated functional block.
 
-Next isolated engineering task: active lesson lifecycle on mobile. A confirmed leave should use the existing backend abandon flow, Back navigation must not silently Finish a lesson, and ordinary leave must not generate a Summary. This documentation task does not implement that functionality.
+Next isolated engineering task: per-message Feedback. This documentation task does not implement Feedback or any other runtime functionality.

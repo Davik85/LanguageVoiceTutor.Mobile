@@ -49,11 +49,20 @@ Expected settings behavior:
 Confirmed current settings contract:
 
 - `GET /api/me/settings` and `PUT /api/me/settings` support backend-owned settings fields: `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `speechVoice`, `speechSpeed`, `conversationModeEnabled`, and `selectedTutorId`.
-- Mobile sends backend language IDs, not display labels, for `nativeLanguage`, `studyLanguage`, and `explanationLanguage` even when Settings displays user-friendly labels.
+- Mobile keeps stable internal dropdown IDs such as `en`, `tr`, and `ru`.
+- `PUT /api/me/settings` serializes `studyLanguage` using the backend-required English study-language name: `English`, `French`, `German`, `Portuguese`, `Spanish`, or `Italian`.
+- `nativeLanguage` and `explanationLanguage` remain in their supported backend ID form.
+- `GET /api/me/settings` parsing accepts both IDs and English names and normalizes them to internal dropdown IDs.
+- Mobile continues to send the complete seven-field settings payload.
 - `studyLanguage`, `nativeLanguage`, and `explanationLanguage` remain separate backend fields and must not be collapsed into one language preference.
 - Mobile may send `selectedTutorId` to `/api/me/settings` when the user chooses a valid tutor from `GET /api/tutor-options`.
 - Mobile must not document fake local selected-tutor persistence as the source of truth.
 - `speechVoice` remains separate from `selectedTutorId`.
+- Safe backend HTTP 400 settings-save error text can be shown to the learner.
+- HTTP 503 uses neutral temporary-unavailable wording.
+- Authentication failure remains distinct.
+- Failed settings saves restore the last backend-confirmed settings so unsaved values do not look persisted.
+- Successful settings saves use the settings object returned by backend.
 
 Possible `/api/me` data fields:
 
@@ -194,6 +203,37 @@ Hint error boundaries:
 - HTTP 429 is temporary Hint unavailability; this document does not promise a product-level free daily Hint quota.
 - Network, backend, and malformed-response errors remain learner-safe and retryable.
 
+
+
+## Confirmed lesson Translation contract
+
+The completed mobile Translation flow uses the existing shared backend lesson runtime; no backend deployment is claimed by this documentation update. The mobile Translation endpoint is:
+
+```http
+POST /api/translate
+```
+
+Mobile sends the same authenticated bearer token used by lesson APIs and reuses the existing refresh-on-401 flow. Backend owns provider calls, prompts, rate protection, session validation, and translation behavior. Flutter does not call OpenAI or another provider directly, does not contain provider prompts, and does not contain translation methodology.
+
+Tutor and learner messages use the same endpoint and contract. Translation is requested for the exact visible message text, does not require a persisted lesson-message ID, and includes the active backend lesson session ID. The translation target is the learner's backend-saved native language: mobile converts the saved native-language ID to the backend-compatible English language name for the request. Translation does not use interface or explanation language as its target. Source-language metadata comes from the selected study language.
+
+Translation UI and persistence boundaries:
+
+- Translation appears inline with the original message and is not rendered as a new tutor or learner message.
+- Results are cached per message. A second tap hides the cached translation, and a later tap shows the cached translation without another backend request.
+- Different messages can be translated independently.
+- Duplicate requests for the same loading message are prevented.
+- Translation does not persist a lesson message.
+- Translation does not increment `learnerTurnCount` or `validTurnCount`.
+- Translation does not change Hint, abandonment, Finish, Summary, lesson progression, or subscription entitlement.
+- Translation is not shown on the Summary screen because the transcript is not shown there.
+
+Translation error boundaries:
+
+- Authentication failures reuse the existing authentication-required behavior.
+- Session-ended responses use the existing terminal-session handling.
+- HTTP 429 is temporary Translation unavailability.
+- Network, backend, malformed-response, and unexpected failures remain learner-safe and retryable.
 
 ## Confirmed lesson abandon contract
 
