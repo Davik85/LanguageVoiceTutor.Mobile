@@ -127,6 +127,32 @@ class AuthService {
     }
   }
 
+  Future<LessonFeedbackResult> requestLessonFeedback({
+    required LessonChatRequest request,
+  }) async {
+    if (request.userMessage.trim().isEmpty ||
+        request.sourceMessageId == null ||
+        request.sourcePersistedMessageId == null ||
+        request.sourcePersistedMessageId!.trim().isEmpty ||
+        request.backendSessionId.trim().isEmpty) {
+      return LessonFeedbackResult.validation();
+    }
+    try {
+      final response = await _authenticatedPost(
+        '/api/lesson-chat/feedback',
+        body: request.toJson(),
+        failureMessageForResponse: _lessonFeedbackFailureMessage,
+      );
+      return LessonFeedbackResult.success(
+        LessonFeedbackResponse.fromJson(_decodeObject(response.body)),
+      );
+    } on ApiException catch (error) {
+      return _safeLessonFeedbackResult(error);
+    } catch (_) {
+      return LessonFeedbackResult.failed();
+    }
+  }
+
   Future<TranslationResult> requestTranslation({
     required TranslationRequest request,
   }) async {
@@ -147,15 +173,20 @@ class AuthService {
     }
   }
 
-  Future<void> persistLessonSessionMessage({
+  Future<String> persistLessonSessionMessage({
     required String sessionId,
     required CreateLessonSessionMessageRequest request,
   }) async {
-    await _authenticatedPost(
+    final response = await _authenticatedPost(
       '/api/me/lesson-sessions/$sessionId/messages',
       body: request.toJson(),
       failureMessageForResponse: _lessonSessionMessageFailureMessage,
     );
+    final id = _jsonString(_decodeObject(response.body), 'id').trim();
+    if (id.isEmpty) {
+      throw const ApiException('Could not save the message right now.');
+    }
+    return id;
   }
 
   Future<LessonSessionAbandonResult> abandonLessonSession({
@@ -578,6 +609,29 @@ class AuthService {
     return 'Could not translate this message. Please try again.';
   }
 
+  static String _lessonFeedbackFailureMessage(ApiResponse response) {
+    if (response.statusCode == 400) {
+      return 'Feedback is not available for this message.';
+    }
+    if (response.statusCode == 401) {
+      return 'Please sign in again to continue the lesson.';
+    }
+    if (response.statusCode == 429) {
+      return 'Feedback is temporarily unavailable. Please try again shortly.';
+    }
+    final code = _lessonSessionErrorCode(response.body);
+    if (response.statusCode == 409 ||
+        code == 'lesson_ended' ||
+        code == 'lesson_session_ended' ||
+        code == 'session_conflict') {
+      return 'This lesson has already ended.';
+    }
+    if (response.statusCode >= 500) {
+      return 'Feedback is unavailable right now. Please try again.';
+    }
+    return 'Could not get feedback. Please try again.';
+  }
+
   static const _settingsValidationMarker = 'settings-validation:';
 
   static String _userSettingsUpdateFailureMessage(ApiResponse response) {
@@ -789,6 +843,30 @@ class AuthService {
       return TranslationResult.unavailable();
     }
     return TranslationResult.failed();
+  }
+
+  static LessonFeedbackResult _safeLessonFeedbackResult(ApiException error) {
+    if (error.message == 'Please sign in again.' ||
+        error.message == 'Please sign in again to continue the lesson.') {
+      return LessonFeedbackResult.authRequired();
+    }
+    if (error.message == 'This lesson has already ended.') {
+      return LessonFeedbackResult.sessionEnded();
+    }
+    if (error.message == 'Feedback is not available for this message.') {
+      return LessonFeedbackResult.validation();
+    }
+    if (error.message ==
+        'Feedback is temporarily unavailable. Please try again shortly.') {
+      return LessonFeedbackResult.temporarilyUnavailable();
+    }
+    if (error.message ==
+            'Feedback is unavailable right now. Please try again.' ||
+        error.message == 'The service took too long to respond.' ||
+        error.message == 'Unable to reach the service.') {
+      return LessonFeedbackResult.unavailable();
+    }
+    return LessonFeedbackResult.failed();
   }
 
   static UserSettingsUpdateResult _safeUserSettingsUpdateResult(

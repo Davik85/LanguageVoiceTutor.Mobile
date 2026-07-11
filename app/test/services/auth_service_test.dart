@@ -647,11 +647,14 @@ void main() {
   test('message persistence uses session messages endpoint', () async {
     final api = FakeApiClient();
     api.responses['/api/me/lesson-sessions/session-1/messages'] = [
-      const ApiResponse(statusCode: 200, body: '{}'),
+      const ApiResponse(
+        statusCode: 200,
+        body: '{"id":"11111111-1111-4111-8111-111111111111"}',
+      ),
     ];
     final service = AuthService(apiClient: api, storage: MemoryStorage());
 
-    await service.persistLessonSessionMessage(
+    final persistedId = await service.persistLessonSessionMessage(
       sessionId: 'session-1',
       request: const CreateLessonSessionMessageRequest(
         role: 'user',
@@ -667,7 +670,108 @@ void main() {
       api.calls,
       contains('POST /api/me/lesson-sessions/session-1/messages'),
     );
+    expect(persistedId, '11111111-1111-4111-8111-111111111111');
     expect(api.calls.join(' '), isNot(contains('openai')));
+  });
+
+  test('feedback posts the existing full request contract and parses sections',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/lesson-chat/feedback'] = [
+      const ApiResponse(
+          statusCode: 200,
+          body:
+              '{"shortText":"Good work.","correctedVersion":"","grammarTip":"","vocabularyTip":"word","cultureTip":"","naturalVersion":"More natural."}'),
+    ];
+    final request = LessonChatRequest.fromScenario(
+      scenario: LessonRuntimeScenario.fromJson(runtimeScenarioJson()),
+      levelProfile: LessonRuntimeScenario.fromJson(runtimeScenarioJson())
+          .levelProfileFor('A1 Beginner'),
+      selectedLevel: 'A1 Beginner',
+      topicTitle: 'Daily Life',
+      subtopicTitle: 'Introductions',
+      userMessage: 'Hello, my name is Sam.',
+      lastBotMessage: 'Hello!',
+      nativeLanguageName: 'English',
+      targetLanguageId: 'es',
+      targetLanguageName: 'Spanish',
+      targetLanguageNativeName: 'Spanish',
+      targetLanguageCode: 'es',
+      userDisplayName: '',
+      learnerTurnCount: 1,
+      recentMessages: const [],
+      backendSessionId: 'session-1',
+      sourceMessageId: 42,
+      sourcePersistedMessageId: '11111111-1111-4111-8111-111111111111',
+      sourceMessageKind: 'user',
+    );
+    final result = await AuthService(apiClient: api, storage: MemoryStorage())
+        .requestLessonFeedback(request: request);
+    expect(result.status, LessonFeedbackStatus.success);
+    expect(result.feedback?.shortText, 'Good work.');
+    expect(result.feedback?.vocabularyTip, 'word');
+    expect(api.calls, ['POST /api/lesson-chat/feedback']);
+    expect(api.bodies.single, request.toJson());
+    expect(api.bodies.single!['sourceMessageId'], 42);
+    expect(api.bodies.single!['sourcePersistedMessageId'],
+        '11111111-1111-4111-8111-111111111111');
+    expect(api.bodies.single!['backendSessionId'], 'session-1');
+    expect(api.bodies.single!['sourceMessageKind'], 'user');
+    expect(api.calls.single, isNot(contains('/api/dev')));
+  });
+
+  test('feedback keeps malformed responses and HTTP failures learner-safe',
+      () async {
+    for (final body in ['{}', '{"shortText":"  "}', 'not json']) {
+      final api = FakeApiClient()
+        ..responses['/api/lesson-chat/feedback'] = [
+          ApiResponse(statusCode: 200, body: body)
+        ];
+      expect(
+          (await AuthService(apiClient: api, storage: MemoryStorage())
+                  .requestLessonFeedback(request: sampleChatRequest()))
+              .status,
+          LessonFeedbackStatus.validation);
+    }
+    final statuses = <int, LessonFeedbackStatus>{
+      400: LessonFeedbackStatus.validation,
+      409: LessonFeedbackStatus.sessionEnded,
+      429: LessonFeedbackStatus.temporarilyUnavailable,
+      500: LessonFeedbackStatus.unavailable,
+      502: LessonFeedbackStatus.unavailable
+    };
+    for (final entry in statuses.entries) {
+      final api = FakeApiClient()
+        ..responses['/api/lesson-chat/feedback'] = [
+          ApiResponse(statusCode: entry.key, body: '{}')
+        ];
+      final request = LessonChatRequest.fromScenario(
+          scenario: LessonRuntimeScenario.fromJson(runtimeScenarioJson()),
+          levelProfile: LessonRuntimeScenario.fromJson(runtimeScenarioJson())
+              .levelProfileFor('A1 Beginner'),
+          selectedLevel: 'A1 Beginner',
+          topicTitle: 'Daily Life',
+          subtopicTitle: 'Introductions',
+          userMessage: 'Hello',
+          lastBotMessage: '',
+          nativeLanguageName: 'English',
+          targetLanguageId: 'es',
+          targetLanguageName: 'Spanish',
+          targetLanguageNativeName: 'Spanish',
+          targetLanguageCode: 'es',
+          userDisplayName: '',
+          learnerTurnCount: 1,
+          recentMessages: const [],
+          backendSessionId: 'session-1',
+          sourceMessageId: 1,
+          sourcePersistedMessageId: '11111111-1111-4111-8111-111111111111',
+          sourceMessageKind: 'user');
+      expect(
+          (await AuthService(apiClient: api, storage: MemoryStorage())
+                  .requestLessonFeedback(request: request))
+              .status,
+          entry.value);
+    }
   });
 
   test('abandon uses the authenticated production endpoint with no body',

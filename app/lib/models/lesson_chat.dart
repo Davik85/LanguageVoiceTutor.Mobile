@@ -84,6 +84,9 @@ class LessonChatRequest {
     required this.activeLevelProfileAddedKeyPhrases,
     required this.activeLevelProfileAddedUsefulConstructions,
     required this.activeLevelProfileAddedGrammarFocus,
+    this.sourceMessageId,
+    this.sourcePersistedMessageId,
+    this.sourceMessageKind = '',
   });
 
   final String selectedLevel;
@@ -168,6 +171,9 @@ class LessonChatRequest {
   final List<String> activeLevelProfileAddedKeyPhrases;
   final List<String> activeLevelProfileAddedUsefulConstructions;
   final List<String> activeLevelProfileAddedGrammarFocus;
+  final int? sourceMessageId;
+  final String? sourcePersistedMessageId;
+  final String sourceMessageKind;
 
   Map<String, dynamic> toJson() => {
         'selectedLevel': selectedLevel,
@@ -269,6 +275,11 @@ class LessonChatRequest {
             activeLevelProfileAddedUsefulConstructions,
         'activeLevelProfileAddedGrammarFocus':
             activeLevelProfileAddedGrammarFocus,
+        if (sourceMessageId != null) 'sourceMessageId': sourceMessageId,
+        if (sourcePersistedMessageId != null)
+          'sourcePersistedMessageId': sourcePersistedMessageId,
+        if (sourceMessageKind.isNotEmpty)
+          'sourceMessageKind': sourceMessageKind,
       };
 
   factory LessonChatRequest.fromScenario({
@@ -288,6 +299,9 @@ class LessonChatRequest {
     required int learnerTurnCount,
     required List<LessonRecentConversationMessage> recentMessages,
     required String backendSessionId,
+    int? sourceMessageId,
+    String? sourcePersistedMessageId,
+    String sourceMessageKind = '',
     String selectedContextTitle = '',
     LessonRuntimeContextVariant? selectedContextVariant,
   }) {
@@ -403,6 +417,9 @@ class LessonChatRequest {
       activeLevelProfileAddedUsefulConstructions:
           levelProfile.addedUsefulConstructions,
       activeLevelProfileAddedGrammarFocus: levelProfile.addedGrammarFocus,
+      sourceMessageId: sourceMessageId,
+      sourcePersistedMessageId: sourcePersistedMessageId,
+      sourceMessageKind: sourceMessageKind,
     );
   }
 }
@@ -625,6 +642,76 @@ class CreateLessonSessionMessageRequest {
         'transcriptConfidence': null,
         'audioDurationMs': null,
       };
+}
+
+class LessonFeedbackResponse {
+  const LessonFeedbackResponse({
+    required this.shortText,
+    required this.correctedVersion,
+    required this.grammarTip,
+    required this.vocabularyTip,
+    required this.cultureTip,
+    required this.naturalVersion,
+  });
+
+  final String shortText;
+  final String correctedVersion;
+  final String grammarTip;
+  final String vocabularyTip;
+  final String cultureTip;
+  final String naturalVersion;
+
+  factory LessonFeedbackResponse.fromJson(Map<String, dynamic> json) {
+    final shortText = _string(json, 'shortText').trim();
+    if (shortText.isEmpty) {
+      throw const FormatException('Invalid feedback response.');
+    }
+    return LessonFeedbackResponse(
+      shortText: shortText,
+      correctedVersion: _string(json, 'correctedVersion').trim(),
+      grammarTip: _string(json, 'grammarTip').trim(),
+      vocabularyTip: _string(json, 'vocabularyTip').trim(),
+      cultureTip: _string(json, 'cultureTip').trim(),
+      naturalVersion: _string(json, 'naturalVersion').trim(),
+    );
+  }
+}
+
+enum LessonFeedbackStatus {
+  success,
+  authRequired,
+  sessionEnded,
+  validation,
+  temporarilyUnavailable,
+  unavailable,
+  failed
+}
+
+class LessonFeedbackResult {
+  const LessonFeedbackResult._(this.status, this.message, [this.feedback]);
+  final LessonFeedbackStatus status;
+  final String message;
+  final LessonFeedbackResponse? feedback;
+  bool get isSuccess => status == LessonFeedbackStatus.success;
+  factory LessonFeedbackResult.success(LessonFeedbackResponse value) =>
+      LessonFeedbackResult._(
+          LessonFeedbackStatus.success, 'Feedback ready.', value);
+  factory LessonFeedbackResult.authRequired() => const LessonFeedbackResult._(
+      LessonFeedbackStatus.authRequired,
+      'Please sign in again to continue the lesson.');
+  factory LessonFeedbackResult.sessionEnded() => const LessonFeedbackResult._(
+      LessonFeedbackStatus.sessionEnded, 'This lesson has already ended.');
+  factory LessonFeedbackResult.validation() => const LessonFeedbackResult._(
+      LessonFeedbackStatus.validation,
+      'Feedback is not available for this message.');
+  factory LessonFeedbackResult.temporarilyUnavailable() =>
+      const LessonFeedbackResult._(LessonFeedbackStatus.temporarilyUnavailable,
+          'Feedback is temporarily unavailable. Please try again shortly.');
+  factory LessonFeedbackResult.unavailable() => const LessonFeedbackResult._(
+      LessonFeedbackStatus.unavailable,
+      'Feedback is unavailable right now. Please try again.');
+  factory LessonFeedbackResult.failed() => const LessonFeedbackResult._(
+      LessonFeedbackStatus.failed, 'Could not get feedback. Please try again.');
 }
 
 String _string(Map<String, dynamic> json, String key) {

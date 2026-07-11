@@ -28,6 +28,7 @@ class _LessonActionAvailability {
     required this.canSendText,
     required this.canToggleRecordingPlaceholder,
     required this.canUsePlaceholders,
+    required this.canUseFeedback,
     required this.canUseTranslation,
     required this.canUseHint,
   });
@@ -35,6 +36,7 @@ class _LessonActionAvailability {
   final bool canSendText;
   final bool canToggleRecordingPlaceholder;
   final bool canUsePlaceholders;
+  final bool canUseFeedback;
   final bool canUseTranslation;
   final bool canUseHint;
 }
@@ -374,13 +376,15 @@ class _LessonScreenState extends State<LessonScreen> {
     });
     _scrollTranscriptToBottom();
 
-    _trackMessagePersistence(_persistChatMessages(
+    final persistenceOperation = _persistChatMessages(
       sessionId: session.lessonSessionId,
       studyLanguage: session.studyLanguage,
-      userText: text,
+      userMessage: userMessage,
       botText: botText,
       turnNumber: learnerTurnCount,
-    ));
+    );
+    userMessage.persistenceOperation = persistenceOperation;
+    _trackMessagePersistence(persistenceOperation);
   }
 
   Future<void> _requestHint() async {
@@ -545,22 +549,25 @@ class _LessonScreenState extends State<LessonScreen> {
   Future<void> _persistChatMessages({
     required String sessionId,
     required String studyLanguage,
-    required String userText,
+    required _LessonChatMessage userMessage,
     required String botText,
     required int turnNumber,
   }) async {
     try {
-      await _authService.persistLessonSessionMessage(
+      final persistedUserMessageId =
+          await _authService.persistLessonSessionMessage(
         sessionId: sessionId,
         request: CreateLessonSessionMessageRequest(
           role: 'user',
-          text: userText,
+          text: userMessage.text,
           source: 'typed',
           turnNumber: turnNumber,
           isValidLessonTurn: true,
           studyLanguage: studyLanguage,
         ),
       );
+      userMessage.persistedBackendMessageId = persistedUserMessageId;
+      userMessage.persistenceError = null;
       if (botText.isNotEmpty) {
         await _authService.persistLessonSessionMessage(
           sessionId: sessionId,
@@ -576,6 +583,8 @@ class _LessonScreenState extends State<LessonScreen> {
       }
     } catch (_) {
       // Live chat remains primary if persistence is unavailable.
+      userMessage.persistenceError =
+          'Feedback is not ready yet. Please try again.';
     }
   }
 
@@ -643,6 +652,12 @@ class _LessonScreenState extends State<LessonScreen> {
           !_isAuthenticationRequired,
       canUsePlaceholders: lessonReady &&
           !_isFinishing &&
+          !_isCompleted &&
+          !_lessonSessionEnded &&
+          !_isAuthenticationRequired,
+      canUseFeedback: lessonReady &&
+          !_isFinishing &&
+          !_isAbandoning &&
           !_isCompleted &&
           !_lessonSessionEnded &&
           !_isAuthenticationRequired,
@@ -932,6 +947,105 @@ class _LessonScreenState extends State<LessonScreen> {
     });
   }
 
+  Future<void> _requestFeedback(_LessonChatMessage message) async {
+    final selection = widget.selection;
+    final session = _startResult?.session;
+    final scenario = _scenario;
+    final settings = _settings;
+    if (!message.isUser ||
+        selection == null ||
+        session == null ||
+        scenario == null ||
+        settings == null ||
+        _isAuthenticationRequired ||
+        _lessonSessionEnded ||
+        _isAbandoning ||
+        _isFinishing ||
+        _isCompleted ||
+        message.isFeedbackLoading) {
+      return;
+    }
+    if (message.isFeedbackVisible) {
+      setState(() => message.isFeedbackVisible = false);
+      return;
+    }
+    if (message.feedback != null) {
+      setState(() {
+        message.isFeedbackVisible = true;
+        message.feedbackError = null;
+      });
+      return;
+    }
+    setState(() {
+      message.isFeedbackLoading = true;
+      message.feedbackError = null;
+    });
+    final persistence = message.persistenceOperation;
+    if (message.persistedBackendMessageId == null && persistence != null) {
+      await persistence.timeout(const Duration(seconds: 5), onTimeout: () {});
+    }
+    if (!mounted || _isCompleted || _isAbandoning || _isFinishing) return;
+    final persistedId = message.persistedBackendMessageId;
+    if (persistedId == null || persistedId.isEmpty) {
+      setState(() {
+        message.isFeedbackLoading = false;
+        message.feedbackError = 'Feedback is not ready yet. Please try again.';
+      });
+      return;
+    }
+    final lastBotMessage = _messages.lastWhere(
+      (value) => value.isBot,
+      orElse: () => _LessonChatMessage.tutor(''),
+    );
+    final learnerTurnCount = _messages.where((value) => value.isUser).length;
+    final request = LessonChatRequest.fromScenario(
+      scenario: scenario,
+      levelProfile: scenario.levelProfileFor(selection.level),
+      selectedLevel: selection.level,
+      topicTitle: selection.topicTitle,
+      subtopicTitle: selection.subtopicTitle,
+      userMessage: message.text,
+      lastBotMessage: lastBotMessage.text,
+      nativeLanguageName:
+          LanguageOptions.backendNativeLanguageNameFor(settings.nativeLanguage),
+      targetLanguageId:
+          LanguageOptions.studyLanguageIdFor(settings.studyLanguage),
+      targetLanguageName:
+          LanguageOptions.backendStudyLanguageNameFor(settings.studyLanguage),
+      targetLanguageNativeName:
+          LanguageOptions.backendStudyLanguageNameFor(settings.studyLanguage),
+      targetLanguageCode:
+          LanguageOptions.studyLanguageIdFor(settings.studyLanguage),
+      userDisplayName: '',
+      learnerTurnCount: learnerTurnCount,
+      recentMessages: _recentConversationMessages(_messages),
+      backendSessionId: session.lessonSessionId,
+      selectedContextTitle: _currentSelectedContextTitle,
+      selectedContextVariant: _selectedContextVariant(scenario),
+      sourceMessageId: message.id,
+      sourcePersistedMessageId: persistedId,
+      sourceMessageKind: 'user',
+    );
+    final result = await _authService.requestLessonFeedback(request: request);
+    if (!mounted || _isCompleted || _isAbandoning) return;
+    setState(() {
+      message.isFeedbackLoading = false;
+      if (result.isSuccess && result.feedback != null) {
+        message.feedback = result.feedback;
+        message.isFeedbackVisible = true;
+        message.feedbackError = null;
+      } else {
+        message.feedbackError = result.message;
+        if (result.status == LessonFeedbackStatus.authRequired) {
+          _isAuthenticationRequired = true;
+        }
+        if (result.status == LessonFeedbackStatus.sessionEnded) {
+          _lessonSessionEnded = true;
+        }
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final selection = widget.selection;
@@ -997,6 +1111,7 @@ class _LessonScreenState extends State<LessonScreen> {
                               transcriptController: _transcriptController,
                               onMessageAction: _handleFutureAction,
                               onTranslateMessage: _translateMessage,
+                              onFeedback: _requestFeedback,
                               onToggleRecordingPlaceholder:
                                   _toggleRecordingPlaceholder,
                               onHint: _requestHint,
@@ -1056,6 +1171,7 @@ class _LessonWorkspace extends StatelessWidget {
     required this.onRetryLoad,
     required this.onMessageAction,
     required this.onTranslateMessage,
+    required this.onFeedback,
     required this.onToggleRecordingPlaceholder,
     required this.onHint,
     required this.onDismissHint,
@@ -1090,6 +1206,7 @@ class _LessonWorkspace extends StatelessWidget {
   final Future<void> Function() onRetryLoad;
   final void Function(String label, {bool speaking}) onMessageAction;
   final Future<void> Function(_LessonChatMessage message) onTranslateMessage;
+  final Future<void> Function(_LessonChatMessage message) onFeedback;
   final VoidCallback onToggleRecordingPlaceholder;
   final VoidCallback onHint;
   final VoidCallback onDismissHint;
@@ -1140,6 +1257,7 @@ class _LessonWorkspace extends StatelessWidget {
                       actionAvailability: actionAvailability,
                       onMessageAction: onMessageAction,
                       onTranslateMessage: onTranslateMessage,
+                      onFeedback: onFeedback,
                     ),
                   ),
                   if (sendError != null) ...[
@@ -1221,6 +1339,7 @@ class _LessonBody extends StatelessWidget {
     required this.actionAvailability,
     required this.onMessageAction,
     required this.onTranslateMessage,
+    required this.onFeedback,
   });
 
   final bool isStarting;
@@ -1234,6 +1353,7 @@ class _LessonBody extends StatelessWidget {
   final _LessonActionAvailability actionAvailability;
   final void Function(String label, {bool speaking}) onMessageAction;
   final Future<void> Function(_LessonChatMessage message) onTranslateMessage;
+  final Future<void> Function(_LessonChatMessage message) onFeedback;
 
   @override
   Widget build(BuildContext context) {
@@ -1292,6 +1412,7 @@ class _LessonBody extends StatelessWidget {
       actionAvailability: actionAvailability,
       onMessageAction: onMessageAction,
       onTranslateMessage: onTranslateMessage,
+      onFeedback: onFeedback,
     );
   }
 }
@@ -1303,6 +1424,7 @@ class _LessonTranscript extends StatelessWidget {
     required this.actionAvailability,
     required this.onMessageAction,
     required this.onTranslateMessage,
+    required this.onFeedback,
   });
 
   final ScrollController controller;
@@ -1310,6 +1432,7 @@ class _LessonTranscript extends StatelessWidget {
   final _LessonActionAvailability actionAvailability;
   final void Function(String label, {bool speaking}) onMessageAction;
   final Future<void> Function(_LessonChatMessage message) onTranslateMessage;
+  final Future<void> Function(_LessonChatMessage message) onFeedback;
 
   @override
   Widget build(BuildContext context) {
@@ -1338,6 +1461,7 @@ class _LessonTranscript extends StatelessWidget {
           actionAvailability: actionAvailability,
           onMessageAction: onMessageAction,
           onTranslateMessage: onTranslateMessage,
+          onFeedback: onFeedback,
         );
       },
     );
@@ -1350,12 +1474,14 @@ class _LessonMessageBubble extends StatelessWidget {
     required this.actionAvailability,
     required this.onMessageAction,
     required this.onTranslateMessage,
+    required this.onFeedback,
   });
 
   final _LessonChatMessage message;
   final _LessonActionAvailability actionAvailability;
   final void Function(String label, {bool speaking}) onMessageAction;
   final Future<void> Function(_LessonChatMessage message) onTranslateMessage;
+  final Future<void> Function(_LessonChatMessage message) onFeedback;
 
   @override
   Widget build(BuildContext context) {
@@ -1404,7 +1530,7 @@ class _LessonMessageBubble extends StatelessWidget {
                           key: const Key('lesson-message-action-tutor-voice'),
                           visualDensity: VisualDensity.compact,
                           tooltip: 'Play voice',
-                          onPressed: actionAvailability.canUsePlaceholders
+                          onPressed: actionAvailability.canUseFeedback
                               ? () => onMessageAction(
                                     'Play voice',
                                     speaking: true,
@@ -1429,7 +1555,7 @@ class _LessonMessageBubble extends StatelessWidget {
                           visualDensity: VisualDensity.compact,
                           tooltip: 'Feedback',
                           onPressed: actionAvailability.canUsePlaceholders
-                              ? () => onMessageAction('Feedback')
+                              ? () => onFeedback(message)
                               : null,
                           icon:
                               const Icon(Icons.mode_comment_outlined, size: 18),
@@ -1456,6 +1582,25 @@ class _LessonMessageBubble extends StatelessWidget {
                     fontStyle: FontStyle.italic,
                   ),
                 ),
+              ],
+              if (message.isFeedbackLoading) ...[
+                const SizedBox(height: 8),
+                const SizedBox(
+                  key: Key('lesson-message-feedback-loading'),
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ],
+              if (message.feedbackError != null) ...[
+                const SizedBox(height: 8),
+                Text(message.feedbackError!,
+                    key: Key('lesson-message-feedback-error-${message.id}'),
+                    style: TextStyle(color: colorScheme.error)),
+              ],
+              if (message.isFeedbackVisible && message.feedback != null) ...[
+                const SizedBox(height: 8),
+                _FeedbackCard(feedback: message.feedback!),
               ],
               if (message.translationError != null) ...[
                 const SizedBox(height: 8),
@@ -1627,10 +1772,54 @@ class _LessonChatMessage {
   bool isTranslationVisible = false;
   String? translatedText;
   String? translationError;
+  String? persistedBackendMessageId;
+  String? persistenceError;
+  Future<void>? persistenceOperation;
+  bool isFeedbackLoading = false;
+  bool isFeedbackVisible = false;
+  LessonFeedbackResponse? feedback;
+  String? feedbackError;
 
   bool get isUser => kind == LessonMessageKind.user;
   bool get isTutor => kind == LessonMessageKind.tutor;
   bool get isBot => isTutor;
+}
+
+class _FeedbackCard extends StatelessWidget {
+  const _FeedbackCard({required this.feedback});
+  final LessonFeedbackResponse feedback;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final sections = <(String, String)>[
+      ('Quick feedback', feedback.shortText),
+      ('Corrected version', feedback.correctedVersion),
+      ('Grammar', feedback.grammarTip),
+      ('Vocabulary', feedback.vocabularyTip),
+      ('Culture', feedback.cultureTip),
+      ('More natural version', feedback.naturalVersion),
+    ].where((section) => section.$2.trim().isNotEmpty).toList();
+    return Card(
+      key: const Key('lesson-message-feedback-card'),
+      margin: EdgeInsets.zero,
+      color: colorScheme.surfaceContainerLowest,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final section in sections) ...[
+              Text(section.$1, style: Theme.of(context).textTheme.labelLarge),
+              const SizedBox(height: 2),
+              Text(section.$2),
+              if (section != sections.last) const SizedBox(height: 10),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _TutorHeader extends StatelessWidget {

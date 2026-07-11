@@ -187,7 +187,7 @@ class FakeAuthService extends AuthService {
   }
 
   @override
-  Future<void> persistLessonSessionMessage({
+  Future<String> persistLessonSessionMessage({
     required String sessionId,
     required CreateLessonSessionMessageRequest request,
   }) async {
@@ -196,6 +196,7 @@ class FakeAuthService extends AuthService {
     if (persistenceCompleters.isNotEmpty) {
       await persistenceCompleters.removeAt(0).future;
     }
+    return '00000000-0000-4000-8000-000000000001';
   }
 
   @override
@@ -862,7 +863,8 @@ void main() {
     expect(find.byIcon(Icons.stop), findsOneWidget);
   });
 
-  testWidgets('user feedback action stays local after sending a message',
+  testWidgets(
+      'user feedback action replaces the old placeholder after sending a message',
       (tester) async {
     final auth = FakeAuthService();
 
@@ -884,7 +886,7 @@ void main() {
     await tester.pump();
 
     expect(find.textContaining('Coming next in a future lesson update.'),
-        findsOneWidget);
+        findsNothing);
     expect(auth.sendLessonChatReplyCallCount, initialSendCount);
     expect(auth.persistedMessages.length, initialPersistCount);
   });
