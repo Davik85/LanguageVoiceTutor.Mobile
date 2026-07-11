@@ -1,5 +1,58 @@
 import 'language_options.dart';
 
+enum UserSettingsUpdateStatus {
+  success,
+  authenticationRequired,
+  validationFailure,
+  serviceUnavailable,
+  ordinaryFailure,
+}
+
+class UserSettingsUpdateResult {
+  const UserSettingsUpdateResult._({
+    required this.status,
+    required this.message,
+    this.settings,
+  });
+
+  final UserSettingsUpdateStatus status;
+  final String message;
+  final UserSettings? settings;
+
+  bool get isSuccess => status == UserSettingsUpdateStatus.success;
+
+  factory UserSettingsUpdateResult.success(UserSettings settings) =>
+      UserSettingsUpdateResult._(
+        status: UserSettingsUpdateStatus.success,
+        message: '',
+        settings: settings,
+      );
+
+  factory UserSettingsUpdateResult.authenticationRequired() =>
+      const UserSettingsUpdateResult._(
+        status: UserSettingsUpdateStatus.authenticationRequired,
+        message: 'Please sign in again.',
+      );
+
+  factory UserSettingsUpdateResult.validationFailure(String message) =>
+      UserSettingsUpdateResult._(
+        status: UserSettingsUpdateStatus.validationFailure,
+        message: message,
+      );
+
+  factory UserSettingsUpdateResult.serviceUnavailable() =>
+      const UserSettingsUpdateResult._(
+        status: UserSettingsUpdateStatus.serviceUnavailable,
+        message: 'Settings are temporarily unavailable. Please try again.',
+      );
+
+  factory UserSettingsUpdateResult.ordinaryFailure() =>
+      const UserSettingsUpdateResult._(
+        status: UserSettingsUpdateStatus.ordinaryFailure,
+        message: 'Unable to save settings right now.',
+      );
+}
+
 class UserSettings {
   const UserSettings({
     required this.nativeLanguage,
@@ -34,7 +87,8 @@ class UserSettings {
 
   Map<String, dynamic> toJson() => {
         'nativeLanguage': nativeLanguage,
-        'studyLanguage': studyLanguage,
+        'studyLanguage':
+            LanguageOptions.backendStudyLanguageNameFor(studyLanguage),
         'explanationLanguage': explanationLanguage,
         'speechVoice': speechVoice,
         'speechSpeed': speechSpeed,

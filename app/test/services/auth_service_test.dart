@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/language_options.dart';
@@ -5,6 +7,7 @@ import 'package:language_voice_tutor_mobile/models/lesson_chat.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_runtime.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_session.dart';
 import 'package:language_voice_tutor_mobile/models/translation.dart';
+import 'package:language_voice_tutor_mobile/models/user_settings.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
 
@@ -234,6 +237,19 @@ const translationRequest = TranslationRequest(
   backendSessionId: 'session-1',
 );
 
+const userSettingsRequest = UserSettings(
+  nativeLanguage: 'tr',
+  studyLanguage: 'en',
+  explanationLanguage: 'ru',
+  speechVoice: 'coral',
+  speechSpeed: 1.1,
+  conversationModeEnabled: true,
+  selectedTutorId: 'lana',
+);
+
+const userSettingsResponseBody =
+    '{"nativeLanguage":"tr","studyLanguage":"en","explanationLanguage":"ru","speechVoice":"coral","speechSpeed":1.1,"conversationModeEnabled":true,"selectedTutorId":"lana"}';
+
 void main() {
   test('study language values are converted to backend-compatible names', () {
     expect(LanguageOptions.backendStudyLanguageNameFor('es'), 'Spanish');
@@ -254,6 +270,135 @@ void main() {
       'selectedContextTitle': null,
       'modeUsed': 'text',
     });
+  });
+
+  test('settings update sends the complete backend-compatible payload',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/settings'] = [
+      const ApiResponse(statusCode: 200, body: userSettingsResponseBody),
+    ];
+
+    final result = await AuthService(apiClient: api, storage: MemoryStorage())
+        .updateUserSettings(userSettingsRequest);
+
+    expect(result.status, UserSettingsUpdateStatus.success);
+    expect(result.settings?.nativeLanguage, 'tr');
+    expect(api.calls, ['PUT /api/me/settings']);
+    expect(api.bodies.single, {
+      'nativeLanguage': 'tr',
+      'studyLanguage': 'English',
+      'explanationLanguage': 'ru',
+      'speechVoice': 'coral',
+      'speechSpeed': 1.1,
+      'conversationModeEnabled': true,
+      'selectedTutorId': 'lana',
+    });
+  });
+
+  test('settings update preserves a safe nonblank 400 error', () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/settings'] = [
+      const ApiResponse(
+          statusCode: 400, body: '{"error":"Unsupported native language."}'),
+    ];
+
+    final result = await AuthService(apiClient: api, storage: MemoryStorage())
+        .updateUserSettings(userSettingsRequest);
+
+    expect(result.status, UserSettingsUpdateStatus.validationFailure);
+    expect(result.message, 'Unsupported native language.');
+  });
+
+  test('settings update keeps malformed or blank 400 errors generic', () async {
+    for (final body in ['{}', '{"error":"  "}', 'not json']) {
+      final api = FakeApiClient();
+      api.responses['/api/me/settings'] = [
+        ApiResponse(statusCode: 400, body: body)
+      ];
+      final result = await AuthService(apiClient: api, storage: MemoryStorage())
+          .updateUserSettings(userSettingsRequest);
+      expect(result.status, UserSettingsUpdateStatus.ordinaryFailure);
+      expect(result.message, 'Unable to save settings right now.');
+    }
+  });
+
+  test('settings update maps 503 to a temporary service result', () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/settings'] = [
+      const ApiResponse(statusCode: 503, body: '{"error":"storage details"}'),
+    ];
+    final result = await AuthService(apiClient: api, storage: MemoryStorage())
+        .updateUserSettings(userSettingsRequest);
+    expect(result.status, UserSettingsUpdateStatus.serviceUnavailable);
+    expect(result.message,
+        'Settings are temporarily unavailable. Please try again.');
+    expect(result.message, isNot(contains('storage details')));
+  });
+
+  test('settings update refreshes once after 401 and returns confirmed data',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/settings'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+      const ApiResponse(statusCode: 200, body: userSettingsResponseBody),
+    ];
+    final result = await AuthService(apiClient: api, storage: MemoryStorage())
+        .updateUserSettings(userSettingsRequest);
+    expect(result.status, UserSettingsUpdateStatus.success);
+    expect(api.calls, [
+      'PUT /api/me/settings',
+      'POST /api/auth/refresh',
+      'PUT /api/me/settings',
+    ]);
+  });
+
+  test('settings update returns authentication required when refresh fails',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/me/settings'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+    ];
+    api.responses['/api/auth/refresh'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+    ];
+    final result = await AuthService(apiClient: api, storage: MemoryStorage())
+        .updateUserSettings(userSettingsRequest);
+    expect(result.status, UserSettingsUpdateStatus.authenticationRequired);
+  });
+
+  test(
+      'settings update keeps malformed success, network, and unknown failures safe',
+      () async {
+    final malformedApi = FakeApiClient()
+      ..responses['/api/me/settings'] = [
+        const ApiResponse(statusCode: 200, body: 'not json'),
+      ];
+    final malformed =
+        await AuthService(apiClient: malformedApi, storage: MemoryStorage())
+            .updateUserSettings(userSettingsRequest);
+    expect(malformed.status, UserSettingsUpdateStatus.ordinaryFailure);
+
+    final networkApi = FakeApiClient()
+      ..errors['/api/me/settings'] = [
+        const SocketException('private network detail')
+      ];
+    final network =
+        await AuthService(apiClient: networkApi, storage: MemoryStorage())
+            .updateUserSettings(userSettingsRequest);
+    expect(network.status, UserSettingsUpdateStatus.ordinaryFailure);
+    expect(network.message, isNot(contains('private network detail')));
+
+    final unexpectedApi = FakeApiClient()
+      ..responses['/api/me/settings'] = [
+        const ApiResponse(
+            statusCode: 418, body: '{"error":"technical detail"}'),
+      ];
+    final unexpected =
+        await AuthService(apiClient: unexpectedApi, storage: MemoryStorage())
+            .updateUserSettings(userSettingsRequest);
+    expect(unexpected.status, UserSettingsUpdateStatus.ordinaryFailure);
+    expect(unexpected.message, isNot(contains('technical detail')));
   });
 
   test('runtime scenario request uses GET lesson content endpoint', () async {

@@ -32,11 +32,18 @@ class FakeApiClient implements ApiClient {
 }
 
 class FakeAuthService extends AuthService {
-  FakeAuthService({this.settingsFailure, this.saveFailure})
-      : super(apiClient: FakeApiClient(), storage: _MemoryStorage());
+  FakeAuthService({
+    this.settingsFailure,
+    this.saveResult,
+    this.confirmedSave,
+    this.initialSettings,
+  }) : super(apiClient: FakeApiClient(), storage: _MemoryStorage());
   final ApiException? settingsFailure;
-  final ApiException? saveFailure;
+  final UserSettingsUpdateResult? saveResult;
+  final UserSettings? confirmedSave;
+  final UserSettings? initialSettings;
   bool saved = false;
+  int saveCalls = 0;
   UserSettings? savedSettings;
   String resetRequestMessage =
       'Password reset instructions were sent if this email is registered.';
@@ -69,14 +76,15 @@ class FakeAuthService extends AuthService {
   @override
   Future<UserSettings> fetchUserSettings() async {
     if (settingsFailure != null) throw settingsFailure!;
-    return const UserSettings(
-        nativeLanguage: 'en',
-        studyLanguage: 'es',
-        explanationLanguage: 'en',
-        speechVoice: 'nova',
-        speechSpeed: 1.0,
-        conversationModeEnabled: true,
-        selectedTutorId: 'nelli');
+    return initialSettings ??
+        const UserSettings(
+            nativeLanguage: 'en',
+            studyLanguage: 'es',
+            explanationLanguage: 'en',
+            speechVoice: 'nova',
+            speechSpeed: 1.0,
+            conversationModeEnabled: true,
+            selectedTutorId: 'nelli');
   }
 
   @override
@@ -93,11 +101,13 @@ class FakeAuthService extends AuthService {
       changePasswordMessage;
 
   @override
-  Future<UserSettings> updateUserSettings(UserSettings settings) async {
-    if (saveFailure != null) throw saveFailure!;
+  Future<UserSettingsUpdateResult> updateUserSettings(
+      UserSettings settings) async {
     saved = true;
+    saveCalls++;
     savedSettings = settings;
-    return settings;
+    return saveResult ??
+        UserSettingsUpdateResult.success(confirmedSave ?? settings);
   }
 }
 
@@ -320,27 +330,31 @@ void main() {
     expect(auth.savedSettings?.explanationLanguage, 'en');
   });
 
-  testWidgets('native language dropdown shows labels and saves backend IDs',
+  testWidgets('Turkish settings send tr with all supported fields',
       (tester) async {
-    final auth = FakeAuthService();
+    const turkishSettings = UserSettings(
+      nativeLanguage: 'tr',
+      studyLanguage: 'es',
+      explanationLanguage: 'en',
+      speechVoice: 'nova',
+      speechSpeed: 1.0,
+      conversationModeEnabled: true,
+      selectedTutorId: 'nelli',
+    );
+    final auth = FakeAuthService(initialSettings: turkishSettings);
     await tester.pumpWidget(_screen(auth));
-    await tester.pumpAndSettle();
-    await _scrollToText(tester, 'Native language');
-
-    await tester.tap(find.byType(DropdownButtonFormField<String>).at(1));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Russian'), findsOneWidget);
-
-    await tester.tap(find.text('Russian').last);
     await tester.pumpAndSettle();
     await _scrollToText(tester, 'Save settings');
     await tester.tap(find.text('Save settings'));
     await tester.pumpAndSettle();
 
-    expect(auth.savedSettings?.nativeLanguage, 'ru');
+    expect(auth.savedSettings?.nativeLanguage, 'tr');
     expect(auth.savedSettings?.studyLanguage, 'es');
     expect(auth.savedSettings?.explanationLanguage, 'en');
+    expect(auth.savedSettings?.speechVoice, 'nova');
+    expect(auth.savedSettings?.speechSpeed, 1.0);
+    expect(auth.savedSettings?.conversationModeEnabled, isTrue);
+    expect(auth.savedSettings?.selectedTutorId, 'nelli');
   });
 
   testWidgets('interface language dropdown shows labels and saves backend IDs',
@@ -408,16 +422,88 @@ void main() {
     expect(auth.saved, isTrue);
     expect(find.text('Settings saved.'), findsOneWidget);
   });
-  testWidgets('settings screen friendly failure hides raw backend details',
+
+  testWidgets('settings save uses backend-confirmed values', (tester) async {
+    const confirmed = UserSettings(
+      nativeLanguage: 'ru',
+      studyLanguage: 'es',
+      explanationLanguage: 'en',
+      speechVoice: 'nova',
+      speechSpeed: 1.0,
+      conversationModeEnabled: true,
+      selectedTutorId: 'nelli',
+    );
+    final auth = FakeAuthService(confirmedSave: confirmed);
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Save settings');
+    await tester.tap(find.text('Save settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Russian'), findsWidgets);
+  });
+
+  testWidgets(
+      'validation failure restores the confirmed selection and shows safe message',
       (tester) async {
     final auth = FakeAuthService(
-        saveFailure: const ApiException('raw stack trace secret token'));
+      saveResult: UserSettingsUpdateResult.validationFailure(
+          'Unsupported native language.'),
+    );
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Native language');
+    await tester.tap(find.byType(DropdownButtonFormField<String>).at(1));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Russian').last);
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Save settings');
+    await tester.tap(find.text('Save settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Unsupported native language.'), findsOneWidget);
+    expect(find.text('Russian'), findsNothing);
+    expect(find.text('English'), findsWidgets);
+  });
+
+  testWidgets('service unavailable is neutral and failed save can be retried',
+      (tester) async {
+    final auth = FakeAuthService(
+      saveResult: UserSettingsUpdateResult.serviceUnavailable(),
+    );
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Save settings');
+    await tester.tap(find.text('Save settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Settings are temporarily unavailable. Please try again.'),
+        findsOneWidget);
+    await tester.tap(find.text('Save settings'));
+    await tester.pumpAndSettle();
+    expect(auth.saveCalls, 2);
+  });
+
+  testWidgets('authentication-required save returns to login', (tester) async {
+    final auth = FakeAuthService(
+      saveResult: UserSettingsUpdateResult.authenticationRequired(),
+    );
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Save settings');
+    await tester.tap(find.text('Save settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Login'), findsOneWidget);
+    expect(find.text('Please sign in again.'), findsNothing);
+  });
+
+  testWidgets('settings screen ordinary failure restores confirmed settings',
+      (tester) async {
+    final auth =
+        FakeAuthService(saveResult: UserSettingsUpdateResult.ordinaryFailure());
     await tester.pumpWidget(_screen(auth));
     await tester.pumpAndSettle();
     await _scrollToText(tester, 'Save settings');
     await tester.tap(find.text('Save settings'));
     await tester.pumpAndSettle();
     expect(find.text('Unable to save settings right now.'), findsOneWidget);
-    expect(find.textContaining('secret token'), findsNothing);
+    expect(find.text('English'), findsWidgets);
   });
 }

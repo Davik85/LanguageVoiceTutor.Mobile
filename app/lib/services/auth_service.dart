@@ -230,10 +230,22 @@ class AuthService {
     return UserSettings.fromJson(_decodeObject(response.body));
   }
 
-  Future<UserSettings> updateUserSettings(UserSettings settings) async {
-    final response =
-        await _authenticatedPut('/api/me/settings', body: settings.toJson());
-    return UserSettings.fromJson(_decodeObject(response.body));
+  Future<UserSettingsUpdateResult> updateUserSettings(
+      UserSettings settings) async {
+    try {
+      final response = await _authenticatedPut(
+        '/api/me/settings',
+        body: settings.toJson(),
+        failureMessageForResponse: _userSettingsUpdateFailureMessage,
+      );
+      return UserSettingsUpdateResult.success(
+        UserSettings.fromJson(_decodeObject(response.body)),
+      );
+    } on ApiException catch (error) {
+      return _safeUserSettingsUpdateResult(error);
+    } catch (_) {
+      return UserSettingsUpdateResult.ordinaryFailure();
+    }
   }
 
   Future<String> requestPasswordReset(String email) async {
@@ -566,6 +578,20 @@ class AuthService {
     return 'Could not translate this message. Please try again.';
   }
 
+  static const _settingsValidationMarker = 'settings-validation:';
+
+  static String _userSettingsUpdateFailureMessage(ApiResponse response) {
+    if (response.statusCode == 400) {
+      final message = _settingsValidationMessage(response.body);
+      if (message.isNotEmpty) return '$_settingsValidationMarker$message';
+    }
+    if (response.statusCode == 401) return 'Please sign in again.';
+    if (response.statusCode == 503) {
+      return 'Settings are temporarily unavailable. Please try again.';
+    }
+    return 'Unable to save settings right now.';
+  }
+
   static String _lessonSessionMessageFailureMessage(ApiResponse response) {
     if (response.statusCode == 401) {
       return 'Please sign in again to continue the lesson.';
@@ -765,6 +791,24 @@ class AuthService {
     return TranslationResult.failed();
   }
 
+  static UserSettingsUpdateResult _safeUserSettingsUpdateResult(
+      ApiException error) {
+    if (error.message == 'Please sign in again.') {
+      return UserSettingsUpdateResult.authenticationRequired();
+    }
+    if (error.message.startsWith(_settingsValidationMarker)) {
+      final message = error.message.substring(_settingsValidationMarker.length);
+      if (message.trim().isNotEmpty) {
+        return UserSettingsUpdateResult.validationFailure(message);
+      }
+    }
+    if (error.message ==
+        'Settings are temporarily unavailable. Please try again.') {
+      return UserSettingsUpdateResult.serviceUnavailable();
+    }
+    return UserSettingsUpdateResult.ordinaryFailure();
+  }
+
   static LessonCompletionResult _safeLessonCompletionResult(
       ApiException error) {
     if (error.message == 'Please sign in again.' ||
@@ -802,6 +846,16 @@ class AuthService {
       return _jsonString(decoded, 'code',
           fallback: _jsonString(decoded, 'errorCode',
               fallback: _jsonString(decoded, 'error')));
+    } catch (_) {
+      return '';
+    }
+  }
+
+  static String _settingsValidationMessage(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is! Map<String, dynamic>) return '';
+      return _jsonString(decoded, 'error').trim();
     } catch (_) {
       return '';
     }

@@ -108,7 +108,32 @@ void main() {
           'selectedTutorId'
         ]));
     expect(json['nativeLanguage'], 'ru');
-    expect(json['studyLanguage'], 'es');
+    expect(json['studyLanguage'], 'Spanish');
+
+    const studyLanguageNames = {
+      'en': 'English',
+      'fr': 'French',
+      'de': 'German',
+      'pt': 'Portuguese',
+      'es': 'Spanish',
+      'it': 'Italian',
+    };
+    for (final entry in studyLanguageNames.entries) {
+      final request = const UserSettings(
+        nativeLanguage: 'tr',
+        studyLanguage: 'en',
+        explanationLanguage: 'ru',
+        speechVoice: 'nova',
+        speechSpeed: 1.0,
+        conversationModeEnabled: true,
+        selectedTutorId: 'lana',
+      ).copyWith(studyLanguage: entry.key);
+      final requestJson = request.toJson();
+      expect(request.studyLanguage, entry.key);
+      expect(requestJson['studyLanguage'], entry.value);
+      expect(requestJson['nativeLanguage'], 'tr');
+      expect(requestJson['explanationLanguage'], 'ru');
+    }
     expect(json['explanationLanguage'], 'pl');
     expect(json['selectedTutorId'], 'lana');
   });

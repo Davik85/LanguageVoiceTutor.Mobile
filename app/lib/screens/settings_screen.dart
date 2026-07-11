@@ -45,6 +45,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   AuthUser? _user;
   SubscriptionStatus? _subscription;
   UserSettings? _settings;
+  UserSettings? _confirmedSettings;
   TutorOptions? _tutorOptions;
   String? _tutorOptionsError;
   String? _accountError;
@@ -124,6 +125,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       setState(() {
         _settings = settings;
+        _confirmedSettings = settings;
         _tutorOptions = tutorOptions;
         _tutorOptionsError = tutorOptionsError;
         _settingsError = null;
@@ -143,25 +145,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (settings == null) return;
     setState(() => _isSaving = true);
     try {
-      final saved = await _authService.updateUserSettings(
+      final result = await _authService.updateUserSettings(
         _settingsWithSupportedTutor(settings),
       );
       if (!mounted) return;
-      setState(() {
-        _settings = saved;
-        _settingsError = null;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Settings saved.')),
-      );
-    } on ApiException catch (error) {
-      if (!mounted) return;
-      if (error.message == 'Please sign in again.') return _goToLogin();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to save settings right now.')),
-      );
+      if (result.isSuccess && result.settings != null) {
+        final saved = result.settings!;
+        setState(() {
+          _settings = saved;
+          _confirmedSettings = saved;
+          _settingsError = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Settings saved.')),
+        );
+        return;
+      }
+      setState(() => _settings = _confirmedSettings);
+      if (result.status == UserSettingsUpdateStatus.authenticationRequired) {
+        return _goToLogin();
+      }
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(result.message)));
     } catch (_) {
       if (!mounted) return;
+      setState(() => _settings = _confirmedSettings);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unable to save settings right now.')),
       );
