@@ -142,7 +142,7 @@ Current mobile lesson-session start should use the existing backend session-star
 }
 ```
 
-Before implementing mobile text lesson Phase 1, verify the client mirrors the existing desktop/CMS/backend flow:
+Current completed mobile lesson behavior mirrors the existing desktop/CMS/backend runtime as a second client while keeping backend as the source of truth:
 
 ```http
 GET /api/me/lesson-access
@@ -151,7 +151,12 @@ GET /api/me/lesson-content/scenarios/{scenarioKey}
 POST /api/me/lesson-sessions
 POST /api/lesson-chat/reply
 POST /api/me/lesson-sessions/{sessionId}/messages
+POST /api/lesson-sessions/{sessionId}/abandon
+PUT /api/me/lesson-sessions/{sessionId}/finish
+GET /api/me/lesson-sessions/{sessionId}/summary
 ```
+
+Current lesson-abandon validation baseline: functional commit `1a392dc` (`Add mobile lesson abandon flow`), `flutter analyze` passed with zero issues, focused AuthService and lesson-screen tests passed, the complete Flutter suite passed with 107 tests, the Android debug APK build passed, and manual Android Emulator verification passed for Stay, Leave lesson, immediate new lesson start, Hint, Finish, and Summary behavior.
 
 Expected boundary checks:
 
@@ -160,9 +165,12 @@ Expected boundary checks:
 - Mobile does not hardcode CMS tutor instructions, level behavior, prompt templates, scenario rules, wrap-up behavior, feedback guidance, or lesson methodology in Flutter.
 - Mobile does not use `POST /api/me/lesson-sessions/{sessionId}/reply` for real lessons at this stage.
 - Desktop is used as the orchestration reference client, while CMS/backend published runtime content remains the behavior source of truth.
-- The next text-chat step loads backend/CMS runtime scenario content and calls the existing desktop/backend reply flow.
+- Confirmed visible Back and Android system Back use the same leave-confirmation flow. Stay makes no backend request; Leave lesson abandons the unfinished session through `POST /api/lesson-sessions/{sessionId}/abandon` with no body and then closes the lesson screen.
+- Abandon does not call Finish, request or generate Summary, change `validTurnCount`, persist a learner/tutor message, or alter Hint/transcript data.
+- Network/backend abandon failures keep the learner on the lesson screen and allow retry; authentication failures use the existing authentication-required behavior.
+- The backend stale active-session interval remains two minutes, with no backend timeout change and no mobile heartbeat. Confirmed Back releases the session immediately; force-close or termination without confirmed leave falls back to the existing backend timeout.
 - No temporary mobile-only backend endpoints, new safe/catalog endpoints, duplicate mobile prompt/runtime system, or backend changes are introduced without an approved final shared lesson-runtime design.
-- No voice, TTS, realtime, hints, feedback, summary, history, or billing is added in the next text-chat step.
+- Translation, per-message Feedback, TTS/tutor voice, microphone recording, speech-to-text, GIF avatar states, fullscreen Conversation mode, history/progress screen, mobile billing, analytics, crash reporting, and store release remain future work. Heartbeat or timeout reduction is optional future reliability work only if real user feedback requires it.
 
 Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
 
