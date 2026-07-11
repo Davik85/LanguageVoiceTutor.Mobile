@@ -160,6 +160,39 @@ Do not use the premature placeholder endpoint below for real mobile lessons at t
 POST /api/me/lesson-sessions/{sessionId}/reply
 ```
 
+## Confirmed lesson Hint contract
+
+The completed mobile Hint flow uses the existing shared backend lesson runtime; no backend changes or backend deployment are claimed by this documentation update. The mobile Hint endpoint is:
+
+```http
+POST /api/lesson-chat/hint
+```
+
+Mobile sends the same authenticated bearer token used by lesson APIs and reuses the existing refresh-on-401 flow. Backend owns AI prompt behavior, teaching methodology, provider calls, usage protection, and learner-safe Hint responses. Flutter does not call OpenAI directly, does not contain Hint prompt logic, and does not copy private prompt contents.
+
+Before context/situation selection, Hint is local only: mobile asks the learner to choose one of the visible situations or type a custom one, does not call the backend, and does not show the CMS `hintRules.exampleHint`. Context selection resolves numeric choices against CMS/runtime context variants, resolves context titles case-insensitively, and supports custom learner-entered situations without inventing a CMS variant ID. The selected context is stored in mutable lesson-screen state and reused by both lesson reply and Hint requests.
+
+After context selection, the first active roleplay Hint may use the CMS-owned `hintRules.exampleHint`; Flutter must not create replacement scenario-specific teaching text. Later active-lesson Hint requests use the full existing `LessonChatRequest` contract, including active backend session ID, runtime scenario, current context, transcript, last tutor message, level, topic, situation, and language/settings data.
+
+Hint UI and persistence boundaries:
+
+- Hint is a compact dismissible inline support card, not a tutor or learner chat message.
+- Hint is not added to the transcript.
+- Duplicate simultaneous Hint requests are blocked.
+- Hint is disabled during incompatible lesson operations and after successful completion.
+- Hint does not create a lesson message.
+- Hint does not increment `learnerTurnCount`.
+- Hint does not change `validTurnCount`.
+- Hint does not change the Finish payload.
+- Hint does not generate or alter the lesson Summary.
+
+Hint error boundaries:
+
+- Authentication failures reuse the existing lesson authentication-required behavior.
+- Session-ended responses disable further lesson interaction consistently.
+- HTTP 429 is temporary Hint unavailability; this document does not promise a product-level free daily Hint quota.
+- Network, backend, and malformed-response errors remain learner-safe and retryable.
+
 ## Confirmed finish and summary contract
 
 The Android mobile client now has a production-verified end-to-end text lesson completion path against backend `0.1.35-backend.112` or later. Version `.112` is required for the verified summary flow because it supports nested Responses API output extraction. Backend `0.1.35-backend.111` is the previous rollback version and should not be treated as the verified summary baseline.
@@ -214,7 +247,7 @@ Explicit no-go items for the next text-chat step:
 - No new safe/catalog endpoints for intermediate convenience.
 - No duplicate mobile prompt/runtime system.
 - No backend changes unless a real final shared lesson-runtime design is approved.
-- No voice, TTS, realtime, hints, feedback, history, or billing.
+- No voice, TTS, realtime, feedback detail, history, or billing.
 
 Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
 

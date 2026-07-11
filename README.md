@@ -9,7 +9,7 @@ This repository contains the Android-first Flutter mobile client under `app/`. T
 
 ## Current verified mobile baseline
 
-The current verified mobile baseline includes backend lesson session start from the lesson placeholder screen using the existing `POST /api/me/lesson-sessions` contract. Real mobile AI chat and text input UI are not implemented. The baseline was verified from `app/` with:
+The current verified mobile baseline includes the production-verified Android text lesson loop and completed mobile Hint flow. The baseline was verified from `app/` with:
 
 ```bash
 dart format --set-exit-if-changed lib test
@@ -17,7 +17,7 @@ flutter analyze
 flutter test
 ```
 
-Expected current results are: `git diff --check` passes, `dart format --set-exit-if-changed lib test` reports 39 files and 0 changes, `flutter analyze` reports `No issues found`, and `flutter test` reports 90 passing tests. Settings/password recovery remains part of this verified baseline. Lesson runtime is still not implemented; the lesson screen remains placeholder-only after the lesson-start selection skeleton.
+Expected current results for the completed Hint baseline are: `flutter analyze` reports zero issues, focused AuthService and lesson screen tests pass, the complete Flutter suite reports 101 passing tests, the Android debug APK build passes, and manual Android Emulator verification passes for context selection, contextual Hint, Finish, and backend-owned Summary. Settings/password recovery remains part of this verified baseline.
 
 Settings has stable visible **Account**, **Learning**, **Audio**, and **Connection status** advanced area, with **Save settings** visible and tested. User level is not in Settings. Settings reads `selectedTutorId` from `GET /api/me/settings` and sends it in `PUT /api/me/settings`; `/api/tutor-options` remains the source for available tutor choices in Settings. Selected tutor is editable in the **Learning** section, persists after app/emulator restart, and remains independent from the separate tutor voice setting. Home no longer shows tutor diagnostics or the old **Available tutors** card; tutor selection belongs in Settings. Home shows the provided app logo next to a branded, accessible **Language Voice Tutor** title, preloads that logo during startup before Home is shown, and displays friendly signed-in or sign-in/sync account status without raw tokens, backend IDs, or technical auth details. The loading screen shows only the centered app logo. Language dropdowns display friendly names while storing and sending backend IDs. Study language remains limited to English, French, German, Portuguese, Spanish, and Italian. Home uses **Start lesson** to open the navigation skeleton: **Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder**. Level cards use soft level-specific colors, topic cards use soft topic-specific colors, and situation cards use the selected topic color family. Situation labels are product-friendly, no longer use `Placeholder:`, and all six topics have options; Travel includes Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage.
 
@@ -45,7 +45,19 @@ Finish sends `{ "validTurnCount": <non-negative integer> }`. Mobile counts only 
 
 Summary UI states are intentionally distinct: ready displays backend learner-safe sections, unavailable means the completed lesson has no summary and shows Done without Retry, retryable load errors may show Retry summary, and authentication failures use the separate sign-in-required state. Before Finish, mobile waits up to 5 seconds for already-started message persistence operations as ordering protection only; this is not a blind retry or duplicate-write mechanism.
 
-Text lesson foundation and Finish plus backend summary are complete. Pending mobile scope still includes history/progress, real hints, translation, feedback detail, tutor TTS, microphone/STT, GIF avatar state binding, fullscreen Conversation mode, billing, analytics/crash reporting, and store release work.
+Text lesson foundation, Finish plus backend summary, and the real mobile Hint flow are complete. Pending mobile scope still includes history/progress, real translation, real per-message feedback, tutor TTS, microphone/STT, GIF avatar state binding, fullscreen Conversation mode, billing, analytics/crash reporting, and store release work.
+
+## Current mobile Hint milestone
+
+The completed mobile Hint flow is implemented as a second-client integration with the existing product runtime. After context selection, mobile uses `POST /api/lesson-chat/hint` with the same authenticated bearer-token and refresh-on-401 behavior used by lesson replies. Backend owns Hint AI prompt behavior, teaching methodology, provider calls, usage protection, and learner-safe server responses. Flutter does not call OpenAI directly and does not contain Hint prompt logic.
+
+Before a context/situation is selected, Hint is local only: it tells the learner to choose one of the visible situations or type a custom one, does not call the backend, and does not show the CMS example Hint early. Numeric choices resolve against CMS/runtime context variants, context titles resolve case-insensitively, and custom learner-entered situations are supported without inventing a CMS variant ID. The selected context is stored in mutable lesson-screen state and reused by both lesson reply and Hint requests.
+
+After context selection, the first active roleplay Hint may use the CMS-owned `hintRules.exampleHint`; Flutter does not create replacement scenario-specific teaching text. Later active-lesson Hint requests use the existing `LessonChatRequest` contract with the active backend session ID, runtime scenario, current context, transcript, last tutor message, level, topic, situation, and language/settings data. Hint appears as a compact dismissible inline support card rather than as a tutor or learner chat message, is not added to the transcript, blocks duplicate simultaneous requests, and is disabled during incompatible lesson operations and after successful completion.
+
+Hint does not create a lesson message, increment `learnerTurnCount`, change `validTurnCount`, change the Finish payload, or generate or alter the lesson Summary. Authentication failures reuse the existing lesson authentication-required behavior; session-ended responses disable further lesson interaction consistently; HTTP 429 is treated neutrally as temporary Hint unavailability; and network, backend, and malformed response errors remain learner-safe and retryable.
+
+Validation baseline for the completed Hint flow: functional commit `f9dbc06` (`Add mobile lesson hint flow`), production backend remains `0.1.35-backend.112`, `flutter analyze` passed with zero issues, focused AuthService and lesson screen tests passed, the complete Flutter suite passed with 101 tests, the Android debug APK build passed, and manual Android Emulator verification covered context selection, contextual Hint, Finish, and backend-owned Summary.
 
 ## Lesson runtime source of truth and desktop/backend flow
 
@@ -95,7 +107,7 @@ The current mobile session-start request shape is backend-compatible and should 
 }
 ```
 
-Next implementation step: Mobile text lesson Phase 1 should load backend/CMS runtime scenario content and call the existing desktop/backend reply flow. Keep the next text-chat step narrow: no voice, TTS, realtime, hints, feedback, summary, history, or billing.
+Next isolated engineering task: active lesson lifecycle on mobile. A confirmed leave should use the existing backend abandon flow, Back navigation must not silently Finish a lesson, and ordinary leave must not generate a Summary. This functionality is not implemented by the documentation-only Hint update.
 
 Explicit no-go items for the next text-chat step:
 
@@ -103,7 +115,8 @@ Explicit no-go items for the next text-chat step:
 - No new safe/catalog endpoints for intermediate convenience.
 - No duplicate mobile prompt/runtime system.
 - No backend changes unless a real final shared lesson-runtime design is approved.
-- No voice, TTS, realtime, hints, feedback, summary, history, or billing.
+- No voice, TTS, realtime, feedback detail, history, or billing.
+- Do not implement active-session abandonment or Back-navigation changes as part of the Hint documentation update.
 
 
 ## Desktop parity source model

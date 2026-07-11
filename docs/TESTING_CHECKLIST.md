@@ -466,4 +466,42 @@ flutter test test/services/auth_service_test.dart
 flutter test
 ```
 
-Expected current result: format passes, analyze reports no issues, focused lesson widget tests pass, AuthService tests pass, and the full Flutter suite passes with 91 tests.
+Expected current result for the completed Hint flow: `flutter analyze` passes with zero issues, focused lesson screen tests pass, focused AuthService tests pass, and the full Flutter suite passes with 101 tests. Android debug APK build passed. Manual Android Emulator verification passed for context selection, contextual Hint, Finish, and backend-owned Summary. Functional Hint commit: `f9dbc06` (`Add mobile lesson hint flow`). Production backend remains `0.1.35-backend.112`.
+
+
+## Production Android Hint flow check
+
+The current production-verified Android Hint flow uses `POST /api/lesson-chat/hint` after context selection and reuses the existing authenticated bearer-token plus refresh-on-401 behavior. Backend owns AI prompt behavior, teaching methodology, provider calls, usage protection, and learner-safe server responses; Flutter does not call OpenAI directly and does not contain Hint prompt logic.
+
+Manual Android emulator verification should cover:
+
+1. Before context selection, tapping Hint shows local guidance to choose a visible situation or type a custom one.
+2. The pre-context Hint does not call the backend and does not show the CMS example Hint.
+3. Numeric choices resolve against CMS/runtime context variants.
+4. Context titles resolve case-insensitively.
+5. Custom learner-entered situations are accepted without inventing a CMS variant ID.
+6. The selected context is reused by both lesson reply and Hint requests.
+7. The first active roleplay Hint may use CMS-owned `hintRules.exampleHint`.
+8. Later Hint requests include the active backend session ID, runtime scenario, current context, transcript, last tutor message, level, topic, situation, and language/settings data.
+9. Hint displays as a compact dismissible inline support card, not as a tutor or learner chat message.
+10. Hint is not added to the transcript and does not create a persisted lesson message.
+11. Duplicate simultaneous Hint requests are blocked.
+12. Hint is disabled during incompatible lesson operations and after successful completion.
+13. Hint does not increment `learnerTurnCount`, change `validTurnCount`, alter the Finish payload, or generate/change the Summary.
+14. Authentication failures, session-ended responses, HTTP 429 temporary unavailability, network errors, backend errors, and malformed responses remain learner-safe and consistent with the lesson flow.
+
+Current automated and build verification for the working Hint flow:
+
+```bash
+flutter analyze
+flutter test test/services/auth_service_test.dart
+flutter test test/features/lesson/lesson_screen_test.dart
+flutter test
+flutter build apk --debug
+```
+
+Expected current result: analyze reports zero issues, focused AuthService and lesson screen tests pass, the complete Flutter suite passes with 101 tests, and the Android debug APK build passes.
+
+Still unimplemented unless a later repository change proves otherwise: real Translation, real per-message Feedback, TTS/tutor voice playback, microphone recording, speech-to-text, GIF avatar state integration, fullscreen Conversation mode, history/progress screen, mobile billing, analytics, crash reporting, and store release.
+
+Next isolated engineering task: active lesson lifecycle on mobile. A confirmed leave should use the existing backend abandon flow, Back navigation must not silently Finish a lesson, and ordinary leave must not generate a Summary. This documentation task does not implement that functionality.
