@@ -6,7 +6,7 @@ Mobile V1 establishes an Android-first Flutter client for Language Voice Tutor t
 
 ## Current verified baseline
 
-Latest known functional Hint commit: `f9dbc06` (`Add mobile lesson hint flow`). The Flutter Android client under `app/` has a production-verified text lesson loop, completed mobile Hint flow, and green Settings parity/Home polish baseline. Settings has stable visible **Account**, **Learning**, **Audio**, and **Connection status** sections, **Save settings** is visible and tested, user level is not in Settings, and selected tutor persists through the backend settings API. Tutor selection belongs in Settings; Home no longer shows tutor diagnostics. Home shows the Language Voice Tutor logo/title with startup logo preloading, friendly account/access status, and starts a lesson-start navigation flow.
+Latest known functional Translation commit: `9d2476b` (`Add mobile message translation`). Latest known settings language persistence fix: `340c950` (`Fix mobile settings language persistence`). The Flutter Android client under `app/` has a production-verified text lesson loop, completed mobile Hint flow, and green Settings parity/Home polish baseline. Settings has stable visible **Account**, **Learning**, **Audio**, and **Connection status** sections, **Save settings** is visible and tested, user level is not in Settings, and selected tutor persists through the backend settings API. Tutor selection belongs in Settings; Home no longer shows tutor diagnostics. Home shows the Language Voice Tutor logo/title with startup logo preloading, friendly account/access status, and starts a lesson-start navigation flow.
 
 Verified commands from `app/`:
 
@@ -160,17 +160,21 @@ The Android-first Flutter client now has a complete, production-verified text le
 9. Backend generates and persists the learner summary.
 10. Mobile reads and displays the authenticated backend-owned summary.
 
-Text lesson foundation is complete. Finish plus backend-owned summary display is complete and production-verified against backend `0.1.35-backend.112` or later. The real mobile Hint flow is also complete in functional commit `f9dbc06` (`Add mobile lesson hint flow`) without backend changes or a backend deployment requirement. Mobile still does not call OpenAI directly, does not own tutor behavior, lesson methodology, Hint prompt logic, or summary generation, and never creates a local transcript-derived summary. CMS/backend runtime remains the lesson behavior source of truth; desktop remains a behavior/orchestration reference rather than a separate mobile runtime source.
+Text lesson foundation is complete. Finish plus backend-owned summary display is complete and production-verified against backend `0.1.35-backend.112` or later. The real mobile Hint flow is complete in functional commit `f9dbc06` (`Add mobile lesson hint flow`), and real per-message Translation is complete in functional commit `9d2476b` (`Add mobile message translation`), without backend changes or a backend deployment requirement. Mobile still does not call OpenAI directly, does not own tutor behavior, lesson methodology, Hint prompt logic, or summary generation, and never creates a local transcript-derived summary. CMS/backend runtime remains the lesson behavior source of truth; desktop remains a behavior/orchestration reference rather than a separate mobile runtime source.
 
 Mobile Hint uses `POST /api/lesson-chat/hint` after context selection with the existing authenticated bearer-token and refresh-on-401 flow. Before context selection, Hint is local only and asks the learner to choose a visible situation or type a custom one; it does not call the backend or show the CMS example Hint early. Numeric choices resolve against CMS/runtime context variants, context titles resolve case-insensitively, and custom learner-entered situations are supported without inventing a CMS variant ID. The selected context is mutable lesson-screen state reused by both lesson replies and Hint requests.
 
+
+
+Mobile Translation uses `POST /api/translate` through the existing authenticated bearer-token and refresh-on-401 flow. Backend owns provider calls, prompts, rate protection, session validation, and translation behavior; Flutter does not call OpenAI or another provider directly. Tutor and learner messages use the same endpoint for the exact visible message text, include the active backend lesson session ID, and do not require persisted lesson-message IDs. Translation targets the learner's backend-saved native language, converted from the saved native-language ID to the backend-compatible English language name, while source-language metadata comes from the selected study language. Inline per-message results are cached, can be hidden and reshown without another backend request, and do not persist lesson messages, increment counters, alter Finish/Summary/Hint/abandonment/progression/entitlement, or appear on Summary.
+
 The first active roleplay Hint may use the CMS-owned `hintRules.exampleHint`; later Hint requests send the full existing `LessonChatRequest` context, including active session ID, runtime scenario, current context, transcript, last tutor message, level, topic, situation, and language/settings data. Hint is a compact dismissible inline support card, not a chat message, and is not added to the transcript. It blocks duplicate simultaneous requests, is disabled during incompatible operations and after completion, and does not create lesson messages, increment `learnerTurnCount`, change `validTurnCount`, alter the Finish payload, or generate/change the Summary. HTTP 429 means temporary Hint unavailability; authentication, session-ended, network, backend, and malformed-response states remain learner-safe and consistent with the existing lesson flow.
 
-Still pending for Mobile V1 or later phases:
+Completed and remaining Mobile V1 or later phases:
 
+- Real per-message Translation. **Complete** in functional commit `9d2476b` (`Add mobile message translation`).
+- Per-message Feedback. **Next isolated functional block**.
 - Lesson history and progress screens.
-- Real translation.
-- Real feedback detail.
 - Tutor TTS playback.
 - Microphone recording and speech-to-text.
 - Animated tutor GIF loading and state binding.
@@ -182,4 +186,4 @@ Still pending for Mobile V1 or later phases:
 
 ## Next isolated engineering task
 
-Active lesson lifecycle on mobile remains unimplemented. The next isolated engineering task should add an explicit leave/abandon lifecycle: confirmed leave should use the existing backend abandon flow, Back navigation must not silently Finish a lesson, and ordinary leave must not generate a Summary. This documentation update does not implement active-session abandonment or Back-navigation behavior.
+Per-message Feedback is the next isolated functional block. Keep TTS/tutor voice playback, microphone recording, speech-to-text, GIF avatar state integration, fullscreen Conversation mode, history/progress screen, mobile billing, analytics, crash reporting, and store release as future work.
