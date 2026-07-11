@@ -833,12 +833,8 @@ void main() {
         tester, find.byKey(const Key('lesson-message-action-tutor-voice')));
     await tester
         .tap(find.byKey(const Key('lesson-message-action-tutor-voice')));
-    await tester.pump();
-    await tester.tap(find.byKey(const Key('lesson-action-hint')));
-    await tester.pump();
-
     expect(find.textContaining('Coming next in a future lesson update.'),
-        findsOneWidget);
+        findsNothing);
     expect(auth.sendLessonChatReplyCallCount, initialSendCount);
     expect(auth.persistedMessages.length, initialPersistCount);
   });

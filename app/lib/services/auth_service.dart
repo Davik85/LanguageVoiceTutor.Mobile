@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import '../api/api_client.dart';
 import '../models/auth_models.dart';
+import '../models/audio_speech.dart';
 import '../models/lesson_access_decision.dart';
 import '../models/lesson_chat.dart';
 import '../models/lesson_runtime.dart';
@@ -19,6 +21,51 @@ class AuthService {
 
   final ApiClient _apiClient;
   final SessionStorage _storage;
+
+  Future<AudioSpeechResult> requestTutorSpeech({
+    required AudioSpeechRequest request,
+  }) async {
+    if (request.text.trim().isEmpty ||
+        request.backendSessionId.trim().isEmpty) {
+      return AudioSpeechResult.failed();
+    }
+    final binaryClient =
+        _apiClient is BinaryApiClient ? _apiClient as BinaryApiClient : null;
+    if (binaryClient == null) return AudioSpeechResult.temporarilyUnavailable();
+    try {
+      final response = await _authenticatedBinaryPost(
+        binaryClient,
+        '/api/audio/speech',
+        request.toJson(),
+      );
+      if (response.statusCode == 200) {
+        final contentType = response
+            .header('content-type')
+            ?.split(';')
+            .first
+            .trim()
+            .toLowerCase();
+        if (contentType != 'audio/wav' || response.bodyBytes.isEmpty) {
+          return AudioSpeechResult.failed();
+        }
+        return AudioSpeechResult.success(response.bodyBytes);
+      }
+      if (response.statusCode == 409 &&
+          _isLessonSessionEnded(response.bodyBytes)) {
+        return AudioSpeechResult.sessionEnded();
+      }
+      if (response.statusCode == 429 || response.statusCode >= 500) {
+        return AudioSpeechResult.temporarilyUnavailable();
+      }
+      return AudioSpeechResult.failed();
+    } on _BinaryAuthenticationException {
+      return AudioSpeechResult.authenticationRequired();
+    } on ApiException {
+      return AudioSpeechResult.temporarilyUnavailable();
+    } catch (_) {
+      return AudioSpeechResult.failed();
+    }
+  }
 
   Future<AuthUser> login(String email, String password) async {
     final auth = await _authenticate('/api/auth/login',
@@ -445,6 +492,46 @@ class AuthService {
           'Unable to load account details right now.');
     }
     return response;
+  }
+
+  Future<BinaryApiResponse> _authenticatedBinaryPost(
+    BinaryApiClient client,
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    final accessToken = await _storage.readAccessToken();
+    if (accessToken == null || accessToken.isEmpty) {
+      throw const _BinaryAuthenticationException();
+    }
+    var response =
+        await client.postBinary(path, body: body, accessToken: accessToken);
+    if (response.statusCode != 401) return response;
+    if (!await _refreshSession()) throw const _BinaryAuthenticationException();
+    final refreshedToken = await _storage.readAccessToken();
+    if (refreshedToken == null || refreshedToken.isEmpty) {
+      throw const _BinaryAuthenticationException();
+    }
+    response =
+        await client.postBinary(path, body: body, accessToken: refreshedToken);
+    if (response.statusCode == 401) {
+      throw const _BinaryAuthenticationException();
+    }
+    return response;
+  }
+
+  static bool _isLessonSessionEnded(Uint8List bytes) {
+    try {
+      final body = utf8.decode(bytes, allowMalformed: true);
+      final parsed = _decodeObject(body);
+      final code = (parsed['code'] ?? parsed['errorCode'] ?? parsed['error'])
+          ?.toString()
+          .toLowerCase();
+      return code == 'lesson_session_ended_elsewhere' ||
+          code == 'lesson_ended' ||
+          code == 'session_conflict';
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<bool> _refreshSession() async {
@@ -955,4 +1042,8 @@ class AuthService {
     }
     return decoded;
   }
+}
+
+class _BinaryAuthenticationException implements Exception {
+  const _BinaryAuthenticationException();
 }

@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_secure_storage: ^9.2.2
+  just_audio: ^0.9.42
 
 dev_dependencies:
   flutter_test:

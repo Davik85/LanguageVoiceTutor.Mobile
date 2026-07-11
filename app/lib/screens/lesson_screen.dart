@@ -1,6 +1,10 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../models/language_options.dart';
+import '../models/audio_speech.dart';
 import '../models/lesson_chat.dart';
 import '../models/lesson_runtime.dart';
 import '../models/lesson_session.dart';
@@ -8,6 +12,7 @@ import '../models/lesson_start_selection.dart';
 import '../models/translation.dart';
 import '../models/user_settings.dart';
 import '../services/auth_service.dart';
+import '../services/tutor_audio_playback_service.dart';
 import '../services/service_factory.dart';
 
 enum LessonTutorStatus {
@@ -30,6 +35,7 @@ class _LessonActionAvailability {
     required this.canUsePlaceholders,
     required this.canUseFeedback,
     required this.canUseTranslation,
+    required this.canUseTts,
     required this.canUseHint,
   });
 
@@ -38,6 +44,7 @@ class _LessonActionAvailability {
   final bool canUsePlaceholders;
   final bool canUseFeedback;
   final bool canUseTranslation;
+  final bool canUseTts;
   final bool canUseHint;
 }
 
@@ -46,18 +53,22 @@ class LessonScreen extends StatefulWidget {
     super.key,
     this.selection,
     AuthService? authService,
-  }) : _authService = authService;
+    TutorAudioPlaybackService? audioPlaybackService,
+  })  : _authService = authService,
+        _audioPlaybackService = audioPlaybackService;
 
   static const String routeName = '/lesson';
 
   final LessonStartSelection? selection;
   final AuthService? _authService;
+  final TutorAudioPlaybackService? _audioPlaybackService;
 
   @override
   State<LessonScreen> createState() => _LessonScreenState();
 }
 
-class _LessonScreenState extends State<LessonScreen> {
+class _LessonScreenState extends State<LessonScreen>
+    with WidgetsBindingObserver {
   static const _comingNextMessage = 'Coming next in a future lesson update.';
   static const _hintFallbackUserMessage = 'I need a hint for what to say next.';
   static const _neutralOpeningFallback = 'Your lesson is ready.';
@@ -66,6 +77,8 @@ class _LessonScreenState extends State<LessonScreen> {
   static const _initialContextVariantLimit = 3;
 
   late final AuthService _authService;
+  late final TutorAudioPlaybackService _audioPlaybackService;
+  late final StreamSubscription<void> _playbackCompletedSubscription;
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _transcriptController = ScrollController();
   late bool _isStarting;
@@ -79,7 +92,6 @@ class _LessonScreenState extends State<LessonScreen> {
   bool _isAuthenticationRequired = false;
   bool _lessonSessionEnded = false;
   bool _isRecordingPlaceholderActive = false;
-  bool _isSpeakingPlaceholderActive = false;
   LessonSessionStartResult? _startResult;
   LessonRuntimeScenario? _scenario;
   UserSettings? _settings;
@@ -95,11 +107,17 @@ class _LessonScreenState extends State<LessonScreen> {
   LessonCompletionStatus? _summaryStatus;
   final List<_LessonChatMessage> _messages = [];
   final Set<Future<void>> _pendingMessagePersistence = {};
+  int? _activePlayingMessageId;
 
   @override
   void initState() {
     super.initState();
     _authService = widget._authService ?? createAuthService();
+    _audioPlaybackService =
+        widget._audioPlaybackService ?? JustAudioTutorPlaybackService();
+    _playbackCompletedSubscription =
+        _audioPlaybackService.completed.listen((_) => _onPlaybackCompleted());
+    WidgetsBinding.instance.addObserver(this);
     _isStarting = widget.selection != null;
     _selectedContextId = widget.selection?.selectedContextId?.trim();
     _selectedContextTitle = widget.selection?.selectedContextTitle?.trim();
@@ -110,9 +128,26 @@ class _LessonScreenState extends State<LessonScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    unawaited(_disposeAudio());
     _messageController.dispose();
     _transcriptController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      unawaited(_stopTutorPlayback());
+    }
+  }
+
+  Future<void> _disposeAudio() async {
+    await _stopAndClearTutorAudio();
+    await _playbackCompletedSubscription.cancel();
+    await _audioPlaybackService.dispose();
   }
 
   Future<void> _startLessonSession({bool showLoadingState = true}) async {
@@ -182,7 +217,6 @@ class _LessonScreenState extends State<LessonScreen> {
       _scenario = null;
       _settings = null;
       _isRecordingPlaceholderActive = false;
-      _isSpeakingPlaceholderActive = false;
       _messages.clear();
     });
 
@@ -344,7 +378,6 @@ class _LessonScreenState extends State<LessonScreen> {
       _isSending = true;
       _sendError = null;
       _isRecordingPlaceholderActive = false;
-      _isSpeakingPlaceholderActive = false;
       _hintText = null;
       _hintError = null;
       _messages
@@ -620,7 +653,7 @@ class _LessonScreenState extends State<LessonScreen> {
     if (_lessonLoadError != null || _sendError != null) {
       return LessonTutorStatus.error;
     }
-    if (_isSpeakingPlaceholderActive) {
+    if (_activePlayingMessageId != null) {
       return LessonTutorStatus.speaking;
     }
     if (_isSending || _isStarting || _isLoadingScenario) {
@@ -662,6 +695,12 @@ class _LessonScreenState extends State<LessonScreen> {
           !_lessonSessionEnded &&
           !_isAuthenticationRequired,
       canUseTranslation: lessonReady &&
+          !_isFinishing &&
+          !_isAbandoning &&
+          !_isCompleted &&
+          !_lessonSessionEnded &&
+          !_isAuthenticationRequired,
+      canUseTts: lessonReady &&
           !_isFinishing &&
           !_isAbandoning &&
           !_isCompleted &&
@@ -728,6 +767,7 @@ class _LessonScreenState extends State<LessonScreen> {
   Future<void> _abandonLesson() async {
     final session = _startResult?.session;
     if (session == null || !_canAbandon) return;
+    await _stopAndClearTutorAudio();
     setState(() {
       _isAbandoning = true;
       _hintText = null;
@@ -735,7 +775,6 @@ class _LessonScreenState extends State<LessonScreen> {
       _sendError = null;
       _finishError = null;
       _isRecordingPlaceholderActive = false;
-      _isSpeakingPlaceholderActive = false;
     });
     final result = await _authService.abandonLessonSession(
       sessionId: session.lessonSessionId,
@@ -784,11 +823,11 @@ class _LessonScreenState extends State<LessonScreen> {
   Future<void> _finishLesson() async {
     final session = _startResult?.session;
     if (session == null || !_canFinish) return;
+    await _stopAndClearTutorAudio();
     setState(() {
       _isFinishing = true;
       _finishError = null;
       _isRecordingPlaceholderActive = false;
-      _isSpeakingPlaceholderActive = false;
       _hintText = null;
       _hintError = null;
     });
@@ -870,7 +909,6 @@ class _LessonScreenState extends State<LessonScreen> {
     if (!_actionAvailability.canToggleRecordingPlaceholder) return;
     setState(() {
       _isRecordingPlaceholderActive = !_isRecordingPlaceholderActive;
-      _isSpeakingPlaceholderActive = false;
     });
     _showComingNext(
       _isRecordingPlaceholderActive
@@ -879,15 +917,143 @@ class _LessonScreenState extends State<LessonScreen> {
     );
   }
 
-  void _handleFutureAction(String label, {bool speaking = false}) {
-    if (!_actionAvailability.canUsePlaceholders) return;
+  Future<void> _playTutorVoice(_LessonChatMessage message) async {
+    final session = _startResult?.session;
+    final settings = _settings;
+    if (!message.isTutor ||
+        session == null ||
+        settings == null ||
+        !_actionAvailability.canUseTts ||
+        message.isTtsLoading) {
+      return;
+    }
+    if (_activePlayingMessageId == message.id) {
+      await _stopTutorPlayback();
+      return;
+    }
+    await _stopTutorPlayback();
+    var cachedPath = message.cachedTtsPath;
+    if (cachedPath != null && !await File(cachedPath).exists()) {
+      message.cachedTtsPath = null;
+      cachedPath = null;
+    }
+    if (cachedPath == null) {
+      setState(() {
+        message.isTtsLoading = true;
+        message.ttsError = null;
+      });
+      final studyLanguageId =
+          LanguageOptions.studyLanguageIdFor(settings.studyLanguage);
+      final studyLanguageName =
+          LanguageOptions.backendStudyLanguageNameFor(settings.studyLanguage);
+      final result = await _authService.requestTutorSpeech(
+        request: AudioSpeechRequest(
+          text: message.text,
+          speechVoice: settings.speechVoice,
+          speechSpeed: settings.speechSpeed,
+          targetLanguageId: studyLanguageId,
+          targetLanguageName: studyLanguageName,
+          targetLanguageNativeName: studyLanguageName,
+          targetLanguageCode: studyLanguageId,
+          backendSessionId: session.lessonSessionId,
+        ),
+      );
+      if (!mounted || !_actionAvailability.canUseTts) return;
+      if (!result.isSuccess || result.audioBytes == null) {
+        setState(() {
+          message.isTtsLoading = false;
+          message.ttsError = result.message;
+          if (result.status == AudioSpeechStatus.authenticationRequired) {
+            _isAuthenticationRequired = true;
+          }
+          if (result.status == AudioSpeechStatus.sessionEnded) {
+            _lessonSessionEnded = true;
+          }
+        });
+        return;
+      }
+      try {
+        final file = File(
+          '${Directory.systemTemp.path}${Platform.pathSeparator}'
+          'language-voice-tutor-${message.id}-${DateTime.now().microsecondsSinceEpoch}.wav',
+        );
+        await file.writeAsBytes(result.audioBytes!, flush: true);
+        cachedPath = file.path;
+        if (!mounted || !_actionAvailability.canUseTts) {
+          try {
+            await file.delete();
+          } catch (_) {}
+          return;
+        }
+        message.cachedTtsPath = cachedPath;
+      } catch (_) {
+        if (mounted) {
+          setState(() {
+            message.isTtsLoading = false;
+            message.ttsError = 'Could not play voice. Please try again.';
+          });
+        }
+        return;
+      }
+    }
+    if (!mounted) return;
+    final playbackPath = cachedPath;
+    try {
+      await _audioPlaybackService.playFile(playbackPath);
+      if (!mounted) return;
+      setState(() {
+        message.isTtsLoading = false;
+        message.isTtsPlaying = true;
+        message.ttsError = null;
+        _activePlayingMessageId = message.id;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          message.isTtsLoading = false;
+          message.isTtsPlaying = false;
+          message.ttsError = 'Could not play voice. Please try again.';
+        });
+      }
+    }
+  }
+
+  void _onPlaybackCompleted() {
+    if (!mounted) return;
+    final activeId = _activePlayingMessageId;
+    if (activeId == null) return;
     setState(() {
-      _isSpeakingPlaceholderActive = speaking;
-      if (speaking) {
-        _isRecordingPlaceholderActive = false;
+      _activePlayingMessageId = null;
+      for (final message in _messages) {
+        if (message.id == activeId) message.isTtsPlaying = false;
       }
     });
-    _showComingNext(label);
+  }
+
+  Future<void> _stopTutorPlayback() async {
+    final activeId = _activePlayingMessageId;
+    if (activeId == null) return;
+    await _audioPlaybackService.stop();
+    if (!mounted) return;
+    setState(() {
+      _activePlayingMessageId = null;
+      for (final message in _messages) {
+        if (message.id == activeId) message.isTtsPlaying = false;
+      }
+    });
+  }
+
+  Future<void> _stopAndClearTutorAudio() async {
+    await _stopTutorPlayback();
+    for (final message in _messages) {
+      final path = message.cachedTtsPath;
+      message.cachedTtsPath = null;
+      if (path != null) {
+        try {
+          await File(path).delete();
+        } catch (_) {}
+      }
+    }
   }
 
   Future<void> _translateMessage(_LessonChatMessage message) async {
@@ -1109,7 +1275,7 @@ class _LessonScreenState extends State<LessonScreen> {
                                   : () => _startLessonSession(),
                               onRetryLoad: _retryLessonRuntime,
                               transcriptController: _transcriptController,
-                              onMessageAction: _handleFutureAction,
+                              onPlayVoice: _playTutorVoice,
                               onTranslateMessage: _translateMessage,
                               onFeedback: _requestFeedback,
                               onToggleRecordingPlaceholder:
@@ -1169,7 +1335,7 @@ class _LessonWorkspace extends StatelessWidget {
     required this.onFinish,
     required this.onRetryStart,
     required this.onRetryLoad,
-    required this.onMessageAction,
+    required this.onPlayVoice,
     required this.onTranslateMessage,
     required this.onFeedback,
     required this.onToggleRecordingPlaceholder,
@@ -1204,7 +1370,7 @@ class _LessonWorkspace extends StatelessWidget {
   final VoidCallback onFinish;
   final VoidCallback? onRetryStart;
   final Future<void> Function() onRetryLoad;
-  final void Function(String label, {bool speaking}) onMessageAction;
+  final Future<void> Function(_LessonChatMessage message) onPlayVoice;
   final Future<void> Function(_LessonChatMessage message) onTranslateMessage;
   final Future<void> Function(_LessonChatMessage message) onFeedback;
   final VoidCallback onToggleRecordingPlaceholder;
@@ -1255,7 +1421,7 @@ class _LessonWorkspace extends StatelessWidget {
                       transcriptController: transcriptController,
                       messages: messages,
                       actionAvailability: actionAvailability,
-                      onMessageAction: onMessageAction,
+                      onPlayVoice: onPlayVoice,
                       onTranslateMessage: onTranslateMessage,
                       onFeedback: onFeedback,
                     ),
@@ -1337,7 +1503,7 @@ class _LessonBody extends StatelessWidget {
     required this.transcriptController,
     required this.messages,
     required this.actionAvailability,
-    required this.onMessageAction,
+    required this.onPlayVoice,
     required this.onTranslateMessage,
     required this.onFeedback,
   });
@@ -1351,7 +1517,7 @@ class _LessonBody extends StatelessWidget {
   final ScrollController transcriptController;
   final List<_LessonChatMessage> messages;
   final _LessonActionAvailability actionAvailability;
-  final void Function(String label, {bool speaking}) onMessageAction;
+  final Future<void> Function(_LessonChatMessage message) onPlayVoice;
   final Future<void> Function(_LessonChatMessage message) onTranslateMessage;
   final Future<void> Function(_LessonChatMessage message) onFeedback;
 
@@ -1410,7 +1576,7 @@ class _LessonBody extends StatelessWidget {
       controller: transcriptController,
       messages: messages,
       actionAvailability: actionAvailability,
-      onMessageAction: onMessageAction,
+      onPlayVoice: onPlayVoice,
       onTranslateMessage: onTranslateMessage,
       onFeedback: onFeedback,
     );
@@ -1422,7 +1588,7 @@ class _LessonTranscript extends StatelessWidget {
     required this.controller,
     required this.messages,
     required this.actionAvailability,
-    required this.onMessageAction,
+    required this.onPlayVoice,
     required this.onTranslateMessage,
     required this.onFeedback,
   });
@@ -1430,7 +1596,7 @@ class _LessonTranscript extends StatelessWidget {
   final ScrollController controller;
   final List<_LessonChatMessage> messages;
   final _LessonActionAvailability actionAvailability;
-  final void Function(String label, {bool speaking}) onMessageAction;
+  final Future<void> Function(_LessonChatMessage message) onPlayVoice;
   final Future<void> Function(_LessonChatMessage message) onTranslateMessage;
   final Future<void> Function(_LessonChatMessage message) onFeedback;
 
@@ -1459,7 +1625,7 @@ class _LessonTranscript extends StatelessWidget {
         return _LessonMessageBubble(
           message: message,
           actionAvailability: actionAvailability,
-          onMessageAction: onMessageAction,
+          onPlayVoice: onPlayVoice,
           onTranslateMessage: onTranslateMessage,
           onFeedback: onFeedback,
         );
@@ -1472,14 +1638,14 @@ class _LessonMessageBubble extends StatelessWidget {
   const _LessonMessageBubble({
     required this.message,
     required this.actionAvailability,
-    required this.onMessageAction,
+    required this.onPlayVoice,
     required this.onTranslateMessage,
     required this.onFeedback,
   });
 
   final _LessonChatMessage message;
   final _LessonActionAvailability actionAvailability;
-  final void Function(String label, {bool speaking}) onMessageAction;
+  final Future<void> Function(_LessonChatMessage message) onPlayVoice;
   final Future<void> Function(_LessonChatMessage message) onTranslateMessage;
   final Future<void> Function(_LessonChatMessage message) onFeedback;
 
@@ -1530,13 +1696,22 @@ class _LessonMessageBubble extends StatelessWidget {
                           key: const Key('lesson-message-action-tutor-voice'),
                           visualDensity: VisualDensity.compact,
                           tooltip: 'Play voice',
-                          onPressed: actionAvailability.canUseFeedback
-                              ? () => onMessageAction(
-                                    'Play voice',
-                                    speaking: true,
-                                  )
+                          onPressed: actionAvailability.canUseTts
+                              ? () => onPlayVoice(message)
                               : null,
-                          icon: const Icon(Icons.volume_up_outlined, size: 18),
+                          icon: message.isTtsLoading
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : Icon(
+                                  message.isTtsPlaying
+                                      ? Icons.stop_outlined
+                                      : Icons.volume_up_outlined,
+                                  size: 18,
+                                ),
                         ),
                       ]
                     : [
@@ -1562,6 +1737,14 @@ class _LessonMessageBubble extends StatelessWidget {
                         ),
                       ],
               ),
+              if (message.ttsError != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  message.ttsError!,
+                  key: Key('lesson-message-voice-error-${message.id}'),
+                  style: TextStyle(color: colorScheme.error, fontSize: 12),
+                ),
+              ],
               if (message.isTranslationLoading) ...[
                 const SizedBox(height: 8),
                 const SizedBox(
@@ -1775,6 +1958,10 @@ class _LessonChatMessage {
   String? persistedBackendMessageId;
   String? persistenceError;
   Future<void>? persistenceOperation;
+  bool isTtsLoading = false;
+  bool isTtsPlaying = false;
+  String? cachedTtsPath;
+  String? ttsError;
   bool isFeedbackLoading = false;
   bool isFeedbackVisible = false;
   LessonFeedbackResponse? feedback;
