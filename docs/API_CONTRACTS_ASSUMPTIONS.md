@@ -121,6 +121,7 @@ GET /api/me/lesson-content/scenarios/{scenarioKey}
 POST /api/me/lesson-sessions
 POST /api/lesson-chat/reply
 POST /api/me/lesson-sessions/{sessionId}/messages
+POST /api/lesson-sessions/{sessionId}/abandon
 PUT /api/me/lesson-sessions/{sessionId}/finish
 GET /api/me/lesson-sessions/{sessionId}/summary
 ```
@@ -193,6 +194,33 @@ Hint error boundaries:
 - HTTP 429 is temporary Hint unavailability; this document does not promise a product-level free daily Hint quota.
 - Network, backend, and malformed-response errors remain learner-safe and retryable.
 
+
+## Confirmed lesson abandon contract
+
+Mobile uses the existing backend abandon flow as a second client of the same product runtime:
+
+```http
+POST /api/lesson-sessions/{sessionId}/abandon
+```
+
+The request has no body. Mobile sends the same authenticated bearer token used by lesson APIs and reuses the existing refresh-on-401 flow. Backend remains the source of truth for lesson-session state. Visible Back and Android system Back use the same leave-confirmation flow: **Stay** keeps the learner inside the lesson and makes no backend request; **Leave lesson** abandons the unfinished backend session and then closes the lesson screen. Duplicate abandon requests are prevented.
+
+Abandon boundaries:
+
+- Abandon does not call Finish.
+- Abandon does not generate or request Summary.
+- Abandon does not change `validTurnCount`.
+- Abandon does not create or persist a learner or tutor message.
+- Abandon does not alter Hint behavior or lesson transcript data.
+
+Failure and timeout boundaries:
+
+- Authentication failures use the existing authentication-required behavior.
+- Network/backend failures keep the learner on the lesson screen and allow retry.
+- Active-lesson conflict wording is neutral and does not claim that the session is necessarily on another physical device.
+- The backend stale active-session interval remains two minutes; no backend timeout change was made and no mobile heartbeat was added.
+- Normal confirmed Back navigation releases the session immediately. If the app is force-closed or terminated without the confirmed leave flow, the existing backend timeout remains the fallback. The two-minute timeout is intentionally retained unless real user feedback proves it needs adjustment.
+
 ## Confirmed finish and summary contract
 
 The Android mobile client now has a production-verified end-to-end text lesson completion path against backend `0.1.35-backend.112` or later. Version `.112` is required for the verified summary flow because it supports nested Responses API output extraction. Backend `0.1.35-backend.111` is the previous rollback version and should not be treated as the verified summary baseline.
@@ -207,6 +235,7 @@ POST /api/me/lesson-sessions
 GET /api/me/lesson-content/scenarios/{scenarioKey}
 POST /api/lesson-chat/reply
 POST /api/me/lesson-sessions/{sessionId}/messages
+POST /api/lesson-sessions/{sessionId}/abandon
 PUT /api/me/lesson-sessions/{sessionId}/finish
 GET /api/me/lesson-sessions/{sessionId}/summary
 POST /api/auth/refresh
@@ -240,6 +269,8 @@ Expected behavior:
 - Mobile retrieves and displays backend-owned lesson state, then sends user text or voice inputs to backend APIs when those phases are approved.
 - Backend orchestrates AI tutor behavior and stores lesson history and progress.
 - Mobile retrieves history and progress from backend APIs when those phases are approved.
+
+Confirmed mobile lesson abandonment is complete. Heartbeat or timeout reduction is optional future reliability work only if real user feedback requires it, not the next required task.
 
 Explicit no-go items for the next text-chat step:
 
