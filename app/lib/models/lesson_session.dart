@@ -129,6 +129,48 @@ enum LessonCompletionStatus {
   failed,
 }
 
+enum LessonSessionAbandonStatus {
+  abandoned,
+  authRequired,
+  unavailable,
+  failed,
+}
+
+class LessonSessionAbandonResult {
+  const LessonSessionAbandonResult._(
+      {required this.status, required this.message});
+
+  final LessonSessionAbandonStatus status;
+  final String message;
+
+  bool get canLeave => status == LessonSessionAbandonStatus.abandoned;
+
+  factory LessonSessionAbandonResult.abandoned() =>
+      const LessonSessionAbandonResult._(
+        status: LessonSessionAbandonStatus.abandoned,
+        message: 'Lesson ended.',
+      );
+
+  factory LessonSessionAbandonResult.authRequired() =>
+      const LessonSessionAbandonResult._(
+        status: LessonSessionAbandonStatus.authRequired,
+        message: 'Please sign in again to continue the lesson.',
+      );
+
+  factory LessonSessionAbandonResult.unavailable() =>
+      const LessonSessionAbandonResult._(
+        status: LessonSessionAbandonStatus.unavailable,
+        message:
+            'Could not leave the lesson. Please check your connection and try again.',
+      );
+
+  factory LessonSessionAbandonResult.failed() =>
+      const LessonSessionAbandonResult._(
+        status: LessonSessionAbandonStatus.failed,
+        message: 'Could not leave the lesson. Please try again.',
+      );
+}
+
 class LessonCompletionResult {
   const LessonCompletionResult._({required this.status, this.summary});
 
@@ -201,7 +243,7 @@ class LessonSessionStartResult {
       const LessonSessionStartResult._(
         status: LessonSessionStartStatus.conflict,
         message:
-            'You already have an active lesson on another device. Finish it there before starting a new one.',
+            'You already have an active lesson. Finish or leave it before starting a new one.',
       );
 
   factory LessonSessionStartResult.authRequired() =>

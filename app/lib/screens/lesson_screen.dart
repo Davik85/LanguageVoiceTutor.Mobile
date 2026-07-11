@@ -69,6 +69,7 @@ class _LessonScreenState extends State<LessonScreen> {
   bool _isSending = false;
   bool _isHintLoading = false;
   bool _isFinishing = false;
+  bool _isAbandoning = false;
   bool _isCompleted = false;
   bool _isAuthenticationRequired = false;
   bool _lessonSessionEnded = false;
@@ -661,6 +662,79 @@ class _LessonScreenState extends State<LessonScreen> {
       !_isFinishing &&
       !_isCompleted;
 
+  bool get _hasActiveLessonSession =>
+      (_startResult?.isReady ?? false) && !_lessonSessionEnded && !_isCompleted;
+
+  bool get _canAbandon =>
+      _hasActiveLessonSession &&
+      !_isSending &&
+      !_isHintLoading &&
+      !_isFinishing &&
+      !_isLoadingScenario &&
+      !_isAbandoning;
+
+  Future<void> _handleLeaveRequest() async {
+    if (!_hasActiveLessonSession) {
+      await Navigator.of(context).maybePop();
+      return;
+    }
+    if (!_canAbandon) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Leave lesson?'),
+        content: const Text(
+          'Leaving ends this unfinished lesson without creating a summary.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Stay'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Leave lesson'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await _abandonLesson();
+  }
+
+  Future<void> _abandonLesson() async {
+    final session = _startResult?.session;
+    if (session == null || !_canAbandon) return;
+    setState(() {
+      _isAbandoning = true;
+      _hintText = null;
+      _hintError = null;
+      _sendError = null;
+      _finishError = null;
+      _isRecordingPlaceholderActive = false;
+      _isSpeakingPlaceholderActive = false;
+    });
+    final result = await _authService.abandonLessonSession(
+      sessionId: session.lessonSessionId,
+    );
+    if (!mounted) return;
+    if (result.canLeave) {
+      setState(() {
+        _isAbandoning = false;
+        _lessonSessionEnded = true;
+      });
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+      await Navigator.of(context).maybePop();
+      return;
+    }
+    setState(() {
+      _isAbandoning = false;
+      _sendError = result.message;
+      _isAuthenticationRequired =
+          result.status == LessonSessionAbandonStatus.authRequired;
+    });
+  }
+
   Future<void> _confirmFinishLesson() async {
     if (!_canFinish) return;
     final confirmed = await showDialog<bool>(
@@ -795,73 +869,79 @@ class _LessonScreenState extends State<LessonScreen> {
   @override
   Widget build(BuildContext context) {
     final selection = widget.selection;
-    return Scaffold(
-      body: SafeArea(
-        child: selection == null
-            ? const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Text(
-                    'Choose a level, topic, and situation to start a lesson.',
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              )
-            : _isCompleted
-                ? _LessonSummaryView(
-                    summary: _lessonSummary,
-                    status: _summaryStatus ??
-                        LessonCompletionStatus.summaryLoadError,
-                    onDone: () => Navigator.of(context).maybePop(),
-                    onRetrySummary: _retrySummary,
-                  )
-                : Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: _LessonWorkspace(
-                            selection: selection,
-                            scenario: _scenario,
-                            tutorDisplayName: _tutorDisplayName,
-                            tutorStatus: _tutorStatus,
-                            compactLevel: _compactLevel,
-                            isStarting: _isStarting,
-                            startResult: _startResult,
-                            lessonLoadError: _lessonLoadError,
-                            isLoadingScenario: _isLoadingScenario,
-                            messages: _messages,
-                            sendError: _sendError,
-                            hintText: _hintText,
-                            hintError: _hintError,
-                            isHintLoading: _isHintLoading,
-                            isSending: _isSending,
-                            controller: _messageController,
-                            actionAvailability: _actionAvailability,
-                            isRecordingPlaceholderActive:
-                                _isRecordingPlaceholderActive,
-                            isFinishing: _isFinishing,
-                            canFinish: _canFinish,
-                            finishError: _finishError,
-                            onBack: () => Navigator.of(context).maybePop(),
-                            onFinish: _confirmFinishLesson,
-                            onRetryStart: _isStarting
-                                ? null
-                                : () => _startLessonSession(),
-                            onRetryLoad: _retryLessonRuntime,
-                            transcriptController: _transcriptController,
-                            onMessageAction: _handleFutureAction,
-                            onToggleRecordingPlaceholder:
-                                _toggleRecordingPlaceholder,
-                            onHint: _requestHint,
-                            onDismissHint: () =>
-                                setState(() => _hintText = null),
-                            onSend: _sendMessage,
-                          ),
-                        ),
-                      ],
+    return PopScope(
+      canPop: !_hasActiveLessonSession,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _handleLeaveRequest();
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: selection == null
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text(
+                      'Choose a level, topic, and situation to start a lesson.',
+                      textAlign: TextAlign.center,
                     ),
                   ),
+                )
+              : _isCompleted
+                  ? _LessonSummaryView(
+                      summary: _lessonSummary,
+                      status: _summaryStatus ??
+                          LessonCompletionStatus.summaryLoadError,
+                      onDone: () => Navigator.of(context).maybePop(),
+                      onRetrySummary: _retrySummary,
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: _LessonWorkspace(
+                              selection: selection,
+                              scenario: _scenario,
+                              tutorDisplayName: _tutorDisplayName,
+                              tutorStatus: _tutorStatus,
+                              compactLevel: _compactLevel,
+                              isStarting: _isStarting,
+                              startResult: _startResult,
+                              lessonLoadError: _lessonLoadError,
+                              isLoadingScenario: _isLoadingScenario,
+                              messages: _messages,
+                              sendError: _sendError,
+                              hintText: _hintText,
+                              hintError: _hintError,
+                              isHintLoading: _isHintLoading,
+                              isSending: _isSending,
+                              controller: _messageController,
+                              actionAvailability: _actionAvailability,
+                              isRecordingPlaceholderActive:
+                                  _isRecordingPlaceholderActive,
+                              isFinishing: _isFinishing,
+                              canFinish: _canFinish,
+                              finishError: _finishError,
+                              onBack: _handleLeaveRequest,
+                              onFinish: _confirmFinishLesson,
+                              onRetryStart: _isStarting
+                                  ? null
+                                  : () => _startLessonSession(),
+                              onRetryLoad: _retryLessonRuntime,
+                              transcriptController: _transcriptController,
+                              onMessageAction: _handleFutureAction,
+                              onToggleRecordingPlaceholder:
+                                  _toggleRecordingPlaceholder,
+                              onHint: _requestHint,
+                              onDismissHint: () =>
+                                  setState(() => _hintText = null),
+                              onSend: _sendMessage,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+        ),
       ),
     );
   }

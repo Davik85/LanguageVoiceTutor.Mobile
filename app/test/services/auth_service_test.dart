@@ -514,6 +514,69 @@ void main() {
     expect(api.calls.join(' '), isNot(contains('openai')));
   });
 
+  test('abandon uses the authenticated production endpoint with no body',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/lesson-sessions/session-1/abandon'] = [
+      const ApiResponse(
+        statusCode: 200,
+        body: '{"id":"session-1","status":"abandoned"}',
+      ),
+    ];
+    final result = await AuthService(apiClient: api, storage: MemoryStorage())
+        .abandonLessonSession(sessionId: 'session-1');
+
+    expect(result.status, LessonSessionAbandonStatus.abandoned);
+    expect(api.calls, ['POST /api/lesson-sessions/session-1/abandon']);
+    expect(api.bodies.single, isNull);
+    expect(api.tokens.single, 'access');
+    expect(api.calls.join(' '), isNot(contains('/api/dev')));
+    expect(api.calls.join(' '), isNot(contains('/active/abandon')));
+  });
+
+  test('abandon refreshes once after 401 and keeps failures safe', () async {
+    final api = FakeApiClient();
+    api.responses['/api/lesson-sessions/session-1/abandon'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+      const ApiResponse(statusCode: 200, body: '{"status":"abandoned"}'),
+    ];
+    final result = await AuthService(apiClient: api, storage: MemoryStorage())
+        .abandonLessonSession(sessionId: 'session-1');
+    expect(result.status, LessonSessionAbandonStatus.abandoned);
+    expect(
+        api.calls,
+        containsAllInOrder([
+          'POST /api/lesson-sessions/session-1/abandon',
+          'POST /api/auth/refresh',
+          'POST /api/lesson-sessions/session-1/abandon',
+        ]));
+
+    final authFailureApi = FakeApiClient();
+    authFailureApi.responses['/api/lesson-sessions/session-1/abandon'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+    ];
+    authFailureApi.responses['/api/auth/refresh'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+    ];
+    expect(
+      (await AuthService(apiClient: authFailureApi, storage: MemoryStorage())
+              .abandonLessonSession(sessionId: 'session-1'))
+          .status,
+      LessonSessionAbandonStatus.authRequired,
+    );
+
+    final failureApi = FakeApiClient();
+    failureApi.responses['/api/lesson-sessions/session-1/abandon'] = [
+      const ApiResponse(statusCode: 503, body: '{}'),
+    ];
+    expect(
+      (await AuthService(apiClient: failureApi, storage: MemoryStorage())
+              .abandonLessonSession(sessionId: 'session-1'))
+          .status,
+      LessonSessionAbandonStatus.unavailable,
+    );
+  });
+
   test('finish uses authenticated production PUT then reads ready summary',
       () async {
     final api = FakeApiClient();

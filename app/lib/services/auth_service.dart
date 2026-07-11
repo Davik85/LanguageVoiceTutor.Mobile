@@ -137,6 +137,25 @@ class AuthService {
     );
   }
 
+  Future<LessonSessionAbandonResult> abandonLessonSession({
+    required String sessionId,
+  }) async {
+    final normalizedId = sessionId.trim();
+    if (normalizedId.isEmpty) return LessonSessionAbandonResult.failed();
+    try {
+      final response = await _authenticatedPostWithoutBody(
+        '/api/lesson-sessions/$normalizedId/abandon',
+        failureMessageForResponse: _lessonAbandonFailureMessage,
+      );
+      _decodeObject(response.body);
+      return LessonSessionAbandonResult.abandoned();
+    } on ApiException catch (error) {
+      return _safeLessonSessionAbandonResult(error);
+    } catch (_) {
+      return LessonSessionAbandonResult.failed();
+    }
+  }
+
   Future<LessonCompletionResult> finishLessonSession({
     required String sessionId,
     required int validTurnCount,
@@ -309,6 +328,17 @@ class AuthService {
     );
   }
 
+  Future<ApiResponse> _authenticatedPostWithoutBody(
+    String path, {
+    String Function(ApiResponse response)? failureMessageForResponse,
+  }) async {
+    return _authenticatedSend(
+      path,
+      (token) => _apiClient.post(path, accessToken: token),
+      failureMessageForResponse: failureMessageForResponse,
+    );
+  }
+
   Future<ApiResponse> _authenticatedPut(
     String path, {
     required Map<String, dynamic> body,
@@ -424,7 +454,7 @@ class AuthService {
       return 'You have used today\'s free lesson. Please try again tomorrow or upgrade.';
     }
     if (code == 'active_lesson_exists') {
-      return 'You already have an active lesson on another device. Finish it there before starting a new one.';
+      return 'You already have an active lesson. Finish or leave it before starting a new one.';
     }
     return 'Could not start the lesson. Please try again.';
   }
@@ -520,6 +550,16 @@ class AuthService {
     return 'Could not finish the lesson. Please check your connection and try again.';
   }
 
+  static String _lessonAbandonFailureMessage(ApiResponse response) {
+    if (response.statusCode == 401) {
+      return 'Please sign in again to continue the lesson.';
+    }
+    if (response.statusCode >= 500) {
+      return 'Could not leave the lesson. Please check your connection and try again.';
+    }
+    return 'Could not leave the lesson. Please try again.';
+  }
+
   static String _lessonSummaryFailureMessage(ApiResponse response) {
     if (response.statusCode == 401) {
       return 'Please sign in again to finish the lesson.';
@@ -580,7 +620,7 @@ class AuthService {
       return LessonSessionStartResult.blocked();
     }
     if (error.message ==
-        'You already have an active lesson on another device. Finish it there before starting a new one.') {
+        'You already have an active lesson. Finish or leave it before starting a new one.') {
       return LessonSessionStartResult.conflict();
     }
     if (error.message ==
@@ -590,6 +630,22 @@ class AuthService {
       return LessonSessionStartResult.unavailable();
     }
     return LessonSessionStartResult.failed();
+  }
+
+  static LessonSessionAbandonResult _safeLessonSessionAbandonResult(
+    ApiException error,
+  ) {
+    if (error.message == 'Please sign in again.' ||
+        error.message == 'Please sign in again to continue the lesson.') {
+      return LessonSessionAbandonResult.authRequired();
+    }
+    if (error.message ==
+            'Could not leave the lesson. Please check your connection and try again.' ||
+        error.message == 'The service took too long to respond.' ||
+        error.message == 'Unable to reach the service.') {
+      return LessonSessionAbandonResult.unavailable();
+    }
+    return LessonSessionAbandonResult.failed();
   }
 
   static LessonChatReplyResult _safeLessonChatReplyResult(ApiException error) {

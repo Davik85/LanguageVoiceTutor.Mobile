@@ -50,6 +50,8 @@ class FakeAuthService extends AuthService {
     this.scenarioFailure,
     this.finishCompleter,
     LessonCompletionResult? finishResult,
+    this.abandonCompleter,
+    LessonSessionAbandonResult? abandonResult,
     LessonCompletionResult? summaryResult,
     List<Completer<void>>? persistenceCompleters,
     this.persistenceFailure,
@@ -59,6 +61,7 @@ class FakeAuthService extends AuthService {
         hintResult = hintResult ?? _defaultHintResult(),
         finishResult =
             finishResult ?? LessonCompletionResult.summaryUnavailable(),
+        abandonResult = abandonResult ?? LessonSessionAbandonResult.abandoned(),
         summaryResult = summaryResult ??
             finishResult ??
             LessonCompletionResult.summaryUnavailable(),
@@ -77,6 +80,8 @@ class FakeAuthService extends AuthService {
   final ApiException? scenarioFailure;
   final Completer<LessonCompletionResult>? finishCompleter;
   final LessonCompletionResult finishResult;
+  final Completer<LessonSessionAbandonResult>? abandonCompleter;
+  final LessonSessionAbandonResult abandonResult;
   final LessonCompletionResult summaryResult;
   final List<Completer<void>> persistenceCompleters;
   final Object? persistenceFailure;
@@ -87,6 +92,7 @@ class FakeAuthService extends AuthService {
   int sendLessonChatReplyCallCount = 0;
   int requestLessonChatHintCallCount = 0;
   int finishLessonSessionCallCount = 0;
+  int abandonLessonSessionCallCount = 0;
   int loadLessonSummaryCallCount = 0;
   int? lastValidTurnCount;
   StartLessonSessionRequest? lastStartRequest;
@@ -183,6 +189,14 @@ class FakeAuthService extends AuthService {
     finishLessonSessionCallCount += 1;
     lastValidTurnCount = validTurnCount;
     return finishCompleter?.future ?? finishResult;
+  }
+
+  @override
+  Future<LessonSessionAbandonResult> abandonLessonSession({
+    required String sessionId,
+  }) async {
+    abandonLessonSessionCallCount += 1;
+    return abandonCompleter?.future ?? abandonResult;
   }
 
   @override
@@ -874,6 +888,75 @@ void main() {
     await tester.tap(find.text('Continue lesson'));
     await tester.pumpAndSettle();
     expect(auth.finishLessonSessionCallCount, 0);
+  });
+
+  testWidgets('visible Back confirms leaving and Stay makes no request',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('lesson-back-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Leave lesson?'), findsOneWidget);
+    await tester.tap(find.text('Stay'));
+    await tester.pumpAndSettle();
+
+    expect(auth.abandonLessonSessionCallCount, 0);
+    expect(find.byKey(const Key('lesson-input')), findsOneWidget);
+  });
+
+  testWidgets('system Back uses the same leave confirmation', (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Leave lesson?'), findsOneWidget);
+    expect(auth.abandonLessonSessionCallCount, 0);
+  });
+
+  testWidgets('leaving abandons once and returns home without finishing',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_lessonScreenWithHome(auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('lesson-back-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Leave lesson'));
+    await tester.pumpAndSettle();
+
+    expect(auth.abandonLessonSessionCallCount, 1);
+    expect(auth.finishLessonSessionCallCount, 0);
+    expect(auth.loadLessonSummaryCallCount, 0);
+    expect(auth.persistedMessages, isEmpty);
+    expect(find.text('Home'), findsOneWidget);
+  });
+
+  testWidgets('abandon failure keeps the lesson open and allows retry',
+      (tester) async {
+    final auth = FakeAuthService(
+      abandonResult: LessonSessionAbandonResult.failed(),
+    );
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('lesson-back-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Leave lesson'));
+    await tester.pumpAndSettle();
+    expect(find.text('Could not leave the lesson. Please try again.'),
+        findsOneWidget);
+    expect(find.byKey(const Key('lesson-input')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('lesson-back-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Leave lesson'));
+    await tester.pumpAndSettle();
+    expect(auth.abandonLessonSessionCallCount, 2);
   });
 
   testWidgets('finish sends once and shows unavailable completed state',
