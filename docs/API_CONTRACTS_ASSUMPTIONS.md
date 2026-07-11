@@ -162,10 +162,43 @@ POST /api/me/lesson-sessions/{sessionId}/reply
 
 ## Confirmed finish and summary contract
 
-- `PUT /api/me/lesson-sessions/{sessionId}/finish` is authenticated and accepts `{ "validTurnCount": 0 }` (or the actual non-negative typed learner turn count). It returns the finished lesson-session response and is idempotent.
-- On successful finish, mobile reads `GET /api/me/lesson-sessions/{sessionId}/summary`. The learner-safe response has `status: "ready"` or `status: "unavailable"`.
-- For `ready`, mobile displays only the backend-owned learner fields: optional context (`level`, `topicTitle`, `subtopicTitle`) plus `summary`, `strengths`, `improvements`, `vocabulary`, `grammar`, and `nextSteps`.
-- For `unavailable`, completion remains successful and mobile presents a safe fallback with a summary retry action. Mobile never generates a summary from the transcript, uploads a summary, calls a `/api/dev` route, uses the diagnostic summary PUT route, or calls OpenAI directly.
+The Android mobile client now has a production-verified end-to-end text lesson completion path against backend `0.1.35-backend.112` or later. Version `.112` is required for the verified summary flow because it supports nested Responses API output extraction. Backend `0.1.35-backend.111` is the previous rollback version and should not be treated as the verified summary baseline.
+
+Exact authenticated routes in the current text lesson loop:
+
+```http
+GET /api/me/settings
+GET /api/me/lesson-access
+GET /api/me/subscription-status
+POST /api/me/lesson-sessions
+GET /api/me/lesson-content/scenarios/{scenarioKey}
+POST /api/lesson-chat/reply
+POST /api/me/lesson-sessions/{sessionId}/messages
+PUT /api/me/lesson-sessions/{sessionId}/finish
+GET /api/me/lesson-sessions/{sessionId}/summary
+POST /api/auth/refresh
+```
+
+Finish uses this request body:
+
+```json
+{
+  "validTurnCount": 0
+}
+```
+
+`validTurnCount` must be a non-negative integer. Mobile counts only learner practice messages sent after scenario/context selection. The scenario/context selection itself is not a practice turn, tutor/assistant messages are excluded, and mobile must not invent its own completion threshold. Backend owns completion acceptance and summary generation.
+
+Summary loading boundaries:
+
+- `ready`: mobile displays only backend-owned learner-safe fields: lesson context, `summary`, `strengths`, `improvements`, `vocabulary`, `grammar`, and `nextSteps`.
+- `unavailable`: completion still succeeded; mobile shows a saved/no-summary message and **Done** only. It must not show **Retry** because `GET /api/me/lesson-sessions/{sessionId}/summary` does not regenerate a summary.
+- Retryable load error: network, server, timeout, or parse failures while loading summary may show **Retry summary** because retrying repeats the read.
+- Authentication failure: mobile shows the separate sign-in-required state and may use `POST /api/auth/refresh` for authenticated retry according to the existing auth flow.
+
+Mobile must never generate a fake/local summary from the transcript, upload a client summary, call `/api/dev` summary routes, use diagnostic summary routes, call OpenAI directly, or display raw server exception text to learners.
+
+Before calling Finish, mobile waits up to 5 seconds for already-started message persistence operations. This is an ordering barrier so the backend summary generator does not run before current writes have had a chance to settle. It is not a blind retry loop, duplicate-write mechanism, or replacement for normal best-effort message persistence.
 
 Expected behavior:
 

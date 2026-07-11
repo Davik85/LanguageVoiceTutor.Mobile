@@ -433,3 +433,37 @@ Expected behavior:
 - No backend, desktop, website, billing, voice, TTS, AI runtime, analytics, store metadata, signing, or package id changes are included in this branding slice.
 
 Verification commands are the standard current baseline commands from `app/`: `dart format --set-exit-if-changed lib test`, `flutter analyze`, and `flutter test`.
+
+## Production Android text lesson completion check
+
+The current production-verified Android text lesson flow uses backend `0.1.35-backend.112` or later. Version `.112` is required because it supports nested Responses API output extraction for backend-owned learner summaries. No database migration was required for `.112`; backend health and database health were green during verification.
+
+Manual Android emulator verification should cover:
+
+1. Start an authenticated lesson session.
+2. Confirm mobile loads the CMS/backend runtime scenario and renders the learner-facing opening plus scenario suggestions.
+3. Choose a scenario through normal typed input.
+4. Send 3-4 learner practice messages and confirm tutor replies use `POST /api/lesson-chat/reply`.
+5. Confirm user and tutor messages are persisted under the backend lesson session with `POST /api/me/lesson-sessions/{sessionId}/messages`.
+6. Tap **Finish lesson**, confirm the dialog, and verify mobile calls `PUT /api/me/lesson-sessions/{sessionId}/finish` with a non-negative `validTurnCount` that excludes scenario selection and tutor messages.
+7. Verify mobile waits for already-started message persistence before Finish as ordering protection, without blindly retrying or duplicating message writes.
+8. Verify the backend-owned summary is read from `GET /api/me/lesson-sessions/{sessionId}/summary` and the summary screen is scrollable.
+9. Verify summary sections are learner-safe backend fields: lesson context, summary, strengths, improvements, vocabulary, grammar, and next steps.
+10. Verify no more lesson messages can be sent after completion.
+11. Verify **Done** returns from the completed lesson.
+12. Verify a legitimate `200` unavailable summary state has no **Retry** button and still treats the lesson as completed.
+13. Verify retryable network/server/parse summary-load errors show **Retry summary**.
+14. Verify authentication failure shows the separate sign-in-required state.
+15. Verify no raw server messages, stack traces, backend IDs, or provider diagnostics are displayed to learners.
+
+Current automated verification for the working text lesson completion flow:
+
+```bash
+dart format --set-exit-if-changed lib test
+flutter analyze
+flutter test test/features/lesson/lesson_screen_test.dart
+flutter test test/services/auth_service_test.dart
+flutter test
+```
+
+Expected current result: format passes, analyze reports no issues, focused lesson widget tests pass, AuthService tests pass, and the full Flutter suite passes with 91 tests.

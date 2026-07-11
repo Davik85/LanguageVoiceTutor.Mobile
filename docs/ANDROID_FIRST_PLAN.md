@@ -65,20 +65,17 @@ The reviewed Windows desktop client walkthrough presentation is a product source
 
 ### Phase 3: Lessons and progress
 
-- Completed as UI-only foundation: lesson-start skeleton from Home to soft colored Choose Level, Choose Topic, Choose Situation screens, and Lesson placeholder.
-- The lesson session foundation attempt was reverted because it combined too much at once: models, AuthService, navigation, lesson UI, and tests. Do not repeat that pattern.
-- Next safe phase: Settings UX polish or lesson runtime planning by inspecting backend lesson/session APIs before implementation.
-- Future lesson runtime work must be split into small PRs: first read-only investigation or service-only, then UI-only using an already-tested service. Do not combine service, models, navigation, UI, and widget tests in one PR.
-- Lesson runtime foundation must not add OpenAI calls from mobile and must not include voice, TTS, realtime, billing, analytics, history, or unrelated runtime features.
-- Implement lesson access checks.
-- Implement lesson start/resume only after the backend lesson/session contract is confirmed.
-- Implement tutor message exchange through backend.
-- Implement lesson history and progress screens.
+- Complete: lesson-start skeleton from Home to soft colored Choose Level, Choose Topic, Choose Situation screens.
+- Complete and production-verified: Android text lesson foundation, including authenticated session start, CMS/backend runtime opening, scenario selection, text conversation, message persistence, Finish, and backend-owned summary display.
+- Complete and production-verified: Finish plus backend summary flow against production backend `0.1.35-backend.112` or later.
+- Backend `.112` is the verified dependency because it supports nested Responses API output extraction for persisted learner summaries; `.111` is the previous rollback backend.
+- Keep pending: lesson history and progress screens, real hints, translation, feedback detail, tutor TTS, microphone/STT, GIF avatar state binding, fullscreen Conversation mode, billing, analytics, crash reporting, and store release work.
+- Lesson runtime foundation must not add OpenAI calls from mobile and must not include client-owned tutor methodology or local summary generation.
 
 
 ### Current lesson-runtime boundary
 
-Mobile starts backend lesson sessions from the lesson placeholder screen using the backend-compatible `POST /api/me/lesson-sessions` request shape. Real mobile AI chat is not implemented. The next lesson implementation must mirror the existing desktop/CMS/backend runtime instead of creating a separate mobile runtime.
+Mobile now completes the Android text lesson loop through backend-owned summary display. The current lesson implementation mirrors the existing desktop/CMS/backend runtime instead of creating a separate mobile runtime. Mobile starts authenticated backend lesson sessions, loads CMS/backend scenario content, renders the lesson opening and suggestions, sends text practice replies through the existing lesson-chat route, persists messages under the backend session, waits for in-flight persistence before Finish, calls authenticated Finish, and reads the backend-owned learner summary.
 
 Use this flow for mobile alignment:
 
@@ -89,6 +86,8 @@ GET /api/me/lesson-content/scenarios/{scenarioKey}
 POST /api/me/lesson-sessions
 POST /api/lesson-chat/reply
 POST /api/me/lesson-sessions/{sessionId}/messages
+PUT /api/me/lesson-sessions/{sessionId}/finish
+GET /api/me/lesson-sessions/{sessionId}/summary
 ```
 
 Current mobile session-start request shape:
