@@ -9,7 +9,7 @@ This repository contains the Android-first Flutter mobile client under `app/`. T
 
 ## Current verified mobile baseline
 
-The current verified mobile baseline includes the production-verified Android text lesson loop, completed mobile Hint and lesson-abandon flows, real per-message Translation from functional commit `9d2476b` (`Add mobile message translation`), and the settings language persistence fix from `340c950` (`Fix mobile settings language persistence`). The baseline was verified from `app/` with:
+The current verified mobile baseline includes the production-verified Android text lesson loop, completed mobile Hint and lesson-abandon flows, real per-message Translation from functional commit `9d2476b` (`Add mobile message translation`), real learner-message Feedback from functional commit `f1e8f16` (`Add mobile learner message feedback`), and the settings language persistence fix from `340c950` (`Fix mobile settings language persistence`). The baseline was verified from `app/` with:
 
 ```bash
 dart format --set-exit-if-changed lib test
@@ -17,7 +17,7 @@ flutter analyze
 flutter test
 ```
 
-Expected current results for the completed Translation and settings-language persistence baseline are: dart formatting passed; `flutter analyze` passed with zero issues; focused AuthService and Settings tests passed with 52 tests; direct UserSettings tests passed with 5 tests; the complete Flutter suite passed; the Android debug APK built successfully; and manual verification confirmed native-language saving and Translation in the selected language. Settings/password recovery remains part of this verified baseline.
+Expected current results for the completed Feedback baseline are: dart formatting passed; `flutter analyze` passed with zero issues; focused AuthService tests passed with 32 tests; focused lesson-flow tests passed with 35 tests; the complete Flutter suite passed with 123 tests; the Android debug APK built successfully; and manual Android Emulator verification confirmed Feedback displays under the correct learner message while existing Translation, Hint, abandon, Finish, and Summary behavior remained operational. Settings/password recovery remains part of this verified baseline.
 
 Settings has stable visible **Account**, **Learning**, **Audio**, and **Connection status** advanced area, with **Save settings** visible and tested. User level is not in Settings. Settings reads `selectedTutorId` from `GET /api/me/settings` and sends it in `PUT /api/me/settings`; `/api/tutor-options` remains the source for available tutor choices in Settings. Selected tutor is editable in the **Learning** section, persists after app/emulator restart, and remains independent from the separate tutor voice setting. Home no longer shows tutor diagnostics or the old **Available tutors** card; tutor selection belongs in Settings. Home shows the provided app logo next to a branded, accessible **Language Voice Tutor** title, preloads that logo during startup before Home is shown, and displays friendly signed-in or sign-in/sync account status without raw tokens, backend IDs, or technical auth details. The loading screen shows only the centered app logo. Language dropdowns display friendly names while keeping stable internal IDs such as `en`, `tr`, and `ru`. `PUT /api/me/settings` serializes `studyLanguage` as the backend-required English study-language name (`English`, `French`, `German`, `Portuguese`, `Spanish`, or `Italian`), while native and explanation language remain in their supported backend ID form. `GET /api/me/settings` accepts IDs or English names and normalizes them to internal dropdown IDs. The complete seven-field settings payload remains in use. Study language remains limited to English, French, German, Portuguese, Spanish, and Italian. Home uses **Start lesson** to open the navigation skeleton: **Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder**. Level cards use soft level-specific colors, topic cards use soft topic-specific colors, and situation cards use the selected topic color family. Situation labels are product-friendly, no longer use `Placeholder:`, and all six topics have options; Travel includes Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage.
 
@@ -35,6 +35,7 @@ GET /api/me/subscription-status
 POST /api/me/lesson-sessions
 GET /api/me/lesson-content/scenarios/{scenarioKey}
 POST /api/lesson-chat/reply
+POST /api/lesson-chat/feedback
 POST /api/me/lesson-sessions/{sessionId}/messages
 POST /api/lesson-sessions/{sessionId}/abandon
 PUT /api/me/lesson-sessions/{sessionId}/finish
@@ -50,7 +51,7 @@ The backend stale active-session interval remains two minutes. No backend timeou
 
 Summary UI states are intentionally distinct: ready displays backend learner-safe sections, unavailable means the completed lesson has no summary and shows Done without Retry, retryable load errors may show Retry summary, and authentication failures use the separate sign-in-required state. Before Finish, mobile waits up to 5 seconds for already-started message persistence operations as ordering protection only; this is not a blind retry or duplicate-write mechanism.
 
-Text lesson foundation, Finish plus backend summary, the real mobile Hint flow, confirmed mobile lesson abandonment, and real per-message Translation are complete. Pending mobile scope still includes history/progress, real per-message Feedback, tutor TTS, microphone/STT, GIF avatar state binding, fullscreen Conversation mode, billing, analytics/crash reporting, and store release work. Per-message Feedback is the next isolated functional block.
+Text lesson foundation, Finish plus backend summary, the real mobile Hint flow, confirmed mobile lesson abandonment, real per-message Translation, and real learner-message Feedback are complete. Pending mobile scope still includes tutor TTS, microphone/STT, GIF avatar state binding, fullscreen Conversation mode, history/progress, billing, analytics/crash reporting, and store release work. TTS/tutor voice playback is the next isolated functional block.
 
 
 ## Current mobile Translation milestone
@@ -62,6 +63,18 @@ Tutor and learner messages use the same endpoint and contract. Mobile requests T
 Translation appears inline with the original message rather than as a new tutor or learner message. Results are cached per message: a second tap hides the cached Translation, a later tap shows it without another backend request, different messages can be translated independently, and duplicate requests for the same loading message are prevented. Translation does not persist a lesson message, increment `learnerTurnCount` or `validTurnCount`, or change Hint, abandonment, Finish, Summary, lesson progression, or subscription entitlement. Translation is not shown on the Summary screen because the transcript is not shown there.
 
 Authentication failures use the existing authentication-required flow, session-ended responses use existing terminal-session handling, HTTP 429 is temporary Translation unavailability, and network, backend, malformed-response, and unexpected failures remain learner-safe and retryable.
+
+## Current mobile Feedback milestone
+
+The completed mobile Feedback flow is implemented as a second-client integration with the existing product runtime. Mobile uses `POST /api/lesson-chat/feedback` with the existing full `LessonChatRequest` contract, authenticated bearer token, and refresh-on-401 flow. Backend owns Feedback prompts, correction rules, level adaptation, scenario context, provider calls, structured output, usage events, and persistence. Flutter does not call OpenAI directly and does not contain correction methodology or provider prompts.
+
+Feedback is available only for learner messages. Tutor messages do not show Feedback controls, and Feedback is user initiated rather than automatic. Mobile retains the real backend GUID returned when a learner message is persisted, waits for that message's existing persistence operation when needed, and never invents a backend message ID or treats the local message ID as persisted. If persistence is not ready or has failed, Feedback is not requested and the learner receives a retryable not-ready message.
+
+Feedback requests include the exact learner text, stable local source message ID, real persisted backend message ID, active backend lesson session ID, learner-message kind, level, topic, subtopic, selected context, current transcript, last tutor message, study/native language metadata, CMS/runtime scenario data, lesson goal/type, tutor profile, and active level-profile data. The backend result contains `shortText`, `correctedVersion`, `grammarTip`, `vocabularyTip`, `cultureTip`, and `naturalVersion`; `shortText` is required and nonblank, other sections may be empty, and mobile displays only nonblank sections without inventing missing correction content.
+
+Feedback appears in an expandable card directly below the related learner message. It is not rendered as a tutor or learner transcript message and does not replace the learner's original text. Results are cached per message, can be hidden and shown again without another backend request, maintain independent state across learner messages, prevent duplicate requests for the same loading message, and can coexist with Translation on the same learner message. Feedback remains in the study language, is not automatically translated into the learner's native language, does not use explanation language as a client-side override, and does not implement Translation of Feedback sections in this milestone.
+
+Feedback does not create an extra lesson message, increment `learnerTurnCount` or `validTurnCount`, change the Finish payload, generate or alter Summary, change Hint, change message Translation, change lesson abandonment, or alter lesson progression or subscription entitlement. It is available only while the lesson transcript is visible and is not added to the Summary screen. Authentication failures reuse the existing authentication-required flow, terminal-session responses reuse existing session-ended handling, HTTP 429 means temporary Feedback unavailability, and provider/backend/network/malformed response failures remain learner-safe and retryable without showing raw provider or HTTP details.
 
 ## Current mobile Hint milestone
 
@@ -101,6 +114,7 @@ GET /api/me/subscription-status
 GET /api/me/lesson-content/scenarios/{scenarioKey}
 POST /api/me/lesson-sessions
 POST /api/lesson-chat/reply
+POST /api/lesson-chat/feedback
 POST /api/me/lesson-sessions/{sessionId}/messages
 ```
 
@@ -131,7 +145,7 @@ Explicit no-go items for the next text-chat step:
 - No new safe/catalog endpoints for intermediate convenience.
 - No duplicate mobile prompt/runtime system.
 - No backend changes unless a real final shared lesson-runtime design is approved.
-- No voice, TTS, realtime, feedback detail, history, or billing.
+- No voice, TTS, realtime, history, or billing.
 
 
 ## Desktop parity source model

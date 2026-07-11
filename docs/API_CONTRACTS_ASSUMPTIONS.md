@@ -129,6 +129,7 @@ GET /api/me/subscription-status
 GET /api/me/lesson-content/scenarios/{scenarioKey}
 POST /api/me/lesson-sessions
 POST /api/lesson-chat/reply
+POST /api/lesson-chat/feedback
 POST /api/me/lesson-sessions/{sessionId}/messages
 POST /api/lesson-sessions/{sessionId}/abandon
 PUT /api/me/lesson-sessions/{sessionId}/finish
@@ -235,6 +236,50 @@ Translation error boundaries:
 - HTTP 429 is temporary Translation unavailability.
 - Network, backend, malformed-response, and unexpected failures remain learner-safe and retryable.
 
+
+## Confirmed lesson Feedback contract
+
+The completed mobile Feedback flow uses the existing shared backend lesson runtime; no backend deployment is claimed by this documentation update. The mobile Feedback endpoint is:
+
+```http
+POST /api/lesson-chat/feedback
+```
+
+Mobile sends the same authenticated bearer token used by lesson APIs and reuses the existing refresh-on-401 flow. The request uses the existing full `LessonChatRequest` contract rather than a mobile-only schema. Backend owns Feedback prompts, correction rules, level adaptation, scenario context, provider calls, structured output, usage events, and persistence. Flutter does not call OpenAI directly, does not contain correction methodology, and does not copy provider prompts.
+
+Eligibility and persisted-message boundaries:
+
+- Feedback is available only for learner messages; tutor messages do not show Feedback controls.
+- Feedback is user initiated and is not requested automatically.
+- Mobile retains the real backend GUID returned when a learner message is persisted.
+- Feedback waits for the selected learner message's existing persistence operation when necessary.
+- Mobile does not invent a backend message ID and does not use the local message ID as a persisted backend ID.
+- If persistence is not ready or has failed, Feedback is not requested and the learner receives a retryable not-ready message.
+
+Feedback request context includes the exact learner message text, stable local source message ID, real persisted backend message ID, active backend lesson session ID, learner-message kind, level, topic, subtopic, selected context, current transcript, last tutor message, study/native language metadata, CMS/runtime scenario data, lesson goal/type, tutor profile, and active level-profile data. Do not duplicate the complete JSON schema in additional documents.
+
+Feedback response fields are `shortText`, `correctedVersion`, `grammarTip`, `vocabularyTip`, `cultureTip`, and `naturalVersion`. `shortText` is required and nonblank. Other sections may be empty. Mobile displays only nonblank sections and does not invent missing correction content.
+
+Feedback UI and lesson boundaries:
+
+- Feedback appears in an expandable card directly below the related learner message.
+- Feedback is not rendered as a tutor or learner transcript message and does not replace the learner's original text.
+- Results are cached per message and can be hidden and shown again without another backend request.
+- Different learner messages maintain independent Feedback state.
+- Duplicate requests for the same loading message are prevented.
+- Translation and Feedback can coexist independently on the same learner message.
+- Feedback remains in the study language, is not automatically translated into the learner's native language, does not use explanation language as a client-side override, and does not implement Translation of Feedback sections in this milestone.
+- Feedback does not create an extra lesson message, increment `learnerTurnCount`, increment `validTurnCount`, change the Finish payload, generate or alter Summary, change Hint, change message Translation, change lesson abandonment, or alter lesson progression or subscription entitlement.
+- Feedback is available only while the lesson transcript is visible and is not added to the Summary screen.
+
+Feedback error boundaries:
+
+- Authentication failures reuse the existing authentication-required flow.
+- Terminal-session responses reuse existing session-ended handling.
+- HTTP 429 is temporary Feedback unavailability.
+- Provider, backend, network, and malformed-response failures remain learner-safe and retryable.
+- Raw provider or HTTP details are not shown.
+
 ## Confirmed lesson abandon contract
 
 Mobile uses the existing backend abandon flow as a second client of the same product runtime:
@@ -274,6 +319,7 @@ GET /api/me/subscription-status
 POST /api/me/lesson-sessions
 GET /api/me/lesson-content/scenarios/{scenarioKey}
 POST /api/lesson-chat/reply
+POST /api/lesson-chat/feedback
 POST /api/me/lesson-sessions/{sessionId}/messages
 POST /api/lesson-sessions/{sessionId}/abandon
 PUT /api/me/lesson-sessions/{sessionId}/finish
@@ -318,7 +364,7 @@ Explicit no-go items for the next text-chat step:
 - No new safe/catalog endpoints for intermediate convenience.
 - No duplicate mobile prompt/runtime system.
 - No backend changes unless a real final shared lesson-runtime design is approved.
-- No voice, TTS, realtime, feedback detail, history, or billing.
+- No voice, TTS, realtime, history, or billing.
 
 Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
 
