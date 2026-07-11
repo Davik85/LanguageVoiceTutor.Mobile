@@ -9,6 +9,7 @@ import 'package:language_voice_tutor_mobile/models/lesson_runtime.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_session.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_start_selection.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
+import 'package:language_voice_tutor_mobile/models/translation.dart';
 import 'package:language_voice_tutor_mobile/models/user_settings.dart';
 import 'package:language_voice_tutor_mobile/screens/home_screen.dart';
 import 'package:language_voice_tutor_mobile/screens/lesson_screen.dart';
@@ -45,6 +46,8 @@ class FakeAuthService extends AuthService {
     LessonChatReplyResult? replyResult,
     this.hintCompleter,
     LessonChatHintResult? hintResult,
+    this.translationCompleter,
+    TranslationResult? translationResult,
     LessonRuntimeScenario? scenario,
     this.settingsFailure,
     this.scenarioFailure,
@@ -59,6 +62,7 @@ class FakeAuthService extends AuthService {
   })  : lessonStartResult = lessonStartResult ?? _readyLessonStartResult(),
         replyResult = replyResult ?? _defaultReplyResult(),
         hintResult = hintResult ?? _defaultHintResult(),
+        translationResult = translationResult ?? _defaultTranslationResult(),
         finishResult =
             finishResult ?? LessonCompletionResult.summaryUnavailable(),
         abandonResult = abandonResult ?? LessonSessionAbandonResult.abandoned(),
@@ -75,6 +79,8 @@ class FakeAuthService extends AuthService {
   final LessonChatReplyResult replyResult;
   final Completer<LessonChatHintResult>? hintCompleter;
   final LessonChatHintResult hintResult;
+  final Completer<TranslationResult>? translationCompleter;
+  final TranslationResult translationResult;
   final LessonRuntimeScenario scenario;
   final ApiException? settingsFailure;
   final ApiException? scenarioFailure;
@@ -91,6 +97,7 @@ class FakeAuthService extends AuthService {
   int fetchScenarioCallCount = 0;
   int sendLessonChatReplyCallCount = 0;
   int requestLessonChatHintCallCount = 0;
+  int requestTranslationCallCount = 0;
   int finishLessonSessionCallCount = 0;
   int abandonLessonSessionCallCount = 0;
   int loadLessonSummaryCallCount = 0;
@@ -98,6 +105,7 @@ class FakeAuthService extends AuthService {
   StartLessonSessionRequest? lastStartRequest;
   LessonChatRequest? lastLessonChatRequest;
   LessonChatRequest? lastHintRequest;
+  TranslationRequest? lastTranslationRequest;
   final persistedMessages = <CreateLessonSessionMessageRequest>[];
 
   @override
@@ -167,6 +175,15 @@ class FakeAuthService extends AuthService {
     requestLessonChatHintCallCount += 1;
     lastHintRequest = request;
     return hintCompleter?.future ?? hintResult;
+  }
+
+  @override
+  Future<TranslationResult> requestTranslation({
+    required TranslationRequest request,
+  }) async {
+    requestTranslationCallCount += 1;
+    lastTranslationRequest = request;
+    return translationCompleter?.future ?? translationResult;
   }
 
   @override
@@ -382,6 +399,10 @@ LessonChatReplyResult _defaultReplyResult() => LessonChatReplyResult.success(
 
 LessonChatHintResult _defaultHintResult() => LessonChatHintResult.success(
       const LessonChatHintResponse(hintText: 'Try a short greeting.'),
+    );
+
+TranslationResult _defaultTranslationResult() => TranslationResult.success(
+      const TranslationResponse(translatedText: 'Hola, ¿cómo estás?'),
     );
 
 Widget _home({FakeAuthService? authService}) => MaterialApp(
@@ -783,7 +804,8 @@ void main() {
     expect(find.byKey(const Key('lesson-action-hint')), findsOneWidget);
   });
 
-  testWidgets('placeholder icon actions stay local and do not call backend',
+  testWidgets(
+      'translation uses the selected tutor message without a lesson turn',
       (tester) async {
     final auth = FakeAuthService();
 
@@ -792,13 +814,20 @@ void main() {
 
     final initialSendCount = auth.sendLessonChatReplyCallCount;
     final initialPersistCount = auth.persistedMessages.length;
-    final initialScenarioCount = auth.fetchScenarioCallCount;
-
     await _showWidget(
         tester, find.byKey(const Key('lesson-message-action-tutor-translate')));
     await tester
         .tap(find.byKey(const Key('lesson-message-action-tutor-translate')));
-    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(auth.requestTranslationCallCount, 1);
+    expect(auth.lastTranslationRequest?.text,
+        contains('Today we\'ll practice introductions.'));
+    expect(auth.lastTranslationRequest?.targetLanguage, 'English');
+    expect(auth.lastTranslationRequest?.sourceLanguageId, 'es');
+    expect(find.text('Hola, ¿cómo estás?'), findsOneWidget);
+    expect(auth.sendLessonChatReplyCallCount, initialSendCount);
+    expect(auth.persistedMessages.length, initialPersistCount);
+
     await _showWidget(
         tester, find.byKey(const Key('lesson-message-action-tutor-voice')));
     await tester
@@ -811,7 +840,6 @@ void main() {
         findsOneWidget);
     expect(auth.sendLessonChatReplyCallCount, initialSendCount);
     expect(auth.persistedMessages.length, initialPersistCount);
-    expect(auth.fetchScenarioCallCount, initialScenarioCount);
   });
 
   testWidgets('record placeholder stays local and switches status',

@@ -5,6 +5,7 @@ import '../models/lesson_chat.dart';
 import '../models/lesson_runtime.dart';
 import '../models/lesson_session.dart';
 import '../models/lesson_start_selection.dart';
+import '../models/translation.dart';
 import '../models/user_settings.dart';
 import '../services/auth_service.dart';
 import '../services/service_factory.dart';
@@ -27,12 +28,14 @@ class _LessonActionAvailability {
     required this.canSendText,
     required this.canToggleRecordingPlaceholder,
     required this.canUsePlaceholders,
+    required this.canUseTranslation,
     required this.canUseHint,
   });
 
   final bool canSendText;
   final bool canToggleRecordingPlaceholder;
   final bool canUsePlaceholders;
+  final bool canUseTranslation;
   final bool canUseHint;
 }
 
@@ -304,7 +307,7 @@ class _LessonScreenState extends State<LessonScreen> {
     final userMessage = _LessonChatMessage.user(text);
     final lastBotMessage = _messages.lastWhere(
       (message) => message.isBot,
-      orElse: () => const _LessonChatMessage.tutor(''),
+      orElse: () => _LessonChatMessage.tutor(''),
     );
     final updatedMessages = [..._messages, userMessage];
     final learnerTurnCount =
@@ -413,7 +416,7 @@ class _LessonScreenState extends State<LessonScreen> {
 
     final lastBotMessage = _messages.lastWhere(
       (message) => message.isBot,
-      orElse: () => const _LessonChatMessage.tutor(''),
+      orElse: () => _LessonChatMessage.tutor(''),
     );
     final learnerTurnCount =
         _messages.where((message) => message.isUser).length;
@@ -643,6 +646,12 @@ class _LessonScreenState extends State<LessonScreen> {
           !_isCompleted &&
           !_lessonSessionEnded &&
           !_isAuthenticationRequired,
+      canUseTranslation: lessonReady &&
+          !_isFinishing &&
+          !_isAbandoning &&
+          !_isCompleted &&
+          !_lessonSessionEnded &&
+          !_isAuthenticationRequired,
       canUseHint: lessonReady &&
           !_isSending &&
           !_isHintLoading &&
@@ -866,6 +875,63 @@ class _LessonScreenState extends State<LessonScreen> {
     _showComingNext(label);
   }
 
+  Future<void> _translateMessage(_LessonChatMessage message) async {
+    final session = _startResult?.session;
+    final settings = _settings;
+    if (session == null ||
+        settings == null ||
+        !_actionAvailability.canUseTranslation) {
+      return;
+    }
+    if (message.isTranslationLoading) return;
+    if (message.isTranslationVisible) {
+      setState(() => message.isTranslationVisible = false);
+      return;
+    }
+    if (message.translatedText != null) {
+      setState(() => message.isTranslationVisible = true);
+      return;
+    }
+
+    setState(() {
+      message.isTranslationLoading = true;
+      message.translationError = null;
+    });
+    final studyLanguageId =
+        LanguageOptions.studyLanguageIdFor(settings.studyLanguage);
+    final studyLanguageName =
+        LanguageOptions.backendStudyLanguageNameFor(settings.studyLanguage);
+    final result = await _authService.requestTranslation(
+      request: TranslationRequest(
+        text: message.text,
+        targetLanguage: LanguageOptions.backendNativeLanguageNameFor(
+            settings.nativeLanguage),
+        sourceLanguageId: studyLanguageId,
+        sourceLanguageName: studyLanguageName,
+        sourceLanguageNativeName: studyLanguageName,
+        sourceLanguageCode: studyLanguageId,
+        backendSessionId: session.lessonSessionId,
+      ),
+    );
+    if (!mounted || _isCompleted || _isAbandoning) return;
+    setState(() {
+      message.isTranslationLoading = false;
+      if (result.isSuccess && result.translation != null) {
+        message.translatedText = result.translation!.translatedText;
+        message.isTranslationVisible = true;
+        message.translationError = null;
+      } else {
+        message.translationError = result.message;
+        if (result.status == TranslationStatus.authRequired) {
+          _isAuthenticationRequired = true;
+        }
+        if (result.status == TranslationStatus.sessionEnded) {
+          _lessonSessionEnded = true;
+        }
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final selection = widget.selection;
@@ -930,6 +996,7 @@ class _LessonScreenState extends State<LessonScreen> {
                               onRetryLoad: _retryLessonRuntime,
                               transcriptController: _transcriptController,
                               onMessageAction: _handleFutureAction,
+                              onTranslateMessage: _translateMessage,
                               onToggleRecordingPlaceholder:
                                   _toggleRecordingPlaceholder,
                               onHint: _requestHint,
@@ -988,6 +1055,7 @@ class _LessonWorkspace extends StatelessWidget {
     required this.onRetryStart,
     required this.onRetryLoad,
     required this.onMessageAction,
+    required this.onTranslateMessage,
     required this.onToggleRecordingPlaceholder,
     required this.onHint,
     required this.onDismissHint,
@@ -1021,6 +1089,7 @@ class _LessonWorkspace extends StatelessWidget {
   final VoidCallback? onRetryStart;
   final Future<void> Function() onRetryLoad;
   final void Function(String label, {bool speaking}) onMessageAction;
+  final Future<void> Function(_LessonChatMessage message) onTranslateMessage;
   final VoidCallback onToggleRecordingPlaceholder;
   final VoidCallback onHint;
   final VoidCallback onDismissHint;
@@ -1070,6 +1139,7 @@ class _LessonWorkspace extends StatelessWidget {
                       messages: messages,
                       actionAvailability: actionAvailability,
                       onMessageAction: onMessageAction,
+                      onTranslateMessage: onTranslateMessage,
                     ),
                   ),
                   if (sendError != null) ...[
@@ -1150,6 +1220,7 @@ class _LessonBody extends StatelessWidget {
     required this.messages,
     required this.actionAvailability,
     required this.onMessageAction,
+    required this.onTranslateMessage,
   });
 
   final bool isStarting;
@@ -1162,6 +1233,7 @@ class _LessonBody extends StatelessWidget {
   final List<_LessonChatMessage> messages;
   final _LessonActionAvailability actionAvailability;
   final void Function(String label, {bool speaking}) onMessageAction;
+  final Future<void> Function(_LessonChatMessage message) onTranslateMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -1219,6 +1291,7 @@ class _LessonBody extends StatelessWidget {
       messages: messages,
       actionAvailability: actionAvailability,
       onMessageAction: onMessageAction,
+      onTranslateMessage: onTranslateMessage,
     );
   }
 }
@@ -1229,12 +1302,14 @@ class _LessonTranscript extends StatelessWidget {
     required this.messages,
     required this.actionAvailability,
     required this.onMessageAction,
+    required this.onTranslateMessage,
   });
 
   final ScrollController controller;
   final List<_LessonChatMessage> messages;
   final _LessonActionAvailability actionAvailability;
   final void Function(String label, {bool speaking}) onMessageAction;
+  final Future<void> Function(_LessonChatMessage message) onTranslateMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -1262,6 +1337,7 @@ class _LessonTranscript extends StatelessWidget {
           message: message,
           actionAvailability: actionAvailability,
           onMessageAction: onMessageAction,
+          onTranslateMessage: onTranslateMessage,
         );
       },
     );
@@ -1273,11 +1349,13 @@ class _LessonMessageBubble extends StatelessWidget {
     required this.message,
     required this.actionAvailability,
     required this.onMessageAction,
+    required this.onTranslateMessage,
   });
 
   final _LessonChatMessage message;
   final _LessonActionAvailability actionAvailability;
   final void Function(String label, {bool speaking}) onMessageAction;
+  final Future<void> Function(_LessonChatMessage message) onTranslateMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -1317,8 +1395,8 @@ class _LessonMessageBubble extends StatelessWidget {
                               'lesson-message-action-tutor-translate'),
                           visualDensity: VisualDensity.compact,
                           tooltip: 'Translation',
-                          onPressed: actionAvailability.canUsePlaceholders
-                              ? () => onMessageAction('Translation')
+                          onPressed: actionAvailability.canUseTranslation
+                              ? () => onTranslateMessage(message)
                               : null,
                           icon: const Icon(Icons.translate, size: 18),
                         ),
@@ -1341,8 +1419,8 @@ class _LessonMessageBubble extends StatelessWidget {
                               const Key('lesson-message-action-user-translate'),
                           visualDensity: VisualDensity.compact,
                           tooltip: 'Translation',
-                          onPressed: actionAvailability.canUsePlaceholders
-                              ? () => onMessageAction('Translation')
+                          onPressed: actionAvailability.canUseTranslation
+                              ? () => onTranslateMessage(message)
                               : null,
                           icon: const Icon(Icons.translate, size: 18),
                         ),
@@ -1358,6 +1436,35 @@ class _LessonMessageBubble extends StatelessWidget {
                         ),
                       ],
               ),
+              if (message.isTranslationLoading) ...[
+                const SizedBox(height: 8),
+                const SizedBox(
+                  key: Key('lesson-message-translation-loading'),
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ],
+              if (message.isTranslationVisible &&
+                  message.translatedText != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  message.translatedText!,
+                  key: Key('lesson-message-translation-${message.id}'),
+                  style: TextStyle(
+                    color: textColor,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+              if (message.translationError != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  message.translationError!,
+                  key: Key('lesson-message-translation-error-${message.id}'),
+                  style: TextStyle(color: colorScheme.error),
+                ),
+              ],
             ],
           ),
         ),
@@ -1504,12 +1611,22 @@ class _LessonComposer extends StatelessWidget {
 }
 
 class _LessonChatMessage {
-  const _LessonChatMessage.user(this.text) : kind = LessonMessageKind.user;
+  _LessonChatMessage.user(this.text)
+      : kind = LessonMessageKind.user,
+        id = _nextId++;
 
-  const _LessonChatMessage.tutor(this.text) : kind = LessonMessageKind.tutor;
+  _LessonChatMessage.tutor(this.text)
+      : kind = LessonMessageKind.tutor,
+        id = _nextId++;
 
+  static int _nextId = 0;
+  final int id;
   final String text;
   final LessonMessageKind kind;
+  bool isTranslationLoading = false;
+  bool isTranslationVisible = false;
+  String? translatedText;
+  String? translationError;
 
   bool get isUser => kind == LessonMessageKind.user;
   bool get isTutor => kind == LessonMessageKind.tutor;

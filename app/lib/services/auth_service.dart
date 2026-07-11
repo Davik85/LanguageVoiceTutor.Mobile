@@ -7,6 +7,7 @@ import '../models/lesson_chat.dart';
 import '../models/lesson_runtime.dart';
 import '../models/lesson_session.dart';
 import '../models/subscription_status.dart';
+import '../models/translation.dart';
 import '../models/user_settings.dart';
 import 'session_storage.dart';
 
@@ -123,6 +124,26 @@ class AuthService {
       return _safeLessonChatHintResult(error);
     } catch (_) {
       return LessonChatHintResult.failed();
+    }
+  }
+
+  Future<TranslationResult> requestTranslation({
+    required TranslationRequest request,
+  }) async {
+    if (request.text.trim().isEmpty) return TranslationResult.validation();
+    try {
+      final response = await _authenticatedPost(
+        '/api/translate',
+        body: request.toJson(),
+        failureMessageForResponse: _translationFailureMessage,
+      );
+      return TranslationResult.success(
+        TranslationResponse.fromJson(_decodeObject(response.body)),
+      );
+    } on ApiException catch (error) {
+      return _safeTranslationResult(error);
+    } catch (_) {
+      return TranslationResult.failed();
     }
   }
 
@@ -524,6 +545,27 @@ class AuthService {
     return 'Could not get a hint. Please try again.';
   }
 
+  static String _translationFailureMessage(ApiResponse response) {
+    if (response.statusCode == 400) return 'This message cannot be translated.';
+    if (response.statusCode == 401) {
+      return 'Please sign in again to continue the lesson.';
+    }
+    if (response.statusCode == 429) {
+      return 'Translation is temporarily unavailable. Please try again shortly.';
+    }
+    final code = _lessonSessionErrorCode(response.body);
+    if (response.statusCode == 409 ||
+        code == 'lesson_ended' ||
+        code == 'lesson_session_ended' ||
+        code == 'session_conflict') {
+      return 'This lesson has already ended.';
+    }
+    if (response.statusCode >= 500) {
+      return 'Translation is unavailable right now. Please try again.';
+    }
+    return 'Could not translate this message. Please try again.';
+  }
+
   static String _lessonSessionMessageFailureMessage(ApiResponse response) {
     if (response.statusCode == 401) {
       return 'Please sign in again to continue the lesson.';
@@ -697,6 +739,30 @@ class AuthService {
       return LessonChatHintResult.unavailable();
     }
     return LessonChatHintResult.failed();
+  }
+
+  static TranslationResult _safeTranslationResult(ApiException error) {
+    if (error.message == 'Please sign in again.' ||
+        error.message == 'Please sign in again to continue the lesson.') {
+      return TranslationResult.authRequired();
+    }
+    if (error.message == 'This lesson has already ended.') {
+      return TranslationResult.sessionEnded();
+    }
+    if (error.message == 'This message cannot be translated.') {
+      return TranslationResult.validation();
+    }
+    if (error.message ==
+        'Translation is temporarily unavailable. Please try again shortly.') {
+      return TranslationResult.temporarilyUnavailable();
+    }
+    if (error.message ==
+            'Translation is unavailable right now. Please try again.' ||
+        error.message == 'The service took too long to respond.' ||
+        error.message == 'Unable to reach the service.') {
+      return TranslationResult.unavailable();
+    }
+    return TranslationResult.failed();
   }
 
   static LessonCompletionResult _safeLessonCompletionResult(

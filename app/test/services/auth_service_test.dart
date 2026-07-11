@@ -4,6 +4,7 @@ import 'package:language_voice_tutor_mobile/models/language_options.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_chat.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_runtime.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_session.dart';
+import 'package:language_voice_tutor_mobile/models/translation.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
 
@@ -222,6 +223,16 @@ LessonChatRequest sampleChatRequest() => LessonChatRequest.fromScenario(
       ],
       backendSessionId: 'session-1',
     );
+
+const translationRequest = TranslationRequest(
+  text: 'Hello, how are you?',
+  targetLanguage: 'Spanish',
+  sourceLanguageId: 'en',
+  sourceLanguageName: 'English',
+  sourceLanguageNativeName: 'English',
+  sourceLanguageCode: 'en',
+  backendSessionId: 'session-1',
+);
 
 void main() {
   test('study language values are converted to backend-compatible names', () {
@@ -700,5 +711,110 @@ void main() {
                 .loadLessonSummary(sessionId: 'session-1'))
             .status,
         LessonCompletionStatus.authRequired);
+  });
+
+  test('translation posts the exact backend contract and parses translatedText',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/translate'] = [
+      const ApiResponse(statusCode: 200, body: '{"translatedText":"Hola"}'),
+    ];
+    final result = await AuthService(apiClient: api, storage: MemoryStorage())
+        .requestTranslation(request: translationRequest);
+
+    expect(result.status, TranslationStatus.success);
+    expect(result.translation?.translatedText, 'Hola');
+    expect(api.calls, ['POST /api/translate']);
+    expect(api.bodies.single, translationRequest.toJson());
+    expect(api.bodies.single!.keys, {
+      'text',
+      'targetLanguage',
+      'sourceLanguageId',
+      'sourceLanguageName',
+      'sourceLanguageNativeName',
+      'sourceLanguageCode',
+      'backendSessionId',
+    });
+    expect(api.bodies.single!['targetLanguage'], 'Spanish');
+    expect(api.bodies.single!['sourceLanguageId'], 'en');
+    expect(api.bodies.single!['sourceLanguageName'], 'English');
+    expect(api.bodies.single!['backendSessionId'], 'session-1');
+    expect(api.calls.join(' '), isNot(contains('/api/dev')));
+  });
+
+  test('translation accepts source-equivalent text and rejects invalid bodies',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/translate'] = [
+      const ApiResponse(
+          statusCode: 200, body: '{"translatedText":"Hello, how are you?"}'),
+      const ApiResponse(statusCode: 200, body: '{}'),
+      const ApiResponse(statusCode: 200, body: '{"translatedText":"   "}'),
+      const ApiResponse(statusCode: 200, body: 'not json'),
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+    expect(
+        (await service.requestTranslation(request: translationRequest)).status,
+        TranslationStatus.success);
+    for (var i = 0; i < 3; i++) {
+      expect(
+        (await service.requestTranslation(request: translationRequest)).status,
+        TranslationStatus.failed,
+      );
+    }
+  });
+
+  test('translation maps safe failures and retries once after 401', () async {
+    final cases = <ApiResponse, TranslationStatus>{
+      const ApiResponse(statusCode: 400, body: '{}'):
+          TranslationStatus.validation,
+      const ApiResponse(statusCode: 409, body: '{}'):
+          TranslationStatus.sessionEnded,
+      const ApiResponse(statusCode: 429, body: '{}'):
+          TranslationStatus.temporarilyUnavailable,
+      const ApiResponse(statusCode: 500, body: '{}'):
+          TranslationStatus.unavailable,
+    };
+    for (final entry in cases.entries) {
+      final api = FakeApiClient();
+      api.responses['/api/translate'] = [entry.key];
+      expect(
+        (await AuthService(apiClient: api, storage: MemoryStorage())
+                .requestTranslation(request: translationRequest))
+            .status,
+        entry.value,
+      );
+    }
+
+    final api = FakeApiClient();
+    api.responses['/api/translate'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+      const ApiResponse(statusCode: 200, body: '{"translatedText":"Hola"}'),
+    ];
+    expect(
+      (await AuthService(apiClient: api, storage: MemoryStorage())
+              .requestTranslation(request: translationRequest))
+          .status,
+      TranslationStatus.success,
+    );
+    expect(api.calls, [
+      'POST /api/translate',
+      'POST /api/auth/refresh',
+      'POST /api/translate',
+    ]);
+
+    final failedRefresh = FakeApiClient();
+    failedRefresh.responses['/api/translate'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+    ];
+    failedRefresh.responses['/api/auth/refresh'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+    ];
+    expect(
+      (await AuthService(apiClient: failedRefresh, storage: MemoryStorage())
+              .requestTranslation(request: translationRequest))
+          .status,
+      TranslationStatus.authRequired,
+    );
   });
 }
