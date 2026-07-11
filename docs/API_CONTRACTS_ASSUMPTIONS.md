@@ -130,6 +130,7 @@ GET /api/me/lesson-content/scenarios/{scenarioKey}
 POST /api/me/lesson-sessions
 POST /api/lesson-chat/reply
 POST /api/lesson-chat/feedback
+POST /api/audio/speech
 POST /api/me/lesson-sessions/{sessionId}/messages
 POST /api/lesson-sessions/{sessionId}/abandon
 PUT /api/me/lesson-sessions/{sessionId}/finish
@@ -320,6 +321,7 @@ POST /api/me/lesson-sessions
 GET /api/me/lesson-content/scenarios/{scenarioKey}
 POST /api/lesson-chat/reply
 POST /api/lesson-chat/feedback
+POST /api/audio/speech
 POST /api/me/lesson-sessions/{sessionId}/messages
 POST /api/lesson-sessions/{sessionId}/abandon
 PUT /api/me/lesson-sessions/{sessionId}/finish
@@ -369,28 +371,84 @@ Explicit no-go items for the next text-chat step:
 Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
 
 
-## Voice upload and TTS expectations
+## Confirmed manual tutor-message TTS contract
 
-Voice upload expectations:
+Manual tutor-message TTS playback is complete. Mobile uses the existing backend speech endpoint as a second client of the same product runtime:
 
-- Mobile records audio using platform APIs.
+```http
+POST /api/audio/speech
+```
+
+The request is authenticated and reuses the existing bearer-token plus refresh-on-401 flow. Backend returns raw WAV bytes with `audio/wav` content type. Backend owns the speech provider, model, voice processing, WAV generation, rate protection, usage enforcement, and session validation. Flutter never calls OpenAI or another speech provider directly and contains no provider credentials. No backend deployment is claimed by this documentation update.
+
+Manual tutor playback request context includes:
+
+- Exact visible tutor message text.
+- `purpose: lesson_chat_tts`.
+- `speechVoice` from backend user settings.
+- `speechSpeed` from backend user settings.
+- Study-language ID, English name, native name, and code.
+- Active backend lesson session ID.
+
+The mobile TTS request does not send tutor profile, persisted tutor-message ID, message kind, provider model, provider instructions, or requested output format. Do not duplicate the full JSON schema in additional documents.
+
+Binary response boundaries:
+
+- Mobile uses a separate binary response path; existing JSON API methods remain unchanged.
+- Successful WAV data is retained as bytes and is not decoded as UTF-8.
+- Empty audio and unsupported response content types are rejected safely.
+
+Playback and UI boundaries:
+
+- Mobile uses `just_audio`; the pubspec constraint is `^0.9.42`, and the verified resolved version is `0.9.46`.
+- Playback is wrapped behind a focused service/adapter so tests do not require the platform plugin.
+- Only one `AudioPlayer` is active for the lesson screen.
+- Play voice is available only for tutor messages, including opening and older tutor messages.
+- Learner messages, Translation text, and Feedback sections do not receive TTS controls.
+- First playback downloads WAV bytes and caches a temporary WAV file for the current lesson screen; replay uses the cached file without another backend request.
+- Tapping the same playing message stops it, starting another tutor message stops previous playback, and duplicate generation requests for the same loading message are prevented.
+- Loading is shown only for the selected tutor message, the control changes to Stop while playback is active, playback errors are learner-safe and retryable, and `LessonTutorStatus.speaking` is driven by actual audio playback.
+- No GIF asset switching was added.
+
+Temporary-file and lifecycle boundaries:
+
+- The audio cache is temporary and scoped to the active lesson screen.
+- Temporary WAV files are cleaned during screen/session cleanup.
+- Playback stops before confirmed abandonment, Finish, Summary navigation, screen disposal, and app backgrounding.
+- Playback does not automatically resume.
+- Choosing Stay in the leave confirmation does not abandon the lesson.
+- No persistent audio cache or background playback was added.
+
+Lesson boundaries:
+
+- TTS does not create or persist lesson messages and does not require tutor-message persistence.
+- TTS does not increment `learnerTurnCount` or `validTurnCount`.
+- TTS does not change Hint, Translation, Feedback, abandonment semantics, Finish payload, Summary, lesson progression, or Premium decisions.
+- TTS remains available while the transcript is visible and is not added to the Summary screen.
+
+TTS error boundaries:
+
+- Authentication failures use the existing authentication-required flow.
+- Terminal-session responses use existing session-ended handling.
+- HTTP 429 is temporary voice unavailability.
+- Invalid request, provider, timeout, service, network, empty-audio, and unsupported-content failures are learner-safe and retryable.
+- Raw response bodies, provider details, tokens, URLs, and stack traces are not exposed.
+
+## Voice upload and speech-to-text expectations
+
+Voice upload and speech-to-text remain future work. Expected future behavior:
+
+- Mobile records audio using platform APIs after the microphone feature is approved.
 - Mobile uploads audio to backend over HTTPS.
 - Backend validates file type, size, duration, user entitlement, and usage limits.
 - Backend handles speech recognition or AI tutor processing.
 
-TTS expectations:
-
-- Backend determines whether TTS is available for the user and lesson context.
-- Backend returns a TTS result suitable for mobile playback.
-- The result may be an authenticated URL, short-lived signed URL, streaming response, or binary payload; this must be confirmed before implementation.
-
-Open questions:
+Open questions for the future microphone/STT area:
 
 - Required audio format and codec.
 - Maximum upload size and duration.
 - Retry and resumable upload policy.
 - Whether uploads need pre-signed URLs.
-- TTS response format and caching rules.
 
 ## Error handling expectations
 

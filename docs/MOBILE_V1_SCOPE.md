@@ -191,4 +191,4 @@ Completed and remaining Mobile V1 or later phases:
 
 ## Next isolated engineering task
 
-TTS/tutor voice playback is the next isolated functional block. Keep microphone recording, speech-to-text, GIF avatar state integration, fullscreen Conversation mode, history/progress screen, mobile billing, analytics, crash reporting, and store release as future work.
+Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Microphone recording plus speech-to-text is the next isolated functional area. Keep microphone recording, speech-to-text, GIF avatar state integration, fullscreen Conversation mode, history/progress screen, mobile billing, analytics, crash reporting, and store release as future work.

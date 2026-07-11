@@ -171,7 +171,7 @@ Expected boundary checks:
 - Network/backend abandon failures keep the learner on the lesson screen and allow retry; authentication failures use the existing authentication-required behavior.
 - The backend stale active-session interval remains two minutes, with no backend timeout change and no mobile heartbeat. Confirmed Back releases the session immediately; force-close or termination without confirmed leave falls back to the existing backend timeout.
 - No temporary mobile-only backend endpoints, new safe/catalog endpoints, duplicate mobile prompt/runtime system, or backend changes are introduced without an approved final shared lesson-runtime design.
-- Per-message Translation and real per-message learner Feedback are complete. TTS/tutor voice, microphone recording, speech-to-text, GIF avatar states, fullscreen Conversation mode, history/progress screen, mobile billing, analytics, crash reporting, and store release remain future work. TTS/tutor voice playback is the next isolated functional block. Heartbeat or timeout reduction is optional future reliability work only if real user feedback requires it.
+- Per-message Translation, real per-message learner Feedback, and manual tutor-message TTS playback are complete. Microphone recording, speech-to-text, automatic tutor playback, GIF avatar states, fullscreen Conversation mode, history/progress screen, mobile billing, analytics, crash reporting, and store release remain future work. Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Microphone recording plus speech-to-text is the next isolated functional area. Heartbeat or timeout reduction is optional future reliability work only if real user feedback requires it.
 
 Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
 
@@ -189,6 +189,24 @@ Confirmed results for the completed learner-message Feedback baseline:
 - Android debug APK built successfully.
 - Manual Android Emulator verification confirmed Feedback display under the correct learner message.
 - Existing Translation, Hint, abandon, Finish, and Summary behavior remained operational.
+
+## Current manual tutor-message TTS validation baseline
+
+Confirmed results for completed manual tutor-message TTS playback:
+
+- Functional commit: `28356ff` (`Add mobile tutor voice playback`).
+- `flutter pub get` passed.
+- Dart formatting passed.
+- `flutter analyze` passed with zero issues.
+- Focused AuthService tests passed with 32 tests.
+- Focused playback-service tests passed with 4 tests.
+- Focused lesson-flow tests passed with 35 tests.
+- The complete Flutter suite passed with 127 tests.
+- Android debug APK built successfully.
+- Manual Android Emulator verification passed without issues.
+- Hint, Translation, Feedback, abandonment, Finish, and Summary remained operational.
+- Manual tutor-message TTS uses `POST /api/audio/speech`, raw WAV bytes, temporary current-screen cache, and `just_audio` (`^0.9.42`, resolved `0.9.46`).
+- Automatic playback, microphone recording, speech-to-text, audio streaming endpoint usage, background playback, media notifications, pause/resume controls, Conversation mode, and GIF avatar integration remain out of scope.
 
 ## Future Flutter checks
 
@@ -525,6 +543,6 @@ flutter build apk --debug
 
 Expected current result: analyze reports zero issues, focused AuthService and lesson screen tests pass, the complete Flutter suite passes with 101 tests, and the Android debug APK build passes.
 
-Real Translation is complete in functional commit `9d2476b` (`Add mobile message translation`). Real per-message learner Feedback is complete in functional commit `f1e8f16` (`Add mobile learner message feedback`). Still unimplemented unless a later repository change proves otherwise: TTS/tutor voice playback, microphone recording, speech-to-text, GIF avatar state integration, fullscreen Conversation mode, history/progress screen, mobile billing, analytics, crash reporting, and store release. TTS/tutor voice playback is the next isolated functional block.
+Real Translation is complete in functional commit `9d2476b` (`Add mobile message translation`). Real per-message learner Feedback is complete in functional commit `f1e8f16` (`Add mobile learner message feedback`). Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Still unimplemented unless a later repository change proves otherwise: microphone recording, speech-to-text, automatic tutor playback, GIF avatar state integration, fullscreen Conversation mode, history/progress screen, mobile billing, analytics, crash reporting, and store release. Microphone recording plus speech-to-text is the next isolated functional area.
 
-Next isolated engineering task: TTS/tutor voice playback. This documentation task does not implement TTS or any other runtime functionality.
+Next isolated engineering task: microphone recording plus speech-to-text. This documentation task does not implement microphone recording, speech-to-text, or any other runtime functionality.
