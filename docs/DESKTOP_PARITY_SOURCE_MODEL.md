@@ -182,3 +182,9 @@ record speech -> transcribe audio -> generate lesson reply -> display and speak 
 ```
 
 Lesson runtime, voice recording, TTS playback, billing, analytics, Google Play Billing, and Apple billing remain out of scope for the current documentation update.
+
+## Current mobile text lesson parity milestone
+
+Mobile now mirrors the shared desktop/CMS/backend text lesson path through completion and backend-owned summary display. The verified Android flow starts an authenticated session, loads CMS/backend runtime content, renders the opening and scenario suggestions, accepts scenario selection through typed input, sends text practice turns through `POST /api/lesson-chat/reply`, persists transcript messages under the backend session, finishes through `PUT /api/me/lesson-sessions/{sessionId}/finish`, and reads the learner summary through `GET /api/me/lesson-sessions/{sessionId}/summary`.
+
+Backend-owned boundaries remain unchanged: backend owns lesson completion and summary generation, CMS/backend runtime owns tutor behavior and lesson methodology, and mobile never generates summaries locally. Desktop remains a behavior and orchestration reference for the shared runtime; it is not a second source of lesson behavior for mobile to fork.

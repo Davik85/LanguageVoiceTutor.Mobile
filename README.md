@@ -22,6 +22,31 @@ Expected current results are: `git diff --check` passes, `dart format --set-exit
 Settings has stable visible **Account**, **Learning**, **Audio**, and **Connection status** advanced area, with **Save settings** visible and tested. User level is not in Settings. Settings reads `selectedTutorId` from `GET /api/me/settings` and sends it in `PUT /api/me/settings`; `/api/tutor-options` remains the source for available tutor choices in Settings. Selected tutor is editable in the **Learning** section, persists after app/emulator restart, and remains independent from the separate tutor voice setting. Home no longer shows tutor diagnostics or the old **Available tutors** card; tutor selection belongs in Settings. Home shows the provided app logo next to a branded, accessible **Language Voice Tutor** title, preloads that logo during startup before Home is shown, and displays friendly signed-in or sign-in/sync account status without raw tokens, backend IDs, or technical auth details. The loading screen shows only the centered app logo. Language dropdowns display friendly names while storing and sending backend IDs. Study language remains limited to English, French, German, Portuguese, Spanish, and Italian. Home uses **Start lesson** to open the navigation skeleton: **Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder**. Level cards use soft level-specific colors, topic cards use soft topic-specific colors, and situation cards use the selected topic color family. Situation labels are product-friendly, no longer use `Placeholder:`, and all six topics have options; Travel includes Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage.
 
 
+## Current mobile text lesson milestone
+
+The Android mobile client now has a complete, production-verified text lesson loop: authenticated lesson start, CMS/backend runtime opening, scenario selection through typed input, text conversation through the existing backend lesson-chat route, backend session message persistence, authenticated Finish, and backend-owned learner summary display. This flow is verified against production backend `0.1.35-backend.112` or later; `.112` is required for the verified summary path because it supports nested Responses API output extraction.
+
+Current lesson completion routes:
+
+```http
+GET /api/me/settings
+GET /api/me/lesson-access
+GET /api/me/subscription-status
+POST /api/me/lesson-sessions
+GET /api/me/lesson-content/scenarios/{scenarioKey}
+POST /api/lesson-chat/reply
+POST /api/me/lesson-sessions/{sessionId}/messages
+PUT /api/me/lesson-sessions/{sessionId}/finish
+GET /api/me/lesson-sessions/{sessionId}/summary
+POST /api/auth/refresh
+```
+
+Finish sends `{ "validTurnCount": <non-negative integer> }`. Mobile counts only learner practice messages after scenario selection, excludes tutor messages, and does not invent a completion threshold. Backend owns lesson completion and summary generation; CMS/backend runtime owns tutor behavior and lesson methodology; desktop remains an orchestration reference rather than a separate mobile runtime source. Mobile never calls OpenAI directly and never generates a local summary from the transcript.
+
+Summary UI states are intentionally distinct: ready displays backend learner-safe sections, unavailable means the completed lesson has no summary and shows Done without Retry, retryable load errors may show Retry summary, and authentication failures use the separate sign-in-required state. Before Finish, mobile waits up to 5 seconds for already-started message persistence operations as ordering protection only; this is not a blind retry or duplicate-write mechanism.
+
+Text lesson foundation and Finish plus backend summary are complete. Pending mobile scope still includes history/progress, real hints, translation, feedback detail, tutor TTS, microphone/STT, GIF avatar state binding, fullscreen Conversation mode, billing, analytics/crash reporting, and store release work.
+
 ## Lesson runtime source of truth and desktop/backend flow
 
 Mobile must not invent a separate lesson runtime. Lesson behavior is owned by CMS-authored and backend-published runtime content, with the desktop app serving as the existing working reference client for orchestration. Desktop is not the owner of lesson behavior; it demonstrates how a client consumes the shared CMS/backend runtime.

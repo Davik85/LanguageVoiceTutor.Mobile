@@ -144,3 +144,34 @@ The backend is the source of truth for:
 - Billing verification and entitlement updates.
 
 The mobile app may keep short-lived local state for responsiveness, but any authoritative state must be fetched from or reconciled with the backend.
+
+## Current text lesson milestone
+
+The Android-first Flutter client now has a complete, production-verified text lesson loop:
+
+1. Mobile starts an authenticated backend lesson session.
+2. Mobile loads the CMS/backend runtime scenario.
+3. Mobile renders the learner-facing lesson opening and scenario suggestions.
+4. The learner selects a scenario through normal typed input.
+5. Text replies use the existing backend lesson-chat route.
+6. User and tutor messages are persisted under the backend lesson session.
+7. Mobile waits up to 5 seconds for already-started message persistence before Finish.
+8. Mobile calls authenticated Finish.
+9. Backend generates and persists the learner summary.
+10. Mobile reads and displays the authenticated backend-owned summary.
+
+Text lesson foundation is complete. Finish plus backend-owned summary display is complete and production-verified against backend `0.1.35-backend.112` or later. Mobile still does not call OpenAI directly, does not own tutor behavior or lesson methodology, and never creates a local transcript-derived summary. CMS/backend runtime remains the lesson behavior source of truth; desktop remains a behavior/orchestration reference rather than a separate mobile runtime source.
+
+Still pending for Mobile V1 or later phases:
+
+- Lesson history and progress screens.
+- Real hints.
+- Real translation.
+- Real feedback detail.
+- Tutor TTS playback.
+- Microphone recording and speech-to-text.
+- Animated tutor GIF loading and state binding.
+- Fullscreen Conversation mode.
+- Google Play Billing.
+- Apple billing.
+- Analytics, crash reporting, and store release work.
