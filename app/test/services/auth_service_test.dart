@@ -182,6 +182,7 @@ Map<String, dynamic> runtimeScenarioJson() => {
       'promptTemplates': {
         'opening': 'Keep the greeting simple.',
       },
+      'hintRules': {'exampleHint': 'Try: My name is Ana.'},
       'runtimeContent': {
         'effectiveRuntimeSource': 'cms_published_snapshot',
         'contentPackSlug': 'static-json-v1',
@@ -395,6 +396,96 @@ void main() {
 
     expect(result.status, LessonChatReplyStatus.validation);
     expect(api.calls, isEmpty);
+  });
+
+  test('lesson chat hint sends the existing request JSON and parses hintText',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/lesson-chat/hint'] = [
+      const ApiResponse(statusCode: 200, body: '{"hintText":"Try hello."}'),
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final request = sampleChatRequest();
+    final result = await service.requestLessonChatHint(request: request);
+
+    expect(result.status, LessonChatHintStatus.success);
+    expect(result.hint?.hintText, 'Try hello.');
+    expect(api.calls, contains('POST /api/lesson-chat/hint'));
+    expect(api.bodies.last, request.toJson());
+    expect(api.calls.join(' '), isNot(contains('/api/dev')));
+    expect(api.calls.join(' '), isNot(contains('/reply')));
+  });
+
+  test('lesson chat hint rejects blank, missing, and malformed responses',
+      () async {
+    for (final body in ['{"hintText":"  "}', '{}', 'not json']) {
+      final api = FakeApiClient();
+      api.responses['/api/lesson-chat/hint'] = [
+        ApiResponse(statusCode: 200, body: body),
+      ];
+      final result = await AuthService(apiClient: api, storage: MemoryStorage())
+          .requestLessonChatHint(request: sampleChatRequest());
+      expect(result.status, LessonChatHintStatus.failed);
+    }
+  });
+
+  test('lesson chat hint maps learner-safe failures, including 429', () async {
+    final cases = <ApiResponse, LessonChatHintStatus>{
+      const ApiResponse(statusCode: 400, body: '{}'):
+          LessonChatHintStatus.failed,
+      const ApiResponse(statusCode: 429, body: '{}'):
+          LessonChatHintStatus.limited,
+      const ApiResponse(statusCode: 409, body: '{"code":"lesson_ended"}'):
+          LessonChatHintStatus.conflict,
+      const ApiResponse(statusCode: 500, body: '{}'):
+          LessonChatHintStatus.unavailable,
+    };
+    for (final entry in cases.entries) {
+      final api = FakeApiClient();
+      api.responses['/api/lesson-chat/hint'] = [entry.key];
+      final result = await AuthService(apiClient: api, storage: MemoryStorage())
+          .requestLessonChatHint(request: sampleChatRequest());
+      expect(result.status, entry.value);
+      if (entry.key.statusCode == 429) {
+        expect(result.message,
+            'Hint is temporarily unavailable. Please try again shortly.');
+      }
+    }
+  });
+
+  test('lesson chat hint refreshes once and keeps auth failure distinct',
+      () async {
+    final api = FakeApiClient();
+    api.responses['/api/lesson-chat/hint'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+      const ApiResponse(statusCode: 200, body: '{"hintText":"Try hello."}'),
+    ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+    expect(
+        (await service.requestLessonChatHint(request: sampleChatRequest()))
+            .status,
+        LessonChatHintStatus.success);
+    expect(
+        api.calls,
+        containsAllInOrder([
+          'POST /api/lesson-chat/hint',
+          'POST /api/auth/refresh',
+          'POST /api/lesson-chat/hint',
+        ]));
+
+    final failedRefreshApi = FakeApiClient();
+    failedRefreshApi.responses['/api/lesson-chat/hint'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+    ];
+    failedRefreshApi.responses['/api/auth/refresh'] = [
+      const ApiResponse(statusCode: 401, body: '{}'),
+    ];
+    final failed = await AuthService(
+      apiClient: failedRefreshApi,
+      storage: MemoryStorage(),
+    ).requestLessonChatHint(request: sampleChatRequest());
+    expect(failed.status, LessonChatHintStatus.authRequired);
   });
 
   test('message persistence uses session messages endpoint', () async {

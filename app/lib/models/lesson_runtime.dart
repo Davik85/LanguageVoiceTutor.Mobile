@@ -14,6 +14,7 @@ class LessonRuntimeScenario {
     required this.aiTutorPromptInstructions,
     required this.promptTemplates,
     required this.controlledVariation,
+    required this.hintRules,
     required this.runtimeContent,
   });
 
@@ -31,6 +32,7 @@ class LessonRuntimeScenario {
   final List<String> aiTutorPromptInstructions;
   final Map<String, String> promptTemplates;
   final LessonRuntimeControlledVariation controlledVariation;
+  final LessonRuntimeHintRules hintRules;
   final LessonRuntimeContent runtimeContent;
 
   factory LessonRuntimeScenario.fromJson(Map<String, dynamic> json) =>
@@ -62,6 +64,7 @@ class LessonRuntimeScenario {
         controlledVariation: LessonRuntimeControlledVariation.fromJson(
           _object(json, 'controlledVariation'),
         ),
+        hintRules: LessonRuntimeHintRules.fromJson(_object(json, 'hintRules')),
         runtimeContent:
             LessonRuntimeContent.fromJson(_object(json, 'runtimeContent')),
       );
@@ -340,6 +343,15 @@ class LessonRuntimeControlledVariation {
             .where((value) => value.title.isNotEmpty)
             .toList(growable: false),
       );
+}
+
+class LessonRuntimeHintRules {
+  const LessonRuntimeHintRules({required this.exampleHint});
+
+  final String exampleHint;
+
+  factory LessonRuntimeHintRules.fromJson(Map<String, dynamic> json) =>
+      LessonRuntimeHintRules(exampleHint: _string(json, 'exampleHint'));
 }
 
 class LessonRuntimeContextVariant {

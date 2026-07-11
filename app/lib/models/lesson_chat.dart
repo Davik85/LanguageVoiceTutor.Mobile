@@ -522,6 +522,82 @@ class LessonChatReplyResult {
       );
 }
 
+class LessonChatHintResponse {
+  const LessonChatHintResponse({required this.hintText});
+
+  final String hintText;
+
+  factory LessonChatHintResponse.fromJson(Map<String, dynamic> json) {
+    final hintText = _string(json, 'hintText').trim();
+    if (hintText.isEmpty) {
+      throw const FormatException('Invalid hint response.');
+    }
+    return LessonChatHintResponse(hintText: hintText);
+  }
+}
+
+enum LessonChatHintStatus {
+  success,
+  authRequired,
+  notFound,
+  conflict,
+  limited,
+  unavailable,
+  failed,
+}
+
+class LessonChatHintResult {
+  const LessonChatHintResult._({
+    required this.status,
+    required this.message,
+    this.hint,
+  });
+
+  final LessonChatHintStatus status;
+  final String message;
+  final LessonChatHintResponse? hint;
+
+  bool get isSuccess => status == LessonChatHintStatus.success;
+
+  factory LessonChatHintResult.success(LessonChatHintResponse hint) =>
+      LessonChatHintResult._(
+        status: LessonChatHintStatus.success,
+        message: 'Hint ready.',
+        hint: hint,
+      );
+
+  factory LessonChatHintResult.authRequired() => const LessonChatHintResult._(
+        status: LessonChatHintStatus.authRequired,
+        message: 'Please sign in again to continue the lesson.',
+      );
+
+  factory LessonChatHintResult.notFound() => const LessonChatHintResult._(
+        status: LessonChatHintStatus.notFound,
+        message: 'This lesson session is no longer available.',
+      );
+
+  factory LessonChatHintResult.conflict() => const LessonChatHintResult._(
+        status: LessonChatHintStatus.conflict,
+        message: 'This lesson has already ended.',
+      );
+
+  factory LessonChatHintResult.limited() => const LessonChatHintResult._(
+        status: LessonChatHintStatus.limited,
+        message: 'Hint is temporarily unavailable. Please try again shortly.',
+      );
+
+  factory LessonChatHintResult.unavailable() => const LessonChatHintResult._(
+        status: LessonChatHintStatus.unavailable,
+        message:
+            'Could not get a hint. Please check your connection and try again.',
+      );
+
+  factory LessonChatHintResult.failed() => const LessonChatHintResult._(
+        status: LessonChatHintStatus.failed,
+        message: 'Could not get a hint. Please try again.',
+      );
+}
+
 class CreateLessonSessionMessageRequest {
   const CreateLessonSessionMessageRequest({
     required this.role,

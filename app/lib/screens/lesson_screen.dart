@@ -27,13 +27,13 @@ class _LessonActionAvailability {
     required this.canSendText,
     required this.canToggleRecordingPlaceholder,
     required this.canUsePlaceholders,
-    required this.canUseHintPlaceholder,
+    required this.canUseHint,
   });
 
   final bool canSendText;
   final bool canToggleRecordingPlaceholder;
   final bool canUsePlaceholders;
-  final bool canUseHintPlaceholder;
+  final bool canUseHint;
 }
 
 class LessonScreen extends StatefulWidget {
@@ -54,7 +54,10 @@ class LessonScreen extends StatefulWidget {
 
 class _LessonScreenState extends State<LessonScreen> {
   static const _comingNextMessage = 'Coming next in a future lesson update.';
+  static const _hintFallbackUserMessage = 'I need a hint for what to say next.';
   static const _neutralOpeningFallback = 'Your lesson is ready.';
+  static const _chooseSituationHint =
+      'Choose one of the situations above, or type your own.';
   static const _initialContextVariantLimit = 3;
 
   late final AuthService _authService;
@@ -64,8 +67,11 @@ class _LessonScreenState extends State<LessonScreen> {
   bool _startInFlight = false;
   bool _isLoadingScenario = false;
   bool _isSending = false;
+  bool _isHintLoading = false;
   bool _isFinishing = false;
   bool _isCompleted = false;
+  bool _isAuthenticationRequired = false;
+  bool _lessonSessionEnded = false;
   bool _isRecordingPlaceholderActive = false;
   bool _isSpeakingPlaceholderActive = false;
   LessonSessionStartResult? _startResult;
@@ -73,6 +79,11 @@ class _LessonScreenState extends State<LessonScreen> {
   UserSettings? _settings;
   String? _lessonLoadError;
   String? _sendError;
+  String? _hintText;
+  String? _hintError;
+  String? _selectedContextId;
+  String? _selectedContextTitle;
+  String? _customLearnerContext;
   String? _finishError;
   LessonSummaryResponse? _lessonSummary;
   LessonCompletionStatus? _summaryStatus;
@@ -84,6 +95,8 @@ class _LessonScreenState extends State<LessonScreen> {
     super.initState();
     _authService = widget._authService ?? createAuthService();
     _isStarting = widget.selection != null;
+    _selectedContextId = widget.selection?.selectedContextId?.trim();
+    _selectedContextTitle = widget.selection?.selectedContextTitle?.trim();
     if (widget.selection != null) {
       _startLessonSession(showLoadingState: false);
     }
@@ -155,6 +168,11 @@ class _LessonScreenState extends State<LessonScreen> {
       _isLoadingScenario = true;
       _lessonLoadError = null;
       _sendError = null;
+      _hintText = null;
+      _hintError = null;
+      _isHintLoading = false;
+      _isAuthenticationRequired = false;
+      _lessonSessionEnded = false;
       _scenario = null;
       _settings = null;
       _isRecordingPlaceholderActive = false;
@@ -267,7 +285,9 @@ class _LessonScreenState extends State<LessonScreen> {
         settings == null ||
         _isSending ||
         _isFinishing ||
-        _isCompleted) {
+        _isCompleted ||
+        _lessonSessionEnded ||
+        _isAuthenticationRequired) {
       return;
     }
 
@@ -277,6 +297,8 @@ class _LessonScreenState extends State<LessonScreen> {
       });
       return;
     }
+
+    _resolveContextSelection(text, scenario);
 
     final userMessage = _LessonChatMessage.user(text);
     final lastBotMessage = _messages.lastWhere(
@@ -308,7 +330,8 @@ class _LessonScreenState extends State<LessonScreen> {
       learnerTurnCount: learnerTurnCount,
       recentMessages: _recentConversationMessages(updatedMessages),
       backendSessionId: session.lessonSessionId,
-      selectedContextTitle: selection.selectedContextTitle ?? '',
+      selectedContextTitle: _currentSelectedContextTitle,
+      selectedContextVariant: _selectedContextVariant(scenario),
     );
 
     setState(() {
@@ -316,6 +339,8 @@ class _LessonScreenState extends State<LessonScreen> {
       _sendError = null;
       _isRecordingPlaceholderActive = false;
       _isSpeakingPlaceholderActive = false;
+      _hintText = null;
+      _hintError = null;
       _messages
         ..clear()
         ..addAll(updatedMessages);
@@ -352,6 +377,150 @@ class _LessonScreenState extends State<LessonScreen> {
       botText: botText,
       turnNumber: learnerTurnCount,
     ));
+  }
+
+  Future<void> _requestHint() async {
+    final selection = widget.selection;
+    final session = _startResult?.session;
+    final scenario = _scenario;
+    final settings = _settings;
+    if (selection == null ||
+        session == null ||
+        scenario == null ||
+        settings == null ||
+        !_actionAvailability.canUseHint) {
+      return;
+    }
+
+    if (!_hasSelectedContext) {
+      setState(() {
+        _hintError = null;
+        _hintText = _chooseSituationHint;
+      });
+      return;
+    }
+
+    if (_isFirstActiveRoleplayStep(scenario) &&
+        _messages.where((message) => message.isUser).isEmpty &&
+        scenario.hintRules.exampleHint.trim().isNotEmpty) {
+      setState(() {
+        _hintError = null;
+        _hintText = scenario.hintRules.exampleHint.trim();
+      });
+      return;
+    }
+
+    final lastBotMessage = _messages.lastWhere(
+      (message) => message.isBot,
+      orElse: () => const _LessonChatMessage.tutor(''),
+    );
+    final learnerTurnCount =
+        _messages.where((message) => message.isUser).length;
+    final request = LessonChatRequest.fromScenario(
+      scenario: scenario,
+      levelProfile: scenario.levelProfileFor(selection.level),
+      selectedLevel: selection.level,
+      topicTitle: selection.topicTitle,
+      subtopicTitle: selection.subtopicTitle,
+      userMessage: _messageController.text.trim().isEmpty
+          ? _hintFallbackUserMessage
+          : _messageController.text.trim(),
+      lastBotMessage: lastBotMessage.text,
+      nativeLanguageName:
+          LanguageOptions.backendNativeLanguageNameFor(settings.nativeLanguage),
+      targetLanguageId:
+          LanguageOptions.studyLanguageIdFor(settings.studyLanguage),
+      targetLanguageName:
+          LanguageOptions.backendStudyLanguageNameFor(settings.studyLanguage),
+      targetLanguageNativeName:
+          LanguageOptions.backendStudyLanguageNameFor(settings.studyLanguage),
+      targetLanguageCode:
+          LanguageOptions.studyLanguageIdFor(settings.studyLanguage),
+      userDisplayName: '',
+      learnerTurnCount: learnerTurnCount,
+      recentMessages: _recentConversationMessages(_messages),
+      backendSessionId: session.lessonSessionId,
+      selectedContextTitle: _currentSelectedContextTitle,
+      selectedContextVariant: _selectedContextVariant(scenario),
+    );
+
+    setState(() {
+      _isHintLoading = true;
+      _hintText = null;
+      _hintError = null;
+    });
+    final result = await _authService.requestLessonChatHint(request: request);
+    if (!mounted) return;
+    setState(() {
+      _isHintLoading = false;
+      if (result.isSuccess && result.hint != null) {
+        _hintText = result.hint!.hintText;
+        _hintError = null;
+      } else {
+        _hintError = result.message;
+        if (result.status == LessonChatHintStatus.authRequired) {
+          _isAuthenticationRequired = true;
+        }
+        if (result.status == LessonChatHintStatus.notFound ||
+            result.status == LessonChatHintStatus.conflict) {
+          _lessonSessionEnded = true;
+        }
+      }
+    });
+  }
+
+  bool _isFirstActiveRoleplayStep(LessonRuntimeScenario scenario) =>
+      scenario.runtimeContent.lessonPhase.trim().toLowerCase() ==
+      'active_roleplay';
+
+  bool get _hasSelectedContext =>
+      (_selectedContextId?.isNotEmpty ?? false) ||
+      (_selectedContextTitle?.isNotEmpty ?? false) ||
+      (_customLearnerContext?.isNotEmpty ?? false);
+
+  String get _currentSelectedContextTitle =>
+      _customLearnerContext ?? _selectedContextTitle ?? '';
+
+  LessonRuntimeContextVariant? _selectedContextVariant(
+    LessonRuntimeScenario scenario,
+  ) {
+    final selectedId = _selectedContextId;
+    if (selectedId == null || selectedId.isEmpty) return null;
+    for (final variant in scenario.controlledVariation.contextVariants) {
+      if (variant.id == selectedId) return variant;
+    }
+    return null;
+  }
+
+  void _resolveContextSelection(String text, LessonRuntimeScenario scenario) {
+    if (_hasSelectedContext) return;
+
+    final variants = scenario.controlledVariation.contextVariants;
+    LessonRuntimeContextVariant? match;
+    final choice = int.tryParse(text);
+    if (choice != null && choice >= 1 && choice <= variants.length) {
+      match = variants[choice - 1];
+    } else {
+      final normalizedText = text.toLowerCase();
+      for (final variant in variants) {
+        if (variant.title.trim().toLowerCase() == normalizedText) {
+          match = variant;
+          break;
+        }
+      }
+    }
+
+    if (match != null) {
+      _selectedContextId = match.id;
+      _selectedContextTitle = match.title.trim();
+      _customLearnerContext = null;
+    } else {
+      _selectedContextId = null;
+      _selectedContextTitle = null;
+      _customLearnerContext = text;
+    }
+    _hintText = null;
+    _hintError = null;
   }
 
   void _trackMessagePersistence(Future<void> operation) {
@@ -456,12 +625,30 @@ class _LessonScreenState extends State<LessonScreen> {
         _scenario != null &&
         _settings != null;
     return _LessonActionAvailability(
-      canSendText: lessonReady && !_isSending && !_isFinishing && !_isCompleted,
-      canToggleRecordingPlaceholder:
-          lessonReady && !_isSending && !_isFinishing && !_isCompleted,
-      canUsePlaceholders: lessonReady && !_isFinishing && !_isCompleted,
-      canUseHintPlaceholder:
-          lessonReady && !_isSending && !_isFinishing && !_isCompleted,
+      canSendText: lessonReady &&
+          !_isSending &&
+          !_isFinishing &&
+          !_isCompleted &&
+          !_lessonSessionEnded &&
+          !_isAuthenticationRequired,
+      canToggleRecordingPlaceholder: lessonReady &&
+          !_isSending &&
+          !_isFinishing &&
+          !_isCompleted &&
+          !_lessonSessionEnded &&
+          !_isAuthenticationRequired,
+      canUsePlaceholders: lessonReady &&
+          !_isFinishing &&
+          !_isCompleted &&
+          !_lessonSessionEnded &&
+          !_isAuthenticationRequired,
+      canUseHint: lessonReady &&
+          !_isSending &&
+          !_isHintLoading &&
+          !_isFinishing &&
+          !_isCompleted &&
+          !_lessonSessionEnded &&
+          !_isAuthenticationRequired,
     );
   }
 
@@ -469,6 +656,7 @@ class _LessonScreenState extends State<LessonScreen> {
       (_startResult?.isReady ?? false) &&
       !_isLoadingScenario &&
       !_isSending &&
+      !_isHintLoading &&
       !_isRecordingPlaceholderActive &&
       !_isFinishing &&
       !_isCompleted;
@@ -503,6 +691,8 @@ class _LessonScreenState extends State<LessonScreen> {
       _finishError = null;
       _isRecordingPlaceholderActive = false;
       _isSpeakingPlaceholderActive = false;
+      _hintText = null;
+      _hintError = null;
     });
     await _waitForPendingMessagePersistence();
     if (!mounted) return;
@@ -642,6 +832,9 @@ class _LessonScreenState extends State<LessonScreen> {
                             isLoadingScenario: _isLoadingScenario,
                             messages: _messages,
                             sendError: _sendError,
+                            hintText: _hintText,
+                            hintError: _hintError,
+                            isHintLoading: _isHintLoading,
                             isSending: _isSending,
                             controller: _messageController,
                             actionAvailability: _actionAvailability,
@@ -660,7 +853,9 @@ class _LessonScreenState extends State<LessonScreen> {
                             onMessageAction: _handleFutureAction,
                             onToggleRecordingPlaceholder:
                                 _toggleRecordingPlaceholder,
-                            onHint: () => _handleFutureAction('Hint'),
+                            onHint: _requestHint,
+                            onDismissHint: () =>
+                                setState(() => _hintText = null),
                             onSend: _sendMessage,
                           ),
                         ),
@@ -697,6 +892,9 @@ class _LessonWorkspace extends StatelessWidget {
     required this.isLoadingScenario,
     required this.messages,
     required this.sendError,
+    required this.hintText,
+    required this.hintError,
+    required this.isHintLoading,
     required this.isSending,
     required this.transcriptController,
     required this.controller,
@@ -712,6 +910,7 @@ class _LessonWorkspace extends StatelessWidget {
     required this.onMessageAction,
     required this.onToggleRecordingPlaceholder,
     required this.onHint,
+    required this.onDismissHint,
     required this.onSend,
   });
 
@@ -726,6 +925,9 @@ class _LessonWorkspace extends StatelessWidget {
   final bool isLoadingScenario;
   final List<_LessonChatMessage> messages;
   final String? sendError;
+  final String? hintText;
+  final String? hintError;
+  final bool isHintLoading;
   final bool isSending;
   final ScrollController transcriptController;
   final TextEditingController controller;
@@ -741,6 +943,7 @@ class _LessonWorkspace extends StatelessWidget {
   final void Function(String label, {bool speaking}) onMessageAction;
   final VoidCallback onToggleRecordingPlaceholder;
   final VoidCallback onHint;
+  final VoidCallback onDismissHint;
   final Future<void> Function([String? overrideText]) onSend;
 
   @override
@@ -800,6 +1003,27 @@ class _LessonWorkspace extends StatelessWidget {
                       ),
                     ),
                   ],
+                  if (hintError != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: Text(
+                        hintError!,
+                        key: const Key('lesson-hint-error'),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: colorScheme.error),
+                      ),
+                    ),
+                  if (hintText != null)
+                    _LessonHintCard(
+                      text: hintText!,
+                      onDismiss: onDismissHint,
+                    ),
+                  if (isHintLoading)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 8),
+                      child: Text('Getting hint...',
+                          key: Key('lesson-hint-loading')),
+                    ),
                   if (finishError != null)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -817,8 +1041,8 @@ class _LessonWorkspace extends StatelessWidget {
                     controller: controller,
                     canSendText: actionAvailability.canSendText,
                     canRecord: actionAvailability.canToggleRecordingPlaceholder,
-                    canHint: actionAvailability.canUseHintPlaceholder,
-                    isSending: isSending || isFinishing,
+                    canHint: actionAvailability.canUseHint,
+                    isSending: isSending || isFinishing || isHintLoading,
                     isRecordingPlaceholderActive: isRecordingPlaceholderActive,
                     onToggleRecordingPlaceholder: onToggleRecordingPlaceholder,
                     onHint: onHint,
@@ -1062,6 +1286,40 @@ class _LessonMessageBubble extends StatelessWidget {
   }
 }
 
+class _LessonHintCard extends StatelessWidget {
+  const _LessonHintCard({required this.text, required this.onDismiss});
+
+  final String text;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      key: const Key('lesson-hint-card'),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.lightbulb_outline, size: 20),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text)),
+          IconButton(
+            key: const Key('lesson-hint-dismiss'),
+            tooltip: 'Dismiss hint',
+            onPressed: onDismiss,
+            icon: const Icon(Icons.close, size: 18),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _LessonComposer extends StatelessWidget {
   const _LessonComposer({
     required this.controller,
@@ -1109,13 +1367,12 @@ class _LessonComposer extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              if (canHint)
-                OutlinedButton.icon(
-                  key: const Key('lesson-action-hint'),
-                  onPressed: onHint,
-                  icon: const Icon(Icons.lightbulb_outline),
-                  label: const Text('Hint'),
-                ),
+              OutlinedButton.icon(
+                key: const Key('lesson-action-hint'),
+                onPressed: canHint ? onHint : null,
+                icon: const Icon(Icons.lightbulb_outline),
+                label: const Text('Hint'),
+              ),
             ],
           ),
           const SizedBox(height: 12),

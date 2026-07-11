@@ -43,6 +43,8 @@ class FakeAuthService extends AuthService {
     LessonSessionStartResult? lessonStartResult,
     this.replyCompleter,
     LessonChatReplyResult? replyResult,
+    this.hintCompleter,
+    LessonChatHintResult? hintResult,
     LessonRuntimeScenario? scenario,
     this.settingsFailure,
     this.scenarioFailure,
@@ -54,6 +56,7 @@ class FakeAuthService extends AuthService {
     this.studyLanguage = 'es',
   })  : lessonStartResult = lessonStartResult ?? _readyLessonStartResult(),
         replyResult = replyResult ?? _defaultReplyResult(),
+        hintResult = hintResult ?? _defaultHintResult(),
         finishResult =
             finishResult ?? LessonCompletionResult.summaryUnavailable(),
         summaryResult = summaryResult ??
@@ -67,6 +70,8 @@ class FakeAuthService extends AuthService {
   final LessonSessionStartResult lessonStartResult;
   final Completer<LessonChatReplyResult>? replyCompleter;
   final LessonChatReplyResult replyResult;
+  final Completer<LessonChatHintResult>? hintCompleter;
+  final LessonChatHintResult hintResult;
   final LessonRuntimeScenario scenario;
   final ApiException? settingsFailure;
   final ApiException? scenarioFailure;
@@ -80,11 +85,13 @@ class FakeAuthService extends AuthService {
   int startLessonSessionCallCount = 0;
   int fetchScenarioCallCount = 0;
   int sendLessonChatReplyCallCount = 0;
+  int requestLessonChatHintCallCount = 0;
   int finishLessonSessionCallCount = 0;
   int loadLessonSummaryCallCount = 0;
   int? lastValidTurnCount;
   StartLessonSessionRequest? lastStartRequest;
   LessonChatRequest? lastLessonChatRequest;
+  LessonChatRequest? lastHintRequest;
   final persistedMessages = <CreateLessonSessionMessageRequest>[];
 
   @override
@@ -148,6 +155,15 @@ class FakeAuthService extends AuthService {
   }
 
   @override
+  Future<LessonChatHintResult> requestLessonChatHint({
+    required LessonChatRequest request,
+  }) async {
+    requestLessonChatHintCallCount += 1;
+    lastHintRequest = request;
+    return hintCompleter?.future ?? hintResult;
+  }
+
+  @override
   Future<void> persistLessonSessionMessage({
     required String sessionId,
     required CreateLessonSessionMessageRequest request,
@@ -204,6 +220,18 @@ const _introLessonSelection = LessonStartSelection(
   lessonContentId: 'everyday_english_introductions',
 );
 
+const _introLessonSelectionWithContext = LessonStartSelection(
+  level: 'A1 Beginner',
+  topicId: '1',
+  topicTitle: 'Daily Life',
+  subtopicId: '101',
+  subtopicTitle: 'Introductions',
+  situation: 'Introductions',
+  lessonContentId: 'everyday_english_introductions',
+  selectedContextId: 'new_neighbor',
+  selectedContextTitle: 'Meeting a new neighbor',
+);
+
 LessonSessionStartResult _readyLessonStartResult() =>
     LessonSessionStartResult.ready(
       const LessonSessionResponse(
@@ -213,7 +241,11 @@ LessonSessionStartResult _readyLessonStartResult() =>
       ),
     );
 
-LessonRuntimeScenario _runtimeScenario() => LessonRuntimeScenario.fromJson({
+LessonRuntimeScenario _runtimeScenario({
+  String exampleHint = 'Try: My name is Ana.',
+  String lessonPhase = 'active_roleplay',
+}) =>
+    LessonRuntimeScenario.fromJson({
       'id': 'everyday_english_introductions',
       'metadata': {
         'topic': 'Daily Life',
@@ -277,6 +309,7 @@ LessonRuntimeScenario _runtimeScenario() => LessonRuntimeScenario.fromJson({
       'expectedScenarioProgression': ['Greet learner', 'Exchange names'],
       'aiTutorPromptInstructions': ['Keep tutor messages short.'],
       'promptTemplates': {'opening': 'Keep the greeting simple.'},
+      'hintRules': {'exampleHint': exampleHint},
       'controlledVariation': {
         'contextVariants': [
           {
@@ -321,7 +354,7 @@ LessonRuntimeScenario _runtimeScenario() => LessonRuntimeScenario.fromJson({
         'resolvedLevelId': 'A1 Beginner',
         'softWrapUpAfterUserTurn': 10,
         'finalMessageAtUserTurn': 15,
-        'lessonPhase': 'active_roleplay',
+        'lessonPhase': lessonPhase,
         'hasWrapUpStarted': false,
       },
     });
@@ -333,14 +366,22 @@ LessonChatReplyResult _defaultReplyResult() => LessonChatReplyResult.success(
       ),
     );
 
+LessonChatHintResult _defaultHintResult() => LessonChatHintResult.success(
+      const LessonChatHintResponse(hintText: 'Try a short greeting.'),
+    );
+
 Widget _home({FakeAuthService? authService}) => MaterialApp(
       home: HomeScreen(authService: authService ?? FakeAuthService()),
     );
 
-Widget _lessonScreen(FakeAuthService authService) => MaterialApp(
+Widget _lessonScreen(
+  FakeAuthService authService, {
+  LessonStartSelection selection = _introLessonSelection,
+}) =>
+    MaterialApp(
       home: LessonScreen(
         authService: authService,
-        selection: _introLessonSelection,
+        selection: selection,
       ),
     );
 
@@ -467,22 +508,80 @@ void main() {
     expect(find.textContaining('expected scenario progression'), findsNothing);
   });
 
-  testWidgets('typed scenario choice still sends through lesson chat reply',
+  testWidgets('typed scenario choice resolves before sending lesson chat reply',
       (tester) async {
     final auth = FakeAuthService();
 
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField), 'Meeting a new neighbor');
+    await tester.enterText(find.byType(TextField), 'meeting a new neighbor');
     await tester.pump();
     await tester.tap(_sendButton());
     await tester.pumpAndSettle();
 
     expect(auth.sendLessonChatReplyCallCount, 1);
-    expect(auth.lastLessonChatRequest?.userMessage, 'Meeting a new neighbor');
+    expect(auth.lastLessonChatRequest?.userMessage, 'meeting a new neighbor');
+    expect(
+        auth.lastLessonChatRequest?.selectedContextVariantId, 'new_neighbor');
+    expect(auth.lastLessonChatRequest?.selectedContextTitle,
+        'Meeting a new neighbor');
+    expect(auth.lastLessonChatRequest?.selectedContextOpeningLine, isNotEmpty);
+  });
+
+  testWidgets('numeric scenario choice resolves the CMS context variant',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '2');
+    await tester.pump();
+    await tester.tap(_sendButton());
+    await tester.pumpAndSettle();
+
+    expect(auth.lastLessonChatRequest?.selectedContextVariantId,
+        'first_day_class');
+    expect(auth.lastLessonChatRequest?.selectedContextTitle,
+        'First day at a language school');
+  });
+
+  testWidgets('custom scenario context has no invented variant ID',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'Meeting a colleague');
+    await tester.pump();
+    await tester.tap(_sendButton());
+    await tester.pumpAndSettle();
+
     expect(auth.lastLessonChatRequest?.selectedContextVariantId, isEmpty);
-    expect(auth.lastLessonChatRequest?.selectedContextOpeningLine, isEmpty);
+    expect(auth.lastLessonChatRequest?.selectedContextTitle,
+        'Meeting a colleague');
+  });
+
+  testWidgets('selecting a context clears the pre-context Hint',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    final hint = find.byKey(const Key('lesson-action-hint'));
+    await _showWidget(tester, hint);
+    await tester.tap(hint);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('lesson-hint-card')), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), '1');
+    await tester.pump();
+    await tester.tap(_sendButton());
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('lesson-hint-card')), findsNothing);
+    expect(
+        auth.lastLessonChatRequest?.selectedContextVariantId, 'new_neighbor');
   });
 
   testWidgets('send button is disabled for blank input', (tester) async {
@@ -493,6 +592,84 @@ void main() {
 
     final button = tester.widget<FilledButton>(_sendButton());
     expect(button.onPressed, isNull);
+  });
+
+  testWidgets(
+      'pre-context Hint stays local and asks the learner to choose a situation',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    final hint = find.byKey(const Key('lesson-action-hint'));
+    await _showWidget(tester, hint);
+    await tester.tap(hint);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('lesson-hint-card')), findsOneWidget);
+    expect(
+      find.text('Choose one of the situations above, or type your own.'),
+      findsOneWidget,
+    );
+    expect(find.text('Try: My name is Ana.'), findsNothing);
+    expect(auth.requestLessonChatHintCallCount, 0);
+    expect(find.byKey(const Key('lesson-chat-transcript')), findsOneWidget);
+    expect(auth.persistedMessages, isEmpty);
+  });
+
+  testWidgets(
+      'CMS Hint is local only on the first active step after context selection',
+      (tester) async {
+    final auth = FakeAuthService(
+      scenario: _runtimeScenario(),
+    );
+    await tester.pumpWidget(
+      _lessonScreen(auth, selection: _introLessonSelectionWithContext),
+    );
+    await tester.pumpAndSettle();
+
+    final hint = find.byKey(const Key('lesson-action-hint'));
+    await _showWidget(tester, hint);
+    await tester.tap(hint);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Try: My name is Ana.'), findsOneWidget);
+    expect(auth.requestLessonChatHintCallCount, 0);
+    expect(auth.lastHintRequest?.selectedContextVariantId, isNull);
+  });
+
+  testWidgets('active Hint calls once without changing turns or persistence',
+      (tester) async {
+    final completer = Completer<LessonChatHintResult>();
+    final auth = FakeAuthService(
+      scenario: _runtimeScenario(exampleHint: ''),
+      hintCompleter: completer,
+    );
+    await tester.pumpWidget(
+      _lessonScreen(auth, selection: _introLessonSelectionWithContext),
+    );
+    await tester.pumpAndSettle();
+
+    final hint = find.byKey(const Key('lesson-action-hint'));
+    await _showWidget(tester, hint);
+    await tester.tap(hint);
+    await tester.pump();
+    expect(auth.requestLessonChatHintCallCount, 1);
+    expect(find.byKey(const Key('lesson-hint-loading')), findsOneWidget);
+    completer.complete(_defaultHintResult());
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('lesson-hint-card')), findsOneWidget);
+    expect(auth.persistedMessages, isEmpty);
+    expect(auth.lastValidTurnCount, isNull);
+    expect(auth.lastHintRequest?.userMessage,
+        'I need a hint for what to say next.');
+    expect(auth.lastHintRequest?.selectedContextVariantId, 'new_neighbor');
+    expect(
+        auth.lastHintRequest?.selectedContextTitle, 'Meeting a new neighbor');
+    await tester.tap(find.byKey(const Key('lesson-hint-dismiss')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('lesson-hint-card')), findsNothing);
   });
 
   testWidgets('send button and loading state prevent duplicate sends',

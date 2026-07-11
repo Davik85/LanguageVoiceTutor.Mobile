@@ -107,6 +107,25 @@ class AuthService {
     }
   }
 
+  Future<LessonChatHintResult> requestLessonChatHint({
+    required LessonChatRequest request,
+  }) async {
+    try {
+      final response = await _authenticatedPost(
+        '/api/lesson-chat/hint',
+        body: request.toJson(),
+        failureMessageForResponse: _lessonChatHintFailureMessage,
+      );
+      return LessonChatHintResult.success(
+        LessonChatHintResponse.fromJson(_decodeObject(response.body)),
+      );
+    } on ApiException catch (error) {
+      return _safeLessonChatHintResult(error);
+    } catch (_) {
+      return LessonChatHintResult.failed();
+    }
+  }
+
   Future<void> persistLessonSessionMessage({
     required String sessionId,
     required CreateLessonSessionMessageRequest request,
@@ -452,6 +471,29 @@ class AuthService {
     return 'Could not send the message. Please try again.';
   }
 
+  static String _lessonChatHintFailureMessage(ApiResponse response) {
+    if (response.statusCode == 401) {
+      return 'Please sign in again to continue the lesson.';
+    }
+    if (response.statusCode == 404) {
+      return 'This lesson session is no longer available.';
+    }
+    if (response.statusCode == 429) {
+      return 'Hint is temporarily unavailable. Please try again shortly.';
+    }
+    final code = _lessonSessionErrorCode(response.body);
+    if (code == 'lesson_ended' ||
+        code == 'lesson_session_ended' ||
+        code == 'session_conflict' ||
+        response.statusCode == 409) {
+      return 'This lesson has already ended.';
+    }
+    if (response.statusCode >= 500) {
+      return 'Could not get a hint. Please check your connection and try again.';
+    }
+    return 'Could not get a hint. Please try again.';
+  }
+
   static String _lessonSessionMessageFailureMessage(ApiResponse response) {
     if (response.statusCode == 401) {
       return 'Please sign in again to continue the lesson.';
@@ -575,6 +617,30 @@ class AuthService {
       return LessonChatReplyResult.unavailable();
     }
     return LessonChatReplyResult.failed();
+  }
+
+  static LessonChatHintResult _safeLessonChatHintResult(ApiException error) {
+    if (error.message == 'Please sign in again.' ||
+        error.message == 'Please sign in again to continue the lesson.') {
+      return LessonChatHintResult.authRequired();
+    }
+    if (error.message == 'This lesson session is no longer available.') {
+      return LessonChatHintResult.notFound();
+    }
+    if (error.message == 'This lesson has already ended.') {
+      return LessonChatHintResult.conflict();
+    }
+    if (error.message ==
+        'Hint is temporarily unavailable. Please try again shortly.') {
+      return LessonChatHintResult.limited();
+    }
+    if (error.message ==
+            'Could not get a hint. Please check your connection and try again.' ||
+        error.message == 'The service took too long to respond.' ||
+        error.message == 'Unable to reach the service.') {
+      return LessonChatHintResult.unavailable();
+    }
+    return LessonChatHintResult.failed();
   }
 
   static LessonCompletionResult _safeLessonCompletionResult(
