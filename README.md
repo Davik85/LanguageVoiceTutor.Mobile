@@ -9,7 +9,7 @@ This repository contains the Android-first Flutter mobile client under `app/`. T
 
 ## Current verified mobile baseline
 
-The current verified mobile baseline includes the production-verified Android text lesson loop, completed mobile Hint and lesson-abandon flows, real per-message Translation from functional commit `9d2476b` (`Add mobile message translation`), real learner-message Feedback from functional commit `f1e8f16` (`Add mobile learner message feedback`), and the settings language persistence fix from `340c950` (`Fix mobile settings language persistence`). The baseline was verified from `app/` with:
+The current verified mobile baseline includes the production-verified Android text lesson loop, completed mobile Hint and lesson-abandon flows, real per-message Translation from functional commit `9d2476b` (`Add mobile message translation`), real learner-message Feedback from functional commit `f1e8f16` (`Add mobile learner message feedback`), manual tutor-message TTS playback from functional commit `28356ff` (`Add mobile tutor voice playback`), and the settings language persistence fix from `340c950` (`Fix mobile settings language persistence`). The baseline was verified from `app/` with:
 
 ```bash
 dart format --set-exit-if-changed lib test
@@ -17,7 +17,7 @@ flutter analyze
 flutter test
 ```
 
-Expected current results for the completed Feedback baseline are: dart formatting passed; `flutter analyze` passed with zero issues; focused AuthService tests passed with 32 tests; focused lesson-flow tests passed with 35 tests; the complete Flutter suite passed with 123 tests; the Android debug APK built successfully; and manual Android Emulator verification confirmed Feedback displays under the correct learner message while existing Translation, Hint, abandon, Finish, and Summary behavior remained operational. Settings/password recovery remains part of this verified baseline.
+Expected current results for the completed manual tutor-message TTS baseline are: `flutter pub get` passed; dart formatting passed; `flutter analyze` passed with zero issues; focused AuthService tests passed with 32 tests; focused playback-service tests passed with 4 tests; focused lesson-flow tests passed with 35 tests; the complete Flutter suite passed with 127 tests; the Android debug APK built successfully; and manual Android Emulator verification confirmed manual tutor-message playback while existing Hint, Translation, Feedback, abandonment, Finish, and Summary behavior remained operational. Settings/password recovery remains part of this verified baseline.
 
 Settings has stable visible **Account**, **Learning**, **Audio**, and **Connection status** advanced area, with **Save settings** visible and tested. User level is not in Settings. Settings reads `selectedTutorId` from `GET /api/me/settings` and sends it in `PUT /api/me/settings`; `/api/tutor-options` remains the source for available tutor choices in Settings. Selected tutor is editable in the **Learning** section, persists after app/emulator restart, and remains independent from the separate tutor voice setting. Home no longer shows tutor diagnostics or the old **Available tutors** card; tutor selection belongs in Settings. Home shows the provided app logo next to a branded, accessible **Language Voice Tutor** title, preloads that logo during startup before Home is shown, and displays friendly signed-in or sign-in/sync account status without raw tokens, backend IDs, or technical auth details. The loading screen shows only the centered app logo. Language dropdowns display friendly names while keeping stable internal IDs such as `en`, `tr`, and `ru`. `PUT /api/me/settings` serializes `studyLanguage` as the backend-required English study-language name (`English`, `French`, `German`, `Portuguese`, `Spanish`, or `Italian`), while native and explanation language remain in their supported backend ID form. `GET /api/me/settings` accepts IDs or English names and normalizes them to internal dropdown IDs. The complete seven-field settings payload remains in use. Study language remains limited to English, French, German, Portuguese, Spanish, and Italian. Home uses **Start lesson** to open the navigation skeleton: **Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder**. Level cards use soft level-specific colors, topic cards use soft topic-specific colors, and situation cards use the selected topic color family. Situation labels are product-friendly, no longer use `Placeholder:`, and all six topics have options; Travel includes Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage.
 
@@ -36,6 +36,7 @@ POST /api/me/lesson-sessions
 GET /api/me/lesson-content/scenarios/{scenarioKey}
 POST /api/lesson-chat/reply
 POST /api/lesson-chat/feedback
+POST /api/audio/speech
 POST /api/me/lesson-sessions/{sessionId}/messages
 POST /api/lesson-sessions/{sessionId}/abandon
 PUT /api/me/lesson-sessions/{sessionId}/finish
@@ -51,8 +52,20 @@ The backend stale active-session interval remains two minutes. No backend timeou
 
 Summary UI states are intentionally distinct: ready displays backend learner-safe sections, unavailable means the completed lesson has no summary and shows Done without Retry, retryable load errors may show Retry summary, and authentication failures use the separate sign-in-required state. Before Finish, mobile waits up to 5 seconds for already-started message persistence operations as ordering protection only; this is not a blind retry or duplicate-write mechanism.
 
-Text lesson foundation, Finish plus backend summary, the real mobile Hint flow, confirmed mobile lesson abandonment, real per-message Translation, and real learner-message Feedback are complete. Pending mobile scope still includes tutor TTS, microphone/STT, GIF avatar state binding, fullscreen Conversation mode, history/progress, billing, analytics/crash reporting, and store release work. TTS/tutor voice playback is the next isolated functional block.
+Text lesson foundation, Finish plus backend summary, the real mobile Hint flow, confirmed mobile lesson abandonment, real per-message Translation, real learner-message Feedback, and manual tutor-message TTS playback are complete. Pending mobile scope still includes microphone recording, speech-to-text, automatic tutor playback, GIF avatar state binding, fullscreen Conversation mode, history/progress, billing, analytics/crash reporting, and store release work. Microphone recording plus speech-to-text is the next isolated functional area.
 
+
+## Current mobile manual tutor-message TTS milestone
+
+Manual tutor-message TTS playback is complete as a second-client integration with the existing product runtime. Mobile uses authenticated `POST /api/audio/speech` with the existing bearer-token and refresh-on-401 flow. Backend returns raw WAV bytes with `audio/wav`; owns the speech provider, model, voice processing, WAV generation, rate protection, usage enforcement, and session validation; and remains the source of truth. Flutter never calls OpenAI or another speech provider directly and contains no provider credentials.
+
+Manual tutor playback sends the exact visible tutor message text, `purpose: lesson_chat_tts`, `speechVoice` and `speechSpeed` from backend user settings, study-language ID/English/native/code metadata, and the active backend lesson session ID. It does not send tutor profile, persisted tutor-message ID, message kind, provider model, provider instructions, or requested output format. Mobile uses a separate binary response path so existing JSON API methods remain unchanged; successful WAV data stays as bytes rather than UTF-8 text, while empty audio and unsupported content types are rejected safely.
+
+Playback uses `just_audio`; the pubspec constraint remains `^0.9.42`, and the verified resolved version is `0.9.46`. Playback is wrapped behind a focused service/adapter so tests do not require the platform plugin, and only one `AudioPlayer` is active for the lesson screen. Play voice is available only for tutor messages, including opening and older tutor messages; learner messages, Translation text, and Feedback sections do not receive TTS controls. First playback downloads WAV bytes and caches a temporary WAV file for the current lesson screen; replay uses that cached file without another backend request. Tapping the same playing message stops it, starting another tutor message stops the previous playback, and duplicate generation requests for the same loading message are prevented.
+
+Loading is shown only for the selected tutor message, and the control changes to Stop while playback is active. Playback errors are learner-safe and retryable. `LessonTutorStatus.speaking` is driven by actual audio playback; no GIF asset switching was added. The temporary audio cache is scoped to the active lesson screen, temporary WAV files are cleaned during screen/session cleanup, and playback stops before confirmed abandonment, Finish, Summary navigation, screen disposal, and app backgrounding. Playback does not automatically resume. Choosing Stay in the leave confirmation does not abandon the lesson. No persistent audio cache, background playback, media notifications, pause/resume controls, streaming endpoint usage, automatic playback, microphone recording, speech-to-text, Conversation mode, or GIF avatar integration was added.
+
+TTS does not create or persist lesson messages, require tutor-message persistence, increment `learnerTurnCount` or `validTurnCount`, change Hint, Translation, Feedback, abandonment semantics, Finish payload, Summary, lesson progression, or make Premium decisions locally. It remains available while the transcript is visible and is not added to the Summary screen. Authentication failures use the existing authentication-required flow, terminal-session responses use existing session-ended handling, HTTP 429 is temporary voice unavailability, and invalid request, provider, timeout, service, network, empty-audio, and unsupported-content failures are learner-safe and retryable without exposing raw response bodies, provider details, tokens, URLs, or stack traces.
 
 ## Current mobile Translation milestone
 
@@ -115,6 +128,7 @@ GET /api/me/lesson-content/scenarios/{scenarioKey}
 POST /api/me/lesson-sessions
 POST /api/lesson-chat/reply
 POST /api/lesson-chat/feedback
+POST /api/audio/speech
 POST /api/me/lesson-sessions/{sessionId}/messages
 ```
 
