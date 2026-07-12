@@ -6,7 +6,7 @@ Mobile V1 establishes an Android-first Flutter client for Language Voice Tutor t
 
 ## Current verified baseline
 
-Latest known functional Feedback commit: `f1e8f16` (`Add mobile learner message feedback`). Latest known functional Translation commit: `9d2476b` (`Add mobile message translation`). Latest known settings language persistence fix: `340c950` (`Fix mobile settings language persistence`). The Flutter Android client under `app/` has a production-verified text lesson loop, completed mobile Hint flow, and green Settings parity/Home polish baseline. Settings has stable visible **Account**, **Learning**, **Audio**, and **Connection status** sections, **Save settings** is visible and tested, user level is not in Settings, and selected tutor persists through the backend settings API. Tutor selection belongs in Settings; Home no longer shows tutor diagnostics. Home shows the Language Voice Tutor logo/title with startup logo preloading, friendly account/access status, and starts a lesson-start navigation flow.
+Latest known functional learner microphone recording and speech-to-text commit: `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Latest known functional Feedback commit: `f1e8f16` (`Add mobile learner message feedback`). Latest known functional Translation commit: `9d2476b` (`Add mobile message translation`). Latest known settings language persistence fix: `340c950` (`Fix mobile settings language persistence`). The Flutter Android client under `app/` has a production-verified text lesson loop, completed mobile Hint flow, and green Settings parity/Home polish baseline. Settings has stable visible **Account**, **Learning**, **Audio**, and **Connection status** sections, **Save settings** is visible and tested, user level is not in Settings, and selected tutor persists through the backend settings API. Tutor selection belongs in Settings; Home no longer shows tutor diagnostics. Home shows the Language Voice Tutor logo/title with startup logo preloading, friendly account/access status, and starts a lesson-start navigation flow.
 
 Verified commands from `app/`:
 
@@ -50,7 +50,7 @@ Tutor profiles currently represented by desktop are Lana, Nelli, and David. Tuto
 
 ## Current lesson-start skeleton
 
-Mobile now includes a UI-only lesson-start skeleton that follows the desktop product order: `Home -> Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder`. The screens are phone-first adaptations and do not copy the Windows layout pixel-by-pixel. Choose Situation uses product-friendly desktop-aligned labels instead of placeholder wording. The Lesson placeholder displays the selected level, topic, and situation. Real lesson runtime, lesson chat, voice recording, TTS playback, AI tutor calls, Conversation Mode runtime, and mobile-only backend lesson state remain out of scope for this skeleton.
+Mobile now includes a UI-only lesson-start skeleton that follows the desktop product order: `Home -> Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder`. The screens are phone-first adaptations and do not copy the Windows layout pixel-by-pixel. Choose Situation uses product-friendly desktop-aligned labels instead of placeholder wording. The Lesson placeholder displays the selected level, topic, and situation. Real lesson runtime, lesson chat, AI tutor calls, Conversation Mode runtime, and mobile-only backend lesson state remain out of scope for this skeleton; the later real lesson runtime now includes manual TTS and learner microphone transcription as completed features.
 
 Home is intentionally learner-facing: it shows the app logo/title, short product promise, primary **Start lesson** action, friendly account/access status, and secondary Settings entrypoint. Tutor diagnostics are not shown on Home; selected tutor remains a Settings concern.
 
@@ -70,6 +70,8 @@ GET /api/me/lesson-content/scenarios/{scenarioKey}
 POST /api/me/lesson-sessions
 POST /api/lesson-chat/reply
 POST /api/lesson-chat/feedback
+POST /api/audio/speech
+POST /api/audio/transcribe
 POST /api/me/lesson-sessions/{sessionId}/messages
 ```
 
@@ -90,13 +92,13 @@ Current mobile `POST /api/me/lesson-sessions` request shape:
 }
 ```
 
-Current lesson lifecycle, Translation, and learner-message Feedback are complete. Confirmed leave uses the existing backend abandon flow, Back navigation must not silently Finish a lesson, and ordinary leave must not generate a Summary. Do not add temporary mobile-only backend endpoints, new safe/catalog endpoints for convenience, backend changes without an approved final shared lesson-runtime design, voice, TTS, realtime, history, or billing as part of lesson maintenance.
+Current lesson lifecycle, Translation, and learner-message Feedback are complete. Confirmed leave uses the existing backend abandon flow, Back navigation must not silently Finish a lesson, and ordinary leave must not generate a Summary. Do not add temporary mobile-only backend endpoints, new safe/catalog endpoints for convenience, backend changes without an approved final shared lesson-runtime design, realtime, history, or billing as part of lesson maintenance.
 
 Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
 
 ## Next implementation priority
 
-The next safe implementation work should continue from the green Settings baseline, Home polish, and lesson-start navigation skeleton. Keep slices small and mobile-only unless an API gap is explicitly approved. Recommended small next steps are Settings UX polish and lesson runtime planning by inspecting backend lesson/session APIs before implementation. Billing, voice recording, TTS, analytics, crash reporting, Google Play Billing, Apple billing, and store release setup remain later phases and should not be started without a separate plan.
+The next safe implementation work should continue from the green Settings baseline, Home polish, and lesson-start navigation skeleton. Keep slices small and mobile-only unless an API gap is explicitly approved. Recommended small next steps are Settings UX polish and lesson runtime planning by inspecting backend lesson/session APIs before implementation. Billing, automatic tutor playback, Conversation mode, analytics, crash reporting, Google Play Billing, Apple billing, and store release setup remain later phases and should not be started without a separate plan.
 
 This priority preserves the product boundary:
 
@@ -116,14 +118,14 @@ This priority preserves the product boundary:
 - Subscription and entitlement display based on backend state.
 - Lesson access checks based on backend decisions.
 - Lesson start, tutor message exchange, lesson history, and progress retrieval/update through backend APIs.
-- Voice upload to backend for tutor processing.
-- TTS playback using backend-provided responses or assets.
+- Completed learner voice upload to backend transcription for speech-to-text.
+- Completed manual TTS playback using backend-provided WAV responses; automatic tutor playback remains future work.
 - Google Play Billing bridge where the mobile app receives a purchase token and sends it to the backend for verification.
 
 ## Out of scope for Mobile V1 foundation
 
 - Implementing billing before backend auth/account/subscription-status integration is confirmed.
-- Implementing voice, TTS, analytics, crash reporting, or store release setup before the backend account path is validated.
+- Implementing automatic tutor playback, Conversation mode, analytics, crash reporting, or store release setup before the backend account path is validated.
 - Creating a mobile backend.
 - Creating a mobile database as the source of truth.
 - Client-side OpenAI calls.
@@ -173,6 +175,16 @@ Feedback renders as an expandable card below the related learner message, not as
 
 Mobile Translation uses `POST /api/translate` through the existing authenticated bearer-token and refresh-on-401 flow. Backend owns provider calls, prompts, rate protection, session validation, and translation behavior; Flutter does not call OpenAI or another provider directly. Tutor and learner messages use the same endpoint for the exact visible message text, include the active backend lesson session ID, and do not require persisted lesson-message IDs. Translation targets the learner's backend-saved native language, converted from the saved native-language ID to the backend-compatible English language name, while source-language metadata comes from the selected study language. Inline per-message results are cached, can be hidden and reshown without another backend request, and do not persist lesson messages, increment counters, alter Finish/Summary/Hint/abandonment/progression/entitlement, or appear on Summary.
 
+### Current learner microphone recording and speech-to-text milestone
+
+Learner microphone recording and speech-to-text are complete in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Mobile uses authenticated `POST /api/audio/transcribe` as `multipart/form-data`, sends the audio part as `file` with `audio/wav`, and includes study-language ID, English/native language names, ISO language code, lesson phase, bounded transcription context, and the active backend lesson-session ID. Backend owns transcription provider selection, model behavior, language processing, usage protection, and session validation; Flutter does not call OpenAI or device-local speech recognition directly.
+
+Android capture uses `record` `^7.1.1` to create genuine WAV audio: PCM 16-bit, mono, 16 kHz. Android `RECORD_AUDIO` is required, `permission_handler` `^12.0.3` handles permission and settings recovery, no storage or background-microphone permission was added, and the repository still has no iOS runner. Mobile validates RIFF/WAVE structure, PCM format, mono, 16 kHz, 16-bit data, duration from 500 ms through 30 seconds, nonempty data, and near-silence before upload; invalid or silent audio is rejected locally and temporary WAV files are cleaned after success, failure, cancellation, lifecycle exit, or navigation.
+
+A valid transcript is inserted into the existing editable composer and is never sent automatically. If typed text already exists or changes during transcription, the learner chooses whether to replace it. Recording and transcription do not create lesson messages or change `learnerTurnCount` or `validTurnCount`. Permission denial is retryable, permanent denial offers Android settings recovery and rechecks on return, typed drafts remain preserved, the microphone button changes to Stop during recording, manual Stop starts validation/transcription, recording auto-stops at 30 seconds, tutor TTS stops before recording begins, and recording is cancelled before Leave, Finish, Summary, navigation, disposal, or app backgrounding without automatic resume.
+
+Out of scope remains automatic sending after transcription, continuous listening, Conversation mode, realtime or streaming transcription, background recording, waveform visualization, learner recording playback, local device speech recognition, and iOS implementation.
+
 The first active roleplay Hint may use the CMS-owned `hintRules.exampleHint`; later Hint requests send the full existing `LessonChatRequest` context, including active session ID, runtime scenario, current context, transcript, last tutor message, level, topic, situation, and language/settings data. Hint is a compact dismissible inline support card, not a chat message, and is not added to the transcript. It blocks duplicate simultaneous requests, is disabled during incompatible operations and after completion, and does not create lesson messages, increment `learnerTurnCount`, change `validTurnCount`, alter the Finish payload, or generate/change the Summary. HTTP 429 means temporary Hint unavailability; authentication, session-ended, network, backend, and malformed-response states remain learner-safe and consistent with the existing lesson flow.
 
 Completed and remaining Mobile V1 or later phases:
@@ -180,8 +192,9 @@ Completed and remaining Mobile V1 or later phases:
 - Real per-message Translation. **Complete** in functional commit `9d2476b` (`Add mobile message translation`).
 - Real per-message learner Feedback. **Complete** in functional commit `f1e8f16` (`Add mobile learner message feedback`).
 - Lesson history and progress screens.
-- Tutor TTS playback.
-- Microphone recording and speech-to-text.
+- Tutor TTS playback. **Complete** in functional commit `28356ff` (`Add mobile tutor voice playback`).
+- Learner microphone recording and speech-to-text. **Complete** in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`).
+- Automatic tutor playback.
 - Animated tutor GIF loading and state binding.
 - Fullscreen Conversation mode.
 - Google Play Billing.
@@ -191,4 +204,4 @@ Completed and remaining Mobile V1 or later phases:
 
 ## Next isolated engineering task
 
-Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Microphone recording plus speech-to-text is the next isolated functional area. Keep microphone recording, speech-to-text, GIF avatar state integration, fullscreen Conversation mode, history/progress screen, mobile billing, analytics, crash reporting, and store release as future work.
+Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Learner microphone recording plus speech-to-text is complete in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Conversation mode planning is the next isolated functional area, but implementation remains future work. Keep automatic tutor playback, GIF avatar state integration, fullscreen Conversation mode, realtime/continuous voice conversation, history/progress screen, mobile billing, analytics, crash reporting, and store release as future work.
