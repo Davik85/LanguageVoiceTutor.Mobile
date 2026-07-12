@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../models/language_options.dart';
 import '../models/audio_speech.dart';
+import '../models/audio_transcription.dart';
 import '../models/lesson_chat.dart';
 import '../models/lesson_runtime.dart';
 import '../models/lesson_session.dart';
@@ -13,6 +14,8 @@ import '../models/translation.dart';
 import '../models/user_settings.dart';
 import '../services/auth_service.dart';
 import '../services/tutor_audio_playback_service.dart';
+import '../services/learner_audio_recording_service.dart';
+import '../services/learner_microphone_permission_service.dart';
 import '../services/service_factory.dart';
 
 enum LessonTutorStatus {
@@ -20,6 +23,16 @@ enum LessonTutorStatus {
   thinking,
   listening,
   speaking,
+  error,
+}
+
+enum LearnerRecordingUiState {
+  idle,
+  requestingPermission,
+  recording,
+  stopping,
+  transcribing,
+  transcriptReady,
   error,
 }
 
@@ -54,14 +67,20 @@ class LessonScreen extends StatefulWidget {
     this.selection,
     AuthService? authService,
     TutorAudioPlaybackService? audioPlaybackService,
+    LearnerAudioRecordingService? recordingService,
+    LearnerMicrophonePermissionService? microphonePermissionService,
   })  : _authService = authService,
-        _audioPlaybackService = audioPlaybackService;
+        _audioPlaybackService = audioPlaybackService,
+        _recordingService = recordingService,
+        _microphonePermissionService = microphonePermissionService;
 
   static const String routeName = '/lesson';
 
   final LessonStartSelection? selection;
   final AuthService? _authService;
   final TutorAudioPlaybackService? _audioPlaybackService;
+  final LearnerAudioRecordingService? _recordingService;
+  final LearnerMicrophonePermissionService? _microphonePermissionService;
 
   @override
   State<LessonScreen> createState() => _LessonScreenState();
@@ -69,7 +88,6 @@ class LessonScreen extends StatefulWidget {
 
 class _LessonScreenState extends State<LessonScreen>
     with WidgetsBindingObserver {
-  static const _comingNextMessage = 'Coming next in a future lesson update.';
   static const _hintFallbackUserMessage = 'I need a hint for what to say next.';
   static const _neutralOpeningFallback = 'Your lesson is ready.';
   static const _chooseSituationHint =
@@ -78,6 +96,8 @@ class _LessonScreenState extends State<LessonScreen>
 
   late final AuthService _authService;
   late final TutorAudioPlaybackService _audioPlaybackService;
+  late final LearnerAudioRecordingService _recordingService;
+  late final LearnerMicrophonePermissionService _microphonePermissionService;
   late final StreamSubscription<void> _playbackCompletedSubscription;
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _transcriptController = ScrollController();
@@ -91,7 +111,14 @@ class _LessonScreenState extends State<LessonScreen>
   bool _isCompleted = false;
   bool _isAuthenticationRequired = false;
   bool _lessonSessionEnded = false;
-  bool _isRecordingPlaceholderActive = false;
+  LearnerRecordingUiState _recordingState = LearnerRecordingUiState.idle;
+  String? _recordingFilePath;
+  String _draftWhenRecordingStarted = '';
+  DateTime? _recordingStartedAt;
+  Timer? _recordingTimer;
+  bool _transcriptionEligible = true;
+  String? _recordingMessage;
+  bool _showOpenMicrophoneSettings = false;
   LessonSessionStartResult? _startResult;
   LessonRuntimeScenario? _scenario;
   UserSettings? _settings;
@@ -115,6 +142,10 @@ class _LessonScreenState extends State<LessonScreen>
     _authService = widget._authService ?? createAuthService();
     _audioPlaybackService =
         widget._audioPlaybackService ?? JustAudioTutorPlaybackService();
+    _recordingService =
+        widget._recordingService ?? LearnerAudioRecordingService();
+    _microphonePermissionService = widget._microphonePermissionService ??
+        PermissionHandlerLearnerMicrophonePermissionService();
     _playbackCompletedSubscription =
         _audioPlaybackService.completed.listen((_) => _onPlaybackCompleted());
     WidgetsBinding.instance.addObserver(this);
@@ -129,6 +160,8 @@ class _LessonScreenState extends State<LessonScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    unawaited(_cancelLearnerRecording(forDeparture: true));
+    unawaited(_recordingService.dispose());
     unawaited(_disposeAudio());
     _messageController.dispose();
     _transcriptController.dispose();
@@ -141,6 +174,10 @@ class _LessonScreenState extends State<LessonScreen>
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
       unawaited(_stopTutorPlayback());
+      unawaited(_cancelLearnerRecording());
+    }
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refreshMicrophonePermissionAfterResume());
     }
   }
 
@@ -216,7 +253,7 @@ class _LessonScreenState extends State<LessonScreen>
       _lessonSessionEnded = false;
       _scenario = null;
       _settings = null;
-      _isRecordingPlaceholderActive = false;
+      _recordingState = LearnerRecordingUiState.idle;
       _messages.clear();
     });
 
@@ -377,7 +414,7 @@ class _LessonScreenState extends State<LessonScreen>
     setState(() {
       _isSending = true;
       _sendError = null;
-      _isRecordingPlaceholderActive = false;
+      _recordingState = LearnerRecordingUiState.idle;
       _hintText = null;
       _hintError = null;
       _messages
@@ -659,7 +696,7 @@ class _LessonScreenState extends State<LessonScreen>
     if (_isSending || _isStarting || _isLoadingScenario) {
       return LessonTutorStatus.thinking;
     }
-    if (_isRecordingPlaceholderActive) {
+    if (_recordingState == LearnerRecordingUiState.recording) {
       return LessonTutorStatus.listening;
     }
     return LessonTutorStatus.ready;
@@ -670,19 +707,37 @@ class _LessonScreenState extends State<LessonScreen>
         !_isLoadingScenario &&
         _scenario != null &&
         _settings != null;
+    final hasPerMessageWork = _messages.any(
+      (message) => message.isTranslationLoading || message.isFeedbackLoading,
+    );
+    final tutorAudioLoading = _messages.any((message) => message.isTtsLoading);
+    final recordingBusy =
+        _recordingState == LearnerRecordingUiState.requestingPermission ||
+            _recordingState == LearnerRecordingUiState.recording ||
+            _recordingState == LearnerRecordingUiState.stopping ||
+            _recordingState == LearnerRecordingUiState.transcribing;
     return _LessonActionAvailability(
       canSendText: lessonReady &&
           !_isSending &&
           !_isFinishing &&
           !_isCompleted &&
           !_lessonSessionEnded &&
-          !_isAuthenticationRequired,
+          !_isAuthenticationRequired &&
+          !recordingBusy,
       canToggleRecordingPlaceholder: lessonReady &&
           !_isSending &&
+          !_isHintLoading &&
+          !hasPerMessageWork &&
+          !tutorAudioLoading &&
+          !_isAbandoning &&
           !_isFinishing &&
           !_isCompleted &&
           !_lessonSessionEnded &&
-          !_isAuthenticationRequired,
+          !_isAuthenticationRequired &&
+          (_recordingState == LearnerRecordingUiState.idle ||
+              _recordingState == LearnerRecordingUiState.transcriptReady ||
+              _recordingState == LearnerRecordingUiState.error ||
+              _recordingState == LearnerRecordingUiState.recording),
       canUsePlaceholders: lessonReady &&
           !_isFinishing &&
           !_isCompleted &&
@@ -721,7 +776,9 @@ class _LessonScreenState extends State<LessonScreen>
       !_isLoadingScenario &&
       !_isSending &&
       !_isHintLoading &&
-      !_isRecordingPlaceholderActive &&
+      _recordingState != LearnerRecordingUiState.recording &&
+      _recordingState != LearnerRecordingUiState.stopping &&
+      _recordingState != LearnerRecordingUiState.transcribing &&
       !_isFinishing &&
       !_isCompleted;
 
@@ -734,9 +791,14 @@ class _LessonScreenState extends State<LessonScreen>
       !_isHintLoading &&
       !_isFinishing &&
       !_isLoadingScenario &&
+      _recordingState != LearnerRecordingUiState.recording &&
+      _recordingState != LearnerRecordingUiState.stopping &&
+      _recordingState != LearnerRecordingUiState.transcribing &&
       !_isAbandoning;
 
   Future<void> _handleLeaveRequest() async {
+    await _cancelLearnerRecording();
+    if (!mounted) return;
     if (!_hasActiveLessonSession) {
       await Navigator.of(context).maybePop();
       return;
@@ -767,6 +829,7 @@ class _LessonScreenState extends State<LessonScreen>
   Future<void> _abandonLesson() async {
     final session = _startResult?.session;
     if (session == null || !_canAbandon) return;
+    await _cancelLearnerRecording(forDeparture: true);
     await _stopAndClearTutorAudio();
     setState(() {
       _isAbandoning = true;
@@ -774,7 +837,7 @@ class _LessonScreenState extends State<LessonScreen>
       _hintError = null;
       _sendError = null;
       _finishError = null;
-      _isRecordingPlaceholderActive = false;
+      _recordingState = LearnerRecordingUiState.idle;
     });
     final result = await _authService.abandonLessonSession(
       sessionId: session.lessonSessionId,
@@ -823,11 +886,12 @@ class _LessonScreenState extends State<LessonScreen>
   Future<void> _finishLesson() async {
     final session = _startResult?.session;
     if (session == null || !_canFinish) return;
+    await _cancelLearnerRecording(forDeparture: true);
     await _stopAndClearTutorAudio();
     setState(() {
       _isFinishing = true;
       _finishError = null;
-      _isRecordingPlaceholderActive = false;
+      _recordingState = LearnerRecordingUiState.idle;
       _hintText = null;
       _hintError = null;
     });
@@ -886,14 +950,6 @@ class _LessonScreenState extends State<LessonScreen>
     return selectionLevel.isEmpty ? 'Level' : selectionLevel;
   }
 
-  void _showComingNext(String label) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text('$label: $_comingNextMessage')),
-      );
-  }
-
   void _scrollTranscriptToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_transcriptController.hasClients) return;
@@ -905,16 +961,273 @@ class _LessonScreenState extends State<LessonScreen>
     });
   }
 
-  void _toggleRecordingPlaceholder() {
+  Future<void> _toggleRecording() async {
+    if (_recordingState == LearnerRecordingUiState.recording) {
+      await _stopAndTranscribeRecording();
+      return;
+    }
     if (!_actionAvailability.canToggleRecordingPlaceholder) return;
+    await _startRecording();
+  }
+
+  Future<void> _startRecording() async {
+    await _stopTutorPlayback();
+    if (!mounted ||
+        _recordingState == LearnerRecordingUiState.recording ||
+        !_actionAvailability.canToggleRecordingPlaceholder) {
+      return;
+    }
     setState(() {
-      _isRecordingPlaceholderActive = !_isRecordingPlaceholderActive;
+      _recordingState = LearnerRecordingUiState.requestingPermission;
+      _recordingMessage = null;
+      _showOpenMicrophoneSettings = false;
+      _draftWhenRecordingStarted = _messageController.text;
+      _transcriptionEligible = true;
     });
-    _showComingNext(
-      _isRecordingPlaceholderActive
-          ? 'Recording placeholder'
-          : 'Recording stopped',
-    );
+    try {
+      var permission = await _microphonePermissionService.check();
+      if (permission == LearnerMicrophonePermissionStatus.denied) {
+        permission = await _microphonePermissionService.request();
+      }
+      if (!mounted || !_transcriptionEligible) return;
+      if (permission != LearnerMicrophonePermissionStatus.granted) {
+        setState(() {
+          _recordingState = LearnerRecordingUiState.error;
+          _recordingMessage = permission ==
+                      LearnerMicrophonePermissionStatus.permanentlyDenied ||
+                  permission == LearnerMicrophonePermissionStatus.restricted
+              ? 'Microphone access is blocked. Open Android settings to enable it.'
+              : 'Microphone access was not granted. Tap the microphone to try again.';
+          _showOpenMicrophoneSettings = permission ==
+                  LearnerMicrophonePermissionStatus.permanentlyDenied ||
+              permission == LearnerMicrophonePermissionStatus.restricted;
+        });
+        return;
+      }
+      final path = await _recordingService.createTemporaryWavPath();
+      await _recordingService.start(path);
+      if (!mounted || !_transcriptionEligible) {
+        await _recordingService.cancel();
+        await _recordingService.deleteFile(path);
+        return;
+      }
+      setState(() {
+        _recordingFilePath = path;
+        _recordingStartedAt = DateTime.now();
+        _recordingState = LearnerRecordingUiState.recording;
+        _showOpenMicrophoneSettings = false;
+      });
+      _recordingTimer?.cancel();
+      _recordingTimer = Timer(const Duration(seconds: 30), () {
+        unawaited(_stopAndTranscribeRecording());
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _recordingState = LearnerRecordingUiState.error;
+          _recordingMessage =
+              'Could not start recording. Please check your microphone.';
+        });
+      }
+    } finally {
+      if (mounted &&
+          _recordingState == LearnerRecordingUiState.requestingPermission) {
+        setState(() {
+          _recordingState = LearnerRecordingUiState.idle;
+          _recordingMessage = null;
+          _showOpenMicrophoneSettings = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _stopAndTranscribeRecording() async {
+    if (_recordingState != LearnerRecordingUiState.recording) return;
+    _recordingTimer?.cancel();
+    setState(() => _recordingState = LearnerRecordingUiState.stopping);
+    final startedAt = _recordingStartedAt;
+    final intendedPath = _recordingFilePath;
+    try {
+      final path = await _recordingService.stop() ?? intendedPath;
+      final duration = startedAt == null
+          ? Duration.zero
+          : DateTime.now().difference(startedAt);
+      if (path == null || duration < const Duration(milliseconds: 500)) {
+        await _recordingService.deleteFile(path);
+        if (mounted) {
+          setState(() {
+            _recordingState = LearnerRecordingUiState.error;
+            _recordingMessage = 'Please record a slightly longer answer.';
+          });
+        }
+        return;
+      }
+      if (duration > const Duration(seconds: 30)) {
+        await _recordingService.deleteFile(path);
+        if (mounted) {
+          setState(() {
+            _recordingState = LearnerRecordingUiState.error;
+            _recordingMessage = 'Please keep recordings under 30 seconds.';
+          });
+        }
+        return;
+      }
+      final wav = await _recordingService.validateWavFile(path);
+      if (!wav.isValid) {
+        await _recordingService.deleteFile(path);
+        if (mounted) {
+          setState(() {
+            _recordingState = LearnerRecordingUiState.error;
+            _recordingMessage = wav.reason;
+          });
+        }
+        return;
+      }
+      if (!mounted || !_transcriptionEligible) return;
+      await _transcribeRecording(path);
+    } catch (_) {
+      await _recordingService.deleteFile(intendedPath);
+      if (mounted) {
+        setState(() {
+          _recordingState = LearnerRecordingUiState.error;
+          _recordingMessage = 'Could not stop recording. Please try again.';
+        });
+      }
+    } finally {
+      _recordingStartedAt = null;
+    }
+  }
+
+  Future<void> _transcribeRecording(String path) async {
+    final session = _startResult?.session;
+    final settings = _settings;
+    if (session == null || settings == null) return;
+    if (mounted) {
+      setState(() => _recordingState = LearnerRecordingUiState.transcribing);
+    }
+    try {
+      final result = await _authService.transcribeLearnerAudio(
+        request: AudioTranscriptionRequest(
+          audioFilePath: path,
+          targetLanguageId:
+              LanguageOptions.studyLanguageIdFor(settings.studyLanguage),
+          targetLanguageName: LanguageOptions.backendStudyLanguageNameFor(
+              settings.studyLanguage),
+          targetLanguageNativeName: LanguageOptions.backendStudyLanguageNameFor(
+              settings.studyLanguage),
+          targetLanguageCode:
+              LanguageOptions.studyLanguageIdFor(settings.studyLanguage),
+          lessonPhase: _scenario?.runtimeContent.lessonPhase.trim() ?? '',
+          transcriptionContext: _transcriptionContext(),
+          backendSessionId: session.lessonSessionId,
+        ),
+      );
+      if (!mounted || !_transcriptionEligible) return;
+      if (!result.isSuccess || result.text == null) {
+        setState(() {
+          _recordingState = LearnerRecordingUiState.error;
+          _recordingMessage = result.message;
+          _isAuthenticationRequired =
+              result.status == AudioTranscriptionStatus.authenticationRequired;
+          _lessonSessionEnded =
+              result.status == AudioTranscriptionStatus.sessionEnded;
+        });
+        return;
+      }
+      final draftChanged =
+          _messageController.text != _draftWhenRecordingStarted;
+      if (_draftWhenRecordingStarted.trim().isNotEmpty || draftChanged) {
+        final replace = await _confirmTranscriptReplacement();
+        if (!mounted || !_transcriptionEligible) return;
+        if (replace == true) _messageController.text = result.text!;
+      } else {
+        _messageController.text = result.text!;
+      }
+      if (mounted) {
+        setState(() {
+          _recordingState = LearnerRecordingUiState.transcriptReady;
+          _recordingMessage = null;
+        });
+      }
+    } catch (_) {
+      if (mounted && _transcriptionEligible) {
+        setState(() {
+          _recordingState = LearnerRecordingUiState.error;
+          _recordingMessage =
+              'Connection failed while transcribing. Please try again.';
+        });
+      }
+    } finally {
+      await _recordingService.deleteFile(path);
+      if (mounted) setState(() => _recordingFilePath = null);
+    }
+  }
+
+  String _transcriptionContext() {
+    final selected = _currentSelectedContextTitle.trim();
+    return selected.isEmpty ? '' : 'Selected context: $selected';
+  }
+
+  Future<bool?> _confirmTranscriptReplacement() => showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Replace typed text?'),
+          content: const Text(
+              'Use the transcribed recording instead of your typed draft?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Keep typed text'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Replace typed text'),
+            ),
+          ],
+        ),
+      );
+
+  Future<void> _cancelLearnerRecording({bool forDeparture = false}) async {
+    _recordingTimer?.cancel();
+    if (forDeparture) _transcriptionEligible = false;
+    final path = _recordingFilePath;
+    if (_recordingState == LearnerRecordingUiState.recording ||
+        _recordingState == LearnerRecordingUiState.requestingPermission ||
+        _recordingState == LearnerRecordingUiState.stopping) {
+      await _recordingService.cancel();
+      await _recordingService.deleteFile(path);
+      _recordingFilePath = null;
+    }
+    if (mounted && !forDeparture) {
+      setState(() {
+        _recordingState = LearnerRecordingUiState.idle;
+        _recordingMessage = null;
+      });
+    }
+  }
+
+  Future<void> _openMicrophoneSettings() async {
+    try {
+      await _microphonePermissionService.openSettings();
+    } catch (_) {
+      // Keep the existing retryable permission message.
+    }
+  }
+
+  Future<void> _refreshMicrophonePermissionAfterResume() async {
+    try {
+      final permission = await _microphonePermissionService.check();
+      if (!mounted || permission != LearnerMicrophonePermissionStatus.granted) {
+        return;
+      }
+      setState(() {
+        _showOpenMicrophoneSettings = false;
+        if (_recordingState == LearnerRecordingUiState.error) {
+          _recordingState = LearnerRecordingUiState.idle;
+          _recordingMessage = null;
+        }
+      });
+    } catch (_) {}
   }
 
   Future<void> _playTutorVoice(_LessonChatMessage message) async {
@@ -1263,8 +1576,14 @@ class _LessonScreenState extends State<LessonScreen>
                               isSending: _isSending,
                               controller: _messageController,
                               actionAvailability: _actionAvailability,
-                              isRecordingPlaceholderActive:
-                                  _isRecordingPlaceholderActive,
+                              isRecordingPlaceholderActive: _recordingState ==
+                                  LearnerRecordingUiState.recording,
+                              isTranscribing: _recordingState ==
+                                  LearnerRecordingUiState.transcribing,
+                              recordingMessage: _recordingMessage,
+                              showOpenMicrophoneSettings:
+                                  _showOpenMicrophoneSettings,
+                              onOpenMicrophoneSettings: _openMicrophoneSettings,
                               isFinishing: _isFinishing,
                               canFinish: _canFinish,
                               finishError: _finishError,
@@ -1278,8 +1597,9 @@ class _LessonScreenState extends State<LessonScreen>
                               onPlayVoice: _playTutorVoice,
                               onTranslateMessage: _translateMessage,
                               onFeedback: _requestFeedback,
-                              onToggleRecordingPlaceholder:
-                                  _toggleRecordingPlaceholder,
+                              onToggleRecordingPlaceholder: () {
+                                unawaited(_toggleRecording());
+                              },
                               onHint: _requestHint,
                               onDismissHint: () =>
                                   setState(() => _hintText = null),
@@ -1328,6 +1648,10 @@ class _LessonWorkspace extends StatelessWidget {
     required this.controller,
     required this.actionAvailability,
     required this.isRecordingPlaceholderActive,
+    required this.isTranscribing,
+    required this.recordingMessage,
+    required this.showOpenMicrophoneSettings,
+    required this.onOpenMicrophoneSettings,
     required this.isFinishing,
     required this.canFinish,
     required this.finishError,
@@ -1363,6 +1687,10 @@ class _LessonWorkspace extends StatelessWidget {
   final TextEditingController controller;
   final _LessonActionAvailability actionAvailability;
   final bool isRecordingPlaceholderActive;
+  final bool isTranscribing;
+  final String? recordingMessage;
+  final bool showOpenMicrophoneSettings;
+  final Future<void> Function() onOpenMicrophoneSettings;
   final bool isFinishing;
   final bool canFinish;
   final String? finishError;
@@ -1478,6 +1806,10 @@ class _LessonWorkspace extends StatelessWidget {
                     canHint: actionAvailability.canUseHint,
                     isSending: isSending || isFinishing || isHintLoading,
                     isRecordingPlaceholderActive: isRecordingPlaceholderActive,
+                    isTranscribing: isTranscribing,
+                    recordingMessage: recordingMessage,
+                    showOpenMicrophoneSettings: showOpenMicrophoneSettings,
+                    onOpenMicrophoneSettings: onOpenMicrophoneSettings,
                     onToggleRecordingPlaceholder: onToggleRecordingPlaceholder,
                     onHint: onHint,
                     onSend: onSend,
@@ -1843,6 +2175,10 @@ class _LessonComposer extends StatelessWidget {
     required this.canHint,
     required this.isSending,
     required this.isRecordingPlaceholderActive,
+    required this.isTranscribing,
+    required this.recordingMessage,
+    required this.showOpenMicrophoneSettings,
+    required this.onOpenMicrophoneSettings,
     required this.onToggleRecordingPlaceholder,
     required this.onHint,
     required this.onSend,
@@ -1854,6 +2190,10 @@ class _LessonComposer extends StatelessWidget {
   final bool canHint;
   final bool isSending;
   final bool isRecordingPlaceholderActive;
+  final bool isTranscribing;
+  final String? recordingMessage;
+  final bool showOpenMicrophoneSettings;
+  final Future<void> Function() onOpenMicrophoneSettings;
   final VoidCallback onToggleRecordingPlaceholder;
   final VoidCallback onHint;
   final Future<void> Function([String? overrideText]) onSend;
@@ -1872,6 +2212,38 @@ class _LessonComposer extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (isTranscribing)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 8),
+                  Text('Transcribing recording...'),
+                ],
+              ),
+            ),
+          if (recordingMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                recordingMessage!,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          if (showOpenMicrophoneSettings)
+            TextButton(
+              key: const Key('lesson-open-microphone-settings'),
+              onPressed: () => unawaited(onOpenMicrophoneSettings()),
+              child: const Text('Open settings'),
+            ),
           Row(
             children: [
               OutlinedButton(

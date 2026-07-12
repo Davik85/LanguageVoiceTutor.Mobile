@@ -15,6 +15,69 @@ import 'package:language_voice_tutor_mobile/screens/home_screen.dart';
 import 'package:language_voice_tutor_mobile/screens/lesson_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
+import 'package:language_voice_tutor_mobile/services/learner_audio_recording_service.dart';
+import 'package:language_voice_tutor_mobile/services/learner_microphone_permission_service.dart';
+
+class FakeLearnerRecorder implements LearnerAudioRecorderAdapter {
+  bool active = false;
+  @override
+  Future<void> cancel() async => active = false;
+  @override
+  Future<void> dispose() async => active = false;
+  @override
+  Future<bool> hasPermission() async => true;
+  @override
+  Future<bool> get isRecording async => active;
+  @override
+  Future<void> start({
+    required String path,
+    required LearnerRecordingConfig config,
+  }) async {
+    active = true;
+  }
+
+  @override
+  Future<String?> stop() async {
+    active = false;
+    return null;
+  }
+}
+
+class FakeLearnerMicrophonePermissionService
+    implements LearnerMicrophonePermissionService {
+  FakeLearnerMicrophonePermissionService({required this.statuses});
+
+  final List<LearnerMicrophonePermissionStatus> statuses;
+  Object? checkError;
+  Object? requestError;
+  int checkCalls = 0;
+  int requestCalls = 0;
+  int openSettingsCalls = 0;
+
+  LearnerMicrophonePermissionStatus get _nextStatus => statuses.isEmpty
+      ? LearnerMicrophonePermissionStatus.denied
+      : statuses.removeAt(0);
+
+  @override
+  Future<LearnerMicrophonePermissionStatus> check() async {
+    checkCalls++;
+    if (checkError != null) throw checkError!;
+    return _nextStatus;
+  }
+
+  @override
+  Future<LearnerMicrophonePermissionStatus> request() async {
+    requestCalls++;
+    if (requestError != null) throw requestError!;
+    return _nextStatus;
+  }
+
+  @override
+  Future<bool> openSettings() async {
+    openSettingsCalls++;
+    return true;
+  }
+}
 
 class FakeApiClient implements ApiClient {
   @override
@@ -413,10 +476,14 @@ Widget _home({FakeAuthService? authService}) => MaterialApp(
 Widget _lessonScreen(
   FakeAuthService authService, {
   LessonStartSelection selection = _introLessonSelection,
+  LearnerAudioRecordingService? recordingService,
+  LearnerMicrophonePermissionService? microphonePermissionService,
 }) =>
     MaterialApp(
       home: LessonScreen(
         authService: authService,
+        recordingService: recordingService,
+        microphonePermissionService: microphonePermissionService,
         selection: selection,
       ),
     );
@@ -839,24 +906,190 @@ void main() {
     expect(auth.persistedMessages.length, initialPersistCount);
   });
 
-  testWidgets('record placeholder stays local and switches status',
+  testWidgets('record starts locally without sending a lesson message',
       (tester) async {
     final auth = FakeAuthService();
 
-    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpWidget(_lessonScreen(auth,
+        recordingService:
+            LearnerAudioRecordingService(recorder: FakeLearnerRecorder())));
     await tester.pumpAndSettle();
 
     final initialSendCount = auth.sendLessonChatReplyCallCount;
     final initialPersistCount = auth.persistedMessages.length;
 
     await tester.tap(find.byKey(const Key('lesson-action-record')));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    expect(find.textContaining('Coming next in a future lesson update.'),
-        findsOneWidget);
     expect(auth.sendLessonChatReplyCallCount, initialSendCount);
     expect(auth.persistedMessages.length, initialPersistCount);
-    expect(find.byIcon(Icons.stop), findsOneWidget);
+  });
+
+  testWidgets('first microphone denial remains retryable and preserves draft',
+      (tester) async {
+    final auth = FakeAuthService();
+    final permission = FakeLearnerMicrophonePermissionService(statuses: [
+      LearnerMicrophonePermissionStatus.denied,
+      LearnerMicrophonePermissionStatus.denied,
+    ]);
+
+    await tester.pumpWidget(_lessonScreen(
+      auth,
+      microphonePermissionService: permission,
+      recordingService:
+          LearnerAudioRecordingService(recorder: FakeLearnerRecorder()),
+    ));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('lesson-input')), 'Keep this draft');
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.text(
+            'Microphone access was not granted. Tap the microphone to try again.'),
+        findsOneWidget);
+    expect(
+        tester
+            .widget<OutlinedButton>(
+                find.byKey(const Key('lesson-action-record')))
+            .onPressed,
+        isNotNull);
+    expect(find.text('Keep this draft'), findsOneWidget);
+    expect(permission.checkCalls, 1);
+    expect(permission.requestCalls, 1);
+    expect(auth.sendLessonChatReplyCallCount, 0);
+    expect(auth.persistedMessages, isEmpty);
+  });
+
+  testWidgets('second microphone tap rechecks, requests, and starts recording',
+      (tester) async {
+    final recorder = FakeLearnerRecorder();
+    final permission = FakeLearnerMicrophonePermissionService(statuses: [
+      LearnerMicrophonePermissionStatus.denied,
+      LearnerMicrophonePermissionStatus.denied,
+      LearnerMicrophonePermissionStatus.denied,
+      LearnerMicrophonePermissionStatus.granted,
+    ]);
+    await tester.pumpWidget(_lessonScreen(
+      FakeAuthService(),
+      microphonePermissionService: permission,
+      recordingService: LearnerAudioRecordingService(recorder: recorder),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(permission.checkCalls, 2);
+    expect(permission.requestCalls, 2);
+  });
+
+  testWidgets(
+      'permanent microphone denial keeps settings action without requesting',
+      (tester) async {
+    final permission = FakeLearnerMicrophonePermissionService(
+      statuses: [
+        LearnerMicrophonePermissionStatus.permanentlyDenied,
+        LearnerMicrophonePermissionStatus.permanentlyDenied,
+      ],
+    );
+    await tester.pumpWidget(_lessonScreen(
+      FakeAuthService(),
+      microphonePermissionService: permission,
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('lesson-open-microphone-settings')),
+        findsOneWidget);
+    expect(permission.requestCalls, 0);
+    expect(
+        tester
+            .widget<OutlinedButton>(
+                find.byKey(const Key('lesson-action-record')))
+            .onPressed,
+        isNotNull);
+
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.pumpAndSettle();
+    expect(permission.checkCalls, 2);
+    expect(permission.requestCalls, 0);
+  });
+
+  testWidgets('resume after Android settings clears granted permission error',
+      (tester) async {
+    final permission = FakeLearnerMicrophonePermissionService(statuses: [
+      LearnerMicrophonePermissionStatus.permanentlyDenied,
+      LearnerMicrophonePermissionStatus.granted,
+    ]);
+    await tester.pumpWidget(_lessonScreen(
+      FakeAuthService(),
+      microphonePermissionService: permission,
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('lesson-open-microphone-settings')),
+        findsOneWidget);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(
+        find.byKey(const Key('lesson-open-microphone-settings')), findsNothing);
+    expect(
+        find.text(
+            'Microphone access is blocked. Open Android settings to enable it.'),
+        findsNothing);
+    expect(find.byIcon(Icons.mic_none), findsOneWidget);
+  });
+
+  testWidgets('resume while still denied keeps the settings action',
+      (tester) async {
+    final permission = FakeLearnerMicrophonePermissionService(statuses: [
+      LearnerMicrophonePermissionStatus.permanentlyDenied,
+      LearnerMicrophonePermissionStatus.permanentlyDenied,
+    ]);
+    await tester.pumpWidget(_lessonScreen(
+      FakeAuthService(),
+      microphonePermissionService: permission,
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.pumpAndSettle();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('lesson-open-microphone-settings')),
+        findsOneWidget);
+    expect(permission.checkCalls, 2);
+  });
+
+  testWidgets('permission exception returns to retryable microphone state',
+      (tester) async {
+    final permission = FakeLearnerMicrophonePermissionService(statuses: []);
+    permission.checkError = StateError('permission plugin failed');
+    await tester.pumpWidget(_lessonScreen(
+      FakeAuthService(),
+      microphonePermissionService: permission,
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.pumpAndSettle();
+    expect(
+        find.text('Could not start recording. Please check your microphone.'),
+        findsOneWidget);
+    expect(
+        tester
+            .widget<OutlinedButton>(
+                find.byKey(const Key('lesson-action-record')))
+            .onPressed,
+        isNotNull);
   });
 
   testWidgets(

@@ -1,9 +1,10 @@
 import 'dart:convert';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
 import '../api/api_client.dart';
 import '../models/auth_models.dart';
 import '../models/audio_speech.dart';
+import '../models/audio_transcription.dart';
 import '../models/lesson_access_decision.dart';
 import '../models/lesson_chat.dart';
 import '../models/lesson_runtime.dart';
@@ -14,13 +15,13 @@ import '../models/user_settings.dart';
 import 'session_storage.dart';
 
 class AuthService {
-  const AuthService(
-      {required ApiClient apiClient, required SessionStorage storage})
+  AuthService({required ApiClient apiClient, required SessionStorage storage})
       : _apiClient = apiClient,
         _storage = storage;
 
   final ApiClient _apiClient;
   final SessionStorage _storage;
+  bool _lastMultipartRefreshRetry = false;
 
   Future<AudioSpeechResult> requestTutorSpeech({
     required AudioSpeechRequest request,
@@ -65,6 +66,92 @@ class AuthService {
     } catch (_) {
       return AudioSpeechResult.failed();
     }
+  }
+
+  Future<AudioTranscriptionResult> transcribeLearnerAudio({
+    required AudioTranscriptionRequest request,
+  }) async {
+    if (request.audioFilePath.trim().isEmpty ||
+        request.backendSessionId.trim().isEmpty ||
+        request.targetLanguageId.trim().isEmpty) {
+      return AudioTranscriptionResult.invalidRecording(
+        'That recording is not ready. Please record again.',
+      );
+    }
+    final client = _apiClient is MultipartApiClient
+        ? _apiClient as MultipartApiClient
+        : null;
+    if (client == null) return AudioTranscriptionResult.failed();
+    try {
+      final response = await _authenticatedMultipartWavPost(
+        client,
+        '/api/audio/transcribe',
+        request,
+      );
+      AudioTranscriptionResult result;
+      if (response.statusCode == 200) {
+        try {
+          result = AudioTranscriptionResult.success(
+            AudioTranscriptionResponse.fromJson(_decodeObject(response.body))
+                .text,
+          );
+        } catch (_) {
+          result = AudioTranscriptionResult.malformedResponse();
+        }
+      } else if (response.statusCode == 409 &&
+          _isLessonSessionEndedText(response.body)) {
+        result = AudioTranscriptionResult.sessionEnded();
+      } else {
+        result = switch (response.statusCode) {
+          400 => AudioTranscriptionResult.invalidRecording(
+              'That recording could not be used. Please record again.',
+            ),
+          409 => AudioTranscriptionResult.sessionEnded(),
+          413 => AudioTranscriptionResult.invalidRecording(
+              'That recording is too large. Please record a shorter answer.',
+            ),
+          415 => AudioTranscriptionResult.invalidRecording(
+              'That recording format is not supported. Please record again.',
+            ),
+          429 => AudioTranscriptionResult.rateLimited(
+              int.tryParse(response.headers['retry-after'] ?? '')),
+          500 || 503 => AudioTranscriptionResult.serviceUnavailable(),
+          504 => AudioTranscriptionResult.timeout(),
+          _ => AudioTranscriptionResult.failed(),
+        };
+      }
+      _debugTranscription(request, result, response.statusCode);
+      return result;
+    } on _BinaryAuthenticationException {
+      final result = AudioTranscriptionResult.authenticationRequired();
+      _debugTranscription(request, result, 401);
+      return result;
+    } on ApiException catch (error) {
+      final result = switch (error.category) {
+        ApiFailureCategory.timeout => AudioTranscriptionResult.timeout(),
+        ApiFailureCategory.network => AudioTranscriptionResult.networkFailure(),
+        _ => AudioTranscriptionResult.serviceUnavailable(),
+      };
+      _debugTranscription(request, result, null);
+      return result;
+    } catch (_) {
+      final result = AudioTranscriptionResult.networkFailure();
+      _debugTranscription(request, result, null);
+      return result;
+    }
+  }
+
+  void _debugTranscription(AudioTranscriptionRequest request,
+      AudioTranscriptionResult result, int? statusCode) {
+    if (!kDebugMode) return;
+    debugPrint('transcription operation=audio_transcription '
+        'targetLanguageId=${request.targetLanguageId} '
+        'targetLanguageName=${request.targetLanguageName} '
+        'targetLanguageCode=${request.targetLanguageCode} '
+        'lessonPhase=${request.lessonPhase} '
+        'uploadAttempt=${_lastMultipartRefreshRetry ? 2 : 1} '
+        'http=${statusCode ?? 'network'} result=${result.status} '
+        'refreshRetry=$_lastMultipartRefreshRetry');
   }
 
   Future<AuthUser> login(String email, String password) async {
@@ -519,6 +606,38 @@ class AuthService {
     return response;
   }
 
+  Future<MultipartApiResponse> _authenticatedMultipartWavPost(
+    MultipartApiClient client,
+    String path,
+    AudioTranscriptionRequest request,
+  ) async {
+    _lastMultipartRefreshRetry = false;
+    final accessToken = await _storage.readAccessToken();
+    if (accessToken == null || accessToken.isEmpty) {
+      throw const _BinaryAuthenticationException();
+    }
+    Future<MultipartApiResponse> send(String token) => client.postMultipartWav(
+          path,
+          fields: request.fields,
+          file:
+              MultipartWavFile(path: request.audioFilePath, fieldName: 'file'),
+          accessToken: token,
+        );
+    var response = await send(accessToken);
+    if (response.statusCode != 401) return response;
+    _lastMultipartRefreshRetry = true;
+    if (!await _refreshSession()) throw const _BinaryAuthenticationException();
+    final refreshedToken = await _storage.readAccessToken();
+    if (refreshedToken == null || refreshedToken.isEmpty) {
+      throw const _BinaryAuthenticationException();
+    }
+    response = await send(refreshedToken);
+    if (response.statusCode == 401) {
+      throw const _BinaryAuthenticationException();
+    }
+    return response;
+  }
+
   static bool _isLessonSessionEnded(Uint8List bytes) {
     try {
       final body = utf8.decode(bytes, allowMalformed: true);
@@ -529,6 +648,20 @@ class AuthService {
       return code == 'lesson_session_ended_elsewhere' ||
           code == 'lesson_ended' ||
           code == 'session_conflict';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static bool _isLessonSessionEndedText(String body) {
+    try {
+      final parsed = _decodeObject(body);
+      final code = _jsonString(parsed, 'error',
+          fallback: _jsonString(parsed, 'code',
+              fallback: _jsonString(parsed, 'errorCode')));
+      return code == 'lesson_session_ended_elsewhere' ||
+          code == 'lesson_ended' ||
+          code == 'lesson_session_ended';
     } catch (_) {
       return false;
     }
