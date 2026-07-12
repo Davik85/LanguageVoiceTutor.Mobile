@@ -171,7 +171,7 @@ Expected boundary checks:
 - Network/backend abandon failures keep the learner on the lesson screen and allow retry; authentication failures use the existing authentication-required behavior.
 - The backend stale active-session interval remains two minutes, with no backend timeout change and no mobile heartbeat. Confirmed Back releases the session immediately; force-close or termination without confirmed leave falls back to the existing backend timeout.
 - No temporary mobile-only backend endpoints, new safe/catalog endpoints, duplicate mobile prompt/runtime system, or backend changes are introduced without an approved final shared lesson-runtime design.
-- Per-message Translation, real per-message learner Feedback, and manual tutor-message TTS playback are complete. Microphone recording, speech-to-text, automatic tutor playback, GIF avatar states, fullscreen Conversation mode, history/progress screen, mobile billing, analytics, crash reporting, and store release remain future work. Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Microphone recording plus speech-to-text is the next isolated functional area. Heartbeat or timeout reduction is optional future reliability work only if real user feedback requires it.
+- Per-message Translation, real per-message learner Feedback, manual tutor-message TTS playback, and learner microphone recording plus speech-to-text are complete. Automatic tutor playback, GIF avatar states, fullscreen Conversation mode, realtime/continuous voice conversation, history/progress screen, mobile billing, analytics, crash reporting, and store release remain future work. Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Learner microphone recording plus speech-to-text is complete in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Conversation mode planning is the next isolated functional area. Heartbeat or timeout reduction is optional future reliability work only if real user feedback requires it.
 
 Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
 
@@ -207,6 +207,23 @@ Confirmed results for completed manual tutor-message TTS playback:
 - Hint, Translation, Feedback, abandonment, Finish, and Summary remained operational.
 - Manual tutor-message TTS uses `POST /api/audio/speech`, raw WAV bytes, temporary current-screen cache, and `just_audio` (`^0.9.42`, resolved `0.9.46`).
 - Automatic playback, microphone recording, speech-to-text, audio streaming endpoint usage, background playback, media notifications, pause/resume controls, Conversation mode, and GIF avatar integration remain out of scope.
+
+## Current learner microphone recording and speech-to-text validation baseline
+
+Confirmed results for completed learner microphone recording and speech-to-text:
+
+- Functional commit: `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`).
+- `flutter pub get` passed.
+- Dart formatting passed.
+- `flutter analyze` passed with zero issues.
+- Focused learner recording service tests passed with 3 tests.
+- Focused lesson-flow tests passed with 41 tests.
+- The complete Flutter suite passed with 136 tests.
+- Android debug APK built successfully.
+- Physical Android-device tests confirmed repeated correct transcription.
+- Existing Summary, Feedback, Translation, Hint, TTS, abandonment, and Finish behavior remained operational.
+- Learner microphone transcription uses `POST /api/audio/transcribe`, authenticated multipart `audio/wav` upload with audio part `file`, Android `RECORD_AUDIO`, `record` `^7.1.1`, and `permission_handler` `^12.0.3`.
+- Automatic sending, continuous listening, Conversation mode, realtime/streaming transcription, background recording, waveform visualization, learner playback, local device speech recognition, and iOS implementation remain out of scope.
 
 ## Future Flutter checks
 
@@ -543,6 +560,4 @@ flutter build apk --debug
 
 Expected current result: analyze reports zero issues, focused AuthService and lesson screen tests pass, the complete Flutter suite passes with 101 tests, and the Android debug APK build passes.
 
-Real Translation is complete in functional commit `9d2476b` (`Add mobile message translation`). Real per-message learner Feedback is complete in functional commit `f1e8f16` (`Add mobile learner message feedback`). Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Still unimplemented unless a later repository change proves otherwise: microphone recording, speech-to-text, automatic tutor playback, GIF avatar state integration, fullscreen Conversation mode, history/progress screen, mobile billing, analytics, crash reporting, and store release. Microphone recording plus speech-to-text is the next isolated functional area.
-
-Next isolated engineering task: microphone recording plus speech-to-text. This documentation task does not implement microphone recording, speech-to-text, or any other runtime functionality.
+Real Translation is complete in functional commit `9d2476b` (`Add mobile message translation`). Real per-message learner Feedback is complete in functional commit `f1e8f16` (`Add mobile learner message feedback`). Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Learner microphone recording plus speech-to-text is complete in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Still unimplemented unless a later repository change proves otherwise: automatic tutor playback, GIF avatar state integration, fullscreen Conversation mode, realtime/continuous voice conversation, history/progress screen, mobile billing, analytics, crash reporting, and store release. Conversation mode planning is the next isolated functional area; this documentation task does not implement it or any other runtime functionality.

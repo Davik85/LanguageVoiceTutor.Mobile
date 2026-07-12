@@ -9,7 +9,7 @@ This repository contains the Android-first Flutter mobile client under `app/`. T
 
 ## Current verified mobile baseline
 
-The current verified mobile baseline includes the production-verified Android text lesson loop, completed mobile Hint and lesson-abandon flows, real per-message Translation from functional commit `9d2476b` (`Add mobile message translation`), real learner-message Feedback from functional commit `f1e8f16` (`Add mobile learner message feedback`), manual tutor-message TTS playback from functional commit `28356ff` (`Add mobile tutor voice playback`), and the settings language persistence fix from `340c950` (`Fix mobile settings language persistence`). The baseline was verified from `app/` with:
+The current verified mobile baseline includes the production-verified Android text lesson loop, completed mobile Hint and lesson-abandon flows, real per-message Translation from functional commit `9d2476b` (`Add mobile message translation`), real learner-message Feedback from functional commit `f1e8f16` (`Add mobile learner message feedback`), manual tutor-message TTS playback from functional commit `28356ff` (`Add mobile tutor voice playback`), completed learner microphone recording and speech-to-text from functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`), and the settings language persistence fix from `340c950` (`Fix mobile settings language persistence`). The baseline was verified from `app/` with:
 
 ```bash
 dart format --set-exit-if-changed lib test
@@ -17,7 +17,7 @@ flutter analyze
 flutter test
 ```
 
-Expected current results for the completed manual tutor-message TTS baseline are: `flutter pub get` passed; dart formatting passed; `flutter analyze` passed with zero issues; focused AuthService tests passed with 32 tests; focused playback-service tests passed with 4 tests; focused lesson-flow tests passed with 35 tests; the complete Flutter suite passed with 127 tests; the Android debug APK built successfully; and manual Android Emulator verification confirmed manual tutor-message playback while existing Hint, Translation, Feedback, abandonment, Finish, and Summary behavior remained operational. Settings/password recovery remains part of this verified baseline.
+Expected current results for the completed learner microphone recording and speech-to-text baseline are: `flutter pub get` passed; Dart formatting passed; `flutter analyze` passed with zero issues; focused learner recording service tests passed with 3 tests; focused lesson-flow tests passed with 41 tests; the complete Flutter suite passed with 136 tests; the Android debug APK built successfully; and physical Android-device verification confirmed repeated correct speech recognition while existing Summary, Feedback, Translation, Hint, TTS, abandonment, and Finish behavior remained operational. Settings/password recovery remains part of this verified baseline.
 
 Settings has stable visible **Account**, **Learning**, **Audio**, and **Connection status** advanced area, with **Save settings** visible and tested. User level is not in Settings. Settings reads `selectedTutorId` from `GET /api/me/settings` and sends it in `PUT /api/me/settings`; `/api/tutor-options` remains the source for available tutor choices in Settings. Selected tutor is editable in the **Learning** section, persists after app/emulator restart, and remains independent from the separate tutor voice setting. Home no longer shows tutor diagnostics or the old **Available tutors** card; tutor selection belongs in Settings. Home shows the provided app logo next to a branded, accessible **Language Voice Tutor** title, preloads that logo during startup before Home is shown, and displays friendly signed-in or sign-in/sync account status without raw tokens, backend IDs, or technical auth details. The loading screen shows only the centered app logo. Language dropdowns display friendly names while keeping stable internal IDs such as `en`, `tr`, and `ru`. `PUT /api/me/settings` serializes `studyLanguage` as the backend-required English study-language name (`English`, `French`, `German`, `Portuguese`, `Spanish`, or `Italian`), while native and explanation language remain in their supported backend ID form. `GET /api/me/settings` accepts IDs or English names and normalizes them to internal dropdown IDs. The complete seven-field settings payload remains in use. Study language remains limited to English, French, German, Portuguese, Spanish, and Italian. Home uses **Start lesson** to open the navigation skeleton: **Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder**. Level cards use soft level-specific colors, topic cards use soft topic-specific colors, and situation cards use the selected topic color family. Situation labels are product-friendly, no longer use `Placeholder:`, and all six topics have options; Travel includes Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage.
 
@@ -52,7 +52,7 @@ The backend stale active-session interval remains two minutes. No backend timeou
 
 Summary UI states are intentionally distinct: ready displays backend learner-safe sections, unavailable means the completed lesson has no summary and shows Done without Retry, retryable load errors may show Retry summary, and authentication failures use the separate sign-in-required state. Before Finish, mobile waits up to 5 seconds for already-started message persistence operations as ordering protection only; this is not a blind retry or duplicate-write mechanism.
 
-Text lesson foundation, Finish plus backend summary, the real mobile Hint flow, confirmed mobile lesson abandonment, real per-message Translation, real learner-message Feedback, and manual tutor-message TTS playback are complete. Pending mobile scope still includes microphone recording, speech-to-text, automatic tutor playback, GIF avatar state binding, fullscreen Conversation mode, history/progress, billing, analytics/crash reporting, and store release work. Microphone recording plus speech-to-text is the next isolated functional area.
+Text lesson foundation, Finish plus backend summary, the real mobile Hint flow, confirmed mobile lesson abandonment, real per-message Translation, real learner-message Feedback, and manual tutor-message TTS playback are complete. Learner microphone recording plus speech-to-text is complete. Pending mobile scope still includes automatic tutor playback, GIF avatar state binding, fullscreen Conversation mode, realtime/continuous voice conversation, history/progress, billing, analytics/crash reporting, and store release work. Conversation mode planning is the next isolated functional area; it is planning only, not implementation.
 
 
 ## Current mobile manual tutor-message TTS milestone
@@ -66,6 +66,18 @@ Playback uses `just_audio`; the pubspec constraint remains `^0.9.42`, and the ve
 Loading is shown only for the selected tutor message, and the control changes to Stop while playback is active. Playback errors are learner-safe and retryable. `LessonTutorStatus.speaking` is driven by actual audio playback; no GIF asset switching was added. The temporary audio cache is scoped to the active lesson screen, temporary WAV files are cleaned during screen/session cleanup, and playback stops before confirmed abandonment, Finish, Summary navigation, screen disposal, and app backgrounding. Playback does not automatically resume. Choosing Stay in the leave confirmation does not abandon the lesson. No persistent audio cache, background playback, media notifications, pause/resume controls, streaming endpoint usage, automatic playback, microphone recording, speech-to-text, Conversation mode, or GIF avatar integration was added.
 
 TTS does not create or persist lesson messages, require tutor-message persistence, increment `learnerTurnCount` or `validTurnCount`, change Hint, Translation, Feedback, abandonment semantics, Finish payload, Summary, lesson progression, or make Premium decisions locally. It remains available while the transcript is visible and is not added to the Summary screen. Authentication failures use the existing authentication-required flow, terminal-session responses use existing session-ended handling, HTTP 429 is temporary voice unavailability, and invalid request, provider, timeout, service, network, empty-audio, and unsupported-content failures are learner-safe and retryable without exposing raw response bodies, provider details, tokens, URLs, or stack traces.
+
+## Current learner microphone recording and speech-to-text milestone
+
+Learner microphone recording and speech-to-text are complete as an Android-first second-client integration with the existing product runtime. Mobile uses authenticated `POST /api/audio/transcribe` with the existing bearer-token and refresh-on-401 flow. The request is `multipart/form-data`; the audio part is named `file`; and mobile sends the WAV as `audio/wav` with study-language ID, English language name, native language name, ISO language code, lesson phase, bounded transcription context, and the active backend lesson-session ID. For an English lesson, confirmed values are `targetLanguageId=en`, `targetLanguageName=English`, `targetLanguageNativeName=English`, and `targetLanguageCode=en`. Backend owns the transcription provider, model, language processing, usage protection, and session validation. Flutter does not call OpenAI or device-local speech recognition directly.
+
+Mobile uses `record` `^7.1.1` for genuine WAV capture: PCM 16-bit, mono, 16 kHz. Android requires `RECORD_AUDIO`; `permission_handler` `^12.0.3` handles permission status and Android settings recovery. No storage or background-microphone permission was added, and this repository still has no iOS runner.
+
+Recordings must be at least 500 ms and at most 30 seconds. Mobile validates RIFF/WAVE structure, PCM format, mono, 16 kHz, 16-bit data, duration, nonempty data, and near-silence before upload. Invalid or silent audio is rejected locally and is never sent to the backend. Temporary WAV files are deleted after success, failure, cancellation, lifecycle exit, or navigation.
+
+A valid transcript is inserted into the existing composer, remains editable, and never sends automatically; only the existing Send button creates the learner turn. If typed text already exists or changes during transcription, the learner chooses whether to replace it. Recording and transcription do not create lesson messages or change `learnerTurnCount` or `validTurnCount`. Normal permission denial returns the microphone to a retryable state; later taps perform a new permission check; permanent denial shows an explicit Open Android settings action; permission is rechecked after returning from settings; and typed drafts remain preserved without requiring a lesson restart.
+
+The microphone button changes to Stop during recording. Manual Stop immediately starts validation and transcription, and recording stops automatically at 30 seconds. Tutor TTS stops before recording begins. Recording is cancelled and cleaned up before Leave, Finish, Summary, navigation, disposal, or app backgrounding, and it does not automatically resume. Authentication, session-ended, invalid recording, rate limit, service unavailable, timeout, network failure, and malformed response remain distinct internal result categories; learner-facing errors are short and safe; network failures are retryable; and raw provider responses, tokens, audio contents, and technical exceptions are not shown. Automatic sending, continuous listening, Conversation mode, realtime or streaming transcription, background recording, waveform visualization, learner recording playback, local device speech recognition, and iOS implementation remain out of scope.
 
 ## Current mobile Translation milestone
 
@@ -272,7 +284,7 @@ flutter test
 
 ## Next safe implementation focus
 
-The next safe implementation focus should be Home UX polish, Settings UX polish, or lesson runtime planning. Home can become less technical and closer to a real learner start screen while account, entitlement, and access decisions remain backend-owned. Settings can continue improving spacing while keeping debug/backend wording out of the normal user flow. Lesson runtime planning should inspect backend lesson/session APIs before any real lesson start is implemented. Real lesson runtime remains out of scope; do not jump directly into voice recording, TTS playback, billing, Google Play Billing, Apple billing, analytics, or real AI lesson runtime without a separate plan.
+The next safe implementation focus is Conversation mode planning as a separate functional area, or smaller Home/Settings UX polish. Account, entitlement, access decisions, lesson runtime, transcription, TTS, and AI behavior remain backend-owned. Do not jump directly into automatic tutor playback, fullscreen Conversation mode implementation, realtime/continuous voice conversation, billing, Google Play Billing, Apple billing, analytics, or store release work without a separate plan.
 
 Future lesson runtime implementation rule: do not combine service, models, navigation, UI, and widget tests in one large PR. The first PR after planning should be read-only investigation or service-only, and the following PR should be UI-only using an already-tested service. The lesson runtime foundation must not add OpenAI calls from mobile and must not include voice, TTS, realtime, billing, analytics, history, or unrelated runtime features.
 
@@ -293,8 +305,8 @@ Before implementing real backend integration, the team should confirm:
 2. Exact backend endpoint paths, methods, request bodies, response bodies, and error codes.
 3. Whether mobile needs refresh tokens, device registration, or session revocation behavior beyond the desktop model.
 4. Minimum Android SDK, target Android SDK, Flutter channel/version, and supported device classes.
-5. Audio recording format, upload size limits, timeout behavior, and retry policy.
-6. TTS delivery mode: generated audio URL, streaming response, or binary payload.
+5. Future Conversation mode scope, UX, and API boundaries.
+6. Future automatic tutor playback behavior, if approved separately.
 7. Google Play Billing product IDs, backend verification endpoint contract, and entitlement reconciliation behavior.
 8. Analytics, crash reporting, privacy consent, and logging requirements.
 
@@ -320,7 +332,7 @@ Still intentionally out of scope:
 
 - Billing implementation or payment UI.
 - Google Play Billing, Apple billing, and Paddle runtime.
-- Voice mode, TTS, lesson runtime, lesson access UI, lesson start, lesson history/progress.
+- Conversation mode, automatic tutor playback, lesson history/progress.
 - Client-side OpenAI calls.
 - Analytics and crash reporting.
 - Store release setup.
@@ -392,7 +404,7 @@ Level is explicitly not part of Settings. To match the desktop product flow, lev
 
 Tutor options are loaded from `GET /api/tutor-options`. The current settings API supports `selectedTutorId`, so selected tutor persistence is backend-owned through `/api/me/settings` instead of being faked with local-only persistence. Tutor voice remains separate from selected tutor.
 
-Out of scope for this PR: backend changes, database migrations, lesson start, lesson chat, lesson runtime, topic/scenario selection, voice recording, voice runtime, TTS runtime/playback, billing, Google Play Billing, Apple billing, Paddle runtime, history/progress, analytics, crash reporting, and store release setup.
+Out of scope for this PR: backend changes, database migrations, Conversation mode, automatic tutor playback, billing, Google Play Billing, Apple billing, Paddle runtime, history/progress, analytics, crash reporting, and store release setup.
 
 Verification commands from `app/`:
 

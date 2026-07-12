@@ -31,7 +31,7 @@ flutter test
 flutter run -d emulator-5554
 ```
 
-The current green baseline includes the production-verified Android text lesson loop and completed mobile Hint flow, lesson abandonment from functional commit `1a392dc` (`Add mobile lesson abandon flow`), real Translation, and real learner-message Feedback from functional commit `f1e8f16` (`Add mobile learner message feedback`). `flutter pub get` passed, Dart formatting passed, `flutter analyze` passed with zero issues, focused AuthService tests passed with 32 tests, focused playback-service tests passed with 4 tests, focused lesson-flow tests passed with 35 tests, the complete Flutter suite passed with 127 tests, the Android debug APK build passed, and manual Android Emulator verification passed for manual tutor-message playback plus existing Stay, Leave lesson, immediate new lesson start, Translation, Feedback, Hint, Finish, and backend-owned Summary. Settings/password recovery remains part of this verified baseline. Settings has stable **Account**, **Learning**, **Audio**, and **Connection status** advanced area, **Save settings** is visible and tested, and user level is not in Settings. Settings selected tutor persistence is complete through `/api/me/settings`: mobile reads and sends `selectedTutorId`, selection survives app/emulator restart, and tutor voice remains a separate setting. Tutor selection belongs in Settings, and Home no longer shows tutor diagnostics or an **Available tutors** card. Home now shows the provided Language Voice Tutor logo next to a more branded, accessible title, preloads the logo during startup before Home is displayed, shows learner-friendly signed-in, account, and plan status while keeping account/access decisions backend-owned, and uses **Start lesson** to open the lesson-start navigation flow. Choose Level uses soft level-specific cards, Choose Topic uses soft topic-specific cards, and Choose Situation uses the selected topic color family. The mobile logo source is `app/assets/brand/source/lvt-logo-source.png`; the app logo is `app/assets/brand/lvt-logo.png`; the loading screen shows only the centered logo; and Android launcher icons under `app/android/app/src/main/res/mipmap-*` are derived from the same provided source logo. Product-friendly situation labels are in place for all six topics, Travel includes Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage, and situation labels no longer show `Placeholder:`. Real per-message Translation is complete in functional commit `9d2476b` (`Add mobile message translation`), real learner-message Feedback is complete in functional commit `f1e8f16` (`Add mobile learner message feedback`), and settings language persistence is fixed in `340c950` (`Fix mobile settings language persistence`). Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Microphone recording plus speech-to-text is the next isolated functional area. Microphone recording, speech-to-text, GIF avatar state integration, fullscreen Conversation mode, history/progress screen, mobile billing, analytics, crash reporting, and store release remain future work.
+The current green baseline includes the production-verified Android text lesson loop, completed Hint and lesson abandonment, real Translation, real learner-message Feedback, manual tutor-message TTS playback, and learner microphone recording plus speech-to-text from functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). `flutter pub get` passed, Dart formatting passed, `flutter analyze` passed with zero issues, focused learner recording service tests passed with 3 tests, focused lesson-flow tests passed with 41 tests, the complete Flutter suite passed with 136 tests, the Android debug APK build passed, and physical Android-device verification confirmed repeated correct speech recognition while existing Summary, Feedback, Translation, Hint, TTS, abandonment, and Finish behavior remained operational. Settings/password recovery remains part of this verified baseline. Settings has stable **Account**, **Learning**, **Audio**, and **Connection status** advanced area, **Save settings** is visible and tested, and user level is not in Settings. Settings selected tutor persistence is complete through `/api/me/settings`: mobile reads and sends `selectedTutorId`, selection survives app/emulator restart, and tutor voice remains a separate setting. Tutor selection belongs in Settings, and Home no longer shows tutor diagnostics or an **Available tutors** card. Home now shows the provided Language Voice Tutor logo next to a more branded, accessible title, preloads the logo during startup before Home is displayed, shows learner-friendly signed-in, account, and plan status while keeping account/access decisions backend-owned, and uses **Start lesson** to open the lesson-start navigation flow. Choose Level uses soft level-specific cards, Choose Topic uses soft topic-specific cards, and Choose Situation uses the selected topic color family. The mobile logo source is `app/assets/brand/source/lvt-logo-source.png`; the app logo is `app/assets/brand/lvt-logo.png`; the loading screen shows only the centered logo; and Android launcher icons under `app/android/app/src/main/res/mipmap-*` are derived from the same provided source logo. Product-friendly situation labels are in place for all six topics, Travel includes Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage, and situation labels no longer show `Placeholder:`. Real per-message Translation is complete in functional commit `9d2476b` (`Add mobile message translation`), real learner-message Feedback is complete in functional commit `f1e8f16` (`Add mobile learner message feedback`), and settings language persistence is fixed in `340c950` (`Fix mobile settings language persistence`). Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Learner microphone recording plus speech-to-text is complete in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Conversation mode planning is the next isolated functional area. Automatic tutor playback, GIF avatar state integration, fullscreen Conversation mode, history/progress screen, mobile billing, analytics, crash reporting, and store release remain future work.
 
 ## Planned phases
 
@@ -73,7 +73,8 @@ The reviewed Windows desktop client walkthrough presentation is a product source
 - Complete in functional commit `1a392dc`: confirmed mobile lesson abandonment through `POST /api/lesson-sessions/{sessionId}/abandon` with no request body, shared visible Back/Android system Back leave confirmation, no silent Finish, no Summary generation, duplicate-abandon prevention, retryable network/backend failure behavior, and existing auth refresh behavior.
 - Complete: real per-message learner Feedback through `POST /api/lesson-chat/feedback`, with the existing full LessonChatRequest contract, backend-owned correction behavior, persisted learner-message GUID requirement, expandable non-transcript per-message UI, per-message caching, study-language output, and no changes to counters, Finish, Summary, Hint, Translation, abandonment, progression, or entitlement.
 - Complete: manual tutor-message TTS playback through `POST /api/audio/speech`, raw WAV binary handling, temporary per-screen caching, one active lesson `AudioPlayer`, learner-safe retryable errors, and no changes to counters, Finish, Summary, Hint, Translation, Feedback, abandonment, progression, or entitlement.
-- Keep pending: microphone recording, speech-to-text, automatic tutor playback, GIF avatar state binding, fullscreen Conversation mode, mobile billing, analytics, crash reporting, and store release work.
+- Complete: learner microphone recording and speech-to-text through `POST /api/audio/transcribe`, authenticated multipart WAV upload, Android `RECORD_AUDIO` permission, local WAV/duration/silence validation, editable transcript insertion, no automatic send, and no changes to lesson counters or message creation.
+- Keep pending: automatic tutor playback, GIF avatar state binding, fullscreen Conversation mode, realtime/continuous voice conversation, history/progress screen, mobile billing, analytics, crash reporting, and store release work.
 - Lesson runtime foundation must not add OpenAI calls from mobile and must not include client-owned tutor methodology or local summary generation.
 
 
@@ -90,6 +91,8 @@ GET /api/me/lesson-content/scenarios/{scenarioKey}
 POST /api/me/lesson-sessions
 POST /api/lesson-chat/reply
 POST /api/lesson-chat/feedback
+POST /api/audio/speech
+POST /api/audio/transcribe
 POST /api/me/lesson-sessions/{sessionId}/messages
 PUT /api/me/lesson-sessions/{sessionId}/finish
 GET /api/me/lesson-sessions/{sessionId}/summary
@@ -117,17 +120,18 @@ Do not use `POST /api/me/lesson-sessions/{sessionId}/reply` for real lessons at 
 
 Confirmed mobile lesson abandonment is complete. The backend stale active-session interval remains two minutes, no backend timeout change was made, and no mobile heartbeat was added. Normal confirmed Back navigation releases the session immediately; if the app is force-closed or terminated without confirmed leave, the existing backend timeout remains the fallback. Heartbeat or timeout reduction is optional future reliability work only if real user feedback requires it.
 
-Explicit no-go items for future lesson work: no temporary mobile-only backend endpoints, no new safe/catalog endpoints for intermediate convenience, no duplicate mobile prompt/runtime system, no backend changes unless a real final shared lesson-runtime design is approved, no silent Finish from Back navigation, no Summary generation from ordinary leave, and no voice/TTS/realtime/history/billing.
+Explicit no-go items for future lesson work: no temporary mobile-only backend endpoints, no new safe/catalog endpoints for intermediate convenience, no duplicate mobile prompt/runtime system, no backend changes unless a real final shared lesson-runtime design is approved, no silent Finish from Back navigation, no Summary generation from ordinary leave, and no realtime/history/billing.
 
 Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
 
 
-### Phase 4: Voice and conversation — later, after manual TTS
+### Phase 4: Voice and conversation — partially complete
 
-- Implement Android recording permissions.
-- Implement backend voice upload.
-- Manual tutor-message TTS playback is complete; keep automatic tutor playback, microphone recording, and speech-to-text as future isolated work.
-- Add timeout, retry, and error-state handling for future voice input features.
+- Complete: Android recording permission handling for learner microphone transcription.
+- Complete: backend voice upload to `POST /api/audio/transcribe` using authenticated multipart WAV.
+- Complete: manual tutor-message TTS playback.
+- Keep automatic tutor playback, GIF avatar state integration, fullscreen Conversation mode, and realtime/continuous voice conversation as future isolated work.
+- Conversation mode planning is the next isolated functional area, but implementation should not be mixed with this documentation update.
 
 ### Phase 5: Google Play Billing bridge — later, not the next safe phase
 
@@ -141,7 +145,7 @@ Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow
 - Confirm minimum SDK and target SDK before creating project files.
 - Keep backend base URL configurable by build flavor or environment file without secrets.
 - Use Android secure storage for session material.
-- Request microphone permission only when voice features are implemented.
+- Request microphone permission only for learner-initiated recording; no background microphone permission is used.
 - Ensure network security permits HTTPS to production backend.
 - Avoid storing sensitive provider or backend secrets in the app bundle.
 

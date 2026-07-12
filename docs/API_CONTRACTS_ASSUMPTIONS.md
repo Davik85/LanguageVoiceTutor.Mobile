@@ -131,6 +131,7 @@ POST /api/me/lesson-sessions
 POST /api/lesson-chat/reply
 POST /api/lesson-chat/feedback
 POST /api/audio/speech
+POST /api/audio/transcribe
 POST /api/me/lesson-sessions/{sessionId}/messages
 POST /api/lesson-sessions/{sessionId}/abandon
 PUT /api/me/lesson-sessions/{sessionId}/finish
@@ -322,6 +323,7 @@ GET /api/me/lesson-content/scenarios/{scenarioKey}
 POST /api/lesson-chat/reply
 POST /api/lesson-chat/feedback
 POST /api/audio/speech
+POST /api/audio/transcribe
 POST /api/me/lesson-sessions/{sessionId}/messages
 POST /api/lesson-sessions/{sessionId}/abandon
 PUT /api/me/lesson-sessions/{sessionId}/finish
@@ -434,21 +436,74 @@ TTS error boundaries:
 - Invalid request, provider, timeout, service, network, empty-audio, and unsupported-content failures are learner-safe and retryable.
 - Raw response bodies, provider details, tokens, URLs, and stack traces are not exposed.
 
-## Voice upload and speech-to-text expectations
+## Confirmed learner microphone recording and speech-to-text contract
 
-Voice upload and speech-to-text remain future work. Expected future behavior:
+Learner microphone recording and speech-to-text are complete. Mobile uses the existing backend transcription endpoint as a second client of the same product runtime:
 
-- Mobile records audio using platform APIs after the microphone feature is approved.
-- Mobile uploads audio to backend over HTTPS.
-- Backend validates file type, size, duration, user entitlement, and usage limits.
-- Backend handles speech recognition or AI tutor processing.
+```http
+POST /api/audio/transcribe
+```
 
-Open questions for the future microphone/STT area:
+The request is authenticated and reuses the existing bearer-token plus refresh-on-401 flow. The request is `multipart/form-data`; the audio part name is `file`; and the WAV file is sent as `audio/wav`. Backend owns the transcription provider, model, language processing, usage protection, and session validation. Flutter does not call OpenAI or device-local speech recognition directly. No backend deployment is claimed by this documentation update.
 
-- Required audio format and codec.
-- Maximum upload size and duration.
-- Retry and resumable upload policy.
-- Whether uploads need pre-signed URLs.
+Transcription request metadata includes:
+
+- Study-language ID.
+- English language name.
+- Native language name.
+- ISO language code.
+- Lesson phase.
+- Bounded transcription context.
+- Active backend lesson-session ID.
+
+For an English lesson, confirmed values are `targetLanguageId=en`, `targetLanguageName=English`, `targetLanguageNativeName=English`, and `targetLanguageCode=en`. Do not duplicate the complete multipart schema in additional documents.
+
+Audio capture and Android permission boundaries:
+
+- Mobile uses `record` `^7.1.1`.
+- Recording format is genuine WAV: PCM 16-bit, mono, 16 kHz.
+- Android `RECORD_AUDIO` permission is required.
+- `permission_handler` `^12.0.3` handles microphone permission status and Android settings recovery.
+- No storage or background-microphone permission was added.
+- The repository still has no iOS runner.
+
+Recording validation and cleanup boundaries:
+
+- Minimum usable duration is 500 ms.
+- Maximum duration is 30 seconds.
+- Mobile validates RIFF/WAVE structure, PCM format, mono, 16 kHz, 16-bit data, duration, and nonempty data before upload.
+- Near-silent recordings are rejected locally.
+- Invalid or silent audio is never sent to the backend.
+- Temporary WAV files are deleted after success, failure, cancellation, lifecycle exit, or navigation.
+
+Transcript and lesson boundaries:
+
+- A valid transcript is inserted into the existing composer and remains editable.
+- Transcription never sends automatically; only the existing Send button creates the learner turn.
+- If typed text already exists or changes during transcription, the learner chooses whether to replace it.
+- Recording and transcription do not create lesson messages.
+- Recording and transcription do not change `learnerTurnCount` or `validTurnCount`.
+
+Permission, UI, and lifecycle boundaries:
+
+- Normal denial returns the microphone to a retryable state, and a later tap performs a new permission check.
+- Permanent denial shows an explicit Open Android settings action.
+- Permission is rechecked after returning from Android settings, typed drafts remain preserved, and the learner does not need to restart the lesson.
+- The microphone button changes to Stop during recording.
+- Manual Stop immediately starts validation and transcription.
+- Recording stops automatically at 30 seconds.
+- Tutor TTS stops before recording begins.
+- Recording is cancelled and cleaned up before Leave, Finish, Summary, navigation, disposal, or app backgrounding.
+- Recording does not automatically resume.
+
+Transcription error boundaries:
+
+- Authentication, session-ended, invalid recording, rate limit, service unavailable, timeout, network failure, and malformed response remain distinct internal result categories.
+- Learner-facing errors are short and safe.
+- Network failures return the microphone to a retryable state.
+- Raw provider responses, tokens, audio contents, and technical exceptions are not shown.
+
+Explicit out-of-scope items for this milestone: automatic sending after transcription, continuous listening, Conversation mode, realtime or streaming transcription, background recording, waveform visualization, learner recording playback, local device speech recognition, and iOS implementation.
 
 ## Error handling expectations
 
