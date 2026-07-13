@@ -1,6 +1,6 @@
 # Mobile lesson, voice, Conversation mode, and voice scenario state
 
-Authoritative source commit: `f195dc2` (`feat: add mobile voice lesson and conversation flows`). This document records the completed Mobile lesson, voice, Conversation mode, and voice scenario-resolution state from that source commit.
+Authoritative source commit: `f195dc2` (`feat: add mobile voice lesson and conversation flows`). This document records the completed Mobile lesson, voice, Conversation mode, voice scenario-resolution state from that source commit, and the later documented Desktop-parity transcription behavior.
 
 ## Product boundary
 
@@ -8,7 +8,7 @@ Mobile is another client of the same Language Voice Tutor product. Backend and C
 
 ## Lesson experience
 
-The committed Mobile client includes a separate Conversation mode screen while normal Lesson Chat remains available. Entering Conversation mode uses the existing lesson session and does not start a second lesson session. Lesson Chat and Conversation mode share transcript safety handling, while Conversation mode adds independent **Auto-send voice** and **Auto-play tutor voice** controls.
+The committed Mobile client includes a separate Conversation mode screen while normal Lesson Chat remains available. Entering Conversation mode uses the existing lesson session and does not start a second lesson session. Lesson Chat and Conversation mode share transcript safety handling and now use one shared Mobile transcription request builder, while Conversation mode adds independent **Auto-send voice** and **Auto-play tutor voice** controls.
 
 The lesson experience separately handles published CMS scenarios and free custom scenarios. Known published scenarios can use a local CMS-derived opening after selection; free scenarios continue through the custom-context lesson reply path without invented CMS variants. Hint behavior remains backend-owned and uses the selected lesson context after a scenario has started. Audio playback handles completion and recovery so voice controls return to a usable state after playback ends or fails. Tutor avatar state is handled with preload fallback rather than assuming every possible lesson-chat avatar asset is present. Keyboard-open layout keeps the composer and **Send** button visible without `RenderFlex` overflow.
 
@@ -68,9 +68,17 @@ If resolver failure occurs, Mobile does not guess. Safe recognized text remains 
 
 After a scenario is selected, later voice replies are normal lesson replies. Published scenarios retain the selected CMS variant through `selectedContextVariant`, and the scenario resolver is not called again.
 
+## Desktop-parity transcription behavior
+
+Mobile uses the existing authenticated `POST /api/audio/transcribe` endpoint and the existing multipart contract; no new backend endpoint, provider integration, or backend deployment requirement was added for the documented transcription-parity behavior. Mobile has an explicit study-language definition containing ID, English name, native name, and transcription language code. Supported study languages remain English, French, German, Portuguese, Spanish, Italian. Speech recognition always uses the selected study language; native language and explanation language do not influence transcription.
+
+During the first unresolved scenario-selection turn, Mobile sends a short transcription context built from the currently visible runtime/CMS context candidates. Candidate titles come from current lesson runtime data and are not hardcoded. The context asks for exact transcription in the selected study language without translation or paraphrasing. During active roleplay, the selected lesson context is used as the transcription hint. Conversation mode uses the same study-language definition and available lesson context as Lesson Chat. When runtime context is unavailable, Mobile safely sends an empty or minimal context instead of inventing lesson data.
+
+Semantic scenario resolution remains unchanged: deterministic numeric and exact-title matching still runs locally; unresolved first voice choices still use the existing backend semantic resolver; `published_context`, `free_context`, `clarify`, `unsafe`, and backend failure behavior remain unchanged; and the canonical CMS candidate returned by backend is still used. Translation remains a separate explicit `POST /api/translate` action.
+
 ## Backend dependency
 
-Production backend `0.1.35-backend.113` contains the semantic voice scenario endpoint. Physical-device testing must use backend `0.1.35-backend.113` or newer. Previous backend versions do not contain this route.
+The existing backend semantic voice scenario resolver remains in use for unresolved first voice choices. The Desktop-parity transcription update did not add a backend endpoint, provider integration, backend deployment requirement, or API contract change.
 
 ## Verification recorded for `f195dc2`
 
@@ -83,9 +91,22 @@ Production backend `0.1.35-backend.113` contains the semantic voice scenario end
 - Debug APK build succeeded.
 - APK path: `app/build/app/outputs/flutter-apk/app-debug.apk`.
 
-## Next manual validation step
+## Verification recorded for Desktop-parity transcription
 
-Do not describe physical-device validation as completed until it has actually been completed after backend `0.1.35-backend.113` deployment. The next manual validation step is to run the committed Mobile client on a physical Android device and verify:
+- `dart format`: completed successfully.
+- `flutter analyze`: completed with no issues.
+- `lesson_start_flow_test.dart`: 58 passed.
+- `conversation_mode_screen_test.dart`: 5 passed.
+- `transcript_script_normalizer_test.dart`: 3 passed.
+- Transcription-parity focused tests: 12 passed.
+- Full Flutter suite: 197 passed, 0 failed.
+- Debug Android APK build succeeded.
+
+## Remaining validation boundary
+
+Initial physical Android testing looks successful, but broader physical-device repetition is still required across several lessons and repeated first-attempt voice selections. Do not declare voice recognition fully stabilized yet. Missing Lesson Chat avatar assets remain a separate issue. The optional Desktop Realtime transcription language issue is outside this Mobile change.
+
+The next manual validation step is to run the committed Mobile client repeatedly on physical Android devices and verify:
 
 - published scenario recognition with imperfect speech;
 - free custom scenario selection;
