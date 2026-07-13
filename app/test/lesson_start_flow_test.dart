@@ -545,8 +545,15 @@ Widget _lessonScreen(
   LessonStartSelection selection = _introLessonSelection,
   LearnerAudioRecordingService? recordingService,
   LearnerMicrophonePermissionService? microphonePermissionService,
+  TextScaler? textScaler,
 }) =>
     MaterialApp(
+      builder: textScaler == null
+          ? null
+          : (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+                child: child!,
+              ),
       home: LessonScreen(
         authService: authService,
         recordingService: recordingService,
@@ -585,6 +592,14 @@ Future<void> _showWidget(WidgetTester tester, Finder finder) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _openTextComposer(WidgetTester tester) async {
+  if (tester.any(find.byKey(const Key('lesson-input')))) return;
+  final keyboard = find.byKey(const Key('lesson-action-keyboard'));
+  await _showWidget(tester, keyboard);
+  await tester.tap(keyboard);
+  await tester.pumpAndSettle();
+}
+
 Future<void> _autoSendOneRecording(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('lesson-auto-send-voice-switch')));
   await _showWidget(tester, find.byKey(const Key('lesson-action-record')));
@@ -598,22 +613,203 @@ Future<void> _autoSendOneRecording(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('narrow keyboard viewport keeps composer and Send visible',
+  testWidgets(
+      'hidden composer anchors action row near bottom SafeArea and transcript fills remaining space',
       (tester) async {
-    tester.view.physicalSize = const Size(360, 640);
+    tester.view.physicalSize = const Size(400, 800);
     tester.view.devicePixelRatio = 1;
-    tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_lessonScreen(FakeAuthService()));
+    await tester.pumpAndSettle();
+
+    final surfaceRect = tester.getRect(
+      find.byKey(const Key('lesson-chat-surface')),
+    );
+    final transcriptRect = tester.getRect(
+      find.byKey(const Key('lesson-chat-transcript')),
+    );
+    final dockRect =
+        tester.getRect(find.byKey(const Key('lesson-bottom-dock')));
+    final actionRect =
+        tester.getRect(find.byKey(const Key('lesson-action-row')));
+
+    expect(find.byKey(const Key('lesson-input')), findsNothing);
+    expect(dockRect.bottom, closeTo(surfaceRect.bottom, 0.1));
+    expect(800 - dockRect.bottom, lessThan(24));
+    expect(surfaceRect.bottom - actionRect.bottom, lessThan(16));
+    expect(transcriptRect.bottom, closeTo(dockRect.top, 0.1));
+    expect(transcriptRect.height, greaterThan(actionRect.height * 3));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'composer opens directly above action row and closes back to bottom-only dock',
+      (tester) async {
+    await tester.pumpWidget(_lessonScreen(FakeAuthService()));
+    await tester.pumpAndSettle();
+
+    final keyboard = find.byKey(const Key('lesson-action-keyboard'));
+    final initialDockBottom =
+        tester.getRect(find.byKey(const Key('lesson-bottom-dock'))).bottom;
+    expect(find.byKey(const Key('lesson-input')), findsNothing);
+    expect(find.byKey(const Key('lesson-send-button')), findsNothing);
+    expect(keyboard, findsOneWidget);
+    expect(find.byKey(const Key('lesson-chat-transcript')), findsOneWidget);
+
+    await tester.tap(keyboard);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('lesson-input')), findsOneWidget);
+    expect(find.byKey(const Key('lesson-send-button')), findsOneWidget);
+    final composerRect = tester.getRect(
+      find.byKey(const Key('lesson-text-composer')),
+    );
+    final actionRect =
+        tester.getRect(find.byKey(const Key('lesson-action-row')));
+    expect(composerRect.bottom, lessThanOrEqualTo(actionRect.top));
+    expect(actionRect.top - composerRect.bottom, lessThanOrEqualTo(8));
+    expect(
+      tester.getRect(find.byKey(const Key('lesson-bottom-dock'))).bottom,
+      closeTo(initialDockBottom, 0.1),
+    );
+
+    await tester.tap(keyboard);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('lesson-input')), findsNothing);
+    expect(find.byKey(const Key('lesson-send-button')), findsNothing);
+    expect(
+      tester.getRect(find.byKey(const Key('lesson-bottom-dock'))).bottom,
+      closeTo(initialDockBottom, 0.1),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'software keyboard moves complete bottom dock above inset and leaves transcript scrollable',
+      (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.view.resetViewInsets);
 
     await tester.pumpWidget(_lessonScreen(FakeAuthService()));
     await tester.pumpAndSettle();
+    await _openTextComposer(tester);
+    final dockBottomBeforeKeyboard =
+        tester.getRect(find.byKey(const Key('lesson-bottom-dock'))).bottom;
 
+    tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+    await tester.pumpAndSettle();
+
+    final dockRect =
+        tester.getRect(find.byKey(const Key('lesson-bottom-dock')));
+    final composerRect = tester.getRect(
+      find.byKey(const Key('lesson-text-composer')),
+    );
+    final actionRect =
+        tester.getRect(find.byKey(const Key('lesson-action-row')));
+    final transcriptRect = tester.getRect(
+      find.byKey(const Key('lesson-chat-transcript')),
+    );
+    final transcript = tester.widget<SingleChildScrollView>(
+      find.byKey(const Key('lesson-chat-transcript')),
+    );
+
+    expect(dockRect.bottom, lessThanOrEqualTo(800 - 280));
+    expect(dockRect.bottom, lessThan(dockBottomBeforeKeyboard));
+    expect(composerRect.top, greaterThanOrEqualTo(dockRect.top));
+    expect(actionRect.bottom, lessThanOrEqualTo(dockRect.bottom));
+    expect(transcriptRect.bottom, closeTo(dockRect.top, 0.1));
+    expect(transcriptRect.height, greaterThan(0));
+    expect(transcript.controller!.hasClients, isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('voice preference row is painted directly on chat gradient',
+      (tester) async {
+    await tester.pumpWidget(_lessonScreen(FakeAuthService()));
+    await tester.pumpAndSettle();
+
+    final preferences = find.byKey(const Key('lesson-voice-preferences'));
+    final surface = find.byKey(const Key('lesson-chat-surface'));
+    final surfaceWidget = tester.widget<Container>(surface);
+    final decoration = surfaceWidget.decoration! as BoxDecoration;
+
+    expect(preferences, findsOneWidget);
+    expect(find.ancestor(of: preferences, matching: surface), findsOneWidget);
+    expect(decoration.gradient, isNotNull);
+    expect(decoration.color, isNull);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'Samsung-like keyboard viewport handles status choices and multiline composer',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 740);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetViewInsets);
+
+    final auth = FakeAuthService(
+      studyLanguage: 'en',
+      transcriptionText: 'meeting',
+      voiceScenarioResponse: const VoiceScenarioSemanticResponse(
+        decision: VoiceScenarioSemanticDecision.clarify,
+        confidence: .55,
+        candidateContextIds: ['new_neighbor', 'hobby_club'],
+        clarificationText:
+            'I heard an ambiguous situation.\nPlease choose the closest option below so the lesson can continue safely.',
+      ),
+    );
+    await tester.pumpWidget(_lessonScreen(
+      auth,
+      textScaler: const TextScaler.linear(1.45),
+      recordingService: FakeSuccessfulRecordingService(),
+      microphonePermissionService: FakeLearnerMicrophonePermissionService(
+        statuses: [LearnerMicrophonePermissionStatus.granted],
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('lesson-auto-send-voice-switch')));
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 550)));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('lesson-send-error')), findsOneWidget);
+    expect(find.byKey(const Key('lesson-voice-clarification-choices')),
+        findsOneWidget);
     expect(find.byKey(const Key('lesson-input')), findsOneWidget);
-    expect(find.byKey(const Key('lesson-send-button')), findsOneWidget);
-    expect(find.byKey(const Key('lesson-chat-transcript')), findsOneWidget);
-    expect(find.byType(Scrollable), findsWidgets);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('lesson-input')),
+      'This is a longer draft\nthat spans several lines\nand keeps growing\nfor layout testing.',
+    );
+    await tester.pumpAndSettle();
+
+    final transcript = tester.widget<SingleChildScrollView>(
+      find.byKey(const Key('lesson-chat-transcript')),
+    );
+    expect(transcript.controller, isNotNull);
+    expect(
+        find.byKey(const Key('lesson-transcript-status-area')), findsOneWidget);
+    for (final key in const [
+      Key('lesson-action-record'),
+      Key('lesson-action-hint'),
+      Key('lesson-action-keyboard'),
+    ]) {
+      final control = find.byKey(key);
+      await tester.ensureVisible(control);
+      await tester.pumpAndSettle();
+      expect(control.hitTestable(), findsOneWidget);
+    }
     expect(tester.takeException(), isNull);
   });
 
@@ -648,8 +844,8 @@ void main() {
     expect(find.byType(AppBar), findsNothing);
     expect(find.byKey(const Key('lesson-tutor-header')), findsOneWidget);
     expect(find.byKey(const Key('lesson-chat-transcript')), findsOneWidget);
-    expect(find.byKey(const Key('lesson-input')), findsOneWidget);
-    expect(_sendButton(), findsOneWidget);
+    expect(find.byKey(const Key('lesson-input')), findsNothing);
+    expect(find.byKey(const Key('lesson-action-keyboard')), findsOneWidget);
     expect(auth.fetchScenarioCallCount, 1);
     expect(auth.lastStartRequest?.lessonContentId,
         'everyday_english_introductions');
@@ -717,6 +913,7 @@ void main() {
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
+    await _openTextComposer(tester);
     await tester.enterText(find.byType(TextField), 'meeting a new neighbor');
     await tester.pump();
     await tester.tap(_sendButton());
@@ -751,6 +948,7 @@ void main() {
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
+    await _openTextComposer(tester);
     await tester.enterText(find.byType(TextField), '2');
     await tester.pump();
     await tester.tap(_sendButton());
@@ -778,6 +976,7 @@ void main() {
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
+    await _openTextComposer(tester);
     await tester.enterText(find.byType(TextField), 'meeting a new neighbor.');
     await tester.pump();
     await tester.tap(_sendButton());
@@ -804,6 +1003,7 @@ void main() {
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
+    await _openTextComposer(tester);
     await tester.enterText(find.byType(TextField), '1.');
     await tester.pump();
     await tester.tap(_sendButton());
@@ -851,6 +1051,7 @@ void main() {
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
+    await _openTextComposer(tester);
     await tester.enterText(find.byType(TextField), 'Meeting a colleague');
     await tester.pump();
     await tester.tap(_sendButton());
@@ -873,6 +1074,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('lesson-hint-card')), findsOneWidget);
 
+    await _openTextComposer(tester);
     await tester.enterText(find.byType(TextField), '1');
     await tester.pump();
     await tester.tap(_sendButton());
@@ -888,6 +1090,7 @@ void main() {
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
+    await _openTextComposer(tester);
     final button = tester.widget<FilledButton>(_sendButton());
     expect(button.onPressed, isNull);
   });
@@ -965,6 +1168,7 @@ void main() {
     expect(auth.lastHintRequest?.selectedContextVariantId, 'new_neighbor');
     expect(
         auth.lastHintRequest?.selectedContextTitle, 'Meeting a new neighbor');
+    await _showWidget(tester, find.byKey(const Key('lesson-hint-dismiss')));
     await tester.tap(find.byKey(const Key('lesson-hint-dismiss')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('lesson-hint-card')), findsNothing);
@@ -978,6 +1182,7 @@ void main() {
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
+    await _openTextComposer(tester);
     await tester.enterText(find.byType(TextField), 'Hello');
     await tester.pump();
     await tester.tap(_sendButton());
@@ -1005,6 +1210,7 @@ void main() {
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
+    await _openTextComposer(tester);
     await tester.enterText(find.byType(TextField), 'Hello, my name is Sam.');
     await tester.pump();
     await tester.tap(_sendButton());
@@ -1038,6 +1244,7 @@ void main() {
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
+    await _openTextComposer(tester);
     await tester.enterText(find.byType(TextField), 'Hello');
     await tester.pump();
     await tester.tap(_sendButton());
@@ -1409,6 +1616,7 @@ void main() {
       ),
     ));
     await tester.pumpAndSettle();
+    await _openTextComposer(tester);
     await tester.enterText(
         find.byKey(const Key('lesson-input')), 'Keep this draft');
     await _showWidget(tester, find.byKey(const Key('lesson-action-record')));
@@ -1454,6 +1662,7 @@ void main() {
           LearnerAudioRecordingService(recorder: FakeLearnerRecorder()),
     ));
     await tester.pumpAndSettle();
+    await _openTextComposer(tester);
     await tester.enterText(
         find.byKey(const Key('lesson-input')), 'Keep this draft');
     await tester.tap(find.byKey(const Key('lesson-action-record')));
@@ -1614,6 +1823,7 @@ void main() {
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
 
+    await _openTextComposer(tester);
     await tester.enterText(find.byType(TextField), 'Hello');
     await tester.pump();
     await tester.tap(_sendButton());
@@ -1676,7 +1886,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(auth.abandonLessonSessionCallCount, 0);
-    expect(find.byKey(const Key('lesson-input')), findsOneWidget);
+    expect(find.byKey(const Key('lesson-action-keyboard')), findsOneWidget);
   });
 
   testWidgets('system Back uses the same leave confirmation', (tester) async {
@@ -1723,7 +1933,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Could not leave the lesson. Please try again.'),
         findsOneWidget);
-    expect(find.byKey(const Key('lesson-input')), findsOneWidget);
+    expect(find.byKey(const Key('lesson-action-keyboard')), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('lesson-back-button')));
     await tester.pumpAndSettle();
@@ -1738,6 +1948,7 @@ void main() {
     final auth = FakeAuthService(finishCompleter: completer);
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
+    await _openTextComposer(tester);
     await tester.tap(find.byKey(const Key('lesson-action-finish')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Finish lesson'));
@@ -1811,6 +2022,7 @@ void main() {
     );
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
+    await _openTextComposer(tester);
     await tester.enterText(find.byKey(const Key('lesson-input')), 'Hello');
     await tester.pump();
     await tester.tap(_sendButton());
@@ -1838,6 +2050,7 @@ void main() {
     final auth = FakeAuthService(persistenceFailure: Exception('offline'));
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
+    await _openTextComposer(tester);
     await tester.enterText(find.byKey(const Key('lesson-input')), 'Hello');
     await tester.tap(_sendButton());
     await tester.pumpAndSettle();
@@ -1917,6 +2130,7 @@ void main() {
     final auth = FakeAuthService(finishResult: LessonCompletionResult.failed());
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
+    await _openTextComposer(tester);
     await tester.enterText(find.byKey(const Key('lesson-input')), 'Hello');
     await tester.tap(find.byKey(const Key('lesson-action-finish')));
     await tester.pumpAndSettle();

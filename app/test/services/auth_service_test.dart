@@ -8,6 +8,7 @@ import 'package:language_voice_tutor_mobile/models/lesson_runtime.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_session.dart';
 import 'package:language_voice_tutor_mobile/models/translation.dart';
 import 'package:language_voice_tutor_mobile/models/user_settings.dart';
+import 'package:language_voice_tutor_mobile/models/voice_scenario_resolution.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
 
@@ -113,6 +114,23 @@ const introStartRequest = StartLessonSessionRequest(
   selectedContextId: null,
   selectedContextTitle: null,
   modeUsed: 'text',
+);
+
+const voiceScenarioRequest = VoiceScenarioResolutionRequest(
+  studyLanguage: 'English',
+  learnerLevel: 'A2',
+  topicId: 'travel',
+  subtopicId: 'hotel',
+  runtimeScenarioId: 'travel_hotel',
+  runtimeVersion: 7,
+  recognizedText: 'private transcript text',
+  candidates: [
+    VoiceScenarioCandidateRequest(
+      id: 'hotel_front_desk',
+      title: 'Private scenario title',
+      description: 'Private prompt and conversation history',
+    ),
+  ],
 );
 
 Map<String, dynamic> runtimeScenarioJson() => {
@@ -270,6 +288,166 @@ void main() {
       'selectedContextTitle': null,
       'modeUsed': 'text',
     });
+  });
+
+  test('voice scenario diagnostics preserve exact non-2xx HTTP status',
+      () async {
+    final api = FakeApiClient()
+      ..responses[
+          '/api/me/lesson-sessions/session-1/voice-scenario-resolution'] = [
+        const ApiResponse(
+          statusCode: 422,
+          body: '{"code":"scenario_contract_rejected"}',
+        ),
+      ];
+
+    final result = await AuthService(apiClient: api, storage: MemoryStorage())
+        .resolveVoiceScenario(
+      sessionId: 'session-1',
+      request: voiceScenarioRequest,
+    );
+
+    expect(result.isSuccess, isFalse);
+    expect(result.diagnostic.httpStatusCode, 422);
+    expect(result.diagnostic.failureStage, 'http_response');
+    expect(result.diagnostic.backendSafeCode, 'scenario_contract_rejected');
+  });
+
+  test('voice scenario diagnostics distinguish initial 401 from retry 401',
+      () async {
+    const path = '/api/me/lesson-sessions/session-1/voice-scenario-resolution';
+    final initial401Api = FakeApiClient()
+      ..responses[path] = [const ApiResponse(statusCode: 401, body: '{}')]
+      ..responses['/api/auth/refresh'] = [
+        const ApiResponse(statusCode: 401, body: '{}'),
+      ];
+    final initial401 = await AuthService(
+      apiClient: initial401Api,
+      storage: MemoryStorage(),
+    ).resolveVoiceScenario(
+      sessionId: 'session-1',
+      request: voiceScenarioRequest,
+    );
+    expect(initial401.diagnostic.httpStatusCode, 401);
+    expect(initial401.diagnostic.refreshRetry, isFalse);
+    expect(initial401.diagnostic.failureStage, 'refresh_failed');
+
+    final retry401Api = FakeApiClient()
+      ..responses[path] = [
+        const ApiResponse(statusCode: 401, body: '{}'),
+        const ApiResponse(statusCode: 401, body: '{}'),
+      ];
+    final retry401 = await AuthService(
+      apiClient: retry401Api,
+      storage: MemoryStorage(),
+    ).resolveVoiceScenario(
+      sessionId: 'session-1',
+      request: voiceScenarioRequest,
+    );
+    expect(retry401.diagnostic.httpStatusCode, 401);
+    expect(retry401.diagnostic.refreshRetry, isTrue);
+    expect(retry401.diagnostic.failureStage, 'unauthorized_after_refresh');
+  });
+
+  test('voice scenario diagnostics classify malformed JSON as response_json',
+      () async {
+    final api = FakeApiClient()
+      ..responses[
+          '/api/me/lesson-sessions/session-1/voice-scenario-resolution'] = [
+        const ApiResponse(statusCode: 200, body: 'not json'),
+      ];
+
+    final result = await AuthService(apiClient: api, storage: MemoryStorage())
+        .resolveVoiceScenario(
+      sessionId: 'session-1',
+      request: voiceScenarioRequest,
+    );
+
+    expect(result.isSuccess, isFalse);
+    expect(result.diagnostic.failureStage, 'response_json');
+    expect(result.diagnostic.responseParsed, isFalse);
+  });
+
+  test(
+      'voice scenario diagnostics classify missing required fields as response_contract',
+      () async {
+    final api = FakeApiClient()
+      ..responses[
+          '/api/me/lesson-sessions/session-1/voice-scenario-resolution'] = [
+        const ApiResponse(
+          statusCode: 200,
+          body: '{"decision":"published_context"}',
+        ),
+      ];
+
+    final result = await AuthService(apiClient: api, storage: MemoryStorage())
+        .resolveVoiceScenario(
+      sessionId: 'session-1',
+      request: voiceScenarioRequest,
+    );
+
+    expect(result.isSuccess, isFalse);
+    expect(result.diagnostic.failureStage, 'response_contract');
+    expect(result.diagnostic.responseParsed, isTrue);
+    expect(result.diagnostic.decisionPresent, isTrue);
+  });
+
+  test('valid voice scenario semantic response is successful', () async {
+    final api = FakeApiClient()
+      ..responses[
+          '/api/me/lesson-sessions/session-1/voice-scenario-resolution'] = [
+        const ApiResponse(
+          statusCode: 200,
+          body:
+              '{"decision":"published_context","matchedContextId":"hotel_front_desk","confidence":0.92,"candidateContextIds":[],"normalizedFreeContext":null,"clarificationText":null}',
+        ),
+      ];
+
+    final result = await AuthService(apiClient: api, storage: MemoryStorage())
+        .resolveVoiceScenario(
+      sessionId: 'session-1',
+      request: voiceScenarioRequest,
+    );
+
+    expect(result.isSuccess, isTrue);
+    expect(result.response?.decision,
+        VoiceScenarioSemanticDecision.publishedContext);
+    expect(result.diagnostic.failureStage, 'success');
+    expect(result.diagnostic.matchedIdPresent, isTrue);
+    expect(result.diagnostic.candidateCount, 1);
+  });
+
+  test('voice scenario diagnostic fields contain metadata only', () async {
+    const path = '/api/me/lesson-sessions/session-1/voice-scenario-resolution';
+    final storage = MemoryStorage()..access = 'private-bearer-token';
+    final api = FakeApiClient()
+      ..responses[path] = [
+        const ApiResponse(
+          statusCode: 500,
+          body:
+              '{"detail":"private raw response body with prompt and history","secret":"private-api-key"}',
+        ),
+      ];
+
+    final result = await AuthService(apiClient: api, storage: storage)
+        .resolveVoiceScenario(
+      sessionId: 'session-1',
+      request: voiceScenarioRequest,
+    );
+    final fields = result.diagnostic.toFields().toString();
+
+    for (final sensitiveValue in [
+      voiceScenarioRequest.recognizedText,
+      voiceScenarioRequest.candidates.single.title,
+      'private-bearer-token',
+      'Private prompt',
+      'conversation history',
+      'private raw response body',
+      'private-api-key',
+    ]) {
+      expect(fields, isNot(contains(sensitiveValue)));
+    }
+    expect(result.diagnostic.backendSafeCode, isNull);
   });
 
   test('settings update sends the complete backend-compatible payload',

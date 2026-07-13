@@ -247,22 +247,280 @@ class AuthService {
     required String sessionId,
     required VoiceScenarioResolutionRequest request,
   }) async {
+    final candidateCount = request.candidates.length;
     if (sessionId.trim().isEmpty || request.recognizedText.trim().isEmpty) {
-      return VoiceScenarioSemanticResult.failed();
-    }
-    try {
-      final response = await _authenticatedPost(
-        '/api/me/lesson-sessions/$sessionId/voice-scenario-resolution',
-        body: request.toJson(),
-        failureMessageForResponse: (_) =>
-            'Scenario matching is temporarily unavailable. Review or edit the recognized text.',
+      return _voiceScenarioFailure(
+        candidateCount: candidateCount,
+        failureStage: 'request_not_started',
       );
-      return VoiceScenarioSemanticResult.success(
-        VoiceScenarioSemanticResponse.fromJson(_decodeObject(response.body)),
+    }
+
+    String? accessToken;
+    try {
+      accessToken = await _storage.readAccessToken();
+    } catch (_) {
+      return _voiceScenarioFailure(
+        candidateCount: candidateCount,
+        failureStage: 'request_not_started',
+      );
+    }
+    if (accessToken == null || accessToken.isEmpty) {
+      return _voiceScenarioFailure(
+        candidateCount: candidateCount,
+        failureStage: 'request_not_started',
+      );
+    }
+
+    final path = '/api/me/lesson-sessions/$sessionId/voice-scenario-resolution';
+    var refreshRetry = false;
+    ApiResponse response;
+    try {
+      response = await _apiClient.post(
+        path,
+        body: request.toJson(),
+        accessToken: accessToken,
       );
     } catch (_) {
-      return VoiceScenarioSemanticResult.failed();
+      return _voiceScenarioFailure(
+        candidateCount: candidateCount,
+        requestAttempted: true,
+        failureStage: 'transport',
+      );
     }
+
+    if (response.statusCode == 401) {
+      final initialMetadata = _voiceScenarioResponseMetadata(response.body);
+      if (!await _refreshSession()) {
+        await _storage.clear();
+        return _voiceScenarioFailure(
+          candidateCount: candidateCount,
+          requestAttempted: true,
+          httpStatusCode: 401,
+          failureStage: 'refresh_failed',
+          responseParsed: initialMetadata.parsed,
+          backendSafeCode: initialMetadata.safeCode,
+        );
+      }
+      final refreshedToken = await _storage.readAccessToken();
+      if (refreshedToken == null || refreshedToken.isEmpty) {
+        await _storage.clear();
+        return _voiceScenarioFailure(
+          candidateCount: candidateCount,
+          requestAttempted: true,
+          httpStatusCode: 401,
+          failureStage: 'refresh_failed',
+          responseParsed: initialMetadata.parsed,
+          backendSafeCode: initialMetadata.safeCode,
+        );
+      }
+      refreshRetry = true;
+      try {
+        response = await _apiClient.post(
+          path,
+          body: request.toJson(),
+          accessToken: refreshedToken,
+        );
+      } catch (_) {
+        return _voiceScenarioFailure(
+          candidateCount: candidateCount,
+          requestAttempted: true,
+          refreshRetry: true,
+          failureStage: 'transport',
+        );
+      }
+      if (response.statusCode == 401) {
+        final metadata = _voiceScenarioResponseMetadata(response.body);
+        return _voiceScenarioFailure(
+          candidateCount: candidateCount,
+          requestAttempted: true,
+          httpStatusCode: 401,
+          refreshRetry: true,
+          failureStage: 'unauthorized_after_refresh',
+          responseParsed: metadata.parsed,
+          backendSafeCode: metadata.safeCode,
+        );
+      }
+    }
+
+    if (!_isSuccess(response.statusCode)) {
+      final metadata = _voiceScenarioResponseMetadata(response.body);
+      return _voiceScenarioFailure(
+        candidateCount: candidateCount,
+        requestAttempted: true,
+        httpStatusCode: response.statusCode,
+        refreshRetry: refreshRetry,
+        failureStage: 'http_response',
+        responseParsed: metadata.parsed,
+        backendSafeCode: metadata.safeCode,
+      );
+    }
+
+    Map<String, dynamic> decoded;
+    try {
+      final value = jsonDecode(response.body);
+      if (value is! Map<String, dynamic>) {
+        throw const FormatException('Expected a JSON object.');
+      }
+      decoded = value;
+    } catch (_) {
+      return _voiceScenarioFailure(
+        candidateCount: candidateCount,
+        requestAttempted: true,
+        httpStatusCode: response.statusCode,
+        refreshRetry: refreshRetry,
+        failureStage: 'response_json',
+      );
+    }
+
+    final decisionPresent = decoded['decision'] is String &&
+        (decoded['decision'] as String).trim().isNotEmpty;
+    final matchedIdPresent = decoded['matchedContextId'] is String &&
+        (decoded['matchedContextId'] as String).trim().isNotEmpty;
+    final normalizedFreeContextPresent =
+        decoded['normalizedFreeContext'] is String &&
+            (decoded['normalizedFreeContext'] as String).trim().isNotEmpty;
+    VoiceScenarioSemanticResponse semanticResponse;
+    try {
+      semanticResponse = VoiceScenarioSemanticResponse.fromJson(decoded);
+    } catch (_) {
+      return _voiceScenarioFailure(
+        candidateCount: candidateCount,
+        requestAttempted: true,
+        httpStatusCode: response.statusCode,
+        refreshRetry: refreshRetry,
+        failureStage: 'response_contract',
+        responseParsed: true,
+        decisionPresent: decisionPresent,
+        matchedIdPresent: matchedIdPresent,
+        normalizedFreeContextPresent: normalizedFreeContextPresent,
+      );
+    }
+
+    if (!_isValidVoiceScenarioMapping(semanticResponse, request.candidates)) {
+      return _voiceScenarioFailure(
+        candidateCount: candidateCount,
+        requestAttempted: true,
+        httpStatusCode: response.statusCode,
+        refreshRetry: refreshRetry,
+        failureStage: 'semantic_result_mapping',
+        responseParsed: true,
+        decisionPresent: decisionPresent,
+        matchedIdPresent: matchedIdPresent,
+        normalizedFreeContextPresent: normalizedFreeContextPresent,
+      );
+    }
+
+    final diagnostic = VoiceScenarioResolutionDiagnostic(
+      requestAttempted: true,
+      httpStatusCode: response.statusCode,
+      refreshRetry: refreshRetry,
+      failureStage: 'success',
+      responseParsed: true,
+      backendSafeCode: null,
+      decisionPresent: decisionPresent,
+      matchedIdPresent: matchedIdPresent,
+      normalizedFreeContextPresent: normalizedFreeContextPresent,
+      candidateCount: candidateCount,
+    );
+    _debugVoiceScenarioSemantic(diagnostic);
+    return VoiceScenarioSemanticResult.success(
+      semanticResponse,
+      diagnostic: diagnostic,
+    );
+  }
+
+  VoiceScenarioSemanticResult _voiceScenarioFailure({
+    required int candidateCount,
+    required String failureStage,
+    bool requestAttempted = false,
+    int? httpStatusCode,
+    bool refreshRetry = false,
+    bool responseParsed = false,
+    String? backendSafeCode,
+    bool decisionPresent = false,
+    bool matchedIdPresent = false,
+    bool normalizedFreeContextPresent = false,
+  }) {
+    final diagnostic = VoiceScenarioResolutionDiagnostic(
+      requestAttempted: requestAttempted,
+      httpStatusCode: httpStatusCode,
+      refreshRetry: refreshRetry,
+      failureStage: failureStage,
+      responseParsed: responseParsed,
+      backendSafeCode: backendSafeCode,
+      decisionPresent: decisionPresent,
+      matchedIdPresent: matchedIdPresent,
+      normalizedFreeContextPresent: normalizedFreeContextPresent,
+      candidateCount: candidateCount,
+    );
+    _debugVoiceScenarioSemantic(diagnostic);
+    return VoiceScenarioSemanticResult.failed(null, diagnostic);
+  }
+
+  void _debugVoiceScenarioSemantic(
+      VoiceScenarioResolutionDiagnostic diagnostic) {
+    if (!kDebugMode) return;
+    debugPrint(
+      'voice_scenario_resolution requestAttempted=${diagnostic.requestAttempted} '
+      'httpStatusCode=${diagnostic.httpStatusCode?.toString() ?? 'none'} '
+      'refreshRetry=${diagnostic.refreshRetry} '
+      'failureStage=${diagnostic.failureStage} '
+      'responseParsed=${diagnostic.responseParsed} '
+      'backendSafeCode=${diagnostic.backendSafeCode ?? 'none'} '
+      'decisionPresent=${diagnostic.decisionPresent} '
+      'matchedIdPresent=${diagnostic.matchedIdPresent} '
+      'normalizedFreeContextPresent=${diagnostic.normalizedFreeContextPresent} '
+      'candidateCount=${diagnostic.candidateCount}',
+    );
+  }
+
+  static ({bool parsed, String? safeCode}) _voiceScenarioResponseMetadata(
+      String body) {
+    try {
+      final value = jsonDecode(body);
+      if (value is! Map<String, dynamic>) {
+        return (parsed: false, safeCode: null);
+      }
+      final rawCode = value['code'] ?? value['errorCode'];
+      final code = rawCode is String ? rawCode.trim() : '';
+      final safeCode =
+          RegExp(r'^[a-z][a-z0-9_]{0,63}$').hasMatch(code) ? code : null;
+      return (parsed: true, safeCode: safeCode);
+    } catch (_) {
+      return (parsed: false, safeCode: null);
+    }
+  }
+
+  static bool _isValidVoiceScenarioMapping(
+    VoiceScenarioSemanticResponse response,
+    List<VoiceScenarioCandidateRequest> candidates,
+  ) {
+    final allowedIds = candidates.map((candidate) => candidate.id).toSet();
+    if (response.confidence < 0 ||
+        response.confidence > 1 ||
+        response.candidateContextIds.length > 2 ||
+        response.candidateContextIds.any((id) => !allowedIds.contains(id)) ||
+        (response.matchedContextId != null &&
+            !allowedIds.contains(response.matchedContextId))) {
+      return false;
+    }
+    return switch (response.decision) {
+      VoiceScenarioSemanticDecision.publishedContext =>
+        response.matchedContextId != null &&
+            response.candidateContextIds.isEmpty &&
+            response.normalizedFreeContext == null,
+      VoiceScenarioSemanticDecision.freeContext =>
+        response.matchedContextId == null &&
+            response.candidateContextIds.isEmpty &&
+            (response.normalizedFreeContext?.trim().isNotEmpty ?? false),
+      VoiceScenarioSemanticDecision.clarify =>
+        response.matchedContextId == null &&
+            response.normalizedFreeContext == null,
+      VoiceScenarioSemanticDecision.unsafe =>
+        response.matchedContextId == null &&
+            response.candidateContextIds.isEmpty &&
+            response.normalizedFreeContext == null,
+    };
   }
 
   Future<LessonChatHintResult> requestLessonChatHint({

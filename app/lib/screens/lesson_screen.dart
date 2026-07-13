@@ -123,6 +123,7 @@ class _LessonScreenState extends State<LessonScreen>
   bool _lessonSessionEnded = false;
   bool _autoSendVoice = false;
   bool _autoPlayBotVoice = false;
+  bool _isTextComposerVisible = false;
   bool _automaticVoiceSubmissionInFlight = false;
   bool _composerContainsVoiceTranscript = false;
   int _recordingOperationGeneration = 0;
@@ -608,6 +609,7 @@ class _LessonScreenState extends State<LessonScreen>
           );
           setState(() {
             _messageController.text = text;
+            _isTextComposerVisible = true;
             _composerContainsVoiceTranscript = false;
             _sendError = message;
             _recordingState = LearnerRecordingUiState.idle;
@@ -652,6 +654,7 @@ class _LessonScreenState extends State<LessonScreen>
                 'Scenario matching is temporarily unavailable. Review or edit the recognized text.';
             setState(() {
               _messageController.text = text;
+              _isTextComposerVisible = true;
               _sendError = message;
               _recordingState = LearnerRecordingUiState.idle;
             });
@@ -687,6 +690,7 @@ class _LessonScreenState extends State<LessonScreen>
                       ? 'Please name a specific situation, or say an option number.'
                       : 'Did you mean:\n$choiceText';
           setState(() {
+            _isTextComposerVisible = true;
             _voiceClarificationChoices = choices;
             _sendError = message;
             _recordingState = LearnerRecordingUiState.idle;
@@ -815,6 +819,7 @@ class _LessonScreenState extends State<LessonScreen>
             _messageController.text.trim().isEmpty &&
             recordingGeneration == _recordingOperationGeneration) {
           _messageController.text = text;
+          _isTextComposerVisible = true;
         }
       });
       return null;
@@ -1635,6 +1640,7 @@ class _LessonScreenState extends State<LessonScreen>
       }
       if (mounted) {
         setState(() {
+          if (!_autoSendVoice) _isTextComposerVisible = true;
           _recordingState = _autoSendVoice
               ? LearnerRecordingUiState.idle
               : LearnerRecordingUiState.transcriptReady;
@@ -2026,104 +2032,115 @@ class _LessonScreenState extends State<LessonScreen>
   @override
   Widget build(BuildContext context) {
     final selection = widget.selection;
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     return PopScope(
       canPop: !_hasActiveLessonSession,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _handleLeaveRequest();
       },
       child: Scaffold(
-        body: SafeArea(
-          child: selection == null
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text(
-                      'Choose a level, topic, and situation to start a lesson.',
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                )
-              : _isCompleted
-                  ? _LessonSummaryView(
-                      summary: _lessonSummary,
-                      status: _summaryStatus ??
-                          LessonCompletionStatus.summaryLoadError,
-                      onDone: () => Navigator.of(context).maybePop(),
-                      onRetrySummary: _retrySummary,
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child: _LessonWorkspace(
-                              selection: selection,
-                              scenario: _scenario,
-                              tutorDisplayName: _tutorDisplayName,
-                              tutorId: _settings?.selectedTutorId ?? '',
-                              tutorStatus: _tutorStatus,
-                              compactLevel: _compactLevel,
-                              isStarting: _isStarting,
-                              startResult: _startResult,
-                              lessonLoadError: _lessonLoadError,
-                              isLoadingScenario: _isLoadingScenario,
-                              messages: _messages,
-                              sendError: _sendError,
-                              voiceClarificationChoices:
-                                  _voiceClarificationChoices,
-                              onSelectVoiceClarification: (variant) =>
-                                  _sendMessageInternal(
-                                overrideText: variant.title,
-                                source: 'voice_transcript',
-                              ),
-                              hintText: _hintText,
-                              hintError: _hintError,
-                              isHintLoading: _isHintLoading,
-                              isSending: _isSending,
-                              controller: _messageController,
-                              actionAvailability: _actionAvailability,
-                              isRecordingPlaceholderActive: _recordingState ==
-                                  LearnerRecordingUiState.recording,
-                              isTranscribing: _recordingState ==
-                                  LearnerRecordingUiState.transcribing,
-                              recordingMessage: _recordingMessage,
-                              showOpenMicrophoneSettings:
-                                  _showOpenMicrophoneSettings,
-                              onOpenMicrophoneSettings: _openMicrophoneSettings,
-                              isFinishing: _isFinishing,
-                              canFinish: _canFinish,
-                              finishError: _finishError,
-                              onBack: _handleLeaveRequest,
-                              onFinish: _confirmFinishLesson,
-                              onRetryStart: _isStarting
-                                  ? null
-                                  : () => _startLessonSession(),
-                              onRetryLoad: _retryLessonRuntime,
-                              transcriptController: _transcriptController,
-                              onPlayVoice: _playTutorVoice,
-                              onTranslateMessage: _translateMessage,
-                              onFeedback: _requestFeedback,
-                              onToggleRecordingPlaceholder: () {
-                                unawaited(_toggleRecording());
-                              },
-                              onHint: _requestHint,
-                              onDismissHint: () =>
-                                  setState(() => _hintText = null),
-                              onSend: _sendMessage,
-                              autoSendVoice: _autoSendVoice,
-                              autoPlayBotVoice: _autoPlayBotVoice,
-                              canOpenConversationMode:
-                                  _actionAvailability.canUsePlaceholders,
-                              onAutoSendVoiceChanged: (value) =>
-                                  setState(() => _autoSendVoice = value),
-                              onAutoPlayBotVoiceChanged: (value) =>
-                                  setState(() => _autoPlayBotVoice = value),
-                              onOpenConversationMode: _openConversationMode,
-                            ),
-                          ),
-                        ],
+        resizeToAvoidBottomInset: false,
+        body: Padding(
+          padding: EdgeInsets.only(bottom: keyboardInset),
+          child: SafeArea(
+            child: selection == null
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Text(
+                        'Choose a level, topic, and situation to start a lesson.',
+                        textAlign: TextAlign.center,
                       ),
                     ),
+                  )
+                : _isCompleted
+                    ? _LessonSummaryView(
+                        summary: _lessonSummary,
+                        status: _summaryStatus ??
+                            LessonCompletionStatus.summaryLoadError,
+                        onDone: () => Navigator.of(context).maybePop(),
+                        onRetrySummary: _retrySummary,
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: _LessonWorkspace(
+                                selection: selection,
+                                scenario: _scenario,
+                                tutorDisplayName: _tutorDisplayName,
+                                tutorId: _settings?.selectedTutorId ?? '',
+                                tutorStatus: _tutorStatus,
+                                compactLevel: _compactLevel,
+                                isStarting: _isStarting,
+                                startResult: _startResult,
+                                lessonLoadError: _lessonLoadError,
+                                isLoadingScenario: _isLoadingScenario,
+                                messages: _messages,
+                                sendError: _sendError,
+                                voiceClarificationChoices:
+                                    _voiceClarificationChoices,
+                                onSelectVoiceClarification: (variant) =>
+                                    _sendMessageInternal(
+                                  overrideText: variant.title,
+                                  source: 'voice_transcript',
+                                ),
+                                hintText: _hintText,
+                                hintError: _hintError,
+                                isHintLoading: _isHintLoading,
+                                isSending: _isSending,
+                                controller: _messageController,
+                                actionAvailability: _actionAvailability,
+                                isRecordingPlaceholderActive: _recordingState ==
+                                    LearnerRecordingUiState.recording,
+                                isTranscribing: _recordingState ==
+                                    LearnerRecordingUiState.transcribing,
+                                recordingMessage: _recordingMessage,
+                                showOpenMicrophoneSettings:
+                                    _showOpenMicrophoneSettings,
+                                onOpenMicrophoneSettings:
+                                    _openMicrophoneSettings,
+                                isFinishing: _isFinishing,
+                                canFinish: _canFinish,
+                                finishError: _finishError,
+                                onBack: _handleLeaveRequest,
+                                onFinish: _confirmFinishLesson,
+                                onRetryStart: _isStarting
+                                    ? null
+                                    : () => _startLessonSession(),
+                                onRetryLoad: _retryLessonRuntime,
+                                transcriptController: _transcriptController,
+                                onPlayVoice: _playTutorVoice,
+                                onTranslateMessage: _translateMessage,
+                                onFeedback: _requestFeedback,
+                                onToggleRecordingPlaceholder: () {
+                                  unawaited(_toggleRecording());
+                                },
+                                onHint: _requestHint,
+                                isTextComposerVisible: _isTextComposerVisible,
+                                onToggleTextComposer: () => setState(() {
+                                  _isTextComposerVisible =
+                                      !_isTextComposerVisible;
+                                }),
+                                onDismissHint: () =>
+                                    setState(() => _hintText = null),
+                                onSend: _sendMessage,
+                                autoSendVoice: _autoSendVoice,
+                                autoPlayBotVoice: _autoPlayBotVoice,
+                                canOpenConversationMode:
+                                    _actionAvailability.canUsePlaceholders,
+                                onAutoSendVoiceChanged: (value) =>
+                                    setState(() => _autoSendVoice = value),
+                                onAutoPlayBotVoiceChanged: (value) =>
+                                    setState(() => _autoPlayBotVoice = value),
+                                onOpenConversationMode: _openConversationMode,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+          ),
         ),
       ),
     );
@@ -2182,6 +2199,8 @@ class _LessonWorkspace extends StatelessWidget {
     required this.onFeedback,
     required this.onToggleRecordingPlaceholder,
     required this.onHint,
+    required this.isTextComposerVisible,
+    required this.onToggleTextComposer,
     required this.onDismissHint,
     required this.onSend,
     required this.autoSendVoice,
@@ -2230,6 +2249,8 @@ class _LessonWorkspace extends StatelessWidget {
   final Future<void> Function(_LessonChatMessage message) onFeedback;
   final VoidCallback onToggleRecordingPlaceholder;
   final VoidCallback onHint;
+  final bool isTextComposerVisible;
+  final VoidCallback onToggleTextComposer;
   final VoidCallback onDismissHint;
   final Future<void> Function([String? overrideText]) onSend;
   final bool autoSendVoice;
@@ -2242,14 +2263,21 @@ class _LessonWorkspace extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    // Scaffold removes the consumed inset from the MediaQuery inherited by its
-    // body. Read the underlying view so this remains true inside the workspace.
-    final keyboardOpen = View.of(context).viewInsets.bottom > 0;
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final chatGradient = colorScheme.brightness == Brightness.light
+        ? const [Color(0xFFDCEFFA), Color(0xFFFFE4B5)]
+        : const [Color(0xFF17384B), Color(0xFF493620)];
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: colorScheme.outlineVariant),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -2268,56 +2296,65 @@ class _LessonWorkspace extends StatelessWidget {
               canOpenConversationMode: canOpenConversationMode,
               onOpenConversationMode: onOpenConversationMode,
             ),
-          if (!keyboardOpen)
-            SizedBox(
-              height: 44,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Transform.scale(
-                          scale: 0.72,
-                          child: Switch(
-                            key: const Key('lesson-auto-send-voice-switch'),
-                            value: autoSendVoice,
-                            onChanged: onAutoSendVoiceChanged,
-                          ),
-                        ),
-                        const Text('Auto-send voice'),
-                      ],
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Transform.scale(
-                          scale: 0.72,
-                          child: Switch(
-                            key: const Key('lesson-auto-play-bot-voice-switch'),
-                            value: autoPlayBotVoice,
-                            onChanged: onAutoPlayBotVoiceChanged,
-                          ),
-                        ),
-                        const Text('Auto-play bot voice'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
           Expanded(
             child: Container(
+              key: const Key('lesson-chat-surface'),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerLowest,
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: chatGradient,
+                  stops: const [0, 1],
+                ),
                 borderRadius: const BorderRadius.vertical(
                   bottom: Radius.circular(28),
                 ),
               ),
               child: Column(
                 children: [
+                  if (!keyboardOpen)
+                    Padding(
+                      key: const Key('lesson-voice-preferences'),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Transform.scale(
+                                  scale: 0.72,
+                                  child: Switch(
+                                    key: const Key(
+                                        'lesson-auto-send-voice-switch'),
+                                    value: autoSendVoice,
+                                    onChanged: onAutoSendVoiceChanged,
+                                  ),
+                                ),
+                                const Text('Auto-send voice'),
+                              ],
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Transform.scale(
+                                  scale: 0.72,
+                                  child: Switch(
+                                    key: const Key(
+                                        'lesson-auto-play-bot-voice-switch'),
+                                    value: autoPlayBotVoice,
+                                    onChanged: onAutoPlayBotVoiceChanged,
+                                  ),
+                                ),
+                                const Text('Auto-play bot voice'),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   Expanded(
                     child: _LessonBody(
                       isStarting: isStarting,
@@ -2332,12 +2369,8 @@ class _LessonWorkspace extends StatelessWidget {
                       onPlayVoice: onPlayVoice,
                       onTranslateMessage: onTranslateMessage,
                       onFeedback: onFeedback,
-                    ),
-                  ),
-                  Flexible(
-                    fit: FlexFit.loose,
-                    child: SingleChildScrollView(
-                      child: Column(
+                      bottomContent: Column(
+                        key: const Key('lesson-transcript-status-area'),
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (sendError != null) ...[
@@ -2404,6 +2437,42 @@ class _LessonWorkspace extends StatelessWidget {
                               child: Text('Finishing lesson...',
                                   key: Key('lesson-finishing-label')),
                             ),
+                          if (isTranscribing)
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text('Transcribing recording...'),
+                                ],
+                              ),
+                            ),
+                          if (recordingMessage != null)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                              child: Text(
+                                recordingMessage!,
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          if (showOpenMicrophoneSettings)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: TextButton(
+                                key: const Key(
+                                    'lesson-open-microphone-settings'),
+                                onPressed: () =>
+                                    unawaited(onOpenMicrophoneSettings()),
+                                child: const Text('Open settings'),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -2415,10 +2484,8 @@ class _LessonWorkspace extends StatelessWidget {
                     canHint: actionAvailability.canUseHint,
                     isSending: isSending || isFinishing || isHintLoading,
                     isRecordingPlaceholderActive: isRecordingPlaceholderActive,
-                    isTranscribing: isTranscribing,
-                    recordingMessage: recordingMessage,
-                    showOpenMicrophoneSettings: showOpenMicrophoneSettings,
-                    onOpenMicrophoneSettings: onOpenMicrophoneSettings,
+                    isTextComposerVisible: isTextComposerVisible,
+                    onToggleTextComposer: onToggleTextComposer,
                     onToggleRecordingPlaceholder: onToggleRecordingPlaceholder,
                     onHint: onHint,
                     onSend: onSend,
@@ -2447,6 +2514,7 @@ class _LessonBody extends StatelessWidget {
     required this.onPlayVoice,
     required this.onTranslateMessage,
     required this.onFeedback,
+    required this.bottomContent,
   });
 
   final bool isStarting;
@@ -2461,6 +2529,7 @@ class _LessonBody extends StatelessWidget {
   final Future<void> Function(_LessonChatMessage message) onPlayVoice;
   final Future<void> Function(_LessonChatMessage message) onTranslateMessage;
   final Future<void> Function(_LessonChatMessage message) onFeedback;
+  final Widget bottomContent;
 
   @override
   Widget build(BuildContext context) {
@@ -2520,6 +2589,7 @@ class _LessonBody extends StatelessWidget {
       onPlayVoice: onPlayVoice,
       onTranslateMessage: onTranslateMessage,
       onFeedback: onFeedback,
+      bottomContent: bottomContent,
     );
   }
 }
@@ -2532,6 +2602,7 @@ class _LessonTranscript extends StatelessWidget {
     required this.onPlayVoice,
     required this.onTranslateMessage,
     required this.onFeedback,
+    required this.bottomContent,
   });
 
   final ScrollController controller;
@@ -2540,6 +2611,7 @@ class _LessonTranscript extends StatelessWidget {
   final Future<void> Function(_LessonChatMessage message) onPlayVoice;
   final Future<void> Function(_LessonChatMessage message) onTranslateMessage;
   final Future<void> Function(_LessonChatMessage message) onFeedback;
+  final Widget bottomContent;
 
   @override
   Widget build(BuildContext context) {
@@ -2571,6 +2643,7 @@ class _LessonTranscript extends StatelessWidget {
               onFeedback: onFeedback,
             ),
           ],
+          bottomContent,
         ],
       ),
     );
@@ -2598,8 +2671,8 @@ class _LessonMessageBubble extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final alignment = isTutor ? Alignment.centerLeft : Alignment.centerRight;
     final bubbleColor = isTutor
-        ? colorScheme.surfaceContainerHigh
-        : colorScheme.primaryContainer;
+        ? colorScheme.surface.withValues(alpha: 0.94)
+        : colorScheme.primaryContainer.withValues(alpha: 0.94);
     final textColor =
         isTutor ? colorScheme.onSurface : colorScheme.onPrimaryContainer;
 
@@ -2615,7 +2688,22 @@ class _LessonMessageBubble extends StatelessWidget {
                   : null,
           decoration: BoxDecoration(
             color: bubbleColor,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(26),
+              topRight: const Radius.circular(26),
+              bottomLeft: Radius.circular(isTutor ? 8 : 26),
+              bottomRight: Radius.circular(isTutor ? 26 : 8),
+            ),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: colorScheme.shadow.withValues(alpha: 0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
           child: Column(
@@ -2791,10 +2879,8 @@ class _LessonComposer extends StatelessWidget {
     required this.canHint,
     required this.isSending,
     required this.isRecordingPlaceholderActive,
-    required this.isTranscribing,
-    required this.recordingMessage,
-    required this.showOpenMicrophoneSettings,
-    required this.onOpenMicrophoneSettings,
+    required this.isTextComposerVisible,
+    required this.onToggleTextComposer,
     required this.onToggleRecordingPlaceholder,
     required this.onHint,
     required this.onSend,
@@ -2806,119 +2892,139 @@ class _LessonComposer extends StatelessWidget {
   final bool canHint;
   final bool isSending;
   final bool isRecordingPlaceholderActive;
-  final bool isTranscribing;
-  final String? recordingMessage;
-  final bool showOpenMicrophoneSettings;
-  final Future<void> Function() onOpenMicrophoneSettings;
+  final bool isTextComposerVisible;
+  final VoidCallback onToggleTextComposer;
   final VoidCallback onToggleRecordingPlaceholder;
   final VoidCallback onHint;
   final Future<void> Function([String? overrideText]) onSend;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      key: const Key('lesson-action-controls'),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-        ),
+    final colorScheme = Theme.of(context).colorScheme;
+    final compactButtonStyle = OutlinedButton.styleFrom(
+      minimumSize: const Size(44, 38),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      visualDensity: VisualDensity.compact,
+      side: BorderSide(
+        color: colorScheme.outline.withValues(alpha: 0.35),
       ),
+      foregroundColor: colorScheme.onSurfaceVariant,
+      backgroundColor: colorScheme.surface.withValues(alpha: 0.72),
+      shape: const StadiumBorder(),
+    );
+    return Container(
+      key: const Key('lesson-bottom-dock'),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (isTranscribing)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 8),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+          if (isTextComposerVisible) ...[
+            Row(
+              key: const Key('lesson-text-composer'),
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: TextField(
+                    key: const Key('lesson-input'),
+                    controller: controller,
+                    enabled: canSendText,
+                    minLines: 1,
+                    maxLines: 4,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) {
+                      if (canSendText) onSend();
+                    },
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: colorScheme.surface.withValues(alpha: 0.9),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 13,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide(
+                          color: colorScheme.outlineVariant
+                              .withValues(alpha: 0.65),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide(
+                          color: colorScheme.primary.withValues(alpha: 0.7),
+                        ),
+                      ),
+                      disabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide(
+                          color:
+                              colorScheme.outlineVariant.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      hintText: 'Type your message',
+                    ),
                   ),
-                  SizedBox(width: 8),
-                  Text('Transcribing recording...'),
-                ],
-              ),
-            ),
-          if (recordingMessage != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                recordingMessage!,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          if (showOpenMicrophoneSettings)
-            TextButton(
-              key: const Key('lesson-open-microphone-settings'),
-              onPressed: () => unawaited(onOpenMicrophoneSettings()),
-              child: const Text('Open settings'),
-            ),
-          Row(
-            children: [
-              OutlinedButton(
-                key: const Key('lesson-action-record'),
-                onPressed: canRecord ? onToggleRecordingPlaceholder : null,
-                child: Icon(
-                  isRecordingPlaceholderActive ? Icons.stop : Icons.mic_none,
                 ),
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton.icon(
-                key: const Key('lesson-action-hint'),
-                onPressed: canHint ? onHint : null,
-                icon: const Icon(Icons.lightbulb_outline),
-                label: const Text('Hint'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: TextField(
-                  key: const Key('lesson-input'),
-                  controller: controller,
-                  enabled: canSendText,
-                  minLines: 1,
-                  maxLines: 4,
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: (_) {
-                    if (canSendText) {
-                      onSend();
-                    }
+                const SizedBox(width: 8),
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: controller,
+                  builder: (context, value, _) {
+                    final canPressSend =
+                        canSendText && value.text.trim().isNotEmpty;
+                    return FilledButton(
+                      key: const Key('lesson-send-button'),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(64, 42),
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        visualDensity: VisualDensity.compact,
+                        shape: const StadiumBorder(),
+                      ),
+                      onPressed: canPressSend ? () => onSend() : null,
+                      child: Text(isSending ? 'Sending...' : 'Send'),
+                    );
                   },
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: 'Type your message',
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+          Align(
+            key: const Key('lesson-action-row'),
+            alignment: Alignment.centerLeft,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                OutlinedButton(
+                  key: const Key('lesson-action-record'),
+                  style: compactButtonStyle,
+                  onPressed: canRecord ? onToggleRecordingPlaceholder : null,
+                  child: Icon(
+                    isRecordingPlaceholderActive ? Icons.stop : Icons.mic_none,
+                    size: 20,
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              ValueListenableBuilder<TextEditingValue>(
-                valueListenable: controller,
-                builder: (context, value, _) {
-                  final canPressSend =
-                      canSendText && value.text.trim().isNotEmpty;
-                  return FilledButton(
-                    key: const Key('lesson-send-button'),
-                    onPressed: canPressSend
-                        ? () {
-                            onSend();
-                          }
-                        : null,
-                    child: Text(isSending ? 'Sending...' : 'Send'),
-                  );
-                },
-              ),
-            ],
+                OutlinedButton.icon(
+                  key: const Key('lesson-action-hint'),
+                  style: compactButtonStyle,
+                  onPressed: canHint ? onHint : null,
+                  icon: const Icon(Icons.lightbulb_outline, size: 19),
+                  label: const Text('Hint'),
+                ),
+                OutlinedButton(
+                  key: const Key('lesson-action-keyboard'),
+                  style: compactButtonStyle,
+                  onPressed: onToggleTextComposer,
+                  child: Icon(
+                    isTextComposerVisible
+                        ? Icons.keyboard_hide_outlined
+                        : Icons.keyboard_alt_outlined,
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
