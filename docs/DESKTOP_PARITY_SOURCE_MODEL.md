@@ -21,13 +21,13 @@ Latest known mobile baseline after commit `fcecef5` (`Fix mobile settings parity
 
 Mobile must match desktop product logic, not desktop pixel layout. Desktop screens should be translated into phone-first layouts that fit mobile navigation, scrolling, touch targets, platform permissions, and smaller displays.
 
-The desktop source flow is:
+The historical desktop source flow was:
 
 ```text
 Start -> Settings/preferences -> Choose level -> Pick topic -> Pick situation -> Practice
 ```
 
-Level selection must remain a separate lesson-start step before topic/situation selection. It must not be moved into Settings.
+Mobile now uses the accepted saved-level account flow: learner level is selected in **Settings -> Learning**, and normal lesson start proceeds through **Home -> Choose Topic -> Choose Situation -> Lesson**. Mobile should still preserve product behavior while adapting navigation for phone-first use.
 
 ## Settings parity target
 
@@ -108,7 +108,7 @@ Selected tutor persistence is supported by `/api/me/settings`. Tutor voice remai
 
 ## Lesson start
 
-Mobile uses the backend-owned account level from `UserSettings.currentLevel`, mapped through the centralized `lessonLevels` collection. The current phone-first flow is **Home -> Start lesson -> Choose Topic -> Choose Situation -> Lesson**; level changes live in **Settings -> Learning**, and the normal flow has no separate level screen. The six current topics are Daily Life, Travel, Work & Business, Job Interview, Restaurant & Cafe, and Free Conversation. CMS-published level profiles remain authoritative for lesson behavior and timing. No backend deployment is required for this Mobile flow, and physical Android validation remains pending.
+Mobile uses the backend-owned account level from `UserSettings.currentLevel`, mapped through the centralized `lessonLevels` collection. The current phone-first flow is **Home -> Choose Topic -> Choose Situation -> Lesson** after the learner taps **Start lesson**; level changes live in **Settings -> Learning**, and the normal flow has no separate level screen. The six current topics are Daily Life, Travel, Work & Business, Job Interview, Restaurant & Cafe, and Free Conversation. CMS-published level profiles remain authoritative for lesson behavior and timing; Mobile does not own lesson complexity or duration rules. No backend deployment was required for this Mobile cleanup because backend release `0.1.35-backend.116` already provided the required `CurrentLevel` settings contract, and the owner physically verified the saved-level lesson-start flow on an Android phone. No backend, Desktop, CMS, website, billing, voice-provider, transcription-provider, semantic resolver, TTS, or database migration changes were made.
 
 ## Backend-owned state boundaries
 

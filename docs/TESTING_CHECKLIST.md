@@ -316,6 +316,8 @@ GET /api/me/lesson-access
 
 Expected behavior:
 
+- The obsolete Choose Level screen, `/choose-level` route, and import are deleted; `ChooseLevelScreen` and `choose_level_screen.dart` no longer exist.
+
 - Home shows a **Lesson access** card.
 - Tapping **Check lesson access** calls `GET /api/me/lesson-access` only when the user has a stored authenticated session.
 - The request uses the stored bearer access token and the existing refresh-on-401 behavior.
@@ -343,6 +345,8 @@ GET /api/tutor-options
 ```
 
 Expected behavior:
+
+- The obsolete Choose Level screen, `/choose-level` route, and import are deleted; `ChooseLevelScreen` and `choose_level_screen.dart` no longer exist.
 
 - Home does not show an **Available tutors** card.
 - Home does not show tutor diagnostics such as `Available tutors: Lana, Nelli, David`.
@@ -381,6 +385,8 @@ GET /api/tutor-options
 ```
 
 Expected behavior:
+
+- The obsolete Choose Level screen, `/choose-level` route, and import are deleted; `ChooseLevelScreen` and `choose_level_screen.dart` no longer exist.
 
 - Settings loads current backend settings when the screen opens.
 - Settings saves backend-supported fields through `PUT /api/me/settings`.
@@ -445,7 +451,7 @@ Desktop parity checks:
 - Settings uses backend-supported `/api/me/settings` fields only: `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `speechVoice`, `speechSpeed`, `conversationModeEnabled`, `selectedTutorId`, and `currentLevel`.
 - Selected tutor persistence remains backend-owned, and tutor voice remains separate from selected tutor.
 - `lessonLevels` remains the centralized Mobile level display list, while CMS-published level profiles remain authoritative for lesson behavior and timing.
-- Physical-device validation of the Settings level control remains pending.
+- Physical Android validation of the saved-level Settings control and normal lesson-start flow is complete for this learner-level/start-flow slice.
 
 Still out of scope for the current documentation update: lesson runtime, voice recording, TTS playback, billing, analytics, Google Play Billing, Apple billing, backend changes, desktop changes, and store release metadata.
 
@@ -454,6 +460,8 @@ Still out of scope for the current documentation update: lesson runtime, voice r
 The normal phone-first lesson-start flow is **Home -> Choose Topic -> Choose Situation -> Lesson**.
 
 Expected behavior:
+
+- The obsolete Choose Level screen, `/choose-level` route, and import are deleted; `ChooseLevelScreen` and `choose_level_screen.dart` no longer exist.
 
 - Home shows **Start lesson** instead of using **Open Lesson** as the primary direct lesson jump.
 - **Start lesson** loads backend `UserSettings.currentLevel` once, resolves it through `lessonLevels`, and opens **Choose Topic** directly with the matching display label.
@@ -464,8 +472,9 @@ Expected behavior:
 - Every current topic has at least one product-friendly situation option, and no Choose Situation label contains `Placeholder:`.
 - Selecting a situation preserves the resolved level display label in `LessonStartSelection` and the existing lesson-session/runtime chain.
 - CMS-published level profiles remain authoritative for language complexity, correction and hint behavior, answer length, wrap-up timing, and final-turn timing.
-- No backend deployment is required; physical Android validation remains pending.
-- Lesson runtime remains out of scope. Voice recording, TTS playback, AI tutor calls, Conversation Mode runtime, billing, analytics, crash reporting, backend changes, and desktop changes remain out of scope.
+- No backend deployment was required because backend release `0.1.35-backend.116` already provided the required `CurrentLevel` settings contract.
+- Physical Android owner verification for this slice confirmed: Choose Level no longer appears; learner level is available in Settings -> Learning; changing and saving the level works; Start lesson opens Choose Topic directly; the lesson starts correctly using the saved level; speech recognition works; Lesson Chat works; Conversation mode works; backend-owned lesson completion and summary generation work; and the summary is displayed successfully.
+- Lesson runtime remains out of scope for this cleanup. No backend, Desktop, CMS, website, billing, voice-provider, transcription-provider, semantic resolver, TTS, or database migration changes were made. Billing, analytics, crash reporting, broader platform work, and missing Lesson Chat avatar assets remain separate where still unresolved.
 
 Verification commands from `app/`:
 
@@ -480,6 +489,8 @@ flutter test
 This mobile slice keeps Home and Settings learner-facing while backend account/access decisions remain backend-owned; real lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, backend changes, desktop changes, and store release work remain out of scope.
 
 Expected behavior:
+
+- The obsolete Choose Level screen, `/choose-level` route, and import are deleted; `ChooseLevelScreen` and `choose_level_screen.dart` no longer exist.
 
 - The mobile logo source exists at `app/assets/brand/source/lvt-logo-source.png`.
 - The app logo asset exists at `app/assets/brand/lvt-logo.png` and is derived only from the provided source logo.
@@ -564,6 +575,6 @@ flutter test
 flutter build apk --debug
 ```
 
-Expected current result: analyze reports zero issues, focused AuthService and lesson screen tests pass, the complete Flutter suite passes with 101 tests, and the Android debug APK build passes.
+Expected current result for the saved-level lesson-start cleanup: `dart format --set-exit-if-changed lib test` passed with 72 files checked; `flutter analyze` passed with no issues; focused Home/start-flow tests passed with 70 tests; full Flutter suite passed with 208 tests; stale-reference searches found no `ChooseLevelScreen`, `choose_level_screen.dart`, or `/choose-level`; protected runtime files had no diff; and CMS runtime parsing, lesson limits, lesson timing, voice request behavior, transcription behavior, semantic resolution, and summary contracts were not changed.
 
-Real Translation is complete in functional commit `9d2476b` (`Add mobile message translation`). Real per-message learner Feedback is complete in functional commit `f1e8f16` (`Add mobile learner message feedback`). Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Learner microphone recording plus speech-to-text is complete in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Mobile voice lesson and Conversation mode flows are complete in functional commit `f195dc2` (`feat: add mobile voice lesson and conversation flows`). Desktop-parity transcription behavior is complete for the documented Mobile state: Lesson Chat and Conversation mode share the same transcription request builder, speech recognition always uses the selected study language definition, native/explanation language do not influence transcription, and the existing `POST /api/audio/transcribe` multipart contract remains unchanged with no backend deployment requirement. Completed verification: `dart format` succeeded; `flutter analyze` completed with no issues; `lesson_start_flow_test.dart` passed with 58 tests; `conversation_mode_screen_test.dart` passed with 5 tests; `transcript_script_normalizer_test.dart` passed with 3 tests; transcription-parity focused tests passed with 12 tests; full Flutter suite passed with 197 tests and 0 failures; debug Android APK build succeeded. Initial physical Android testing looks successful, but broader physical-device repetition is still required across several lessons and repeated first-attempt voice selections; do not declare voice recognition fully stabilized yet. Missing Lesson Chat avatar assets remain separate. The optional Desktop Realtime transcription language issue is outside this Mobile change. Still unimplemented unless a later repository change proves otherwise: history/progress screen, mobile billing, analytics, crash reporting, and store release.
+Real Translation is complete in functional commit `9d2476b` (`Add mobile message translation`). Real per-message learner Feedback is complete in functional commit `f1e8f16` (`Add mobile learner message feedback`). Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Learner microphone recording plus speech-to-text is complete in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Mobile voice lesson and Conversation mode flows are complete in functional commit `f195dc2` (`feat: add mobile voice lesson and conversation flows`). Desktop-parity transcription behavior is complete for the documented Mobile state: Lesson Chat and Conversation mode share the same transcription request builder, speech recognition always uses the selected study language definition, native/explanation language do not influence transcription, and the existing `POST /api/audio/transcribe` multipart contract remains unchanged with no backend deployment requirement. Completed verification: `dart format` succeeded; `flutter analyze` completed with no issues; `lesson_start_flow_test.dart` passed with 58 tests; `conversation_mode_screen_test.dart` passed with 5 tests; `transcript_script_normalizer_test.dart` passed with 3 tests; transcription-parity focused tests passed with 12 tests; full Flutter suite passed with 197 tests and 0 failures; debug Android APK build succeeded. The saved-level learner-level/start-flow slice has completed physical Android validation. Broader physical-device repetition is still required across several lessons and repeated first-attempt voice selections; do not declare voice recognition fully stabilized yet. Missing Lesson Chat avatar assets remain separate. The optional Desktop Realtime transcription language issue is outside this Mobile change. Still unimplemented unless a later repository change proves otherwise: history/progress screen, mobile billing, analytics, crash reporting, and store release.
