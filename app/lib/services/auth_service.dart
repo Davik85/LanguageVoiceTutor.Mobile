@@ -12,6 +12,7 @@ import '../models/lesson_session.dart';
 import '../models/subscription_status.dart';
 import '../models/translation.dart';
 import '../models/user_settings.dart';
+import '../models/voice_scenario_resolution.dart';
 import 'session_storage.dart';
 
 class AuthService {
@@ -239,6 +240,28 @@ class AuthService {
       return _safeLessonChatReplyResult(error);
     } catch (_) {
       return LessonChatReplyResult.failed();
+    }
+  }
+
+  Future<VoiceScenarioSemanticResult> resolveVoiceScenario({
+    required String sessionId,
+    required VoiceScenarioResolutionRequest request,
+  }) async {
+    if (sessionId.trim().isEmpty || request.recognizedText.trim().isEmpty) {
+      return VoiceScenarioSemanticResult.failed();
+    }
+    try {
+      final response = await _authenticatedPost(
+        '/api/me/lesson-sessions/$sessionId/voice-scenario-resolution',
+        body: request.toJson(),
+        failureMessageForResponse: (_) =>
+            'Scenario matching is temporarily unavailable. Review or edit the recognized text.',
+      );
+      return VoiceScenarioSemanticResult.success(
+        VoiceScenarioSemanticResponse.fromJson(_decodeObject(response.body)),
+      );
+    } catch (_) {
+      return VoiceScenarioSemanticResult.failed();
     }
   }
 

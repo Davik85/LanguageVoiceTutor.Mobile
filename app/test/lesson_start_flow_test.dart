@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
+import 'package:language_voice_tutor_mobile/models/audio_transcription.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_chat.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_runtime.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_session.dart';
@@ -11,6 +12,7 @@ import 'package:language_voice_tutor_mobile/models/lesson_start_selection.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
 import 'package:language_voice_tutor_mobile/models/translation.dart';
 import 'package:language_voice_tutor_mobile/models/user_settings.dart';
+import 'package:language_voice_tutor_mobile/models/voice_scenario_resolution.dart';
 import 'package:language_voice_tutor_mobile/screens/home_screen.dart';
 import 'package:language_voice_tutor_mobile/screens/lesson_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
@@ -41,6 +43,43 @@ class FakeLearnerRecorder implements LearnerAudioRecorderAdapter {
     active = false;
     return null;
   }
+}
+
+class FakeSuccessfulRecordingService extends LearnerAudioRecordingService {
+  FakeSuccessfulRecordingService() : super(recorder: FakeLearnerRecorder());
+
+  bool recording = false;
+
+  @override
+  Future<String> createTemporaryWavPath() async => 'fake.wav';
+
+  @override
+  Future<void> start(String path) async => recording = true;
+
+  @override
+  Future<String?> stop() async {
+    recording = false;
+    return 'fake.wav';
+  }
+
+  @override
+  Future<void> cancel() async => recording = false;
+
+  @override
+  Future<bool> get isRecording async => recording;
+
+  @override
+  Future<LearnerWavValidationResult> validateWavFile(String path) async =>
+      const LearnerWavValidationResult(
+        isValid: true,
+        duration: Duration(seconds: 1),
+      );
+
+  @override
+  Future<void> deleteFile(String? path) async {}
+
+  @override
+  Future<void> dispose() async {}
 }
 
 class FakeLearnerMicrophonePermissionService
@@ -122,6 +161,9 @@ class FakeAuthService extends AuthService {
     List<Completer<void>>? persistenceCompleters,
     this.persistenceFailure,
     this.studyLanguage = 'es',
+    this.transcriptionText = 'Hello there',
+    this.voiceScenarioResponse,
+    this.voiceScenarioFailure = false,
   })  : lessonStartResult = lessonStartResult ?? _readyLessonStartResult(),
         replyResult = replyResult ?? _defaultReplyResult(),
         hintResult = hintResult ?? _defaultHintResult(),
@@ -155,6 +197,9 @@ class FakeAuthService extends AuthService {
   final List<Completer<void>> persistenceCompleters;
   final Object? persistenceFailure;
   final String studyLanguage;
+  final String transcriptionText;
+  final VoiceScenarioSemanticResponse? voiceScenarioResponse;
+  final bool voiceScenarioFailure;
 
   int startLessonSessionCallCount = 0;
   int fetchScenarioCallCount = 0;
@@ -164,6 +209,8 @@ class FakeAuthService extends AuthService {
   int finishLessonSessionCallCount = 0;
   int abandonLessonSessionCallCount = 0;
   int loadLessonSummaryCallCount = 0;
+  int transcribeCallCount = 0;
+  int resolveVoiceScenarioCallCount = 0;
   int? lastValidTurnCount;
   StartLessonSessionRequest? lastStartRequest;
   LessonChatRequest? lastLessonChatRequest;
@@ -220,6 +267,26 @@ class FakeAuthService extends AuthService {
     fetchScenarioCallCount += 1;
     if (scenarioFailure != null) throw scenarioFailure!;
     return scenario;
+  }
+
+  @override
+  Future<AudioTranscriptionResult> transcribeLearnerAudio({
+    required AudioTranscriptionRequest request,
+  }) async {
+    transcribeCallCount++;
+    return AudioTranscriptionResult.success(transcriptionText);
+  }
+
+  @override
+  Future<VoiceScenarioSemanticResult> resolveVoiceScenario({
+    required String sessionId,
+    required VoiceScenarioResolutionRequest request,
+  }) async {
+    resolveVoiceScenarioCallCount++;
+    if (voiceScenarioFailure || voiceScenarioResponse == null) {
+      return VoiceScenarioSemanticResult.failed();
+    }
+    return VoiceScenarioSemanticResult.success(voiceScenarioResponse!);
   }
 
   @override
@@ -518,7 +585,38 @@ Future<void> _showWidget(WidgetTester tester, Finder finder) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _autoSendOneRecording(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('lesson-auto-send-voice-switch')));
+  await _showWidget(tester, find.byKey(const Key('lesson-action-record')));
+  await tester.tap(find.byKey(const Key('lesson-action-record')));
+  await tester
+      .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 550)));
+  await tester.pump();
+  await _showWidget(tester, find.byKey(const Key('lesson-action-record')));
+  await tester.tap(find.byKey(const Key('lesson-action-record')));
+  await tester.pumpAndSettle();
+}
+
 void main() {
+  testWidgets('narrow keyboard viewport keeps composer and Send visible',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetViewInsets);
+
+    await tester.pumpWidget(_lessonScreen(FakeAuthService()));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('lesson-input')), findsOneWidget);
+    expect(find.byKey(const Key('lesson-send-button')), findsOneWidget);
+    expect(find.byKey(const Key('lesson-chat-transcript')), findsOneWidget);
+    expect(find.byType(Scrollable), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('selecting a situation starts lesson and opens the workspace',
       (tester) async {
     final startCompleter = Completer<LessonSessionStartResult>();
@@ -567,7 +665,7 @@ void main() {
     final avatarFinder = find.byKey(const Key('lesson-avatar'));
     expect(avatarFinder, findsOneWidget);
     expect(tester.getSize(avatarFinder).height, greaterThanOrEqualTo(220));
-    expect(find.text('Lana'), findsOneWidget);
+    expect(find.text('Tutor'), findsOneWidget);
     expect(find.byKey(const Key('lesson-avatar-placeholder')), findsOneWidget);
     expect(find.byKey(const Key('lesson-meta-summary')), findsOneWidget);
     expect(find.text('A1 · Daily Life'), findsOneWidget);
@@ -611,7 +709,8 @@ void main() {
     expect(find.textContaining('expected scenario progression'), findsNothing);
   });
 
-  testWidgets('typed scenario choice resolves before sending lesson chat reply',
+  testWidgets(
+      'typed scenario choice starts the CMS roleplay without lesson chat reply',
       (tester) async {
     final auth = FakeAuthService();
 
@@ -623,13 +722,27 @@ void main() {
     await tester.tap(_sendButton());
     await tester.pumpAndSettle();
 
+    expect(auth.sendLessonChatReplyCallCount, 0);
+    expect(auth.resolveVoiceScenarioCallCount, 0);
+    expect(find.byKey(const Key('lesson-message-learner-context')),
+        findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byKey(const Key('lesson-message-learner-context')),
+            matching: find.text('Meeting a new neighbor')),
+        findsOneWidget);
+    expect(find.byKey(const Key('lesson-message-cms-opening')), findsOneWidget);
+    expect(auth.persistedMessages.where((m) => m.role == 'user'), hasLength(1));
+    expect(auth.persistedMessages.where((m) => m.role == 'assistant'),
+        hasLength(1));
+    await tester.enterText(find.byType(TextField), 'My name is Sam.');
+    await _showWidget(tester, _sendButton());
+    await tester.tap(_sendButton());
+    await tester.pumpAndSettle();
     expect(auth.sendLessonChatReplyCallCount, 1);
-    expect(auth.lastLessonChatRequest?.userMessage, 'meeting a new neighbor');
+    expect(auth.resolveVoiceScenarioCallCount, 0);
     expect(
         auth.lastLessonChatRequest?.selectedContextVariantId, 'new_neighbor');
-    expect(auth.lastLessonChatRequest?.selectedContextTitle,
-        'Meeting a new neighbor');
-    expect(auth.lastLessonChatRequest?.selectedContextOpeningLine, isNotEmpty);
   });
 
   testWidgets('numeric scenario choice resolves the CMS context variant',
@@ -643,10 +756,93 @@ void main() {
     await tester.tap(_sendButton());
     await tester.pumpAndSettle();
 
+    expect(auth.sendLessonChatReplyCallCount, 0);
+    expect(auth.resolveVoiceScenarioCallCount, 0);
+    expect(find.byKey(const Key('lesson-message-learner-context')),
+        findsOneWidget);
+    expect(find.text('First day at a language school'), findsOneWidget);
+    expect(find.byKey(const Key('lesson-message-cms-opening')), findsOneWidget);
+    expect(auth.persistedMessages, hasLength(2));
+    await tester.enterText(find.byType(TextField), 'Hello.');
+    await _showWidget(tester, _sendButton());
+    await tester.tap(_sendButton());
+    await tester.pumpAndSettle();
+    expect(auth.sendLessonChatReplyCallCount, 1);
     expect(auth.lastLessonChatRequest?.selectedContextVariantId,
         'first_day_class');
-    expect(auth.lastLessonChatRequest?.selectedContextTitle,
-        'First day at a language school');
+  });
+
+  testWidgets('context title ignores case and trailing punctuation',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'meeting a new neighbor.');
+    await tester.pump();
+    await tester.tap(_sendButton());
+    await tester.pumpAndSettle();
+
+    expect(auth.sendLessonChatReplyCallCount, 0);
+    expect(find.byKey(const Key('lesson-message-learner-context')),
+        findsOneWidget);
+    expect(find.text('Meeting a new neighbor'), findsOneWidget);
+    expect(find.byKey(const Key('lesson-message-cms-opening')), findsOneWidget);
+    expect(auth.persistedMessages, hasLength(2));
+    await tester.enterText(find.byType(TextField), 'Hello.');
+    await _showWidget(tester, _sendButton());
+    await tester.tap(_sendButton());
+    await tester.pumpAndSettle();
+    expect(auth.sendLessonChatReplyCallCount, 1);
+    expect(
+        auth.lastLessonChatRequest?.selectedContextVariantId, 'new_neighbor');
+  });
+
+  testWidgets('numeric context choice ignores trailing punctuation',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '1.');
+    await tester.pump();
+    await tester.tap(_sendButton());
+    await tester.pumpAndSettle();
+
+    expect(auth.sendLessonChatReplyCallCount, 0);
+    expect(find.byKey(const Key('lesson-message-learner-context')),
+        findsOneWidget);
+    expect(find.text('Meeting a new neighbor'), findsOneWidget);
+    expect(find.byKey(const Key('lesson-message-cms-opening')), findsOneWidget);
+    expect(auth.persistedMessages, hasLength(2));
+    await tester.enterText(find.byType(TextField), 'Hello.');
+    await _showWidget(tester, _sendButton());
+    await tester.tap(_sendButton());
+    await tester.pumpAndSettle();
+    expect(auth.sendLessonChatReplyCallCount, 1);
+    expect(
+        auth.lastLessonChatRequest?.selectedContextVariantId, 'new_neighbor');
+  });
+
+  testWidgets('ready lesson shows Conversation mode without starting a session',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('lesson-conversation-mode-button')),
+        findsOneWidget);
+    expect(auth.startLessonSessionCallCount, 1);
+    final conversationButton =
+        find.byKey(const Key('lesson-conversation-mode-button'));
+    await _showWidget(tester, conversationButton);
+    await tester.tap(conversationButton);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('conversation-mode-record-button')),
+        findsOneWidget);
+    expect(find.textContaining('Conversation'), findsOneWidget);
+    expect(auth.startLessonSessionCallCount, 1);
   });
 
   testWidgets('custom scenario context has no invented variant ID',
@@ -683,8 +879,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('lesson-hint-card')), findsNothing);
-    expect(
-        auth.lastLessonChatRequest?.selectedContextVariantId, 'new_neighbor');
+    expect(auth.sendLessonChatReplyCallCount, 0);
   });
 
   testWidgets('send button is disabled for blank input', (tester) async {
@@ -923,6 +1118,325 @@ void main() {
 
     expect(auth.sendLessonChatReplyCallCount, initialSendCount);
     expect(auth.persistedMessages.length, initialPersistCount);
+  });
+
+  testWidgets('safe English voice transcript is inserted with Auto-send off',
+      (tester) async {
+    final auth = FakeAuthService(
+        studyLanguage: 'en', transcriptionText: 'Hello   there');
+    await tester.pumpWidget(_lessonScreen(
+      auth,
+      recordingService: FakeSuccessfulRecordingService(),
+      microphonePermissionService: FakeLearnerMicrophonePermissionService(
+        statuses: [LearnerMicrophonePermissionStatus.granted],
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await _showWidget(tester, find.byKey(const Key('lesson-action-record')));
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 550)));
+    await tester.pump();
+    await _showWidget(tester, find.byKey(const Key('lesson-action-record')));
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.pumpAndSettle();
+    expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('lesson-input')))
+            .controller
+            ?.text,
+        'Hello there');
+    expect(auth.sendLessonChatReplyCallCount, 0);
+    expect(auth.persistedMessages, isEmpty);
+  });
+
+  testWidgets('safe Cyrillic homoglyph is normalized before composer insertion',
+      (tester) async {
+    final auth =
+        FakeAuthService(studyLanguage: 'en', transcriptionText: 'Сat hello');
+    await tester.pumpWidget(_lessonScreen(
+      auth,
+      recordingService: FakeSuccessfulRecordingService(),
+      microphonePermissionService: FakeLearnerMicrophonePermissionService(
+        statuses: [LearnerMicrophonePermissionStatus.granted],
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await _showWidget(tester, find.byKey(const Key('lesson-action-record')));
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 550)));
+    await tester.pump();
+    await _showWidget(tester, find.byKey(const Key('lesson-action-record')));
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.pumpAndSettle();
+    expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('lesson-input')))
+            .controller
+            ?.text,
+        'Cat hello');
+  });
+
+  testWidgets('safe English voice transcript submits once with Auto-send on',
+      (tester) async {
+    final auth = FakeAuthService(
+      studyLanguage: 'en',
+      transcriptionText: 'Custom café chat',
+      voiceScenarioResponse: const VoiceScenarioSemanticResponse(
+        decision: VoiceScenarioSemanticDecision.freeContext,
+        confidence: .9,
+        normalizedFreeContext: 'Custom café chat',
+      ),
+    );
+    await tester.pumpWidget(_lessonScreen(
+      auth,
+      recordingService: FakeSuccessfulRecordingService(),
+      microphonePermissionService: FakeLearnerMicrophonePermissionService(
+        statuses: [LearnerMicrophonePermissionStatus.granted],
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('lesson-auto-send-voice-switch')));
+    await _showWidget(tester, find.byKey(const Key('lesson-action-record')));
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 550)));
+    await tester.pump();
+    await _showWidget(tester, find.byKey(const Key('lesson-action-record')));
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.pumpAndSettle();
+    expect(auth.sendLessonChatReplyCallCount, 1);
+    expect(auth.persistedMessages.where((message) => message.role == 'user'),
+        hasLength(1));
+  });
+
+  testWidgets('voice intent starts canonical CMS scenario without reply call',
+      (tester) async {
+    final auth = FakeAuthService(
+      studyLanguage: 'en',
+      transcriptionText: 'meeting and your neighbor',
+      voiceScenarioResponse: const VoiceScenarioSemanticResponse(
+        decision: VoiceScenarioSemanticDecision.publishedContext,
+        confidence: .92,
+        matchedContextId: 'new_neighbor',
+      ),
+    );
+    await tester.pumpWidget(_lessonScreen(
+      auth,
+      recordingService: FakeSuccessfulRecordingService(),
+      microphonePermissionService: FakeLearnerMicrophonePermissionService(
+        statuses: [LearnerMicrophonePermissionStatus.granted],
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('lesson-auto-send-voice-switch')));
+    await _showWidget(tester, find.byKey(const Key('lesson-action-record')));
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 550)));
+    await tester.pump();
+    await _showWidget(tester, find.byKey(const Key('lesson-action-record')));
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.pumpAndSettle();
+
+    expect(auth.sendLessonChatReplyCallCount, 0);
+    expect(auth.resolveVoiceScenarioCallCount, 1);
+    expect(auth.persistedMessages, hasLength(2));
+    expect(find.byKey(const Key('lesson-message-learner-context')),
+        findsOneWidget);
+    expect(find.text('Meeting a new neighbor'), findsOneWidget);
+    expect(find.byKey(const Key('lesson-message-cms-opening')), findsOneWidget);
+  });
+
+  testWidgets('exact voice title avoids backend semantic resolution',
+      (tester) async {
+    final auth = FakeAuthService(
+      studyLanguage: 'en',
+      transcriptionText: 'Meeting a new neighbor',
+      voiceScenarioFailure: true,
+    );
+    await tester.pumpWidget(_lessonScreen(
+      auth,
+      recordingService: FakeSuccessfulRecordingService(),
+      microphonePermissionService: FakeLearnerMicrophonePermissionService(
+        statuses: [LearnerMicrophonePermissionStatus.granted],
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await _autoSendOneRecording(tester);
+
+    expect(auth.resolveVoiceScenarioCallCount, 0);
+    expect(auth.sendLessonChatReplyCallCount, 0);
+    expect(auth.persistedMessages, hasLength(2));
+    expect(find.byKey(const Key('lesson-message-cms-opening')), findsOneWidget);
+  });
+
+  testWidgets('specific free voice scenario keeps context and has no variant',
+      (tester) async {
+    const freeContext = 'meeting a friend in a park';
+    final auth = FakeAuthService(
+      studyLanguage: 'en',
+      transcriptionText: freeContext,
+      voiceScenarioResponse: const VoiceScenarioSemanticResponse(
+        decision: VoiceScenarioSemanticDecision.freeContext,
+        confidence: .94,
+        normalizedFreeContext: freeContext,
+      ),
+    );
+    await tester.pumpWidget(_lessonScreen(
+      auth,
+      recordingService: FakeSuccessfulRecordingService(),
+      microphonePermissionService: FakeLearnerMicrophonePermissionService(
+        statuses: [LearnerMicrophonePermissionStatus.granted],
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('lesson-auto-send-voice-switch')));
+    await _showWidget(tester, find.byKey(const Key('lesson-action-record')));
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 550)));
+    await tester.pump();
+    await _showWidget(tester, find.byKey(const Key('lesson-action-record')));
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.pumpAndSettle();
+
+    expect(auth.sendLessonChatReplyCallCount, 1);
+    expect(auth.resolveVoiceScenarioCallCount, 1);
+    expect(auth.lastLessonChatRequest?.selectedContextTitle, freeContext);
+    expect(auth.lastLessonChatRequest?.selectedContextVariantId, isEmpty);
+    expect(auth.lastLessonChatRequest?.userMessage, freeContext);
+  });
+
+  testWidgets('ambiguous voice scenario only asks for clarification',
+      (tester) async {
+    final auth = FakeAuthService(
+      studyLanguage: 'en',
+      transcriptionText: 'meeting',
+      voiceScenarioResponse: const VoiceScenarioSemanticResponse(
+        decision: VoiceScenarioSemanticDecision.clarify,
+        confidence: .55,
+        candidateContextIds: ['new_neighbor', 'hobby_club'],
+        clarificationText: 'Did you mean:',
+      ),
+    );
+    await tester.pumpWidget(_lessonScreen(
+      auth,
+      recordingService: FakeSuccessfulRecordingService(),
+      microphonePermissionService: FakeLearnerMicrophonePermissionService(
+        statuses: [LearnerMicrophonePermissionStatus.granted],
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('lesson-auto-send-voice-switch')));
+    await _showWidget(tester, find.byKey(const Key('lesson-action-record')));
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 550)));
+    await tester.pump();
+    await _showWidget(tester, find.byKey(const Key('lesson-action-record')));
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.pumpAndSettle();
+
+    expect(auth.sendLessonChatReplyCallCount, 0);
+    expect(auth.resolveVoiceScenarioCallCount, 1);
+    expect(auth.persistedMessages, isEmpty);
+    expect(find.textContaining('Did you mean:'), findsOneWidget);
+    expect(
+        find.byKey(const Key('lesson-message-learner-context')), findsNothing);
+    expect(
+        tester
+            .widget<OutlinedButton>(
+                find.byKey(const Key('lesson-action-record')))
+            .onPressed,
+        isNotNull);
+    final choices = find.byKey(const Key('lesson-voice-clarification-choices'));
+    expect(choices, findsOneWidget);
+    final firstChoice = find.descendant(
+      of: choices,
+      matching: find.text('Meeting a new neighbor'),
+    );
+    await tester.ensureVisible(firstChoice);
+    await tester.pumpAndSettle();
+    await tester.tap(firstChoice);
+    await tester.pumpAndSettle();
+    expect(auth.resolveVoiceScenarioCallCount, 1);
+    expect(auth.sendLessonChatReplyCallCount, 0);
+    expect(auth.persistedMessages, hasLength(2));
+  });
+
+  testWidgets(
+      'semantic endpoint failure preserves transcript and does not guess',
+      (tester) async {
+    const transcript = 'meeting neighbor';
+    final auth = FakeAuthService(
+      studyLanguage: 'en',
+      transcriptionText: transcript,
+      voiceScenarioFailure: true,
+    );
+    await tester.pumpWidget(_lessonScreen(
+      auth,
+      recordingService: FakeSuccessfulRecordingService(),
+      microphonePermissionService: FakeLearnerMicrophonePermissionService(
+        statuses: [LearnerMicrophonePermissionStatus.granted],
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await _autoSendOneRecording(tester);
+
+    expect(auth.resolveVoiceScenarioCallCount, 1);
+    expect(auth.sendLessonChatReplyCallCount, 0);
+    expect(auth.persistedMessages, isEmpty);
+    expect(find.textContaining('temporarily unavailable'), findsOneWidget);
+    expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('lesson-input')))
+            .controller
+            ?.text,
+        transcript);
+  });
+
+  testWidgets('unsafe Cyrillic transcript preserves draft and restores record',
+      (tester) async {
+    final auth =
+        FakeAuthService(studyLanguage: 'en', transcriptionText: 'Hello Привет');
+    await tester.pumpWidget(_lessonScreen(
+      auth,
+      recordingService: FakeSuccessfulRecordingService(),
+      microphonePermissionService: FakeLearnerMicrophonePermissionService(
+        statuses: [LearnerMicrophonePermissionStatus.granted],
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('lesson-input')), 'Keep this draft');
+    await _showWidget(tester, find.byKey(const Key('lesson-action-record')));
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 550)));
+    await tester.pump();
+    await _showWidget(tester, find.byKey(const Key('lesson-action-record')));
+    await tester.tap(find.byKey(const Key('lesson-action-record')));
+    await tester.pumpAndSettle();
+    expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('lesson-input')))
+            .controller
+            ?.text,
+        'Keep this draft');
+    expect(
+        find.text(
+            'I could not recognize that clearly in English. Please try again.'),
+        findsOneWidget);
+    expect(auth.sendLessonChatReplyCallCount, 0);
+    expect(auth.persistedMessages, isEmpty);
+    expect(
+        tester
+            .widget<OutlinedButton>(
+                find.byKey(const Key('lesson-action-record')))
+            .onPressed,
+        isNotNull);
   });
 
   testWidgets('first microphone denial remains retryable and preserves draft',

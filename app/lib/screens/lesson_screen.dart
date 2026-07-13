@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../models/language_options.dart';
@@ -12,8 +13,17 @@ import '../models/lesson_session.dart';
 import '../models/lesson_start_selection.dart';
 import '../models/translation.dart';
 import '../models/user_settings.dart';
+import '../models/voice_scenario_resolution.dart';
+import 'conversation_mode_screen.dart';
 import '../services/auth_service.dart';
+import '../services/lesson_context_selection_resolver.dart';
+import '../services/lesson_roleplay_opening_builder.dart';
+import '../services/lesson_turn_request_builder.dart';
+import '../services/tutor_avatar_preloader.dart';
 import '../services/tutor_audio_playback_service.dart';
+import '../services/transcript_script_normalizer.dart';
+import '../services/voice_scenario_intent_resolver.dart';
+import '../widgets/tutor_avatar.dart';
 import '../services/learner_audio_recording_service.dart';
 import '../services/learner_microphone_permission_service.dart';
 import '../services/service_factory.dart';
@@ -111,6 +121,11 @@ class _LessonScreenState extends State<LessonScreen>
   bool _isCompleted = false;
   bool _isAuthenticationRequired = false;
   bool _lessonSessionEnded = false;
+  bool _autoSendVoice = false;
+  bool _autoPlayBotVoice = false;
+  bool _automaticVoiceSubmissionInFlight = false;
+  bool _composerContainsVoiceTranscript = false;
+  int _recordingOperationGeneration = 0;
   LearnerRecordingUiState _recordingState = LearnerRecordingUiState.idle;
   String? _recordingFilePath;
   String _draftWhenRecordingStarted = '';
@@ -129,12 +144,18 @@ class _LessonScreenState extends State<LessonScreen>
   String? _selectedContextId;
   String? _selectedContextTitle;
   String? _customLearnerContext;
+  List<LessonRuntimeContextVariant> _voiceClarificationChoices = const [];
+  int _activeRoleplayLearnerTurnCount = 0;
   String? _finishError;
   LessonSummaryResponse? _lessonSummary;
   LessonCompletionStatus? _summaryStatus;
   final List<_LessonChatMessage> _messages = [];
   final Set<Future<void>> _pendingMessagePersistence = {};
   int? _activePlayingMessageId;
+  static const _turnRequestBuilder = LessonTurnRequestBuilder();
+  static const _roleplayOpeningBuilder = LessonRoleplayOpeningBuilder();
+  final _avatarPreloader = TutorAvatarPreloader();
+  Future<bool>? _conversationAvatarPreload;
 
   @override
   void initState() {
@@ -255,6 +276,7 @@ class _LessonScreenState extends State<LessonScreen>
       _settings = null;
       _recordingState = LearnerRecordingUiState.idle;
       _messages.clear();
+      _voiceClarificationChoices = const [];
     });
 
     try {
@@ -262,6 +284,7 @@ class _LessonScreenState extends State<LessonScreen>
       final scenario = await _authService.fetchLessonRuntimeScenario(
         scenarioKey: selection.lessonContentId,
       );
+      _debugRuntimeDiagnostics(scenario, settings);
       final openingMessage = _buildInitialTutorMessage(
         scenario: scenario,
       );
@@ -272,6 +295,7 @@ class _LessonScreenState extends State<LessonScreen>
         _messages.add(openingMessage);
         _isLoadingScenario = false;
       });
+      _warmTutorAvatars(settings);
       _scrollTranscriptToBottom();
     } catch (error) {
       if (!mounted) return;
@@ -283,6 +307,74 @@ class _LessonScreenState extends State<LessonScreen>
         );
       });
     }
+  }
+
+  void _debugRuntimeDiagnostics(
+    LessonRuntimeScenario scenario,
+    UserSettings settings,
+  ) {
+    if (!kDebugMode) return;
+    final runtime = scenario.runtimeContent;
+    final tutor =
+        scenario.tutorProfiles.cast<LessonRuntimeTutorProfile?>().firstWhere(
+              (profile) =>
+                  profile?.tutorId.trim().toLowerCase() ==
+                  settings.selectedTutorId.trim().toLowerCase(),
+              orElse: () => null,
+            );
+    final source = runtime.effectiveRuntimeSource.trim();
+    debugPrint(
+      'lesson_runtime scenarioId=${scenario.id} '
+      'version=${runtime.versionNumber?.toString() ?? ''} '
+      'tutorId=${tutor?.tutorId ?? settings.selectedTutorId} '
+      'source=${source.isEmpty ? 'unknown' : source} '
+      'tutorInstructionsPresent=${scenario.aiTutorPromptInstructions.isNotEmpty} '
+      'tutorInstructionsLength=${scenario.aiTutorPromptInstructions.length} '
+      'conversationFlowPresent=${scenario.conversationFlow.opening.trim().isNotEmpty} '
+      'conversationFlowLength=${scenario.conversationFlow.opening.length} '
+      'learningGoalPresent=${scenario.learningGoal.goal.trim().isNotEmpty} '
+      'learningGoalLength=${scenario.learningGoal.goal.length} '
+      'contextVariantsPresent=${scenario.controlledVariation.contextVariants.isNotEmpty} '
+      'contextVariantsLength=${scenario.controlledVariation.contextVariants.length} '
+      'openingPresent=${scenario.conversationFlow.opening.trim().isNotEmpty} '
+      'openingLength=${scenario.conversationFlow.opening.length}',
+    );
+  }
+
+  void _debugVoiceScenarioResolution({
+    required String stage,
+    required String decision,
+    required int candidateCount,
+    required bool matchedContextPresent,
+    required double confidence,
+    required bool hadContextBefore,
+    required String action,
+  }) {
+    if (!kDebugMode) return;
+    debugPrint(
+      'voice_scenario_resolution stage=$stage decision=$decision '
+      'candidateCount=$candidateCount '
+      'matchedContextPresent=$matchedContextPresent '
+      'confidence=${confidence.toStringAsFixed(3)} '
+      'hadContextBefore=$hadContextBefore action=$action',
+    );
+  }
+
+  void _warmTutorAvatars(UserSettings settings) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_avatarPreloader.preload(
+        context: context,
+        tutorId: settings.selectedTutorId,
+        surface: TutorAvatarSurface.lessonChat,
+      ));
+      _conversationAvatarPreload ??= _avatarPreloader.preload(
+        context: context,
+        tutorId: settings.selectedTutorId,
+        surface: TutorAvatarSurface.conversationMode,
+      );
+      if (mounted) setState(() {});
+    });
   }
 
   _LessonChatMessage _buildInitialTutorMessage({
@@ -350,7 +442,69 @@ class _LessonScreenState extends State<LessonScreen>
     await _loadLessonRuntime(selection, session);
   }
 
+  Future<void> _openConversationMode() async {
+    final session = _startResult?.session;
+    final scenario = _scenario;
+    final settings = _settings;
+    if (session == null || scenario == null || settings == null) return;
+    final preload = _conversationAvatarPreload ??= _avatarPreloader.preload(
+      context: context,
+      tutorId: settings.selectedTutorId,
+      surface: TutorAvatarSurface.conversationMode,
+    );
+    // Avatar warmup is optional. A missing/unsupported GIF must never block
+    // entering Conversation mode.
+    await preload.timeout(const Duration(milliseconds: 300),
+        onTimeout: () => false);
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ConversationModeScreen(
+          authService: _authService,
+          audioPlaybackService: JustAudioTutorPlaybackService(),
+          recordingService: LearnerAudioRecordingService(),
+          microphonePermissionService:
+              PermissionHandlerLearnerMicrophonePermissionService(),
+          session: session,
+          scenario: scenario,
+          settings: settings,
+          tutorDisplayName: _tutorDisplayName,
+          initialTranscript: _messages
+              .map((message) => message.text)
+              .where((text) => text.trim().isNotEmpty)
+              .toList(growable: false),
+          onSubmitTranscript: (text) => _sendMessageInternal(
+            overrideText: text,
+            source: 'voice_transcript',
+            suppressAutomaticPlayback: true,
+          ),
+          onHint: _requestConversationHint,
+          onFinish: _confirmFinishLesson,
+          ownsAudioPlaybackService: true,
+        ),
+      ),
+    );
+  }
+
+  Future<String?> _requestConversationHint() async {
+    await _requestHint();
+    return _hintText;
+  }
+
   Future<void> _sendMessage([String? overrideText]) async {
+    await _sendMessageInternal(
+      overrideText: overrideText,
+      source: _composerContainsVoiceTranscript ? 'voice_transcript' : 'typed',
+    );
+  }
+
+  Future<String?> _sendMessageInternal({
+    String? overrideText,
+    String source = 'typed',
+    bool automaticVoiceSubmission = false,
+    int? recordingGeneration,
+    bool suppressAutomaticPlayback = false,
+  }) async {
     final selection = widget.selection;
     final session = _startResult?.session;
     final scenario = _scenario;
@@ -361,58 +515,273 @@ class _LessonScreenState extends State<LessonScreen>
         scenario == null ||
         settings == null ||
         _isSending ||
+        (automaticVoiceSubmission &&
+            (_automaticVoiceSubmissionInFlight ||
+                recordingGeneration != _recordingOperationGeneration)) ||
         _isFinishing ||
         _isCompleted ||
         _lessonSessionEnded ||
         _isAuthenticationRequired) {
-      return;
+      return null;
     }
 
     if (text.isEmpty) {
       setState(() {
         _sendError = 'Please enter a message.';
       });
-      return;
+      return null;
     }
 
-    _resolveContextSelection(text, scenario);
+    final hadSelectedContextBeforeResolution = _hasSelectedContext;
+    var contextInput = text;
+    VoiceScenarioDeterministicResult? voiceIntent;
+    if (source == 'voice_transcript' && !hadSelectedContextBeforeResolution) {
+      voiceIntent = VoiceScenarioIntentResolver.resolve(
+        transcript: text,
+        variants: scenario.controlledVariation.contextVariants,
+      );
+      if (voiceIntent.decision ==
+          VoiceScenarioDeterministicDecision.unsafeTranscript) {
+        const message =
+            'I could not recognize that clearly in English. Please try again.';
+        _debugVoiceScenarioResolution(
+          stage: 'deterministic',
+          decision: 'unsafe',
+          candidateCount: scenario.controlledVariation.contextVariants.length,
+          matchedContextPresent: false,
+          confidence: 1,
+          hadContextBefore: false,
+          action: 'review_text',
+        );
+        setState(() {
+          _sendError = message;
+          _recordingState = LearnerRecordingUiState.idle;
+          _automaticVoiceSubmissionInFlight = false;
+        });
+        return message;
+      }
+      if (voiceIntent.decision ==
+          VoiceScenarioDeterministicDecision.publishedScenario) {
+        contextInput = voiceIntent.matchedVariant!.title;
+        _debugVoiceScenarioResolution(
+          stage: 'deterministic',
+          decision: 'published',
+          candidateCount: scenario.controlledVariation.contextVariants.length,
+          matchedContextPresent: true,
+          confidence: voiceIntent.confidence,
+          hadContextBefore: false,
+          action: 'start_cms',
+        );
+      } else {
+        final semantic = await _authService.resolveVoiceScenario(
+          sessionId: session.lessonSessionId,
+          request: VoiceScenarioResolutionRequest(
+            studyLanguage: LanguageOptions.backendStudyLanguageNameFor(
+                settings.studyLanguage),
+            learnerLevel: selection.level,
+            topicId: selection.topicId,
+            subtopicId: selection.subtopicId,
+            runtimeScenarioId: scenario.id,
+            runtimeVersion: scenario.runtimeContent.versionNumber,
+            recognizedText: text,
+            candidates: scenario.controlledVariation.contextVariants
+                .map((variant) => VoiceScenarioCandidateRequest(
+                      id: variant.id,
+                      title: variant.title,
+                      description: variant.localizedTitle.trim().isNotEmpty
+                          ? variant.localizedTitle
+                          : variant.contextConfirmationLine,
+                    ))
+                .toList(growable: false),
+          ),
+        );
+        if (!semantic.isSuccess) {
+          final message = semantic.message!;
+          _debugVoiceScenarioResolution(
+            stage: 'backend_semantic',
+            decision: 'failed',
+            candidateCount: scenario.controlledVariation.contextVariants.length,
+            matchedContextPresent: false,
+            confidence: 0,
+            hadContextBefore: false,
+            action: 'review_text',
+          );
+          setState(() {
+            _messageController.text = text;
+            _composerContainsVoiceTranscript = false;
+            _sendError = message;
+            _recordingState = LearnerRecordingUiState.idle;
+            _automaticVoiceSubmissionInFlight = false;
+          });
+          return message;
+        }
+        final response = semantic.response!;
+        final matched = response.matchedContextId == null
+            ? null
+            : scenario.controlledVariation.contextVariants
+                .cast<LessonRuntimeContextVariant?>()
+                .firstWhere(
+                  (variant) => variant?.id == response.matchedContextId,
+                  orElse: () => null,
+                );
+        final action = switch (response.decision) {
+          VoiceScenarioSemanticDecision.publishedContext => 'start_cms',
+          VoiceScenarioSemanticDecision.freeContext => 'start_free',
+          VoiceScenarioSemanticDecision.clarify => 'clarify',
+          VoiceScenarioSemanticDecision.unsafe => 'review_text',
+        };
+        final decision = switch (response.decision) {
+          VoiceScenarioSemanticDecision.publishedContext => 'published',
+          VoiceScenarioSemanticDecision.freeContext => 'free',
+          VoiceScenarioSemanticDecision.clarify => 'clarify',
+          VoiceScenarioSemanticDecision.unsafe => 'unsafe',
+        };
+        _debugVoiceScenarioResolution(
+          stage: 'backend_semantic',
+          decision: decision,
+          candidateCount: scenario.controlledVariation.contextVariants.length,
+          matchedContextPresent: matched != null,
+          confidence: response.confidence,
+          hadContextBefore: false,
+          action: action,
+        );
+        if (response.decision ==
+            VoiceScenarioSemanticDecision.publishedContext) {
+          if (matched == null) {
+            const message =
+                'Scenario matching is temporarily unavailable. Review or edit the recognized text.';
+            setState(() {
+              _messageController.text = text;
+              _sendError = message;
+              _recordingState = LearnerRecordingUiState.idle;
+            });
+            return message;
+          }
+          contextInput = matched.title;
+        } else if (response.decision ==
+            VoiceScenarioSemanticDecision.freeContext) {
+          contextInput = response.normalizedFreeContext?.trim() ?? '';
+          if (contextInput.isEmpty) {
+            contextInput = text;
+          }
+        } else {
+          final choices = response.candidateContextIds
+              .map((id) => scenario.controlledVariation.contextVariants
+                  .cast<LessonRuntimeContextVariant?>()
+                  .firstWhere((variant) => variant?.id == id,
+                      orElse: () => null))
+              .whereType<LessonRuntimeContextVariant>()
+              .take(2)
+              .toList(growable: false);
+          final choiceText = choices.indexed
+              .map((entry) => '${entry.$1 + 1}. ${entry.$2.title.trim()}')
+              .join('\n');
+          final backendClarification = response.clarificationText?.trim();
+          final message = backendClarification?.isNotEmpty == true
+              ? choiceText.isEmpty
+                  ? backendClarification!
+                  : '$backendClarification\n$choiceText'
+              : response.decision == VoiceScenarioSemanticDecision.unsafe
+                  ? 'I could not recognize that clearly. Please try again.'
+                  : choiceText.isEmpty
+                      ? 'Please name a specific situation, or say an option number.'
+                      : 'Did you mean:\n$choiceText';
+          setState(() {
+            _voiceClarificationChoices = choices;
+            _sendError = message;
+            _recordingState = LearnerRecordingUiState.idle;
+            _automaticVoiceSubmissionInFlight = false;
+          });
+          return message;
+        }
+      }
+    } else if (source == 'voice_transcript' && kDebugMode) {
+      final selectedVariant = _selectedContextVariant(scenario);
+      _debugVoiceScenarioResolution(
+        stage: 'deterministic',
+        decision: selectedVariant == null ? 'free' : 'published',
+        candidateCount: 0,
+        matchedContextPresent: selectedVariant != null,
+        confidence: 1,
+        hadContextBefore: true,
+        action: 'normal_reply',
+      );
+    }
+    final resolved = LessonContextSelectionResolver.resolve(
+      scenario: scenario,
+      currentSelectedContextId: _selectedContextId,
+      currentSelectedContextTitle: _selectedContextTitle,
+      learnerInput: contextInput,
+    );
+    _selectedContextId = resolved.selectedContextId;
+    _selectedContextTitle = resolved.selectedContextTitle;
+    _customLearnerContext =
+        resolved.isCustomContext ? resolved.selectedContextTitle : null;
+    _voiceClarificationChoices = const [];
 
-    final userMessage = _LessonChatMessage.user(text);
+    final useLocalCmsContextStart =
+        !hadSelectedContextBeforeResolution && resolved.isKnownCmsContext;
+    if (kDebugMode) {
+      debugPrint(
+        'context_branch inputResolved=${resolved.selectedContextVariant != null} '
+        'knownContext=${resolved.isKnownCmsContext} '
+        'customContext=${resolved.isCustomContext} '
+        'isContextSelectionTurn=${resolved.isContextSelectionTurn} '
+        'selectedContextBefore=$hadSelectedContextBeforeResolution '
+        'selectedContextAfter=$_hasSelectedContext '
+        'localCmsBranch=$useLocalCmsContextStart '
+        'lessonReplyBranch=${!useLocalCmsContextStart}',
+      );
+    }
+
+    if (useLocalCmsContextStart) {
+      return _startKnownContextRoleplay(
+        session: session,
+        settings: settings,
+        context: resolved,
+        learnerText: contextInput,
+        source: source,
+      );
+    }
+
+    final userMessage = _LessonChatMessage.user(contextInput);
     final lastBotMessage = _messages.lastWhere(
       (message) => message.isBot,
       orElse: () => _LessonChatMessage.tutor(''),
     );
     final updatedMessages = [..._messages, userMessage];
-    final learnerTurnCount =
-        updatedMessages.where((message) => message.isUser).length;
-    final request = LessonChatRequest.fromScenario(
+    final learnerTurnCount = _activeRoleplayLearnerTurnCount + 1;
+    final request = _turnRequestBuilder.build(
       scenario: scenario,
-      levelProfile: scenario.levelProfileFor(selection.level),
+      settings: settings,
       selectedLevel: selection.level,
-      topicTitle: selection.topicTitle,
-      subtopicTitle: selection.subtopicTitle,
-      userMessage: text,
+      userMessage: contextInput,
       lastBotMessage: lastBotMessage.text,
-      nativeLanguageName:
-          LanguageOptions.backendNativeLanguageNameFor(settings.nativeLanguage),
-      targetLanguageId:
-          LanguageOptions.studyLanguageIdFor(settings.studyLanguage),
-      targetLanguageName:
-          LanguageOptions.backendStudyLanguageNameFor(settings.studyLanguage),
-      targetLanguageNativeName:
-          LanguageOptions.backendStudyLanguageNameFor(settings.studyLanguage),
-      targetLanguageCode:
-          LanguageOptions.studyLanguageIdFor(settings.studyLanguage),
-      userDisplayName: '',
       learnerTurnCount: learnerTurnCount,
       recentMessages: _recentConversationMessages(updatedMessages),
       backendSessionId: session.lessonSessionId,
-      selectedContextTitle: _currentSelectedContextTitle,
-      selectedContextVariant: _selectedContextVariant(scenario),
+      context: resolved,
     );
+    if (kDebugMode) {
+      debugPrint(
+        'lesson_chat_reply operation=reply '
+        'session=${session.lessonSessionId} '
+        'turn=${request.learnerTurnCount} '
+        'source=$source '
+        'isContextSelectionTurn=${request.isContextSelectionTurn} '
+        'contextTitle=${request.selectedContextTitle.isNotEmpty} '
+        'contextVariant=${request.selectedContextVariantId.isNotEmpty} '
+        'lessonPhase=${request.lessonPhase} '
+        'recentMessages=${request.recentMessages.length} '
+        'lastBotPresent=${request.lastBotMessage.trim().isNotEmpty}',
+      );
+    }
 
     setState(() {
       _isSending = true;
+      if (automaticVoiceSubmission) {
+        _automaticVoiceSubmissionInFlight = true;
+      }
       _sendError = null;
       _recordingState = LearnerRecordingUiState.idle;
       _hintText = null;
@@ -422,27 +791,44 @@ class _LessonScreenState extends State<LessonScreen>
         ..addAll(updatedMessages);
       if (overrideText == null) {
         _messageController.clear();
+        _composerContainsVoiceTranscript = false;
       }
     });
 
     final result = await _authService.sendLessonChatReply(request: request);
-    if (!mounted) return;
+    if (kDebugMode) {
+      debugPrint(
+        'lesson_chat_reply operation=reply_result '
+        'status=${result.status} '
+        'success=${result.isSuccess}',
+      );
+    }
+    if (!mounted) return null;
 
     if (!result.isSuccess || result.reply == null) {
       setState(() {
         _isSending = false;
+        _automaticVoiceSubmissionInFlight = false;
+        _messages.removeWhere((message) => identical(message, userMessage));
         _sendError = result.message;
+        if (automaticVoiceSubmission &&
+            _messageController.text.trim().isEmpty &&
+            recordingGeneration == _recordingOperationGeneration) {
+          _messageController.text = text;
+        }
       });
-      return;
+      return null;
     }
 
     final botText = result.reply!.botReply.trim();
+    final tutorMessage =
+        botText.isEmpty ? null : _LessonChatMessage.tutor(botText);
     setState(() {
       _isSending = false;
+      _automaticVoiceSubmissionInFlight = false;
       _sendError = null;
-      if (botText.isNotEmpty) {
-        _messages.add(_LessonChatMessage.tutor(botText));
-      }
+      if (tutorMessage != null) _messages.add(tutorMessage);
+      _activeRoleplayLearnerTurnCount = learnerTurnCount;
     });
     _scrollTranscriptToBottom();
 
@@ -452,9 +838,80 @@ class _LessonScreenState extends State<LessonScreen>
       userMessage: userMessage,
       botText: botText,
       turnNumber: learnerTurnCount,
+      source: source,
     );
     userMessage.persistenceOperation = persistenceOperation;
     _trackMessagePersistence(persistenceOperation);
+    if (tutorMessage != null &&
+        !suppressAutomaticPlayback &&
+        _autoPlayBotVoice) {
+      await _playTutorVoice(
+        tutorMessage,
+        purpose: AudioSpeechPurpose.lessonChatTts,
+      );
+    }
+    return botText;
+  }
+
+  Future<String?> _startKnownContextRoleplay({
+    required LessonSessionResponse session,
+    required UserSettings settings,
+    required LessonContextSelection context,
+    required String learnerText,
+    required String source,
+  }) async {
+    final variant = context.selectedContextVariant;
+    if (variant == null) return null;
+    final opening = _roleplayOpeningBuilder.buildKnownContextOpening(
+      variant: variant,
+      tutorDisplayName: _runtimeTutorDisplayName(settings),
+    );
+    if (opening.isEmpty) {
+      if (kDebugMode) {
+        debugPrint(
+            'cms_context_start contextMessageAdded=false openingMessageAdded=false contextPersistScheduled=false openingPersistScheduled=false lessonReplyCalled=false');
+      }
+      setState(() => _sendError = 'This lesson context is unavailable.');
+      return null;
+    }
+
+    // Desktop records the resolved CMS title, not the learner's punctuation
+    // or numeric shortcut, for known context selections.
+    final userMessage = _LessonChatMessage.user(
+      context.selectedContextTitle?.trim().isNotEmpty == true
+          ? context.selectedContextTitle!.trim()
+          : learnerText,
+      isContextSelection: true,
+    );
+    final tutorMessage = _LessonChatMessage.tutor(opening, isCmsOpening: true);
+    setState(() {
+      _sendError = null;
+      _hintText = null;
+      _hintError = null;
+      _recordingState = LearnerRecordingUiState.idle;
+      _messages.addAll([userMessage, tutorMessage]);
+      _activeRoleplayLearnerTurnCount = 0;
+      if (source == 'typed' || _composerContainsVoiceTranscript) {
+        _messageController.clear();
+      }
+      _composerContainsVoiceTranscript = false;
+    });
+    _scrollTranscriptToBottom();
+    final persistence = _persistChatMessages(
+      sessionId: session.lessonSessionId,
+      studyLanguage: session.studyLanguage,
+      userMessage: userMessage,
+      botText: opening,
+      turnNumber: 0,
+      source: source,
+    );
+    userMessage.persistenceOperation = persistence;
+    _trackMessagePersistence(persistence);
+    if (kDebugMode) {
+      debugPrint(
+          'cms_context_start contextMessageAdded=true openingMessageAdded=true contextPersistScheduled=true openingPersistScheduled=true lessonReplyCalled=false');
+    }
+    return opening;
   }
 
   Future<void> _requestHint() async {
@@ -570,37 +1027,6 @@ class _LessonScreenState extends State<LessonScreen>
     return null;
   }
 
-  void _resolveContextSelection(String text, LessonRuntimeScenario scenario) {
-    if (_hasSelectedContext) return;
-
-    final variants = scenario.controlledVariation.contextVariants;
-    LessonRuntimeContextVariant? match;
-    final choice = int.tryParse(text);
-    if (choice != null && choice >= 1 && choice <= variants.length) {
-      match = variants[choice - 1];
-    } else {
-      final normalizedText = text.toLowerCase();
-      for (final variant in variants) {
-        if (variant.title.trim().toLowerCase() == normalizedText) {
-          match = variant;
-          break;
-        }
-      }
-    }
-
-    if (match != null) {
-      _selectedContextId = match.id;
-      _selectedContextTitle = match.title.trim();
-      _customLearnerContext = null;
-    } else {
-      _selectedContextId = null;
-      _selectedContextTitle = null;
-      _customLearnerContext = text;
-    }
-    _hintText = null;
-    _hintError = null;
-  }
-
   void _trackMessagePersistence(Future<void> operation) {
     _pendingMessagePersistence.add(operation);
     operation.whenComplete(() => _pendingMessagePersistence.remove(operation));
@@ -622,6 +1048,7 @@ class _LessonScreenState extends State<LessonScreen>
     required _LessonChatMessage userMessage,
     required String botText,
     required int turnNumber,
+    String source = 'typed',
   }) async {
     try {
       final persistedUserMessageId =
@@ -630,7 +1057,7 @@ class _LessonScreenState extends State<LessonScreen>
         request: CreateLessonSessionMessageRequest(
           role: 'user',
           text: userMessage.text,
-          source: 'typed',
+          source: source,
           turnNumber: turnNumber,
           isValidLessonTurn: true,
           studyLanguage: studyLanguage,
@@ -923,21 +1350,17 @@ class _LessonScreenState extends State<LessonScreen>
   }
 
   String get _tutorDisplayName =>
-      _displayNameForTutorId(_settings?.selectedTutorId ?? '');
+      _settings == null ? 'Tutor' : _runtimeTutorDisplayName(_settings!);
 
-  String _displayNameForTutorId(String tutorId) {
-    final normalized = tutorId.trim().toLowerCase();
-    if (normalized.isEmpty) return 'Tutor';
-    return switch (normalized) {
-      'lana' => 'Lana',
-      'nelli' => 'Nelli',
-      'david' => 'David',
-      _ => normalized
-          .split(RegExp(r'[_\-\s]+'))
-          .where((part) => part.trim().isNotEmpty)
-          .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
-          .join(' '),
-    };
+  String _runtimeTutorDisplayName(UserSettings settings) {
+    final tutorId = settings.selectedTutorId.trim().toLowerCase();
+    for (final profile in _scenario?.tutorProfiles ?? const []) {
+      if (profile.tutorId.trim().toLowerCase() == tutorId &&
+          profile.displayName.trim().isNotEmpty) {
+        return profile.displayName.trim();
+      }
+    }
+    return 'Tutor';
   }
 
   String get _compactLevel {
@@ -953,11 +1376,20 @@ class _LessonScreenState extends State<LessonScreen>
   void _scrollTranscriptToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_transcriptController.hasClients) return;
-      _transcriptController.animateTo(
+      final firstScroll = _transcriptController.animateTo(
         _transcriptController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
       );
+      unawaited(firstScroll.whenComplete(() {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !_transcriptController.hasClients) return;
+          final position = _transcriptController.position;
+          if (position.pixels < position.maxScrollExtent) {
+            position.jumpTo(position.maxScrollExtent);
+          }
+        });
+      }));
     });
   }
 
@@ -983,6 +1415,7 @@ class _LessonScreenState extends State<LessonScreen>
       _showOpenMicrophoneSettings = false;
       _draftWhenRecordingStarted = _messageController.text;
       _transcriptionEligible = true;
+      _recordingOperationGeneration++;
     });
     try {
       var permission = await _microphonePermissionService.check();
@@ -1084,7 +1517,7 @@ class _LessonScreenState extends State<LessonScreen>
         return;
       }
       if (!mounted || !_transcriptionEligible) return;
-      await _transcribeRecording(path);
+      await _transcribeRecording(path, _recordingOperationGeneration);
     } catch (_) {
       await _recordingService.deleteFile(intendedPath);
       if (mounted) {
@@ -1098,7 +1531,8 @@ class _LessonScreenState extends State<LessonScreen>
     }
   }
 
-  Future<void> _transcribeRecording(String path) async {
+  Future<void> _transcribeRecording(
+      String path, int operationGeneration) async {
     final session = _startResult?.session;
     final settings = _settings;
     if (session == null || settings == null) return;
@@ -1122,7 +1556,11 @@ class _LessonScreenState extends State<LessonScreen>
           backendSessionId: session.lessonSessionId,
         ),
       );
-      if (!mounted || !_transcriptionEligible) return;
+      if (!mounted ||
+          !_transcriptionEligible ||
+          operationGeneration != _recordingOperationGeneration) {
+        return;
+      }
       if (!result.isSuccess || result.text == null) {
         setState(() {
           _recordingState = LearnerRecordingUiState.error;
@@ -1134,18 +1572,72 @@ class _LessonScreenState extends State<LessonScreen>
         });
         return;
       }
+      final normalizedTranscript = TranscriptScriptNormalizer.normalize(
+        result.text!,
+        isEnglish:
+            LanguageOptions.studyLanguageIdFor(settings.studyLanguage) == 'en',
+      );
+      if (kDebugMode) {
+        debugPrint(
+          'transcript_script surface=lesson_chat '
+          'target=${LanguageOptions.studyLanguageIdFor(settings.studyLanguage)} '
+          'latin=${normalizedTranscript.latinLetterCount} '
+          'cyrillic=${normalizedTranscript.cyrillicLetterCount} '
+          'normalized=${normalizedTranscript.changed} '
+          'unsafeMixed=${normalizedTranscript.unsafeMixedScript} '
+          'action=${normalizedTranscript.unsafeMixedScript ? 'rejected' : 'accepted'}',
+        );
+      }
+      if (normalizedTranscript.unsafeMixedScript) {
+        if (!_hasSelectedContext) {
+          _debugVoiceScenarioResolution(
+            stage: 'deterministic',
+            decision: 'unsafe',
+            candidateCount:
+                _scenario?.controlledVariation.contextVariants.length ?? 0,
+            matchedContextPresent: false,
+            confidence: 1,
+            hadContextBefore: false,
+            action: 'review_text',
+          );
+        }
+        if (mounted) {
+          setState(() {
+            _recordingState = LearnerRecordingUiState.idle;
+            _recordingMessage =
+                'I could not recognize that clearly in English. Please try again.';
+          });
+        }
+        return;
+      }
+      final transcriptText = normalizedTranscript.normalizedText;
       final draftChanged =
           _messageController.text != _draftWhenRecordingStarted;
-      if (_draftWhenRecordingStarted.trim().isNotEmpty || draftChanged) {
+      if (_autoSendVoice) {
+        if (transcriptText.isNotEmpty) {
+          await _sendMessageInternal(
+            overrideText: transcriptText,
+            source: 'voice_transcript',
+            automaticVoiceSubmission: true,
+            recordingGeneration: operationGeneration,
+          );
+        }
+      } else if (_draftWhenRecordingStarted.trim().isNotEmpty || draftChanged) {
         final replace = await _confirmTranscriptReplacement();
         if (!mounted || !_transcriptionEligible) return;
-        if (replace == true) _messageController.text = result.text!;
+        if (replace == true) {
+          _messageController.text = transcriptText;
+          _composerContainsVoiceTranscript = true;
+        }
       } else {
-        _messageController.text = result.text!;
+        _messageController.text = transcriptText;
+        _composerContainsVoiceTranscript = true;
       }
       if (mounted) {
         setState(() {
-          _recordingState = LearnerRecordingUiState.transcriptReady;
+          _recordingState = _autoSendVoice
+              ? LearnerRecordingUiState.idle
+              : LearnerRecordingUiState.transcriptReady;
           _recordingMessage = null;
         });
       }
@@ -1189,7 +1681,8 @@ class _LessonScreenState extends State<LessonScreen>
 
   Future<void> _cancelLearnerRecording({bool forDeparture = false}) async {
     _recordingTimer?.cancel();
-    if (forDeparture) _transcriptionEligible = false;
+    _recordingOperationGeneration++;
+    _transcriptionEligible = false;
     final path = _recordingFilePath;
     if (_recordingState == LearnerRecordingUiState.recording ||
         _recordingState == LearnerRecordingUiState.requestingPermission ||
@@ -1202,6 +1695,7 @@ class _LessonScreenState extends State<LessonScreen>
       setState(() {
         _recordingState = LearnerRecordingUiState.idle;
         _recordingMessage = null;
+        _transcriptionEligible = true;
       });
     }
   }
@@ -1230,7 +1724,10 @@ class _LessonScreenState extends State<LessonScreen>
     } catch (_) {}
   }
 
-  Future<void> _playTutorVoice(_LessonChatMessage message) async {
+  Future<void> _playTutorVoice(
+    _LessonChatMessage message, {
+    AudioSpeechPurpose purpose = AudioSpeechPurpose.lessonChatTts,
+  }) async {
     final session = _startResult?.session;
     final settings = _settings;
     if (!message.isTutor ||
@@ -1269,6 +1766,7 @@ class _LessonScreenState extends State<LessonScreen>
           targetLanguageNativeName: studyLanguageName,
           targetLanguageCode: studyLanguageId,
           backendSessionId: session.lessonSessionId,
+          purpose: purpose,
         ),
       );
       if (!mounted || !_actionAvailability.canUseTts) return;
@@ -1562,6 +2060,7 @@ class _LessonScreenState extends State<LessonScreen>
                               selection: selection,
                               scenario: _scenario,
                               tutorDisplayName: _tutorDisplayName,
+                              tutorId: _settings?.selectedTutorId ?? '',
                               tutorStatus: _tutorStatus,
                               compactLevel: _compactLevel,
                               isStarting: _isStarting,
@@ -1570,6 +2069,13 @@ class _LessonScreenState extends State<LessonScreen>
                               isLoadingScenario: _isLoadingScenario,
                               messages: _messages,
                               sendError: _sendError,
+                              voiceClarificationChoices:
+                                  _voiceClarificationChoices,
+                              onSelectVoiceClarification: (variant) =>
+                                  _sendMessageInternal(
+                                overrideText: variant.title,
+                                source: 'voice_transcript',
+                              ),
                               hintText: _hintText,
                               hintError: _hintError,
                               isHintLoading: _isHintLoading,
@@ -1604,6 +2110,15 @@ class _LessonScreenState extends State<LessonScreen>
                               onDismissHint: () =>
                                   setState(() => _hintText = null),
                               onSend: _sendMessage,
+                              autoSendVoice: _autoSendVoice,
+                              autoPlayBotVoice: _autoPlayBotVoice,
+                              canOpenConversationMode:
+                                  _actionAvailability.canUsePlaceholders,
+                              onAutoSendVoiceChanged: (value) =>
+                                  setState(() => _autoSendVoice = value),
+                              onAutoPlayBotVoiceChanged: (value) =>
+                                  setState(() => _autoPlayBotVoice = value),
+                              onOpenConversationMode: _openConversationMode,
                             ),
                           ),
                         ],
@@ -1632,6 +2147,7 @@ class _LessonWorkspace extends StatelessWidget {
     required this.selection,
     required this.scenario,
     required this.tutorDisplayName,
+    required this.tutorId,
     required this.tutorStatus,
     required this.compactLevel,
     required this.isStarting,
@@ -1640,6 +2156,8 @@ class _LessonWorkspace extends StatelessWidget {
     required this.isLoadingScenario,
     required this.messages,
     required this.sendError,
+    required this.voiceClarificationChoices,
+    required this.onSelectVoiceClarification,
     required this.hintText,
     required this.hintError,
     required this.isHintLoading,
@@ -1666,11 +2184,18 @@ class _LessonWorkspace extends StatelessWidget {
     required this.onHint,
     required this.onDismissHint,
     required this.onSend,
+    required this.autoSendVoice,
+    required this.autoPlayBotVoice,
+    required this.canOpenConversationMode,
+    required this.onAutoSendVoiceChanged,
+    required this.onAutoPlayBotVoiceChanged,
+    required this.onOpenConversationMode,
   });
 
   final LessonStartSelection selection;
   final LessonRuntimeScenario? scenario;
   final String tutorDisplayName;
+  final String tutorId;
   final LessonTutorStatus tutorStatus;
   final String compactLevel;
   final bool isStarting;
@@ -1679,6 +2204,8 @@ class _LessonWorkspace extends StatelessWidget {
   final bool isLoadingScenario;
   final List<_LessonChatMessage> messages;
   final String? sendError;
+  final List<LessonRuntimeContextVariant> voiceClarificationChoices;
+  final ValueChanged<LessonRuntimeContextVariant> onSelectVoiceClarification;
   final String? hintText;
   final String? hintError;
   final bool isHintLoading;
@@ -1705,10 +2232,19 @@ class _LessonWorkspace extends StatelessWidget {
   final VoidCallback onHint;
   final VoidCallback onDismissHint;
   final Future<void> Function([String? overrideText]) onSend;
+  final bool autoSendVoice;
+  final bool autoPlayBotVoice;
+  final bool canOpenConversationMode;
+  final ValueChanged<bool> onAutoSendVoiceChanged;
+  final ValueChanged<bool> onAutoPlayBotVoiceChanged;
+  final VoidCallback onOpenConversationMode;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    // Scaffold removes the consumed inset from the MediaQuery inherited by its
+    // body. Read the underlying view so this remains true inside the workspace.
+    final keyboardOpen = View.of(context).viewInsets.bottom > 0;
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
@@ -1717,17 +2253,61 @@ class _LessonWorkspace extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _TutorHeader(
-            displayName: tutorDisplayName,
-            status: tutorStatus,
-            compactLevel: compactLevel,
-            topic: scenario?.metadata.topic.isNotEmpty ?? false
-                ? scenario!.metadata.topic
-                : selection.topicTitle,
-            onBack: onBack,
-            canFinish: canFinish,
-            onFinish: onFinish,
-          ),
+          if (!keyboardOpen)
+            _TutorHeader(
+              displayName: tutorDisplayName,
+              tutorId: tutorId,
+              status: tutorStatus,
+              compactLevel: compactLevel,
+              topic: scenario?.metadata.topic.isNotEmpty ?? false
+                  ? scenario!.metadata.topic
+                  : selection.topicTitle,
+              onBack: onBack,
+              canFinish: canFinish,
+              onFinish: onFinish,
+              canOpenConversationMode: canOpenConversationMode,
+              onOpenConversationMode: onOpenConversationMode,
+            ),
+          if (!keyboardOpen)
+            SizedBox(
+              height: 44,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Transform.scale(
+                          scale: 0.72,
+                          child: Switch(
+                            key: const Key('lesson-auto-send-voice-switch'),
+                            value: autoSendVoice,
+                            onChanged: onAutoSendVoiceChanged,
+                          ),
+                        ),
+                        const Text('Auto-send voice'),
+                      ],
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Transform.scale(
+                          scale: 0.72,
+                          child: Switch(
+                            key: const Key('lesson-auto-play-bot-voice-switch'),
+                            value: autoPlayBotVoice,
+                            onChanged: onAutoPlayBotVoiceChanged,
+                          ),
+                        ),
+                        const Text('Auto-play bot voice'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -1754,51 +2334,80 @@ class _LessonWorkspace extends StatelessWidget {
                       onFeedback: onFeedback,
                     ),
                   ),
-                  if (sendError != null) ...[
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                      child: Text(
-                        sendError!,
-                        key: const Key('lesson-send-error'),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: colorScheme.error),
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (sendError != null) ...[
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                              child: Text(
+                                sendError!,
+                                key: const Key('lesson-send-error'),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: colorScheme.error),
+                              ),
+                            ),
+                          ],
+                          if (voiceClarificationChoices.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                              child: Wrap(
+                                key: const Key(
+                                    'lesson-voice-clarification-choices'),
+                                alignment: WrapAlignment.center,
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: voiceClarificationChoices
+                                    .map((variant) => ActionChip(
+                                          label: Text(variant.title),
+                                          onPressed: () =>
+                                              onSelectVoiceClarification(
+                                                  variant),
+                                        ))
+                                    .toList(growable: false),
+                              ),
+                            ),
+                          if (hintError != null)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                              child: Text(
+                                hintError!,
+                                key: const Key('lesson-hint-error'),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: colorScheme.error),
+                              ),
+                            ),
+                          if (hintText != null)
+                            _LessonHintCard(
+                              text: hintText!,
+                              onDismiss: onDismissHint,
+                            ),
+                          if (isHintLoading)
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 8),
+                              child: Text('Getting hint...',
+                                  key: Key('lesson-hint-loading')),
+                            ),
+                          if (finishError != null)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                              child: Text(finishError!,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: colorScheme.error)),
+                            ),
+                          if (isFinishing)
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 8),
+                              child: Text('Finishing lesson...',
+                                  key: Key('lesson-finishing-label')),
+                            ),
+                        ],
                       ),
                     ),
-                  ],
-                  if (hintError != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                      child: Text(
-                        hintError!,
-                        key: const Key('lesson-hint-error'),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: colorScheme.error),
-                      ),
-                    ),
-                  if (hintText != null)
-                    _LessonHintCard(
-                      text: hintText!,
-                      onDismiss: onDismissHint,
-                    ),
-                  if (isHintLoading)
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 8),
-                      child: Text('Getting hint...',
-                          key: Key('lesson-hint-loading')),
-                    ),
-                  if (finishError != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                      child: Text(finishError!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: colorScheme.error)),
-                    ),
-                  if (isFinishing)
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 8),
-                      child: Text('Finishing lesson...',
-                          key: Key('lesson-finishing-label')),
-                    ),
+                  ),
                   _LessonComposer(
                     controller: controller,
                     canSendText: actionAvailability.canSendText,
@@ -1946,22 +2555,24 @@ class _LessonTranscript extends StatelessWidget {
       );
     }
 
-    return ListView.separated(
+    return SingleChildScrollView(
       key: const Key('lesson-chat-transcript'),
       controller: controller,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-      itemCount: messages.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final message = messages[index];
-        return _LessonMessageBubble(
-          message: message,
-          actionAvailability: actionAvailability,
-          onPlayVoice: onPlayVoice,
-          onTranslateMessage: onTranslateMessage,
-          onFeedback: onFeedback,
-        );
-      },
+      child: Column(
+        children: [
+          for (var index = 0; index < messages.length; index++) ...[
+            if (index > 0) const SizedBox(height: 12),
+            _LessonMessageBubble(
+              message: messages[index],
+              actionAvailability: actionAvailability,
+              onPlayVoice: onPlayVoice,
+              onTranslateMessage: onTranslateMessage,
+              onFeedback: onFeedback,
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -1997,6 +2608,11 @@ class _LessonMessageBubble extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 340),
         child: Container(
+          key: message.isContextSelection
+              ? const Key('lesson-message-learner-context')
+              : message.isCmsOpening
+                  ? const Key('lesson-message-cms-opening')
+                  : null,
           decoration: BoxDecoration(
             color: bubbleColor,
             borderRadius: BorderRadius.circular(20),
@@ -2311,18 +2927,22 @@ class _LessonComposer extends StatelessWidget {
 }
 
 class _LessonChatMessage {
-  _LessonChatMessage.user(this.text)
+  _LessonChatMessage.user(this.text, {this.isContextSelection = false})
       : kind = LessonMessageKind.user,
-        id = _nextId++;
+        id = _nextId++,
+        isCmsOpening = false;
 
-  _LessonChatMessage.tutor(this.text)
+  _LessonChatMessage.tutor(this.text, {this.isCmsOpening = false})
       : kind = LessonMessageKind.tutor,
-        id = _nextId++;
+        id = _nextId++,
+        isContextSelection = false;
 
   static int _nextId = 0;
   final int id;
   final String text;
   final LessonMessageKind kind;
+  final bool isContextSelection;
+  final bool isCmsOpening;
   bool isTranslationLoading = false;
   bool isTranslationVisible = false;
   String? translatedText;
@@ -2384,21 +3004,27 @@ class _FeedbackCard extends StatelessWidget {
 class _TutorHeader extends StatelessWidget {
   const _TutorHeader({
     required this.displayName,
+    required this.tutorId,
     required this.status,
     required this.compactLevel,
     required this.topic,
     required this.onBack,
     required this.canFinish,
     required this.onFinish,
+    required this.canOpenConversationMode,
+    required this.onOpenConversationMode,
   });
 
   final String displayName;
+  final String tutorId;
   final LessonTutorStatus status;
   final String compactLevel;
   final String topic;
   final VoidCallback onBack;
   final bool canFinish;
   final VoidCallback onFinish;
+  final bool canOpenConversationMode;
+  final VoidCallback onOpenConversationMode;
 
   @override
   Widget build(BuildContext context) {
@@ -2499,12 +3125,33 @@ class _TutorHeader extends StatelessWidget {
                     ),
                   ),
                   Center(
-                    child: Text(
-                      tutorInitial,
-                      key: const Key('lesson-avatar-placeholder'),
-                      style: textTheme.displayLarge?.copyWith(
-                        color: colorScheme.onSurface.withValues(alpha: 0.88),
-                        fontWeight: FontWeight.w700,
+                    child: SizedBox(
+                      width: 160,
+                      height: 190,
+                      child: TutorAvatar(
+                        surface: TutorAvatarSurface.lessonChat,
+                        tutorId: tutorId,
+                        state: switch (status) {
+                          LessonTutorStatus.ready ||
+                          LessonTutorStatus.error =>
+                            TutorAvatarState.idle,
+                          LessonTutorStatus.listening =>
+                            TutorAvatarState.listening,
+                          LessonTutorStatus.thinking =>
+                            TutorAvatarState.thinking,
+                          LessonTutorStatus.speaking =>
+                            TutorAvatarState.speaking,
+                        },
+                        fit: BoxFit.contain,
+                        placeholder: Text(
+                          tutorInitial,
+                          key: const Key('lesson-avatar-placeholder'),
+                          style: textTheme.displayLarge?.copyWith(
+                            color:
+                                colorScheme.onSurface.withValues(alpha: 0.88),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -2536,28 +3183,47 @@ class _TutorHeader extends StatelessWidget {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    child: Row(
-                      children: [
-                        _HeaderMetaChip(
-                          key: const Key('lesson-meta-summary'),
-                          label: '$compactLevel · $topic',
-                        ),
-                        if (displayName.isNotEmpty) ...[
-                          const SizedBox(width: 8),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
                           _HeaderMetaChip(
-                            key: const Key('lesson-meta-tutor'),
-                            label: displayName,
-                            trailing: Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: statusColor,
-                                shape: BoxShape.circle,
+                            key: const Key('lesson-meta-summary'),
+                            label: '$compactLevel · $topic',
+                          ),
+                          if (displayName.isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            _HeaderMetaChip(
+                              key: const Key('lesson-meta-tutor'),
+                              label: displayName,
+                              trailing: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: statusColor,
+                                  shape: BoxShape.circle,
+                                ),
                               ),
+                            ),
+                          ],
+                          const SizedBox(width: 8),
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              color:
+                                  colorScheme.surface.withValues(alpha: 0.78),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: IconButton(
+                              key: const Key('lesson-conversation-mode-button'),
+                              tooltip: 'Open Conversation mode',
+                              onPressed: canOpenConversationMode
+                                  ? onOpenConversationMode
+                                  : null,
+                              icon: const Icon(Icons.open_in_full),
                             ),
                           ),
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 ],

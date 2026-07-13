@@ -39,6 +39,7 @@ class LessonChatRequest {
     required this.selectedContextOpeningLine,
     required this.selectedContextConfirmationLine,
     required this.selectedContextOpeningIntent,
+    required this.isContextSelectionTurn,
     required this.userTurnNumber,
     required this.softWrapUpAfterUserTurn,
     required this.finalMessageAtUserTurn,
@@ -126,6 +127,7 @@ class LessonChatRequest {
   final String selectedContextOpeningLine;
   final String selectedContextConfirmationLine;
   final String selectedContextOpeningIntent;
+  final bool isContextSelectionTurn;
   final int userTurnNumber;
   final int softWrapUpAfterUserTurn;
   final int finalMessageAtUserTurn;
@@ -214,6 +216,7 @@ class LessonChatRequest {
         'selectedContextOpeningLine': selectedContextOpeningLine,
         'selectedContextConfirmationLine': selectedContextConfirmationLine,
         'selectedContextOpeningIntent': selectedContextOpeningIntent,
+        'isContextSelectionTurn': isContextSelectionTurn,
         'userTurnNumber': userTurnNumber,
         'softWrapUpAfterUserTurn': softWrapUpAfterUserTurn,
         'finalMessageAtUserTurn': finalMessageAtUserTurn,
@@ -304,6 +307,9 @@ class LessonChatRequest {
     String sourceMessageKind = '',
     String selectedContextTitle = '',
     LessonRuntimeContextVariant? selectedContextVariant,
+    bool isContextSelectionTurn = false,
+    String tutorAvatarId = '',
+    String tutorDisplayName = '',
   }) {
     final softTurn = levelProfile.softWrapUpAfterUserTurn > 0
         ? levelProfile.softWrapUpAfterUserTurn
@@ -323,8 +329,8 @@ class LessonChatRequest {
       targetLanguageName: targetLanguageName,
       targetLanguageNativeName: targetLanguageNativeName,
       targetLanguageCode: targetLanguageCode,
-      tutorAvatarId: '',
-      tutorDisplayName: '',
+      tutorAvatarId: tutorAvatarId,
+      tutorDisplayName: tutorDisplayName,
       userDisplayName: userDisplayName,
       learningGoal: scenario.learningGoal.goal,
       learnerTurnCount: learnerTurnCount,
@@ -354,6 +360,7 @@ class LessonChatRequest {
       selectedContextConfirmationLine:
           selectedContextVariant?.contextConfirmationLine ?? '',
       selectedContextOpeningIntent: selectedContextVariant?.openingIntent ?? '',
+      isContextSelectionTurn: isContextSelectionTurn,
       userTurnNumber: learnerTurnCount,
       softWrapUpAfterUserTurn: softTurn,
       finalMessageAtUserTurn: finalTurn,

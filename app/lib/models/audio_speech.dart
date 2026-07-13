@@ -10,9 +10,8 @@ class AudioSpeechRequest {
     required this.targetLanguageNativeName,
     required this.targetLanguageCode,
     required this.backendSessionId,
+    this.purpose = AudioSpeechPurpose.lessonChatTts,
   });
-
-  static const purpose = 'lesson_chat_tts';
 
   final String text;
   final String speechVoice;
@@ -22,10 +21,11 @@ class AudioSpeechRequest {
   final String targetLanguageNativeName;
   final String targetLanguageCode;
   final String backendSessionId;
+  final AudioSpeechPurpose purpose;
 
   Map<String, dynamic> toJson() => {
         'text': text,
-        'purpose': purpose,
+        'purpose': purpose.value,
         'speechVoice': speechVoice,
         'speechSpeed': speechSpeed,
         'targetLanguageId': targetLanguageId,
@@ -34,6 +34,14 @@ class AudioSpeechRequest {
         'targetLanguageCode': targetLanguageCode,
         'backendSessionId': backendSessionId,
       };
+}
+
+enum AudioSpeechPurpose {
+  lessonChatTts('lesson_chat_tts'),
+  conversationModeTts('conversation_mode_tts');
+
+  const AudioSpeechPurpose(this.value);
+  final String value;
 }
 
 enum AudioSpeechStatus {

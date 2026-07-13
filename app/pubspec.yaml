@@ -23,3 +23,9 @@ flutter:
   uses-material-design: true
   assets:
     - assets/brand/lvt-logo.png
+    - assets/avatars/lesson_chat/lana/
+    - assets/avatars/lesson_chat/nelli/
+    - assets/avatars/lesson_chat/david/
+    - assets/avatars/conversation_mode/lana/
+    - assets/avatars/conversation_mode/nelli/
+    - assets/avatars/conversation_mode/david/

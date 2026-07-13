@@ -75,4 +75,42 @@ void main() {
     expect(player.stopCalls, 0);
     expect(player.paths, isEmpty);
   });
+
+  test('playToCompletion returns completion and stop results', () async {
+    final player = _FakePlayerAdapter();
+    final service = JustAudioTutorPlaybackService(player: player);
+    final completed = service.playToCompletion(
+      'one.wav',
+      timeout: const Duration(seconds: 1),
+    );
+    await Future<void>.delayed(Duration.zero);
+    player.completedController.add(null);
+    expect((await completed).status, TutorPlaybackStatus.completed);
+
+    final stopped = service.playToCompletion(
+      'two.wav',
+      timeout: const Duration(seconds: 1),
+    );
+    await Future<void>.delayed(Duration.zero);
+    await service.stop();
+    expect((await stopped).status, TutorPlaybackStatus.stopped);
+  });
+
+  test('playToCompletion times out and dispose completes an active wait',
+      () async {
+    final player = _FakePlayerAdapter();
+    final service = JustAudioTutorPlaybackService(player: player);
+    final timedOut = await service.playToCompletion(
+      'timeout.wav',
+      timeout: const Duration(milliseconds: 1),
+    );
+    expect(timedOut.status, TutorPlaybackStatus.timedOut);
+
+    final disposedWait = service.playToCompletion(
+      'disposed.wav',
+      timeout: const Duration(seconds: 1),
+    );
+    await service.dispose();
+    expect((await disposedWait).status, TutorPlaybackStatus.disposed);
+  });
 }

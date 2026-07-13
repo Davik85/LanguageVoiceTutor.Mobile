@@ -16,6 +16,7 @@ class LessonRuntimeScenario {
     required this.controlledVariation,
     required this.hintRules,
     required this.runtimeContent,
+    this.tutorProfiles = const [],
   });
 
   final String id;
@@ -34,6 +35,7 @@ class LessonRuntimeScenario {
   final LessonRuntimeControlledVariation controlledVariation;
   final LessonRuntimeHintRules hintRules;
   final LessonRuntimeContent runtimeContent;
+  final List<LessonRuntimeTutorProfile> tutorProfiles;
 
   factory LessonRuntimeScenario.fromJson(Map<String, dynamic> json) =>
       LessonRuntimeScenario(
@@ -67,10 +69,29 @@ class LessonRuntimeScenario {
         hintRules: LessonRuntimeHintRules.fromJson(_object(json, 'hintRules')),
         runtimeContent:
             LessonRuntimeContent.fromJson(_object(json, 'runtimeContent')),
+        tutorProfiles: _list(_value(json, 'tutorProfiles'))
+            .map((value) => LessonRuntimeTutorProfile.fromJson(_map(value)))
+            .toList(growable: false),
       );
 
   LessonRuntimeLevelProfile levelProfileFor(String level) =>
       levelProfiles[level] ?? const LessonRuntimeLevelProfile.empty();
+}
+
+class LessonRuntimeTutorProfile {
+  const LessonRuntimeTutorProfile({
+    required this.tutorId,
+    required this.displayName,
+  });
+
+  final String tutorId;
+  final String displayName;
+
+  factory LessonRuntimeTutorProfile.fromJson(Map<String, dynamic> json) =>
+      LessonRuntimeTutorProfile(
+        tutorId: _string(json, 'tutorId'),
+        displayName: _string(json, 'displayName'),
+      );
 }
 
 class LessonRuntimeMetadata {
