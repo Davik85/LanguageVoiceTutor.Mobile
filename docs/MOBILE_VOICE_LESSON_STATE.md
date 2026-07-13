@@ -104,9 +104,9 @@ The existing backend semantic voice scenario resolver remains in use for unresol
 
 ## Remaining validation boundary
 
-Initial physical Android testing looks successful, but broader physical-device repetition is still required across several lessons and repeated first-attempt voice selections. Do not declare voice recognition fully stabilized yet. Missing Lesson Chat avatar assets remain a separate issue. The optional Desktop Realtime transcription language issue is outside this Mobile change.
+The saved-level learner-level/start-flow slice has completed owner physical Android validation, including saved-level lesson start, speech recognition, Lesson Chat, Conversation mode, backend-owned completion and summary generation, and summary display. Broader physical-device repetition is still required across several lessons and repeated first-attempt voice selections. Do not declare voice recognition fully stabilized yet. Missing Lesson Chat avatar assets remain a separate issue. The optional Desktop Realtime transcription language issue is outside this Mobile change.
 
-The next manual validation step is to run the committed Mobile client repeatedly on physical Android devices and verify:
+The next manual validation step outside the completed saved-level/start-flow slice is to run the committed Mobile client repeatedly on physical Android devices and verify:
 
 - published scenario recognition with imperfect speech;
 - free custom scenario selection;
