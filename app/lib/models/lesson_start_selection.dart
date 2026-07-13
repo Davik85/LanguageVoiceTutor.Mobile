@@ -118,6 +118,14 @@ String canonicalLessonLevel(Object? value) {
   return fallback;
 }
 
+LessonOption lessonLevelFor(Object? value) {
+  final canonical = canonicalLessonLevel(value);
+  return lessonLevels.firstWhere(
+    (level) => level.id.toUpperCase() == canonical,
+    orElse: () => lessonLevels.first,
+  );
+}
+
 const lessonTopics = [
   LessonOption(
     id: 'daily_life',

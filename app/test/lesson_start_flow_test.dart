@@ -161,6 +161,7 @@ class FakeAuthService extends AuthService {
     List<Completer<void>>? persistenceCompleters,
     this.persistenceFailure,
     this.studyLanguage = 'es',
+    this.currentLevel = 'A1',
     this.transcriptionText = 'Hello there',
     this.voiceScenarioResponse,
     this.voiceScenarioFailure = false,
@@ -197,6 +198,7 @@ class FakeAuthService extends AuthService {
   final List<Completer<void>> persistenceCompleters;
   final Object? persistenceFailure;
   final String studyLanguage;
+  final String currentLevel;
   final String transcriptionText;
   final VoiceScenarioSemanticResponse? voiceScenarioResponse;
   final bool voiceScenarioFailure;
@@ -248,7 +250,7 @@ class FakeAuthService extends AuthService {
       speechSpeed: 1.0,
       conversationModeEnabled: true,
       selectedTutorId: UserSettings.defaultTutorId,
-      currentLevel: 'A1',
+      currentLevel: currentLevel,
     );
   }
 
@@ -824,8 +826,8 @@ void main() {
 
     await tester.tap(find.text('Start lesson'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('A1 Beginner'));
-    await tester.pumpAndSettle();
+    expect(find.text('Choose Level'), findsNothing);
+    expect(find.text('Level: A1 Beginner'), findsOneWidget);
     await tester.tap(find.text('Daily Life'));
     await tester.pumpAndSettle();
     await _expectVisibleAfterScroll(tester, 'Introductions');
@@ -850,6 +852,7 @@ void main() {
     expect(auth.fetchScenarioCallCount, 1);
     expect(auth.lastStartRequest?.lessonContentId,
         'everyday_english_introductions');
+    expect(auth.lastStartRequest?.level, 'A1 Beginner');
   });
 
   testWidgets('tutor header renders large avatar area and compact metadata',

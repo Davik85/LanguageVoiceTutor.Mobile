@@ -434,14 +434,14 @@ Settings checks for this baseline:
 - `selectedTutorId` is sent to `PUT /api/me/settings` and remains separate from `speechVoice`.
 - Language dropdowns display user-friendly names while saving and sending backend IDs.
 - Selected tutor persists after app/emulator restart.
-- **Start lesson** opens the lesson-start skeleton and still ends at a placeholder Lesson screen.
+- **Start lesson** fetches backend `UserSettings.currentLevel`, resolves it through `lessonLevels`, and opens **Choose Topic** directly.
 - Home keeps the logo next to an accessible branded **Language Voice Tutor** title.
-- Lesson-start cards use soft level/topic colors, and situation cards follow the selected topic color family.
+- Topic cards use soft colors, and situation cards follow the selected topic color family.
 
 Desktop parity checks:
 
 - Mobile preserves desktop product flow and behavior without copying the Windows layout directly.
-- Level selection remains a separate lesson-start step before topic/situation selection; saved-level-driven lesson start is still pending.
+- Learner level changes are made in **Settings -> Learning**; Choose Level is removed from the normal Home flow.
 - Settings uses backend-supported `/api/me/settings` fields only: `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `speechVoice`, `speechSpeed`, `conversationModeEnabled`, `selectedTutorId`, and `currentLevel`.
 - Selected tutor persistence remains backend-owned, and tutor voice remains separate from selected tutor.
 - `lessonLevels` remains the centralized Mobile level display list, while CMS-published level profiles remain authoritative for lesson behavior and timing.
@@ -451,17 +451,20 @@ Still out of scope for the current documentation update: lesson runtime, voice r
 
 ## Lesson-start navigation skeleton checks
 
-This mobile slice adds a phone-first lesson-start navigation skeleton that follows the desktop product order: **Home -> Choose Level -> Choose Topic -> Choose Situation -> Lesson placeholder**.
+The normal phone-first lesson-start flow is **Home -> Choose Topic -> Choose Situation -> Lesson**.
 
 Expected behavior:
 
 - Home shows **Start lesson** instead of using **Open Lesson** as the primary direct lesson jump.
-- **Start lesson** opens **Choose Level** with soft level-specific cards for A1 Beginner, A2 Elementary, B1 Intermediate, and B2 Upper-Intermediate.
-- Selecting a level opens **Choose Topic** with soft topic-specific cards for Daily Life, Travel, Work & Business, Job Interview, Restaurant & Cafe, and Free Conversation.
+- **Start lesson** loads backend `UserSettings.currentLevel` once, resolves it through `lessonLevels`, and opens **Choose Topic** directly with the matching display label.
+- Repeated taps while settings load do not duplicate requests or navigation; authentication failure returns to Login, while ordinary failure keeps Home visible with a friendly retry message.
+- **Choose Topic** shows soft topic-specific cards for Daily Life, Travel, Work & Business, Job Interview, Restaurant & Cafe, and Free Conversation.
 - Selecting Travel opens **Choose Situation** with Travel-colored cards for Airport check-in, Hotel check-in, Asking for directions, Ordering transport, and Lost luggage.
 - Selecting any non-Travel topic still opens **Choose Situation**, and those situation cards use the selected topic color family.
 - Every current topic has at least one product-friendly situation option, and no Choose Situation label contains `Placeholder:`.
-- Selecting a situation opens the existing Lesson placeholder and displays the selected level, topic, and situation.
+- Selecting a situation preserves the resolved level display label in `LessonStartSelection` and the existing lesson-session/runtime chain.
+- CMS-published level profiles remain authoritative for language complexity, correction and hint behavior, answer length, wrap-up timing, and final-turn timing.
+- No backend deployment is required; physical Android validation remains pending.
 - Lesson runtime remains out of scope. Voice recording, TTS playback, AI tutor calls, Conversation Mode runtime, billing, analytics, crash reporting, backend changes, and desktop changes remain out of scope.
 
 Verification commands from `app/`:
@@ -488,7 +491,7 @@ Expected behavior:
 - Home does not show **Available tutors** or `Available tutors: Lana, Nelli, David`.
 - Home shows friendly signed-in account status when account data is available.
 - Home shows a friendly sign-in/sync prompt when account data is unavailable.
-- **Start lesson** opens **Choose Level**.
+- **Start lesson** loads the saved backend level and opens **Choose Topic** directly; Choose Level is not shown in the normal flow.
 - **Open Settings** opens Settings.
 - Lesson still ends at the placeholder screen; real lesson runtime remains out of scope.
 - No backend, desktop, website, billing, voice, TTS, AI runtime, analytics, store metadata, signing, or package id changes are included in this branding slice.

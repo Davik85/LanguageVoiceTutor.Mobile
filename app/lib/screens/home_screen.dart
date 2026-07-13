@@ -4,9 +4,10 @@ import '../api/api_client.dart';
 import '../config/app_config.dart';
 import '../models/auth_models.dart';
 import '../models/lesson_access_decision.dart';
+import '../models/lesson_start_selection.dart';
 import '../services/auth_service.dart';
 import '../services/service_factory.dart';
-import 'choose_level_screen.dart';
+import 'choose_topic_screen.dart';
 import 'login_screen.dart';
 import 'settings_screen.dart';
 
@@ -30,6 +31,8 @@ class _HomeScreenState extends State<HomeScreen> {
   LessonAccessDecision? _lessonAccess;
   bool _isCheckingLessonAccess = false;
   String? _lessonAccessError;
+  bool _isLoadingLessonSettings = false;
+  String? _lessonStartError;
 
   @override
   void initState() {
@@ -86,6 +89,47 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _startLesson() async {
+    if (_isLoadingLessonSettings) return;
+    setState(() {
+      _isLoadingLessonSettings = true;
+      _lessonStartError = null;
+    });
+
+    try {
+      final settings = await _authService.fetchUserSettings();
+      if (!mounted) return;
+      final selectedLevel = lessonLevelFor(settings.currentLevel);
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChooseTopicScreen(
+            selectedLevel: selectedLevel,
+            authService: _authService,
+          ),
+        ),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      if (error.message == 'Please sign in again.') {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          LoginScreen.routeName,
+          (_) => false,
+        );
+        return;
+      }
+      setState(() => _lessonStartError =
+          'Unable to load your learning settings right now. Please try again.');
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _lessonStartError =
+          'Unable to load your learning settings right now. Please try again.');
+    } finally {
+      if (mounted) setState(() => _isLoadingLessonSettings = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,19 +145,20 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Choose your level, topic, and situation, then start a guided lesson.',
+            'Choose a topic and situation, then start a guided lesson.',
           ),
           const SizedBox(height: 24),
           FilledButton.icon(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ChooseLevelScreen(authService: _authService),
-              ),
-            ),
+            onPressed: _isLoadingLessonSettings ? null : _startLesson,
             icon: const Icon(Icons.school),
-            label: const Text('Start lesson'),
+            label: Text(
+              _isLoadingLessonSettings ? 'Loading settings...' : 'Start lesson',
+            ),
           ),
+          if (_lessonStartError != null) ...[
+            const SizedBox(height: 8),
+            Text(_lessonStartError!),
+          ],
           const SizedBox(height: 20),
           AccountAccessCard(
             user: _currentUser,

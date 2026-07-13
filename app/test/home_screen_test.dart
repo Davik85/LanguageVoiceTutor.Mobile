@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_access_decision.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
+import 'package:language_voice_tutor_mobile/models/user_settings.dart';
 import 'package:language_voice_tutor_mobile/screens/home_screen.dart';
 import 'package:language_voice_tutor_mobile/screens/settings_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
@@ -35,6 +38,9 @@ class FakeAuthService extends AuthService {
   FakeAuthService({
     AuthUser? user,
     this.loadFailure,
+    this.currentLevel = 'A1',
+    this.settingsFailure,
+    this.settingsCompleter,
   })  : user = user ??
             AuthUser(
               userId: 'user-1',
@@ -46,6 +52,10 @@ class FakeAuthService extends AuthService {
 
   final AuthUser? user;
   final ApiException? loadFailure;
+  final String currentLevel;
+  final ApiException? settingsFailure;
+  final Completer<UserSettings>? settingsCompleter;
+  int fetchUserSettingsCallCount = 0;
 
   @override
   Future<AuthUser> loadCurrentUser() async {
@@ -74,7 +84,26 @@ class FakeAuthService extends AuthService {
         'freeLessonRemainingToday': 1,
         'reason': 'A free lesson is available.',
       });
+
+  @override
+  Future<UserSettings> fetchUserSettings() async {
+    fetchUserSettingsCallCount += 1;
+    if (settingsFailure != null) throw settingsFailure!;
+    if (settingsCompleter != null) return settingsCompleter!.future;
+    return _settings(currentLevel);
+  }
 }
+
+UserSettings _settings(String currentLevel) => UserSettings(
+      nativeLanguage: 'en',
+      studyLanguage: 'es',
+      explanationLanguage: 'en',
+      speechVoice: 'nova',
+      speechSpeed: 1.0,
+      conversationModeEnabled: true,
+      selectedTutorId: UserSettings.defaultTutorId,
+      currentLevel: currentLevel,
+    );
 
 class MemoryStorage implements SessionStorage {
   @override
@@ -96,6 +125,7 @@ class MemoryStorage implements SessionStorage {
 Widget _home({FakeAuthService? authService}) => MaterialApp(
       home: HomeScreen(authService: authService ?? FakeAuthService()),
       routes: {
+        '/login': (_) => const Scaffold(body: Text('Login route')),
         SettingsScreen.routeName: (_) =>
             const Scaffold(body: Center(child: Text('Settings route'))),
       },
@@ -171,14 +201,94 @@ void main() {
     expect(find.textContaining('debug'), findsNothing);
   });
 
-  testWidgets('start lesson opens choose level', (tester) async {
-    await tester.pumpWidget(_home());
+  testWidgets('A1 start lesson loads settings and opens Choose Topic directly',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_home(authService: auth));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Start lesson'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Choose Level'), findsOneWidget);
+    expect(auth.fetchUserSettingsCallCount, 1);
+    expect(find.text('Choose Topic'), findsOneWidget);
+    expect(find.text('Level: A1 Beginner'), findsOneWidget);
+    expect(find.text('Choose Level'), findsNothing);
+  });
+
+  testWidgets('B2 start lesson opens Choose Topic with centralized label',
+      (tester) async {
+    final auth = FakeAuthService(currentLevel: 'B2');
+    await tester.pumpWidget(_home(authService: auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Start lesson'));
+    await tester.pumpAndSettle();
+
+    expect(auth.fetchUserSettingsCallCount, 1);
+    expect(find.text('Choose Topic'), findsOneWidget);
+    expect(find.text('Level: B2 Upper-Intermediate'), findsOneWidget);
+    expect(find.text('Choose Level'), findsNothing);
+  });
+
+  testWidgets('repeated start taps while loading do not duplicate requests',
+      (tester) async {
+    final settingsCompleter = Completer<UserSettings>();
+    final auth = FakeAuthService(settingsCompleter: settingsCompleter);
+    await tester.pumpWidget(_home(authService: auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Start lesson'));
+    await tester.tap(find.text('Start lesson'));
+    await tester.pump();
+
+    expect(auth.fetchUserSettingsCallCount, 1);
+    expect(find.text('Loading settings...'), findsOneWidget);
+    final button = tester.widget<FilledButton>(find.byType(FilledButton).first);
+    expect(button.onPressed, isNull);
+
+    settingsCompleter.complete(_settings('A1'));
+    await tester.pumpAndSettle();
+    expect(find.text('Choose Topic'), findsOneWidget);
+    expect(find.text('Level: A1 Beginner'), findsOneWidget);
+  });
+
+  testWidgets('settings authentication failure routes to Login',
+      (tester) async {
+    final auth = FakeAuthService(
+      settingsFailure: const ApiException('Please sign in again.'),
+    );
+    await tester.pumpWidget(_home(authService: auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Start lesson'));
+    await tester.pumpAndSettle();
+
+    expect(auth.fetchUserSettingsCallCount, 1);
+    expect(find.text('Login route'), findsOneWidget);
+  });
+
+  testWidgets('ordinary settings failure keeps Home and shows friendly error',
+      (tester) async {
+    final auth = FakeAuthService(
+      settingsFailure: const ApiException('private network detail'),
+    );
+    await tester.pumpWidget(_home(authService: auth));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Start lesson'));
+    await tester.pumpAndSettle();
+
+    expect(auth.fetchUserSettingsCallCount, 1);
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Start lesson'), findsOneWidget);
+    expect(
+      find.text(
+        'Unable to load your learning settings right now. Please try again.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Choose Topic'), findsNothing);
   });
 
   testWidgets('open settings opens settings route', (tester) async {
