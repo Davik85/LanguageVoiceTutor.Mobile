@@ -21,6 +21,7 @@ void main() {
         speechSpeed: 1,
         conversationModeEnabled: true,
         selectedTutorId: 'lana',
+        currentLevel: 'A1',
       );
 
   LessonRuntimeScenario scenario({

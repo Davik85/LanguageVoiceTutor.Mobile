@@ -263,10 +263,11 @@ const userSettingsRequest = UserSettings(
   speechSpeed: 1.1,
   conversationModeEnabled: true,
   selectedTutorId: 'lana',
+  currentLevel: 'A1',
 );
 
 const userSettingsResponseBody =
-    '{"nativeLanguage":"tr","studyLanguage":"en","explanationLanguage":"ru","speechVoice":"coral","speechSpeed":1.1,"conversationModeEnabled":true,"selectedTutorId":"lana"}';
+    '{"nativeLanguage":"tr","studyLanguage":"en","explanationLanguage":"ru","speechVoice":"coral","speechSpeed":1.1,"conversationModeEnabled":true,"selectedTutorId":"lana","currentLevel":"A1"}';
 
 void main() {
   test('study language values are converted to backend-compatible names', () {
@@ -471,6 +472,7 @@ void main() {
       'speechSpeed': 1.1,
       'conversationModeEnabled': true,
       'selectedTutorId': 'lana',
+      'currentLevel': 'A1',
     });
   });
 

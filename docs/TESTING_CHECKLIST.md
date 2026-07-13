@@ -429,7 +429,8 @@ Settings checks for this baseline:
 - **Audio** section is visible.
 - **Connection status** is available in a non-intrusive advanced area and can reveal **Check connection**.
 - **Save settings** is visible.
-- No level selector is shown in Settings.
+- **Current level** is shown before **Study language**, displays labels from `lessonLevels`, and saves canonical uppercase `A1`, `A2`, `B1`, or `B2` through `PUT /api/me/settings` only when **Save settings** is used.
+- A failed settings save restores the last backend-confirmed level; the backend remains the account-level source of truth.
 - `selectedTutorId` is sent to `PUT /api/me/settings` and remains separate from `speechVoice`.
 - Language dropdowns display user-friendly names while saving and sending backend IDs.
 - Selected tutor persists after app/emulator restart.
@@ -440,9 +441,11 @@ Settings checks for this baseline:
 Desktop parity checks:
 
 - Mobile preserves desktop product flow and behavior without copying the Windows layout directly.
-- Level selection remains a separate lesson-start step before topic/situation selection.
-- Settings uses backend-supported `/api/me/settings` fields only: `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `speechVoice`, `speechSpeed`, `conversationModeEnabled`, and `selectedTutorId`.
+- Level selection remains a separate lesson-start step before topic/situation selection; saved-level-driven lesson start is still pending.
+- Settings uses backend-supported `/api/me/settings` fields only: `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `speechVoice`, `speechSpeed`, `conversationModeEnabled`, `selectedTutorId`, and `currentLevel`.
 - Selected tutor persistence remains backend-owned, and tutor voice remains separate from selected tutor.
+- `lessonLevels` remains the centralized Mobile level display list, while CMS-published level profiles remain authoritative for lesson behavior and timing.
+- Physical-device validation of the Settings level control remains pending.
 
 Still out of scope for the current documentation update: lesson runtime, voice recording, TTS playback, billing, analytics, Google Play Billing, Apple billing, backend changes, desktop changes, and store release metadata.
 

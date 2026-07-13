@@ -1,4 +1,5 @@
 import 'language_options.dart';
+import 'lesson_start_selection.dart';
 
 enum UserSettingsUpdateStatus {
   success,
@@ -62,6 +63,7 @@ class UserSettings {
     required this.speechSpeed,
     required this.conversationModeEnabled,
     required this.selectedTutorId,
+    required this.currentLevel,
   });
 
   final String nativeLanguage;
@@ -71,6 +73,7 @@ class UserSettings {
   final double speechSpeed;
   final bool conversationModeEnabled;
   final String selectedTutorId;
+  final String currentLevel;
 
   factory UserSettings.fromJson(Map<String, dynamic> json) => UserSettings(
         nativeLanguage:
@@ -83,6 +86,7 @@ class UserSettings {
         speechSpeed: _double(json['speechSpeed'], fallback: 1.0),
         conversationModeEnabled: _bool(json['conversationModeEnabled']),
         selectedTutorId: _selectedTutorId(json['selectedTutorId']),
+        currentLevel: canonicalLessonLevel(json['currentLevel']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -94,6 +98,7 @@ class UserSettings {
         'speechSpeed': speechSpeed,
         'conversationModeEnabled': conversationModeEnabled,
         'selectedTutorId': selectedTutorId,
+        'currentLevel': canonicalLessonLevel(currentLevel),
       };
 
   UserSettings copyWith({
@@ -104,6 +109,7 @@ class UserSettings {
     double? speechSpeed,
     bool? conversationModeEnabled,
     String? selectedTutorId,
+    String? currentLevel,
   }) =>
       UserSettings(
         nativeLanguage: nativeLanguage ?? this.nativeLanguage,
@@ -114,6 +120,7 @@ class UserSettings {
         conversationModeEnabled:
             conversationModeEnabled ?? this.conversationModeEnabled,
         selectedTutorId: selectedTutorId ?? this.selectedTutorId,
+        currentLevel: canonicalLessonLevel(currentLevel ?? this.currentLevel),
       );
 
   static const defaultTutorId = 'lana';

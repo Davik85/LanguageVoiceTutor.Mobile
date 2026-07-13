@@ -248,6 +248,7 @@ class FakeAuthService extends AuthService {
       speechSpeed: 1.0,
       conversationModeEnabled: true,
       selectedTutorId: UserSettings.defaultTutorId,
+      currentLevel: 'A1',
     );
   }
 

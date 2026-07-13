@@ -106,6 +106,18 @@ const lessonLevels = [
   ),
 ];
 
+String canonicalLessonLevel(Object? value) {
+  final fallback = lessonLevels.first.id.toUpperCase();
+  if (value is! String) return fallback;
+
+  final normalized = value.trim().toUpperCase();
+  for (final level in lessonLevels) {
+    final canonical = level.id.toUpperCase();
+    if (canonical == normalized) return canonical;
+  }
+  return fallback;
+}
+
 const lessonTopics = [
   LessonOption(
     id: 'daily_life',

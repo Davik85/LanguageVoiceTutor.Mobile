@@ -58,7 +58,8 @@ void main() {
       speechVoice: '',
       speechSpeed: 1,
       conversationModeEnabled: false,
-      selectedTutorId: 'lana');
+      selectedTutorId: 'lana',
+      currentLevel: 'A1');
 
   test('preserves selected context and runtime tutor data on later turns', () {
     final context = LessonContextSelectionResolver.resolve(

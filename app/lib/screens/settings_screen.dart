@@ -4,6 +4,7 @@ import '../api/api_client.dart';
 import '../models/auth_models.dart';
 import '../models/language_option.dart';
 import '../models/language_options.dart';
+import '../models/lesson_start_selection.dart';
 import '../models/subscription_status.dart';
 import '../models/tutor_options.dart';
 import '../models/user_settings.dart';
@@ -589,6 +590,10 @@ class _LearningCard extends StatelessWidget {
             else if (settings == null)
               Text(error!)
             else ...[
+              _LessonLevelDropdown(
+                  value: settings!.currentLevel,
+                  onChanged: (v) =>
+                      onChanged(settings!.copyWith(currentLevel: v))),
               _LanguageDropdown(
                   label: 'Study language',
                   value: settings!.studyLanguage,
@@ -623,6 +628,28 @@ class _LearningCard extends StatelessWidget {
                       onChanged(settings!.copyWith(speechVoice: v))),
             ],
           ])));
+}
+
+class _LessonLevelDropdown extends StatelessWidget {
+  const _LessonLevelDropdown({required this.value, required this.onChanged});
+
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) => DropdownButtonFormField<String>(
+        decoration: const InputDecoration(labelText: 'Current level'),
+        initialValue: canonicalLessonLevel(value),
+        items: lessonLevels
+            .map((level) => DropdownMenuItem(
+                  value: canonicalLessonLevel(level.id),
+                  child: Text(level.label),
+                ))
+            .toList(),
+        onChanged: (v) {
+          if (v != null) onChanged(v);
+        },
+      );
 }
 
 class _TutorDropdown extends StatelessWidget {

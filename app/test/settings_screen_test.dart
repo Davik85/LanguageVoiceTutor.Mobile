@@ -84,7 +84,8 @@ class FakeAuthService extends AuthService {
             speechVoice: 'nova',
             speechSpeed: 1.0,
             conversationModeEnabled: true,
-            selectedTutorId: 'nelli');
+            selectedTutorId: 'nelli',
+            currentLevel: 'A1');
   }
 
   @override
@@ -178,6 +179,8 @@ void main() {
     expect(find.text('Premium Monthly'), findsOneWidget);
     await _scrollToText(tester, 'Learning');
     expect(find.text('Learning'), findsOneWidget);
+    expect(find.text('Current level'), findsOneWidget);
+    expect(find.text('A1 Beginner'), findsOneWidget);
     expect(find.text('Study language'), findsOneWidget);
     expect(find.text('Spanish'), findsOneWidget);
     expect(find.text('es'), findsNothing);
@@ -195,7 +198,6 @@ void main() {
     expect(find.text('Connection status'), findsOneWidget);
     expect(find.text('Backend diagnostics'), findsNothing);
     expect(find.text('Save settings'), findsOneWidget);
-    expect(find.textContaining('level', findRichText: true), findsNothing);
   });
 
   testWidgets('password recovery section is visible', (tester) async {
@@ -313,7 +315,7 @@ void main() {
     await tester.pumpAndSettle();
     await _scrollToText(tester, 'Study language');
 
-    await tester.tap(find.byType(DropdownButtonFormField<String>).at(0));
+    await tester.tap(find.byType(DropdownButtonFormField<String>).at(1));
     await tester.pumpAndSettle();
 
     expect(find.text('French'), findsWidgets);
@@ -330,6 +332,69 @@ void main() {
     expect(auth.savedSettings?.explanationLanguage, 'en');
   });
 
+  testWidgets('backend B2 displays its centralized lesson level label',
+      (tester) async {
+    final auth = FakeAuthService(
+      initialSettings: const UserSettings(
+        nativeLanguage: 'en',
+        studyLanguage: 'es',
+        explanationLanguage: 'en',
+        speechVoice: 'nova',
+        speechSpeed: 1.0,
+        conversationModeEnabled: true,
+        selectedTutorId: 'nelli',
+        currentLevel: 'B2',
+      ),
+    );
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Current level');
+
+    expect(find.text('B2 Upper-Intermediate'), findsOneWidget);
+  });
+
+  testWidgets('selecting a level waits for save and sends canonical uppercase',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Current level');
+    await tester.tap(find.byType(DropdownButtonFormField<String>).at(0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('B2 Upper-Intermediate').last);
+    await tester.pumpAndSettle();
+
+    expect(auth.saved, isFalse);
+    await _scrollToText(tester, 'Save settings');
+    await tester.tap(find.text('Save settings'));
+    await tester.pumpAndSettle();
+
+    expect(auth.savedSettings?.currentLevel, 'B2');
+  });
+
+  testWidgets('failed save restores the previously confirmed level',
+      (tester) async {
+    final auth = FakeAuthService(
+      saveResult: UserSettingsUpdateResult.validationFailure(
+        'Unsupported current level.',
+      ),
+    );
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Current level');
+    await tester.tap(find.byType(DropdownButtonFormField<String>).at(0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('B2 Upper-Intermediate').last);
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Save settings');
+    await tester.tap(find.text('Save settings'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Unsupported current level.'), findsOneWidget);
+    expect(find.text('A1 Beginner'), findsOneWidget);
+    expect(find.text('B2 Upper-Intermediate'), findsNothing);
+  });
+
   testWidgets('Turkish settings send tr with all supported fields',
       (tester) async {
     const turkishSettings = UserSettings(
@@ -340,6 +405,7 @@ void main() {
       speechSpeed: 1.0,
       conversationModeEnabled: true,
       selectedTutorId: 'nelli',
+      currentLevel: 'A1',
     );
     final auth = FakeAuthService(initialSettings: turkishSettings);
     await tester.pumpWidget(_screen(auth));
@@ -364,7 +430,7 @@ void main() {
     await tester.pumpAndSettle();
     await _scrollToText(tester, 'Interface / explanation language');
 
-    await tester.tap(find.byType(DropdownButtonFormField<String>).at(2));
+    await tester.tap(find.byType(DropdownButtonFormField<String>).at(3));
     await tester.pumpAndSettle();
 
     expect(find.text('Polish'), findsOneWidget);
@@ -386,7 +452,7 @@ void main() {
     await tester.pumpWidget(_screen(auth));
     await tester.pumpAndSettle();
     await _scrollToText(tester, 'Selected tutor');
-    await tester.tap(find.byType(DropdownButtonFormField<String>).at(3));
+    await tester.tap(find.byType(DropdownButtonFormField<String>).at(4));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Lana').last);
     await tester.pumpAndSettle();
@@ -432,6 +498,7 @@ void main() {
       speechSpeed: 1.0,
       conversationModeEnabled: true,
       selectedTutorId: 'nelli',
+      currentLevel: 'B2',
     );
     final auth = FakeAuthService(confirmedSave: confirmed);
     await tester.pumpWidget(_screen(auth));
@@ -440,6 +507,7 @@ void main() {
     await tester.tap(find.text('Save settings'));
     await tester.pumpAndSettle();
     expect(find.text('Russian'), findsWidgets);
+    expect(find.text('B2 Upper-Intermediate'), findsOneWidget);
   });
 
   testWidgets(
@@ -452,7 +520,7 @@ void main() {
     await tester.pumpWidget(_screen(auth));
     await tester.pumpAndSettle();
     await _scrollToText(tester, 'Native language');
-    await tester.tap(find.byType(DropdownButtonFormField<String>).at(1));
+    await tester.tap(find.byType(DropdownButtonFormField<String>).at(2));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Russian').last);
     await tester.pumpAndSettle();

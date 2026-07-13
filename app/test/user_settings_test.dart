@@ -54,7 +54,7 @@ class MemoryStorage implements SessionStorage {
 }
 
 const settingsJson =
-    '{"nativeLanguage":"en","studyLanguage":"es","explanationLanguage":"en","speechVoice":"nova","speechSpeed":1.1,"conversationModeEnabled":true,"selectedTutorId":"nelli","extra":"ignored"}';
+    '{"nativeLanguage":"en","studyLanguage":"es","explanationLanguage":"en","speechVoice":"nova","speechSpeed":1.1,"conversationModeEnabled":true,"selectedTutorId":"nelli","currentLevel":"B2","extra":"ignored"}';
 void main() {
   test('user settings response parsing tolerates extra fields', () {
     final settings = UserSettings.fromJson({
@@ -65,6 +65,7 @@ void main() {
       'speechSpeed': 1.2,
       'conversationModeEnabled': true,
       'selectedTutorId': 'david',
+      'currentLevel': 'B1',
       'extra': 'ignored'
     });
     expect(settings.nativeLanguage, 'ru');
@@ -73,6 +74,7 @@ void main() {
     expect(settings.speechSpeed, 1.2);
     expect(settings.conversationModeEnabled, isTrue);
     expect(settings.selectedTutorId, 'david');
+    expect(settings.currentLevel, 'B1');
   });
   test('user settings response tolerates missing selected tutor', () {
     final settings = UserSettings.fromJson({
@@ -86,6 +88,26 @@ void main() {
     expect(settings.selectedTutorId, UserSettings.defaultTutorId);
   });
 
+  test('current level parses every supported canonical value', () {
+    for (final level in ['A1', 'A2', 'B1', 'B2']) {
+      expect(
+          UserSettings.fromJson({'currentLevel': level}).currentLevel, level);
+    }
+  });
+
+  test('current level parsing trims and normalizes case', () {
+    expect(
+        UserSettings.fromJson({'currentLevel': '  b2  '}).currentLevel, 'B2');
+    expect(UserSettings.fromJson({'currentLevel': 'a2'}).currentLevel, 'A2');
+  });
+
+  test('invalid or absent current level safely falls back to A1', () {
+    for (final value in <Object?>[null, '', '   ', 'C1']) {
+      expect(UserSettings.fromJson({'currentLevel': value}).currentLevel, 'A1');
+    }
+    expect(UserSettings.fromJson({}).currentLevel, 'A1');
+  });
+
   test('update settings request JSON includes backend supported fields', () {
     final json = const UserSettings(
             nativeLanguage: 'ru',
@@ -94,7 +116,8 @@ void main() {
             speechVoice: 'nova',
             speechSpeed: 1.0,
             conversationModeEnabled: false,
-            selectedTutorId: 'lana')
+            selectedTutorId: 'lana',
+            currentLevel: 'B2')
         .toJson();
     expect(
         json.keys,
@@ -105,10 +128,12 @@ void main() {
           'speechVoice',
           'speechSpeed',
           'conversationModeEnabled',
-          'selectedTutorId'
+          'selectedTutorId',
+          'currentLevel'
         ]));
     expect(json['nativeLanguage'], 'ru');
     expect(json['studyLanguage'], 'Spanish');
+    expect(json['currentLevel'], 'B2');
 
     const studyLanguageNames = {
       'en': 'English',
@@ -127,6 +152,7 @@ void main() {
         speechSpeed: 1.0,
         conversationModeEnabled: true,
         selectedTutorId: 'lana',
+        currentLevel: 'A1',
       ).copyWith(studyLanguage: entry.key);
       final requestJson = request.toJson();
       expect(request.studyLanguage, entry.key);
@@ -136,6 +162,30 @@ void main() {
     }
     expect(json['explanationLanguage'], 'pl');
     expect(json['selectedTutorId'], 'lana');
+  });
+
+  test('copyWith changes current level and preserves all other fields', () {
+    const original = UserSettings(
+      nativeLanguage: 'tr',
+      studyLanguage: 'es',
+      explanationLanguage: 'ru',
+      speechVoice: 'coral',
+      speechSpeed: 1.1,
+      conversationModeEnabled: true,
+      selectedTutorId: 'lana',
+      currentLevel: 'A1',
+    );
+
+    final changed = original.copyWith(currentLevel: 'b2');
+
+    expect(changed.currentLevel, 'B2');
+    expect(changed.nativeLanguage, original.nativeLanguage);
+    expect(changed.studyLanguage, original.studyLanguage);
+    expect(changed.explanationLanguage, original.explanationLanguage);
+    expect(changed.speechVoice, original.speechVoice);
+    expect(changed.speechSpeed, original.speechSpeed);
+    expect(changed.conversationModeEnabled, original.conversationModeEnabled);
+    expect(changed.selectedTutorId, original.selectedTutorId);
   });
   test('settings service GET and PUT success with fakes', () async {
     final api = RecordingApiClient(
@@ -153,10 +203,12 @@ void main() {
         speechVoice: 'nova',
         speechSpeed: 1.0,
         conversationModeEnabled: false,
-        selectedTutorId: 'lana'));
+        selectedTutorId: 'lana',
+        currentLevel: 'B2'));
     expect(api.requests.map((r) => '${r.method} ${r.path} ${r.token}'),
         ['GET /api/me/settings token', 'PUT /api/me/settings token']);
     expect(api.requests.last.body?['selectedTutorId'], 'lana');
+    expect(api.requests.last.body?['currentLevel'], 'B2');
   });
   test('settings service failure is sanitized', () async {
     final api = RecordingApiClient(
