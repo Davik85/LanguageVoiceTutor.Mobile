@@ -145,6 +145,7 @@ Widget _screen({_Recording? recording}) => ConversationModeScreen(
           speechSpeed: 1,
           conversationModeEnabled: true,
           selectedTutorId: 'lana'),
+      selectedContextTitle: '',
       tutorDisplayName: 'Tutor',
       initialTranscript: const ['Hello'],
       onSubmitTranscript: (text) async => 'Reply',

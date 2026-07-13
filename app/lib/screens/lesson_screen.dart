@@ -19,9 +19,11 @@ import '../services/auth_service.dart';
 import '../services/lesson_context_selection_resolver.dart';
 import '../services/lesson_roleplay_opening_builder.dart';
 import '../services/lesson_turn_request_builder.dart';
+import '../services/mobile_transcription_request_builder.dart';
 import '../services/tutor_avatar_preloader.dart';
 import '../services/tutor_audio_playback_service.dart';
 import '../services/transcript_script_normalizer.dart';
+import '../services/transcription_context_builder.dart';
 import '../services/voice_scenario_intent_resolver.dart';
 import '../widgets/tutor_avatar.dart';
 import '../services/learner_audio_recording_service.dart';
@@ -102,7 +104,6 @@ class _LessonScreenState extends State<LessonScreen>
   static const _neutralOpeningFallback = 'Your lesson is ready.';
   static const _chooseSituationHint =
       'Choose one of the situations above, or type your own.';
-  static const _initialContextVariantLimit = 3;
 
   late final AuthService _authService;
   late final TutorAudioPlaybackService _audioPlaybackService;
@@ -154,6 +155,8 @@ class _LessonScreenState extends State<LessonScreen>
   final Set<Future<void>> _pendingMessagePersistence = {};
   int? _activePlayingMessageId;
   static const _turnRequestBuilder = LessonTurnRequestBuilder();
+  static const _transcriptionRequestBuilder =
+      MobileTranscriptionRequestBuilder();
   static const _roleplayOpeningBuilder = LessonRoleplayOpeningBuilder();
   final _avatarPreloader = TutorAvatarPreloader();
   Future<bool>? _conversationAvatarPreload;
@@ -395,7 +398,7 @@ class _LessonScreenState extends State<LessonScreen>
     }
 
     final scenarioChoices = scenario.controlledVariation.contextVariants
-        .take(_initialContextVariantLimit)
+        .take(TranscriptionContextBuilder.initialCandidateLimit)
         .map((variant) => variant.title.trim())
         .where((value) => value.isNotEmpty)
         .toList(growable: false);
@@ -469,6 +472,7 @@ class _LessonScreenState extends State<LessonScreen>
           session: session,
           scenario: scenario,
           settings: settings,
+          selectedContextTitle: _currentSelectedContextTitle,
           tutorDisplayName: _tutorDisplayName,
           initialTranscript: _messages
               .map((message) => message.text)
@@ -1546,19 +1550,12 @@ class _LessonScreenState extends State<LessonScreen>
     }
     try {
       final result = await _authService.transcribeLearnerAudio(
-        request: AudioTranscriptionRequest(
+        request: _transcriptionRequestBuilder.build(
           audioFilePath: path,
-          targetLanguageId:
-              LanguageOptions.studyLanguageIdFor(settings.studyLanguage),
-          targetLanguageName: LanguageOptions.backendStudyLanguageNameFor(
-              settings.studyLanguage),
-          targetLanguageNativeName: LanguageOptions.backendStudyLanguageNameFor(
-              settings.studyLanguage),
-          targetLanguageCode:
-              LanguageOptions.studyLanguageIdFor(settings.studyLanguage),
-          lessonPhase: _scenario?.runtimeContent.lessonPhase.trim() ?? '',
-          transcriptionContext: _transcriptionContext(),
           backendSessionId: session.lessonSessionId,
+          settings: settings,
+          scenario: _scenario,
+          selectedContextTitle: _currentSelectedContextTitle,
         ),
       );
       if (!mounted ||
@@ -1659,11 +1656,6 @@ class _LessonScreenState extends State<LessonScreen>
       await _recordingService.deleteFile(path);
       if (mounted) setState(() => _recordingFilePath = null);
     }
-  }
-
-  String _transcriptionContext() {
-    final selected = _currentSelectedContextTitle.trim();
-    return selected.isEmpty ? '' : 'Selected context: $selected';
   }
 
   Future<bool?> _confirmTranscriptReplacement() => showDialog<bool>(

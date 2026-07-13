@@ -13,6 +13,7 @@ import '../models/user_settings.dart';
 import '../services/auth_service.dart';
 import '../services/learner_audio_recording_service.dart';
 import '../services/learner_microphone_permission_service.dart';
+import '../services/mobile_transcription_request_builder.dart';
 import '../services/tutor_audio_playback_service.dart';
 import '../services/transcript_script_normalizer.dart';
 import '../widgets/tutor_avatar.dart';
@@ -27,6 +28,7 @@ class ConversationModeScreen extends StatefulWidget {
     required this.session,
     required this.scenario,
     required this.settings,
+    required this.selectedContextTitle,
     required this.tutorDisplayName,
     required this.initialTranscript,
     required this.onSubmitTranscript,
@@ -42,6 +44,7 @@ class ConversationModeScreen extends StatefulWidget {
   final LessonSessionResponse session;
   final LessonRuntimeScenario scenario;
   final UserSettings settings;
+  final String selectedContextTitle;
   final String tutorDisplayName;
   final List<String> initialTranscript;
   final Future<String?> Function(String text) onSubmitTranscript;
@@ -64,6 +67,8 @@ enum _ConversationState {
 
 class _ConversationModeScreenState extends State<ConversationModeScreen>
     with WidgetsBindingObserver {
+  static const _transcriptionRequestBuilder =
+      MobileTranscriptionRequestBuilder();
   final List<String> _transcript = [];
   Timer? _recordingTimer;
   DateTime? _recordingStartedAt;
@@ -229,22 +234,16 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
     if (!_isCurrent(generation)) return;
     final studyLanguageId =
         LanguageOptions.studyLanguageIdFor(widget.settings.studyLanguage);
-    final studyLanguageName = LanguageOptions.backendStudyLanguageNameFor(
-      widget.settings.studyLanguage,
-    );
     AudioTranscriptionResult result;
     try {
       result = await widget.authService
           .transcribeLearnerAudio(
-            request: AudioTranscriptionRequest(
+            request: _transcriptionRequestBuilder.build(
               audioFilePath: path,
-              targetLanguageId: studyLanguageId,
-              targetLanguageName: studyLanguageName,
-              targetLanguageNativeName: studyLanguageName,
-              targetLanguageCode: studyLanguageId,
-              lessonPhase: widget.scenario.runtimeContent.lessonPhase.trim(),
-              transcriptionContext: '',
               backendSessionId: widget.session.lessonSessionId,
+              settings: widget.settings,
+              scenario: widget.scenario,
+              selectedContextTitle: widget.selectedContextTitle,
             ),
           )
           .timeout(const Duration(seconds: 45));
