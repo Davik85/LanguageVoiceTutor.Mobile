@@ -213,7 +213,6 @@ void main() {
     expect(auth.fetchUserSettingsCallCount, 1);
     expect(find.text('Choose Topic'), findsOneWidget);
     expect(find.text('Level: A1 Beginner'), findsOneWidget);
-    expect(find.text('Choose Level'), findsNothing);
   });
 
   testWidgets('B2 start lesson opens Choose Topic with centralized label',
@@ -228,7 +227,6 @@ void main() {
     expect(auth.fetchUserSettingsCallCount, 1);
     expect(find.text('Choose Topic'), findsOneWidget);
     expect(find.text('Level: B2 Upper-Intermediate'), findsOneWidget);
-    expect(find.text('Choose Level'), findsNothing);
   });
 
   testWidgets('repeated start taps while loading do not duplicate requests',

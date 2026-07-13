@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'config/app_config.dart';
 import 'services/auth_service.dart';
 import 'services/service_factory.dart';
-import 'screens/choose_level_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/lesson_screen.dart';
 import 'screens/login_screen.dart';
@@ -35,8 +34,6 @@ class LanguageVoiceTutorApp extends StatelessWidget {
         SplashScreen.routeName: (_) => SplashScreen(authService: _authService),
         LoginScreen.routeName: (_) => LoginScreen(authService: _authService),
         HomeScreen.routeName: (_) => HomeScreen(authService: _authService),
-        ChooseLevelScreen.routeName: (_) =>
-            ChooseLevelScreen(authService: _authService),
         LessonScreen.routeName: (_) => LessonScreen(authService: _authService),
         SettingsScreen.routeName: (_) =>
             SettingsScreen(authService: _authService),

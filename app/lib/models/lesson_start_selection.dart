@@ -446,41 +446,6 @@ const _defaultLessonCardStyle = LessonCardStyle(
   pressedColor: Color(0xFFE9EDF5),
 );
 
-const lessonLevelCardStylesById = {
-  'a1': LessonCardStyle(
-    familyId: 'level-a1',
-    backgroundColor: Color(0xFFEAF8EC),
-    borderColor: Color(0xFFC9EAD0),
-    accentColor: Color(0xFF2E8B57),
-    foregroundColor: Color(0xFF173D2A),
-    pressedColor: Color(0xFFDCEFE1),
-  ),
-  'a2': LessonCardStyle(
-    familyId: 'level-a2',
-    backgroundColor: Color(0xFFE7F8F8),
-    borderColor: Color(0xFFC5E9EA),
-    accentColor: Color(0xFF188A92),
-    foregroundColor: Color(0xFF123E45),
-    pressedColor: Color(0xFFD9EEEE),
-  ),
-  'b1': LessonCardStyle(
-    familyId: 'level-b1',
-    backgroundColor: Color(0xFFFFF6D7),
-    borderColor: Color(0xFFF2E2A5),
-    accentColor: Color(0xFFC18A12),
-    foregroundColor: Color(0xFF4A3410),
-    pressedColor: Color(0xFFF7ECC7),
-  ),
-  'b2': LessonCardStyle(
-    familyId: 'level-b2',
-    backgroundColor: Color(0xFFF1ECFF),
-    borderColor: Color(0xFFD9CEF5),
-    accentColor: Color(0xFF7153B8),
-    foregroundColor: Color(0xFF33235F),
-    pressedColor: Color(0xFFE6DFFA),
-  ),
-};
-
 const lessonTopicCardStylesById = {
   'daily_life': LessonCardStyle(
     familyId: 'topic-daily-life',
@@ -531,10 +496,6 @@ const lessonTopicCardStylesById = {
     pressedColor: Color(0xFFE8DFFC),
   ),
 };
-
-LessonCardStyle lessonCardStyleForLevel(LessonOption level) {
-  return lessonLevelCardStylesById[level.id] ?? _defaultLessonCardStyle;
-}
 
 LessonCardStyle lessonCardStyleForTopic(LessonOption topic) {
   return lessonTopicCardStylesById[topic.id] ?? _defaultLessonCardStyle;

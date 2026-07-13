@@ -826,7 +826,6 @@ void main() {
 
     await tester.tap(find.text('Start lesson'));
     await tester.pumpAndSettle();
-    expect(find.text('Choose Level'), findsNothing);
     expect(find.text('Level: A1 Beginner'), findsOneWidget);
     await tester.tap(find.text('Daily Life'));
     await tester.pumpAndSettle();
