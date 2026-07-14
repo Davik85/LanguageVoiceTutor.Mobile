@@ -1,6 +1,7 @@
 import '../models/language_options.dart';
 import '../models/lesson_chat.dart';
 import '../models/lesson_runtime.dart';
+import '../models/study_language_definition.dart';
 import '../models/user_settings.dart';
 import 'lesson_context_selection_resolver.dart';
 
@@ -18,11 +19,12 @@ class LessonTurnRequestBuilder {
     required List<LessonRecentConversationMessage> recentMessages,
     required String backendSessionId,
     required LessonContextSelection context,
+    int? sourceMessageId,
+    String? sourcePersistedMessageId,
+    String sourceMessageKind = '',
   }) {
-    final languageId =
-        LanguageOptions.studyLanguageIdFor(settings.studyLanguage);
-    final languageName =
-        LanguageOptions.backendStudyLanguageNameFor(settings.studyLanguage);
+    final studyLanguage =
+        StudyLanguageDefinitions.resolve(settings.studyLanguage);
     final tutorId = settings.selectedTutorId.trim();
     final tutor = scenario.tutorProfiles
         .cast<LessonRuntimeTutorProfile?>()
@@ -41,17 +43,22 @@ class LessonTurnRequestBuilder {
       lastBotMessage: lastBotMessage,
       nativeLanguageName:
           LanguageOptions.backendNativeLanguageNameFor(settings.nativeLanguage),
-      targetLanguageId: languageId,
-      targetLanguageName: languageName,
-      targetLanguageNativeName: languageName,
-      targetLanguageCode: languageId,
+      targetLanguageId: studyLanguage.id,
+      targetLanguageName: studyLanguage.englishName,
+      targetLanguageNativeName: studyLanguage.nativeName,
+      targetLanguageCode: studyLanguage.transcriptionLanguageCode,
       userDisplayName: '',
       learnerTurnCount: learnerTurnCount,
       recentMessages: recentMessages,
       backendSessionId: backendSessionId,
       selectedContextTitle: context.selectedContextTitle ?? '',
+      selectedContextLocalizedTitle:
+          context.selectedContextLocalizedTitle ?? '',
       selectedContextVariant: context.selectedContextVariant,
       isContextSelectionTurn: context.isContextSelectionTurn,
+      sourceMessageId: sourceMessageId,
+      sourcePersistedMessageId: sourcePersistedMessageId,
+      sourceMessageKind: sourceMessageKind,
       tutorAvatarId: tutorId,
       tutorDisplayName: tutor?.displayName.trim() ?? '',
     );

@@ -4,6 +4,10 @@
 
 The mobile app will be built with Flutter using an Android-first delivery path. Android is the first target for implementation, QA, billing integration, and release preparation. iOS should remain a future-compatible consideration, but iOS project files should not be created during the docs-only foundation phase.
 
+## Study-language parity status
+
+The lesson flow now carries English, French, German, Portuguese, Spanish, and Italian through deterministic tutor setup text, canonical scenario selection, known-context openings, local Hints, backend lesson requests, transcription, and Lesson Chat/Conversation TTS. One Mobile study-language definition supplies the exact ID, English name, native name, BCP-47/transcription code, tutor instruction name, and language-lock name. Native/translation language and interface language stay separate. CMS canonical IDs and English semantic metadata are preserved, and CMS/backend still own tutor methodology and generated replies. Interface localization, ARB files, and `flutter_localizations` remain pending as a separate phase. This Mobile-only work needs no backend deployment; all six languages still require physical Android verification.
+
 ## Why Android first
 
 - Google Play Billing is the first mobile billing bridge to plan.

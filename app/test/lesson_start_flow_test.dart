@@ -160,7 +160,7 @@ class FakeAuthService extends AuthService {
     LessonCompletionResult? summaryResult,
     List<Completer<void>>? persistenceCompleters,
     this.persistenceFailure,
-    this.studyLanguage = 'es',
+    this.studyLanguage = 'en',
     this.currentLevel = 'A1',
     this.transcriptionText = 'Hello there',
     this.voiceScenarioResponse,
@@ -909,6 +909,59 @@ void main() {
   });
 
   testWidgets(
+      'Spanish setup and localized choice keep canonical CMS request identity',
+      (tester) async {
+    final auth = FakeAuthService(studyLanguage: 'es');
+    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Hoy vamos a practicar: presentaciones.'),
+        findsOneWidget);
+    expect(find.textContaining('1. Conocer a un nuevo vecino'), findsOneWidget);
+    expect(auth.lastStartRequest?.studyLanguage, 'Spanish');
+
+    await _openTextComposer(tester);
+    await tester.enterText(
+        find.byType(TextField), 'Conocer a un nuevo vecino.');
+    await tester.pump();
+    await tester.tap(_sendButton());
+    await tester.pumpAndSettle();
+
+    expect(auth.sendLessonChatReplyCallCount, 0);
+    expect(find.text('Conocer a un nuevo vecino'), findsOneWidget);
+    expect(find.textContaining('Imaginemos esta situación'), findsOneWidget);
+    expect(find.textContaining('¿Cómo te llamas?'), findsOneWidget);
+
+    final hint = find.byKey(const Key('lesson-action-hint'));
+    await _showWidget(tester, hint);
+    await tester.tap(hint);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Me llamo [tu nombre]'), findsOneWidget);
+    expect(auth.requestLessonChatHintCallCount, 0);
+
+    await tester.enterText(find.byType(TextField), 'Me llamo Sam.');
+    await tester.pump();
+    await tester.tap(_sendButton());
+    await tester.pumpAndSettle();
+
+    final request = auth.lastLessonChatRequest!;
+    expect(request.selectedContextVariantId, 'new_neighbor');
+    expect(request.selectedContextTitle, 'Meeting a new neighbor');
+    expect(request.selectedContextLocalizedTitle, 'Conocer a un nuevo vecino');
+    expect([
+      request.targetLanguageId,
+      request.targetLanguageName,
+      request.targetLanguageNativeName,
+      request.targetLanguageCode,
+    ], [
+      'es',
+      'Spanish',
+      'Español',
+      'es'
+    ]);
+  });
+
+  testWidgets(
       'typed scenario choice starts the CMS roleplay without lesson chat reply',
       (tester) async {
     final auth = FakeAuthService();
@@ -1112,7 +1165,7 @@ void main() {
 
     expect(find.byKey(const Key('lesson-hint-card')), findsOneWidget);
     expect(
-      find.text('Choose one of the situations above, or type your own.'),
+      find.textContaining('You can choose: "Meeting a new neighbor"'),
       findsOneWidget,
     );
     expect(find.text('Try: My name is Ana.'), findsNothing);
@@ -1280,7 +1333,7 @@ void main() {
   testWidgets(
       'translation uses the selected tutor message without a lesson turn',
       (tester) async {
-    final auth = FakeAuthService();
+    final auth = FakeAuthService(studyLanguage: 'es');
 
     await tester.pumpWidget(_lessonScreen(auth));
     await tester.pumpAndSettle();
@@ -1294,7 +1347,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(auth.requestTranslationCallCount, 1);
     expect(auth.lastTranslationRequest?.text,
-        contains('Today we\'ll practice introductions.'));
+        contains('Hoy vamos a practicar: presentaciones.'));
     expect(auth.lastTranslationRequest?.targetLanguage, 'English');
     expect(auth.lastTranslationRequest?.sourceLanguageId, 'es');
     expect(find.text('Hola, ¿cómo estás?'), findsOneWidget);
@@ -1636,9 +1689,7 @@ void main() {
             .controller
             ?.text,
         'Keep this draft');
-    expect(
-        find.text(
-            'I could not recognize that clearly in English. Please try again.'),
+    expect(find.text('I could not recognize that clearly. Please try again.'),
         findsOneWidget);
     expect(auth.sendLessonChatReplyCallCount, 0);
     expect(auth.persistedMessages, isEmpty);

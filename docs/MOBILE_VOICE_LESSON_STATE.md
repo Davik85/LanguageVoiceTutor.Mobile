@@ -6,6 +6,10 @@ Authoritative source commit: `f195dc2` (`feat: add mobile voice lesson and conve
 
 Mobile is another client of the same Language Voice Tutor product. Backend and CMS remain the source of truth for lesson runtime content, topics and scenarios, tutor behavior, session ownership, AI calls, and subscription/account state. Mobile contains no OpenAI API key, provider prompt, or provider model ID. Mobile does not invent CMS scenario IDs or variants.
 
+## Study language through voice and lesson surfaces
+
+English, French, German, Portuguese, Spanish, and Italian now resolve through the same centralized Mobile study-language definition. Lesson Chat and Conversation mode transcription and TTS send the same exact target-language metadata, independent of native/translation and interface languages. Initial setup, localized scenario labels, known CMS confirmation/opening text, pre-context Hint, and the first CMS example Hint are deterministic target-language text ported from Desktop behavior. Voice candidate requests retain canonical candidate IDs and canonical English titles and use localized titles only as learner-facing candidate context. Exact localized titles can resolve the same canonical runtime variant; published/free/clarify/unsafe/failure semantics are unchanged. English-specific recognition errors are neutral, while general UI remains English. Backend/CMS ownership is unchanged, no backend deployment is required, and every language still needs physical Android microphone, transcription, selection, reply, and TTS verification.
+
 ## Lesson experience
 
 The committed Mobile client includes a separate Conversation mode screen while normal Lesson Chat remains available. Entering Conversation mode uses the existing lesson session and does not start a second lesson session. Lesson Chat and Conversation mode share transcript safety handling and now use one shared Mobile transcription request builder, while Conversation mode adds independent **Auto-send voice** and **Auto-play tutor voice** controls.

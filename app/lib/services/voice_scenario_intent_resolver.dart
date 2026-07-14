@@ -49,6 +49,7 @@ class VoiceScenarioIntentResolver {
   static VoiceScenarioDeterministicResult resolve({
     required String transcript,
     required List<LessonRuntimeContextVariant> variants,
+    Map<String, String> localizedTitlesById = const {},
     bool unsafeTranscript = false,
   }) {
     if (unsafeTranscript) {
@@ -73,6 +74,8 @@ class VoiceScenarioIntentResolver {
     final exact = variants
         .where((variant) =>
             _normalize(variant.title) == normalized ||
+            (localizedTitlesById[variant.id]?.trim().isNotEmpty == true &&
+                _normalize(localizedTitlesById[variant.id]!) == normalized) ||
             (variant.localizedTitle.trim().isNotEmpty &&
                 _normalize(variant.localizedTitle) == normalized))
         .toList();

@@ -109,4 +109,51 @@ void main() {
     );
     expect(request.lessonPhase, isEmpty);
   });
+
+  test('all six study languages send exact centralized request metadata', () {
+    const expected = <String, List<String>>{
+      'en': ['en', 'English', 'English', 'en'],
+      'fr': ['fr', 'French', 'Français', 'fr'],
+      'de': ['de', 'German', 'Deutsch', 'de'],
+      'pt': ['pt', 'Portuguese', 'Português', 'pt'],
+      'es': ['es', 'Spanish', 'Español', 'es'],
+      'it': ['it', 'Italian', 'Italiano', 'it'],
+    };
+    for (final entry in expected.entries) {
+      final request = const LessonTurnRequestBuilder().build(
+        scenario: scenario,
+        settings: UserSettings(
+          nativeLanguage: 'hu',
+          studyLanguage: entry.key,
+          explanationLanguage: 'de',
+          speechVoice: '',
+          speechSpeed: 1,
+          conversationModeEnabled: false,
+          selectedTutorId: 'lana',
+          currentLevel: 'A1',
+        ),
+        selectedLevel: 'A1',
+        userMessage: 'Hello',
+        lastBotMessage: '',
+        learnerTurnCount: 1,
+        recentMessages: const [],
+        backendSessionId: 'session',
+        context: const LessonContextSelection(
+          isContextSelectionTurn: false,
+          isKnownCmsContext: false,
+          isCustomContext: true,
+          selectedContextTitle: 'Custom',
+        ),
+      );
+      expect(
+        [
+          request.targetLanguageId,
+          request.targetLanguageName,
+          request.targetLanguageNativeName,
+          request.targetLanguageCode,
+        ],
+        entry.value,
+      );
+    }
+  });
 }

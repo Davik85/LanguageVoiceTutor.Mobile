@@ -1,10 +1,13 @@
 import '../models/lesson_runtime.dart';
+import '../models/study_language_definition.dart';
+import 'localized_lesson_text_service.dart';
 
 class LessonContextSelection {
   const LessonContextSelection({
     this.selectedContextId,
     this.selectedContextTitle,
     this.selectedContextVariant,
+    this.selectedContextLocalizedTitle,
     required this.isContextSelectionTurn,
     required this.isKnownCmsContext,
     required this.isCustomContext,
@@ -13,6 +16,7 @@ class LessonContextSelection {
   final String? selectedContextId;
   final String? selectedContextTitle;
   final LessonRuntimeContextVariant? selectedContextVariant;
+  final String? selectedContextLocalizedTitle;
   final bool isContextSelectionTurn;
   final bool isKnownCmsContext;
   final bool isCustomContext;
@@ -24,6 +28,7 @@ class LessonContextSelectionResolver {
     String? currentSelectedContextId,
     String? currentSelectedContextTitle,
     required String learnerInput,
+    StudyLanguageDefinition? studyLanguage,
   }) {
     final variants = scenario.controlledVariation.contextVariants;
     final currentId = currentSelectedContextId?.trim();
@@ -42,7 +47,20 @@ class LessonContextSelectionResolver {
         match = variants[choice - 1];
       } else {
         for (final variant in variants) {
-          if (_normalize(variant.title) == input) {
+          final localizedTitle = studyLanguage == null
+              ? variant.localizedTitle
+              : LocalizedLessonTextService.localizedScenarioTitle(
+                  variant,
+                  studyLanguage,
+                );
+          final candidates = <String>[
+            variant.title,
+            localizedTitle,
+            variant.localizedTitle,
+            ...variant.aliases,
+          ];
+          if (candidates
+              .any((candidate) => _matches(input, _normalize(candidate)))) {
             match = variant;
             break;
           }
@@ -57,6 +75,14 @@ class LessonContextSelectionResolver {
         selectedContextId: match.id,
         selectedContextTitle: match.title.trim(),
         selectedContextVariant: match,
+        selectedContextLocalizedTitle: studyLanguage == null
+            ? (match.localizedTitle.trim().isEmpty
+                ? match.title.trim()
+                : match.localizedTitle.trim())
+            : LocalizedLessonTextService.localizedScenarioTitle(
+                match,
+                studyLanguage,
+              ),
         // A selected context remains part of every later request, but it only
         // represents a selection on the learner turn which chose it.
         isContextSelectionTurn: !hasCurrentSelection,
@@ -79,8 +105,15 @@ class LessonContextSelectionResolver {
 
   static String _normalize(String value) => value
       .trim()
+      .replaceAll('_', ' ')
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^\p{L}\p{N}]+', unicode: true), ' ')
       .replaceAll(RegExp(r'\s+'), ' ')
-      .replaceFirst(RegExp(r'[.,:;!?]+$'), '')
-      .trim()
-      .toLowerCase();
+      .trim();
+
+  static bool _matches(String input, String candidate) =>
+      candidate.isNotEmpty &&
+      (input == candidate ||
+          input.contains(candidate) ||
+          candidate.contains(input));
 }

@@ -4,6 +4,10 @@
 
 The reviewed Windows desktop client walkthrough presentation is now a product reference source for mobile parity. Mobile parity means preserving the desktop product flow, product decisions, and backend-owned state boundaries; it does not mean copying the Windows pixel layout directly.
 
+## Study-language parity model
+
+Desktop confirms three independent concepts: study language selects the language practiced in lessons; native language selects translation/explanation output; interface language selects application chrome. Mobile now mirrors this separation for English, French, German, Portuguese, Spanish, and Italian. A single Mobile study-language definition supplies request, transcription, and TTS metadata, while Desktop-equivalent deterministic local lesson text builds target-language setup, scenario labels, known-context openings, and local Hints from English CMS semantics. Localized learner-facing scenario text always maps back to the canonical CMS ID, canonical English title, runtime variant, and scenario key. Backend `LessonPromptBuilder` and CMS runtime remain the owners of tutor replies, roleplay, Hint, Feedback, corrections, examples, wrap-up, and final replies. Interface localization is not part of this phase; no Desktop, backend, or CMS change and no deployment are required. Physical Android validation across all six languages remains outstanding.
+
 Latest known mobile baseline after commit `fcecef5` (`Fix mobile settings parity foundation`):
 
 - Mobile Settings parity foundation is fixed.

@@ -182,7 +182,7 @@ void main() {
     expect(find.text('Current level'), findsOneWidget);
     expect(find.text('A1 Beginner'), findsOneWidget);
     expect(find.text('Study language'), findsOneWidget);
-    expect(find.text('Spanish'), findsOneWidget);
+    expect(find.text('Spanish / Español'), findsOneWidget);
     expect(find.text('es'), findsNothing);
     expect(find.text('Selected tutor'), findsOneWidget);
     expect(find.text('Nelli'), findsOneWidget);
@@ -318,10 +318,10 @@ void main() {
     await tester.tap(find.byType(DropdownButtonFormField<String>).at(1));
     await tester.pumpAndSettle();
 
-    expect(find.text('French'), findsWidgets);
+    expect(find.text('French / Français'), findsWidgets);
     expect(find.text('Russian'), findsNothing);
 
-    await tester.tap(find.text('French').last);
+    await tester.tap(find.text('French / Français').last);
     await tester.pumpAndSettle();
     await _scrollToText(tester, 'Save settings');
     await tester.tap(find.text('Save settings'));

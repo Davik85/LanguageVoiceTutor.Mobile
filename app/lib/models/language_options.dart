@@ -1,16 +1,13 @@
 import 'language_option.dart';
+import 'study_language_definition.dart';
 
 abstract final class LanguageOptions {
   static const defaultLanguageId = 'en';
 
-  static const studyLanguages = [
-    LanguageOption('en', 'English'),
-    LanguageOption('fr', 'French'),
-    LanguageOption('de', 'German'),
-    LanguageOption('pt', 'Portuguese'),
-    LanguageOption('es', 'Spanish'),
-    LanguageOption('it', 'Italian'),
-  ];
+  static final studyLanguages = StudyLanguageDefinitions.supported
+      .map(
+          (definition) => LanguageOption(definition.id, definition.displayName))
+      .toList(growable: false);
 
   static const nativeLanguages = [
     LanguageOption('en', 'English'),
@@ -87,17 +84,11 @@ abstract final class LanguageOptions {
     LanguageOption('bg', 'Bulgarian'),
   ];
 
-  static String studyLanguageIdFor(Object? value) => _idFor(
-        value,
-        studyLanguages,
-        fallbackId: defaultLanguageId,
-      );
+  static String studyLanguageIdFor(Object? value) =>
+      StudyLanguageDefinitions.resolve(value).id;
 
-  static String backendStudyLanguageNameFor(Object? value) => _labelFor(
-        value,
-        studyLanguages,
-        fallbackLabel: 'English',
-      );
+  static String backendStudyLanguageNameFor(Object? value) =>
+      StudyLanguageDefinitions.resolve(value).englishName;
 
   static String nativeLanguageIdFor(Object? value) => _idFor(
         value,

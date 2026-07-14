@@ -1,5 +1,16 @@
 # Testing Checklist
 
+## Six-language lesson parity checks
+
+- Verify the centralized study-language definitions exactly cover `en`, `fr`, `de`, `pt`, `es`, and `it`, resolve by ID/English/native name case-insensitively, and fall back to English.
+- Verify study-language dropdown values derive from that catalog; native/translation and interface-language catalogs remain separate.
+- For every language, verify localized setup, scenario titles, known-context confirmation/opening, pre-context Hint, and first local example Hint.
+- Verify numeric, canonical English, localized French/Spanish, punctuation/case, alias, custom-context, and later-active-turn scenario resolution while preserving canonical CMS IDs/titles/variants/scenario keys.
+- Verify reply, Hint, Feedback, transcription, Lesson Chat TTS, and Conversation TTS send the exact centralized ID, English name, native name, and language code; session start sends the backend-compatible English study-language name.
+- Verify English behavior remains unchanged and non-English CMS English text is semantic metadata rather than tutor-facing setup output.
+- Confirm no ARB files, `flutter_localizations`, general UI translation, client OpenAI call, backend endpoint, CMS prompt, or backend deployment was added.
+- Automated checks do not replace physical Android coverage. Test all six languages for initial display, typed and voice scenario selection, transcription, backend reply/Hint/Feedback language lock, tutor TTS, completion, and summary flow.
+
 ## Docs-only foundation checks
 
 - Confirm no Flutter app files were created.

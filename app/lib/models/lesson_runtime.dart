@@ -383,6 +383,7 @@ class LessonRuntimeContextVariant {
     required this.openingLine,
     required this.contextConfirmationLine,
     required this.openingIntent,
+    this.aliases = const [],
   });
 
   final String id;
@@ -391,6 +392,7 @@ class LessonRuntimeContextVariant {
   final String openingLine;
   final String contextConfirmationLine;
   final String openingIntent;
+  final List<String> aliases;
 
   factory LessonRuntimeContextVariant.fromJson(Map<String, dynamic> json) =>
       LessonRuntimeContextVariant(
@@ -400,6 +402,7 @@ class LessonRuntimeContextVariant {
         openingLine: _string(json, 'openingLine'),
         contextConfirmationLine: _string(json, 'contextConfirmationLine'),
         openingIntent: _string(json, 'openingIntent'),
+        aliases: _stringList(_value(json, 'aliases')),
       );
 }
 

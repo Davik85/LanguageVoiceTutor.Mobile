@@ -11,19 +11,21 @@ import '../models/lesson_chat.dart';
 import '../models/lesson_runtime.dart';
 import '../models/lesson_session.dart';
 import '../models/lesson_start_selection.dart';
+import '../models/study_language_definition.dart';
 import '../models/translation.dart';
 import '../models/user_settings.dart';
 import '../models/voice_scenario_resolution.dart';
 import 'conversation_mode_screen.dart';
 import '../services/auth_service.dart';
 import '../services/lesson_context_selection_resolver.dart';
+import '../services/localized_lesson_text_service.dart';
 import '../services/lesson_roleplay_opening_builder.dart';
 import '../services/lesson_turn_request_builder.dart';
 import '../services/mobile_transcription_request_builder.dart';
 import '../services/tutor_avatar_preloader.dart';
 import '../services/tutor_audio_playback_service.dart';
+import '../services/tutor_speech_request_builder.dart';
 import '../services/transcript_script_normalizer.dart';
-import '../services/transcription_context_builder.dart';
 import '../services/voice_scenario_intent_resolver.dart';
 import '../widgets/tutor_avatar.dart';
 import '../services/learner_audio_recording_service.dart';
@@ -101,9 +103,6 @@ class LessonScreen extends StatefulWidget {
 class _LessonScreenState extends State<LessonScreen>
     with WidgetsBindingObserver {
   static const _hintFallbackUserMessage = 'I need a hint for what to say next.';
-  static const _neutralOpeningFallback = 'Your lesson is ready.';
-  static const _chooseSituationHint =
-      'Choose one of the situations above, or type your own.';
 
   late final AuthService _authService;
   late final TutorAudioPlaybackService _audioPlaybackService;
@@ -158,6 +157,7 @@ class _LessonScreenState extends State<LessonScreen>
   static const _transcriptionRequestBuilder =
       MobileTranscriptionRequestBuilder();
   static const _roleplayOpeningBuilder = LessonRoleplayOpeningBuilder();
+  static const _speechRequestBuilder = TutorSpeechRequestBuilder();
   final _avatarPreloader = TutorAvatarPreloader();
   Future<bool>? _conversationAvatarPreload;
 
@@ -291,6 +291,7 @@ class _LessonScreenState extends State<LessonScreen>
       _debugRuntimeDiagnostics(scenario, settings);
       final openingMessage = _buildInitialTutorMessage(
         scenario: scenario,
+        studyLanguage: StudyLanguageDefinitions.resolve(settings.studyLanguage),
       );
       if (!mounted) return;
       setState(() {
@@ -383,59 +384,23 @@ class _LessonScreenState extends State<LessonScreen>
 
   _LessonChatMessage _buildInitialTutorMessage({
     required LessonRuntimeScenario scenario,
+    required StudyLanguageDefinition studyLanguage,
   }) {
-    final openingParts = <String>[];
-    final openingLine = scenario.conversationFlow.opening.trim().isNotEmpty
-        ? scenario.conversationFlow.opening.trim()
-        : scenario.lessonSetup.setupMessage.trim();
-    final goal = scenario.learningGoal.goal.trim();
-
-    if (openingLine.isNotEmpty) {
-      openingParts.add(openingLine);
-    }
-    if (goal.isNotEmpty) {
-      openingParts.add('Goal: $goal');
-    }
-
-    final scenarioChoices = scenario.controlledVariation.contextVariants
-        .take(TranscriptionContextBuilder.initialCandidateLimit)
-        .map((variant) => variant.title.trim())
-        .where((value) => value.isNotEmpty)
-        .toList(growable: false);
-
-    if (scenarioChoices.isNotEmpty) {
-      openingParts.add(
-        [
-          'Choose a situation:',
-          ...scenarioChoices.indexed.map(
-            (entry) => '${entry.$1 + 1}. ${entry.$2}',
-          ),
-        ].join('\n'),
-      );
-    }
-
-    final subtopicTitle = scenario.metadata.subtopic.trim();
-    if (subtopicTitle.isNotEmpty) {
-      openingParts.add(
-        'Or suggest your own situation about ${subtopicTitle.toLowerCase()}.',
-      );
-    }
-
-    final openingText = openingParts.isEmpty
-        ? _neutralOpeningFallback
-        : openingParts.join('\n\n');
-
-    return _LessonChatMessage.tutor(openingText);
+    return _LessonChatMessage.tutor(
+      LocalizedLessonTextService.buildSetupMessage(
+        scenario: scenario,
+        studyLanguage: studyLanguage,
+      ),
+    );
   }
 
   Future<String> _studyLanguage() async {
     try {
       final settings = await _authService.fetchUserSettings();
-      return LanguageOptions.backendStudyLanguageNameFor(
-        settings.studyLanguage,
-      );
+      return StudyLanguageDefinitions.resolve(settings.studyLanguage)
+          .englishName;
     } catch (_) {
-      return LanguageOptions.backendStudyLanguageNameFor(null);
+      return StudyLanguageDefinitions.resolve(null).englishName;
     }
   }
 
@@ -538,17 +503,25 @@ class _LessonScreenState extends State<LessonScreen>
     }
 
     final hadSelectedContextBeforeResolution = _hasSelectedContext;
+    final studyLanguage =
+        StudyLanguageDefinitions.resolve(settings.studyLanguage);
     var contextInput = text;
     VoiceScenarioDeterministicResult? voiceIntent;
     if (source == 'voice_transcript' && !hadSelectedContextBeforeResolution) {
       voiceIntent = VoiceScenarioIntentResolver.resolve(
         transcript: text,
         variants: scenario.controlledVariation.contextVariants,
+        localizedTitlesById: {
+          for (final variant in scenario.controlledVariation.contextVariants)
+            variant.id: LocalizedLessonTextService.localizedScenarioTitle(
+              variant,
+              studyLanguage,
+            ),
+        },
       );
       if (voiceIntent.decision ==
           VoiceScenarioDeterministicDecision.unsafeTranscript) {
-        const message =
-            'I could not recognize that clearly in English. Please try again.';
+        const message = 'I could not recognize that clearly. Please try again.';
         _debugVoiceScenarioResolution(
           stage: 'deterministic',
           decision: 'unsafe',
@@ -581,8 +554,7 @@ class _LessonScreenState extends State<LessonScreen>
         final semantic = await _authService.resolveVoiceScenario(
           sessionId: session.lessonSessionId,
           request: VoiceScenarioResolutionRequest(
-            studyLanguage: LanguageOptions.backendStudyLanguageNameFor(
-                settings.studyLanguage),
+            studyLanguage: studyLanguage.englishName,
             learnerLevel: selection.level,
             topicId: selection.topicId,
             subtopicId: selection.subtopicId,
@@ -593,9 +565,11 @@ class _LessonScreenState extends State<LessonScreen>
                 .map((variant) => VoiceScenarioCandidateRequest(
                       id: variant.id,
                       title: variant.title,
-                      description: variant.localizedTitle.trim().isNotEmpty
-                          ? variant.localizedTitle
-                          : variant.contextConfirmationLine,
+                      description:
+                          LocalizedLessonTextService.localizedScenarioTitle(
+                        variant,
+                        studyLanguage,
+                      ),
                     ))
                 .toList(growable: false),
           ),
@@ -681,7 +655,8 @@ class _LessonScreenState extends State<LessonScreen>
               .take(2)
               .toList(growable: false);
           final choiceText = choices.indexed
-              .map((entry) => '${entry.$1 + 1}. ${entry.$2.title.trim()}')
+              .map((entry) => '${entry.$1 + 1}. '
+                  '${LocalizedLessonTextService.localizedScenarioTitle(entry.$2, studyLanguage)}')
               .join('\n');
           final backendClarification = response.clarificationText?.trim();
           final message = backendClarification?.isNotEmpty == true
@@ -720,6 +695,7 @@ class _LessonScreenState extends State<LessonScreen>
       currentSelectedContextId: _selectedContextId,
       currentSelectedContextTitle: _selectedContextTitle,
       learnerInput: contextInput,
+      studyLanguage: studyLanguage,
     );
     _selectedContextId = resolved.selectedContextId;
     _selectedContextTitle = resolved.selectedContextTitle;
@@ -745,6 +721,7 @@ class _LessonScreenState extends State<LessonScreen>
     if (useLocalCmsContextStart) {
       return _startKnownContextRoleplay(
         session: session,
+        scenario: scenario,
         settings: settings,
         context: resolved,
         learnerText: contextInput,
@@ -864,6 +841,7 @@ class _LessonScreenState extends State<LessonScreen>
 
   Future<String?> _startKnownContextRoleplay({
     required LessonSessionResponse session,
+    required LessonRuntimeScenario scenario,
     required UserSettings settings,
     required LessonContextSelection context,
     required String learnerText,
@@ -872,7 +850,9 @@ class _LessonScreenState extends State<LessonScreen>
     final variant = context.selectedContextVariant;
     if (variant == null) return null;
     final opening = _roleplayOpeningBuilder.buildKnownContextOpening(
+      scenario: scenario,
       variant: variant,
+      studyLanguage: StudyLanguageDefinitions.resolve(settings.studyLanguage),
       tutorDisplayName: _runtimeTutorDisplayName(settings),
     );
     if (opening.isEmpty) {
@@ -887,8 +867,8 @@ class _LessonScreenState extends State<LessonScreen>
     // Desktop records the resolved CMS title, not the learner's punctuation
     // or numeric shortcut, for known context selections.
     final userMessage = _LessonChatMessage.user(
-      context.selectedContextTitle?.trim().isNotEmpty == true
-          ? context.selectedContextTitle!.trim()
+      context.selectedContextLocalizedTitle?.trim().isNotEmpty == true
+          ? context.selectedContextLocalizedTitle!.trim()
           : learnerText,
       isContextSelection: true,
     );
@@ -939,17 +919,26 @@ class _LessonScreenState extends State<LessonScreen>
     if (!_hasSelectedContext) {
       setState(() {
         _hintError = null;
-        _hintText = _chooseSituationHint;
+        _hintText = LocalizedLessonTextService.buildSetupContextHint(
+          scenario: scenario,
+          studyLanguage:
+              StudyLanguageDefinitions.resolve(settings.studyLanguage),
+        );
       });
       return;
     }
 
     if (_isFirstActiveRoleplayStep(scenario) &&
-        _messages.where((message) => message.isUser).isEmpty &&
+        _messages
+            .where((message) => message.isUser && !message.isContextSelection)
+            .isEmpty &&
         scenario.hintRules.exampleHint.trim().isNotEmpty) {
       setState(() {
         _hintError = null;
-        _hintText = scenario.hintRules.exampleHint.trim();
+        _hintText = LocalizedLessonTextService.buildExampleHint(
+          scenario.hintRules.exampleHint,
+          StudyLanguageDefinitions.resolve(settings.studyLanguage),
+        );
       });
       return;
     }
@@ -960,32 +949,24 @@ class _LessonScreenState extends State<LessonScreen>
     );
     final learnerTurnCount =
         _messages.where((message) => message.isUser).length;
-    final request = LessonChatRequest.fromScenario(
+    final request = _turnRequestBuilder.build(
       scenario: scenario,
-      levelProfile: scenario.levelProfileFor(selection.level),
+      settings: settings,
       selectedLevel: selection.level,
-      topicTitle: selection.topicTitle,
-      subtopicTitle: selection.subtopicTitle,
       userMessage: _messageController.text.trim().isEmpty
           ? _hintFallbackUserMessage
           : _messageController.text.trim(),
       lastBotMessage: lastBotMessage.text,
-      nativeLanguageName:
-          LanguageOptions.backendNativeLanguageNameFor(settings.nativeLanguage),
-      targetLanguageId:
-          LanguageOptions.studyLanguageIdFor(settings.studyLanguage),
-      targetLanguageName:
-          LanguageOptions.backendStudyLanguageNameFor(settings.studyLanguage),
-      targetLanguageNativeName:
-          LanguageOptions.backendStudyLanguageNameFor(settings.studyLanguage),
-      targetLanguageCode:
-          LanguageOptions.studyLanguageIdFor(settings.studyLanguage),
-      userDisplayName: '',
       learnerTurnCount: learnerTurnCount,
       recentMessages: _recentConversationMessages(_messages),
       backendSessionId: session.lessonSessionId,
-      selectedContextTitle: _currentSelectedContextTitle,
-      selectedContextVariant: _selectedContextVariant(scenario),
+      context: LessonContextSelectionResolver.resolve(
+        scenario: scenario,
+        currentSelectedContextId: _selectedContextId,
+        currentSelectedContextTitle: _currentSelectedContextTitle,
+        learnerInput: '',
+        studyLanguage: StudyLanguageDefinitions.resolve(settings.studyLanguage),
+      ),
     );
 
     setState(() {
@@ -1577,12 +1558,12 @@ class _LessonScreenState extends State<LessonScreen>
       final normalizedTranscript = TranscriptScriptNormalizer.normalize(
         result.text!,
         isEnglish:
-            LanguageOptions.studyLanguageIdFor(settings.studyLanguage) == 'en',
+            StudyLanguageDefinitions.resolve(settings.studyLanguage).id == 'en',
       );
       if (kDebugMode) {
         debugPrint(
           'transcript_script surface=lesson_chat '
-          'target=${LanguageOptions.studyLanguageIdFor(settings.studyLanguage)} '
+          'target=${StudyLanguageDefinitions.resolve(settings.studyLanguage).id} '
           'latin=${normalizedTranscript.latinLetterCount} '
           'cyrillic=${normalizedTranscript.cyrillicLetterCount} '
           'normalized=${normalizedTranscript.changed} '
@@ -1607,7 +1588,7 @@ class _LessonScreenState extends State<LessonScreen>
           setState(() {
             _recordingState = LearnerRecordingUiState.idle;
             _recordingMessage =
-                'I could not recognize that clearly in English. Please try again.';
+                'I could not recognize that clearly. Please try again.';
           });
         }
         return;
@@ -1750,19 +1731,10 @@ class _LessonScreenState extends State<LessonScreen>
         message.isTtsLoading = true;
         message.ttsError = null;
       });
-      final studyLanguageId =
-          LanguageOptions.studyLanguageIdFor(settings.studyLanguage);
-      final studyLanguageName =
-          LanguageOptions.backendStudyLanguageNameFor(settings.studyLanguage);
       final result = await _authService.requestTutorSpeech(
-        request: AudioSpeechRequest(
+        request: _speechRequestBuilder.build(
           text: message.text,
-          speechVoice: settings.speechVoice,
-          speechSpeed: settings.speechSpeed,
-          targetLanguageId: studyLanguageId,
-          targetLanguageName: studyLanguageName,
-          targetLanguageNativeName: studyLanguageName,
-          targetLanguageCode: studyLanguageId,
+          settings: settings,
           backendSessionId: session.lessonSessionId,
           purpose: purpose,
         ),
@@ -1887,19 +1859,17 @@ class _LessonScreenState extends State<LessonScreen>
       message.isTranslationLoading = true;
       message.translationError = null;
     });
-    final studyLanguageId =
-        LanguageOptions.studyLanguageIdFor(settings.studyLanguage);
-    final studyLanguageName =
-        LanguageOptions.backendStudyLanguageNameFor(settings.studyLanguage);
+    final studyLanguage =
+        StudyLanguageDefinitions.resolve(settings.studyLanguage);
     final result = await _authService.requestTranslation(
       request: TranslationRequest(
         text: message.text,
         targetLanguage: LanguageOptions.backendNativeLanguageNameFor(
             settings.nativeLanguage),
-        sourceLanguageId: studyLanguageId,
-        sourceLanguageName: studyLanguageName,
-        sourceLanguageNativeName: studyLanguageName,
-        sourceLanguageCode: studyLanguageId,
+        sourceLanguageId: studyLanguage.id,
+        sourceLanguageName: studyLanguage.englishName,
+        sourceLanguageNativeName: studyLanguage.nativeName,
+        sourceLanguageCode: studyLanguage.transcriptionLanguageCode,
         backendSessionId: session.lessonSessionId,
       ),
     );
@@ -1973,30 +1943,22 @@ class _LessonScreenState extends State<LessonScreen>
       orElse: () => _LessonChatMessage.tutor(''),
     );
     final learnerTurnCount = _messages.where((value) => value.isUser).length;
-    final request = LessonChatRequest.fromScenario(
+    final request = _turnRequestBuilder.build(
       scenario: scenario,
-      levelProfile: scenario.levelProfileFor(selection.level),
+      settings: settings,
       selectedLevel: selection.level,
-      topicTitle: selection.topicTitle,
-      subtopicTitle: selection.subtopicTitle,
       userMessage: message.text,
       lastBotMessage: lastBotMessage.text,
-      nativeLanguageName:
-          LanguageOptions.backendNativeLanguageNameFor(settings.nativeLanguage),
-      targetLanguageId:
-          LanguageOptions.studyLanguageIdFor(settings.studyLanguage),
-      targetLanguageName:
-          LanguageOptions.backendStudyLanguageNameFor(settings.studyLanguage),
-      targetLanguageNativeName:
-          LanguageOptions.backendStudyLanguageNameFor(settings.studyLanguage),
-      targetLanguageCode:
-          LanguageOptions.studyLanguageIdFor(settings.studyLanguage),
-      userDisplayName: '',
       learnerTurnCount: learnerTurnCount,
       recentMessages: _recentConversationMessages(_messages),
       backendSessionId: session.lessonSessionId,
-      selectedContextTitle: _currentSelectedContextTitle,
-      selectedContextVariant: _selectedContextVariant(scenario),
+      context: LessonContextSelectionResolver.resolve(
+        scenario: scenario,
+        currentSelectedContextId: _selectedContextId,
+        currentSelectedContextTitle: _currentSelectedContextTitle,
+        learnerInput: '',
+        studyLanguage: StudyLanguageDefinitions.resolve(settings.studyLanguage),
+      ),
       sourceMessageId: message.id,
       sourcePersistedMessageId: persistedId,
       sourceMessageKind: 'user',

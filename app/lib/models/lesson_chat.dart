@@ -306,6 +306,7 @@ class LessonChatRequest {
     String? sourcePersistedMessageId,
     String sourceMessageKind = '',
     String selectedContextTitle = '',
+    String selectedContextLocalizedTitle = '',
     LessonRuntimeContextVariant? selectedContextVariant,
     bool isContextSelectionTurn = false,
     String tutorAvatarId = '',
@@ -354,8 +355,9 @@ class LessonChatRequest {
       promptTemplates: scenario.promptTemplates,
       selectedContextVariantId: selectedContextVariant?.id ?? '',
       selectedContextTitle: selectedContextTitle,
-      selectedContextLocalizedTitle:
-          selectedContextVariant?.localizedTitle ?? '',
+      selectedContextLocalizedTitle: selectedContextLocalizedTitle.isNotEmpty
+          ? selectedContextLocalizedTitle
+          : selectedContextVariant?.localizedTitle ?? '',
       selectedContextOpeningLine: selectedContextVariant?.openingLine ?? '',
       selectedContextConfirmationLine:
           selectedContextVariant?.contextConfirmationLine ?? '',

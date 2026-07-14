@@ -15,6 +15,7 @@ import '../services/learner_audio_recording_service.dart';
 import '../services/learner_microphone_permission_service.dart';
 import '../services/mobile_transcription_request_builder.dart';
 import '../services/tutor_audio_playback_service.dart';
+import '../services/tutor_speech_request_builder.dart';
 import '../services/transcript_script_normalizer.dart';
 import '../widgets/tutor_avatar.dart';
 
@@ -69,6 +70,7 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
     with WidgetsBindingObserver {
   static const _transcriptionRequestBuilder =
       MobileTranscriptionRequestBuilder();
+  static const _speechRequestBuilder = TutorSpeechRequestBuilder();
   final List<String> _transcript = [];
   Timer? _recordingTimer;
   DateTime? _recordingStartedAt;
@@ -281,8 +283,7 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
     }
     if (normalized.unsafeMixedScript) {
       _finishConversationOperation(generation,
-          message:
-              'I could not recognize that clearly in English. Please try again.');
+          message: 'I could not recognize that clearly. Please try again.');
       return;
     }
     final normalizedText = normalized.normalizedText;
@@ -318,23 +319,13 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
 
   Future<void> _speak(String text, int generation) async {
     if (!_isCurrent(generation)) return;
-    final studyLanguageId =
-        LanguageOptions.studyLanguageIdFor(widget.settings.studyLanguage);
-    final studyLanguageName = LanguageOptions.backendStudyLanguageNameFor(
-      widget.settings.studyLanguage,
-    );
     AudioSpeechResult result;
     try {
       result = await widget.authService
           .requestTutorSpeech(
-            request: AudioSpeechRequest(
+            request: _speechRequestBuilder.build(
               text: text,
-              speechVoice: widget.settings.speechVoice,
-              speechSpeed: widget.settings.speechSpeed,
-              targetLanguageId: studyLanguageId,
-              targetLanguageName: studyLanguageName,
-              targetLanguageNativeName: studyLanguageName,
-              targetLanguageCode: studyLanguageId,
+              settings: widget.settings,
               backendSessionId: widget.session.lessonSessionId,
               purpose: AudioSpeechPurpose.conversationModeTts,
             ),
