@@ -3117,105 +3117,45 @@ class _TutorHeader extends StatelessWidget {
       child: Stack(
         children: [
           Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(0, -0.35),
-                  radius: 0.95,
-                  colors: [
-                    colorScheme.surface.withValues(alpha: 0.88),
-                    colorScheme.surface.withValues(alpha: 0.22),
-                    Colors.transparent,
-                  ],
+            child: TutorAvatar(
+              key: const Key('lesson-avatar'),
+              surface: TutorAvatarSurface.lessonChat,
+              tutorId: tutorId,
+              state: switch (status) {
+                LessonTutorStatus.ready ||
+                LessonTutorStatus.error =>
+                  TutorAvatarState.idle,
+                LessonTutorStatus.listening => TutorAvatarState.listening,
+                LessonTutorStatus.thinking => TutorAvatarState.thinking,
+                LessonTutorStatus.speaking => TutorAvatarState.speaking,
+              },
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+              placeholder: Center(
+                child: Text(
+                  tutorInitial,
+                  key: const Key('lesson-avatar-placeholder'),
+                  style: textTheme.displayLarge?.copyWith(
+                    color: colorScheme.onSurface.withValues(alpha: 0.88),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
           ),
-          Positioned.fill(
-            child: Container(
-              key: const Key('lesson-avatar'),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: DecoratedBox(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    colorScheme.primaryContainer.withValues(alpha: 0.24),
-                    colorScheme.surface.withValues(alpha: 0.08),
-                  ],
-                ),
+                color: colorScheme.surface.withValues(alpha: 0.78),
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    right: -36,
-                    top: 28,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary.withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const SizedBox(width: 140, height: 140),
-                    ),
-                  ),
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface.withValues(alpha: 0.78),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: IconButton(
-                        key: const Key('lesson-action-finish'),
-                        tooltip: 'Finish lesson',
-                        onPressed: canFinish ? onFinish : null,
-                        icon: const Icon(Icons.flag_outlined),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 28,
-                    bottom: -32,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface.withValues(alpha: 0.16),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const SizedBox(width: 128, height: 128),
-                    ),
-                  ),
-                  Center(
-                    child: SizedBox(
-                      width: 160,
-                      height: 190,
-                      child: TutorAvatar(
-                        surface: TutorAvatarSurface.lessonChat,
-                        tutorId: tutorId,
-                        state: switch (status) {
-                          LessonTutorStatus.ready ||
-                          LessonTutorStatus.error =>
-                            TutorAvatarState.idle,
-                          LessonTutorStatus.listening =>
-                            TutorAvatarState.listening,
-                          LessonTutorStatus.thinking =>
-                            TutorAvatarState.thinking,
-                          LessonTutorStatus.speaking =>
-                            TutorAvatarState.speaking,
-                        },
-                        fit: BoxFit.contain,
-                        placeholder: Text(
-                          tutorInitial,
-                          key: const Key('lesson-avatar-placeholder'),
-                          style: textTheme.displayLarge?.copyWith(
-                            color:
-                                colorScheme.onSurface.withValues(alpha: 0.88),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              child: IconButton(
+                key: const Key('lesson-action-finish'),
+                tooltip: 'Finish lesson',
+                onPressed: canFinish ? onFinish : null,
+                icon: const Icon(Icons.flag_outlined),
               ),
             ),
           ),

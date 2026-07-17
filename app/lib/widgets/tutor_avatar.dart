@@ -53,6 +53,7 @@ class TutorAvatar extends StatefulWidget {
     required this.state,
     required this.placeholder,
     this.fit = BoxFit.cover,
+    this.alignment = Alignment.center,
   });
 
   final TutorAvatarSurface surface;
@@ -60,6 +61,7 @@ class TutorAvatar extends StatefulWidget {
   final TutorAvatarState state;
   final Widget placeholder;
   final BoxFit fit;
+  final AlignmentGeometry alignment;
 
   @override
   State<TutorAvatar> createState() => _TutorAvatarState();
@@ -104,6 +106,7 @@ class _TutorAvatarState extends State<TutorAvatar> {
           path,
           key: Key('tutor-avatar-$path'),
           fit: widget.fit,
+          alignment: widget.alignment,
           width: double.infinity,
           height: double.infinity,
           errorBuilder: (_, __, ___) {
