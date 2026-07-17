@@ -144,7 +144,6 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
     final generation = ++_operationGeneration;
     _operationEligible = true;
     setState(() {
-      _state = _ConversationState.listening;
       _error = null;
       _hint = null;
     });
@@ -170,6 +169,7 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
       }
       _recordingFilePath = path;
       _recordingStartedAt = DateTime.now();
+      setState(() => _state = _ConversationState.listening);
       _recordingTimer?.cancel();
       _recordingTimer = Timer(const Duration(seconds: 30), () {
         unawaited(_stopAndTranscribe(generation));

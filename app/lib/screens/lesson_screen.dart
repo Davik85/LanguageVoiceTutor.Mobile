@@ -36,6 +36,7 @@ enum LessonTutorStatus {
   ready,
   thinking,
   listening,
+  transcribing,
   speaking,
   error,
 }
@@ -153,6 +154,7 @@ class _LessonScreenState extends State<LessonScreen>
   final List<_LessonChatMessage> _messages = [];
   final Set<Future<void>> _pendingMessagePersistence = {};
   int? _activePlayingMessageId;
+  int _playbackOperationGeneration = 0;
   static const _turnRequestBuilder = LessonTurnRequestBuilder();
   static const _transcriptionRequestBuilder =
       MobileTranscriptionRequestBuilder();
@@ -1104,17 +1106,26 @@ class _LessonScreenState extends State<LessonScreen>
   }
 
   LessonTutorStatus get _tutorStatus {
-    if (_lessonLoadError != null || _sendError != null) {
-      return LessonTutorStatus.error;
-    }
     if (_activePlayingMessageId != null) {
       return LessonTutorStatus.speaking;
     }
-    if (_isSending || _isStarting || _isLoadingScenario) {
-      return LessonTutorStatus.thinking;
-    }
     if (_recordingState == LearnerRecordingUiState.recording) {
       return LessonTutorStatus.listening;
+    }
+    if (_recordingState == LearnerRecordingUiState.stopping ||
+        _recordingState == LearnerRecordingUiState.transcribing) {
+      return LessonTutorStatus.transcribing;
+    }
+    if (_isSending ||
+        _isStarting ||
+        _isLoadingScenario ||
+        _isHintLoading ||
+        _messages.any(
+            (message) => message.isFeedbackLoading || message.isTtsLoading)) {
+      return LessonTutorStatus.thinking;
+    }
+    if (_lessonLoadError != null || _sendError != null) {
+      return LessonTutorStatus.error;
     }
     return LessonTutorStatus.ready;
   }
@@ -1721,6 +1732,7 @@ class _LessonScreenState extends State<LessonScreen>
       return;
     }
     await _stopTutorPlayback();
+    final playbackGeneration = ++_playbackOperationGeneration;
     var cachedPath = message.cachedTtsPath;
     if (cachedPath != null && !await File(cachedPath).exists()) {
       message.cachedTtsPath = null;
@@ -1780,16 +1792,35 @@ class _LessonScreenState extends State<LessonScreen>
     if (!mounted) return;
     final playbackPath = cachedPath;
     try {
-      await _audioPlaybackService.playFile(playbackPath);
-      if (!mounted) return;
-      setState(() {
-        message.isTtsLoading = false;
-        message.isTtsPlaying = true;
-        message.ttsError = null;
-        _activePlayingMessageId = message.id;
-      });
+      final result = await _audioPlaybackService.playToCompletion(
+        playbackPath,
+        timeout: const Duration(seconds: 90),
+        onStarted: () {
+          if (!mounted || playbackGeneration != _playbackOperationGeneration) {
+            return;
+          }
+          setState(() {
+            message.isTtsLoading = false;
+            message.isTtsPlaying = true;
+            message.ttsError = null;
+            _activePlayingMessageId = message.id;
+          });
+        },
+      );
+      if (!mounted || playbackGeneration != _playbackOperationGeneration) {
+        return;
+      }
+      if (result.status != TutorPlaybackStatus.completed) {
+        _clearTutorPlayback(message.id);
+        setState(() {
+          message.isTtsLoading = false;
+          message.ttsError = result.status == TutorPlaybackStatus.stopped
+              ? null
+              : 'Could not play voice. Please try again.';
+        });
+      }
     } catch (_) {
-      if (mounted) {
+      if (mounted && playbackGeneration == _playbackOperationGeneration) {
         setState(() {
           message.isTtsLoading = false;
           message.isTtsPlaying = false;
@@ -1803,21 +1834,22 @@ class _LessonScreenState extends State<LessonScreen>
     if (!mounted) return;
     final activeId = _activePlayingMessageId;
     if (activeId == null) return;
-    setState(() {
-      _activePlayingMessageId = null;
-      for (final message in _messages) {
-        if (message.id == activeId) message.isTtsPlaying = false;
-      }
-    });
+    _clearTutorPlayback(activeId);
   }
 
   Future<void> _stopTutorPlayback() async {
+    _playbackOperationGeneration++;
     final activeId = _activePlayingMessageId;
-    if (activeId == null) return;
+    if (activeId != null) _clearTutorPlayback(activeId);
     await _audioPlaybackService.stop();
+  }
+
+  void _clearTutorPlayback(int activeId) {
     if (!mounted) return;
     setState(() {
-      _activePlayingMessageId = null;
+      if (_activePlayingMessageId == activeId) {
+        _activePlayingMessageId = null;
+      }
       for (final message in _messages) {
         if (message.id == activeId) message.isTtsPlaying = false;
       }
@@ -3096,6 +3128,7 @@ class _TutorHeader extends StatelessWidget {
       LessonTutorStatus.ready => colorScheme.onSurfaceVariant,
       LessonTutorStatus.thinking => colorScheme.primary,
       LessonTutorStatus.listening => colorScheme.tertiary,
+      LessonTutorStatus.transcribing => colorScheme.tertiary,
       LessonTutorStatus.speaking => colorScheme.secondary,
       LessonTutorStatus.error => colorScheme.error,
     };
@@ -3126,6 +3159,7 @@ class _TutorHeader extends StatelessWidget {
                 LessonTutorStatus.error =>
                   TutorAvatarState.idle,
                 LessonTutorStatus.listening => TutorAvatarState.listening,
+                LessonTutorStatus.transcribing => TutorAvatarState.transcribing,
                 LessonTutorStatus.thinking => TutorAvatarState.thinking,
                 LessonTutorStatus.speaking => TutorAvatarState.speaking,
               },

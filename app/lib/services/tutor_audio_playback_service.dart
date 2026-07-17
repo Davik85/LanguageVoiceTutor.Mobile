@@ -39,6 +39,7 @@ class JustAudioTutorPlaybackService implements TutorAudioPlaybackService {
   Future<void> _operation = Future.value();
   Future<void>? _disposeOperation;
   Completer<TutorPlaybackResult>? _activePlayback;
+  int _playbackGeneration = 0;
 
   @override
   Stream<Object?> get completed => _player.completed;
@@ -59,6 +60,7 @@ class JustAudioTutorPlaybackService implements TutorAudioPlaybackService {
     if (_disposed) {
       return const TutorPlaybackResult(TutorPlaybackStatus.disposed);
     }
+    final generation = ++_playbackGeneration;
     final result = Completer<TutorPlaybackResult>();
     _activePlayback = result;
     StreamSubscription<Object?>? subscription;
@@ -67,7 +69,9 @@ class JustAudioTutorPlaybackService implements TutorAudioPlaybackService {
     }
 
     subscription = _player.completed.listen((_) {
-      finish(const TutorPlaybackResult(TutorPlaybackStatus.completed));
+      if (_isCurrentPlayback(generation, result)) {
+        finish(const TutorPlaybackResult(TutorPlaybackStatus.completed));
+      }
     });
     Timer? timer;
     try {
@@ -75,12 +79,21 @@ class JustAudioTutorPlaybackService implements TutorAudioPlaybackService {
       if (_disposed) {
         finish(const TutorPlaybackResult(TutorPlaybackStatus.disposed));
       } else {
-        await _player.play();
-        onStarted?.call();
+        final playOperation = _player.play();
+        if (_isCurrentPlayback(generation, result)) {
+          onStarted?.call();
+        }
         timer = Timer(timeout, () {
-          finish(const TutorPlaybackResult(TutorPlaybackStatus.timedOut));
-          unawaited(_player.stop());
+          if (_isCurrentPlayback(generation, result)) {
+            finish(const TutorPlaybackResult(TutorPlaybackStatus.timedOut));
+            unawaited(_player.stop());
+          }
         });
+        unawaited(playOperation.catchError((Object error) {
+          if (_isCurrentPlayback(generation, result)) {
+            finish(TutorPlaybackResult(TutorPlaybackStatus.failed, error));
+          }
+        }));
         final value = await result.future;
         return value;
       }
@@ -98,6 +111,7 @@ class JustAudioTutorPlaybackService implements TutorAudioPlaybackService {
   @override
   Future<void> stop() => _enqueue(() async {
         if (!_disposed) {
+          _playbackGeneration++;
           final playback = _activePlayback;
           if (playback != null && !playback.isCompleted) {
             playback.complete(
@@ -111,6 +125,7 @@ class JustAudioTutorPlaybackService implements TutorAudioPlaybackService {
   Future<void> dispose() {
     if (_disposeOperation != null) return _disposeOperation!;
     _disposed = true;
+    _playbackGeneration++;
     final playback = _activePlayback;
     if (playback != null && !playback.isCompleted) {
       playback
@@ -125,6 +140,14 @@ class JustAudioTutorPlaybackService implements TutorAudioPlaybackService {
     _operation = _operation.catchError((_) {}).then((_) => action());
     return _operation;
   }
+
+  bool _isCurrentPlayback(
+    int generation,
+    Completer<TutorPlaybackResult> playback,
+  ) =>
+      !_disposed &&
+      generation == _playbackGeneration &&
+      identical(_activePlayback, playback);
 }
 
 class JustAudioPlayerAdapter implements TutorAudioPlayerAdapter {
