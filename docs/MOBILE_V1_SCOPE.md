@@ -29,6 +29,21 @@ Verified Android build stack:
 - Kotlin Gradle Plugin 2.2.20
 - Java/Kotlin target 17
 
+
+## Authentication and session resilience
+
+Mobile authentication is hardened so temporary backend or network problems do not incorrectly log users out. Refresh outcomes are classified as `success`, `invalid session`, or `temporary failure`; only a proven invalid session clears stored tokens. Temporary network, timeout, malformed-response, rate-limit, and backend failures preserve stored tokens, and temporary Splash session-check failures remain retryable instead of automatically routing to Login. Concurrent HTTP 401 responses share one single-flight refresh operation across JSON, binary TTS, multipart transcription, and voice-scenario paths. A stale HTTP 401 first retries a newer stored access token before starting another refresh. Access tokens remain 60 minutes, refresh tokens remain 30 days, backend refresh tokens rotate, and reuse of a rotated refresh token revokes its token family. No backend change or deployment was required for this Mobile session-resilience fix. Focused verification recorded 44 AuthService tests passed, 2 Splash tests passed, and `flutter analyze` reported no issues.
+
+## Feedback & reports
+
+Settings contains a collapsed expandable **Feedback & reports** card with subtitle **Send a suggestion or report a problem**. The supported categories are Suggestion, App problem, and AI response. Description is required, blank descriptions are rejected locally, AI response reports show an optional field for pasting the AI response, Send is disabled while submission is active, temporary failures preserve entered text for retry, successful submission clears the fields, and success shows **Thank you. Your message has been received.**
+
+Mobile submits `POST /api/me/feedback-reports` through the existing authenticated JSON client and shared single-flight token refresh behavior. The payload sends `category`, `message`, optional `reportedAiText`, `clientPlatform: android`, and `clientVersion: 0.1.0+1`. Mobile does not send `UserId`, access token as request data, refresh token, email, device identifier, attachments, screenshots, lesson transcript, or unrelated account data. Report text and AI response text are not written to Mobile logs. Focused verification after Feedback & reports support recorded 45 AuthService tests passed, 27 Settings tests passed, and `flutter analyze` reported no issues.
+
+Production integration is verified: backend migration `20260717120148_AddUserFeedbackReports` was applied and backend release `0.1.35-backend.117` was deployed. The initial submission returned HTTP 503 because the new table was owned by `postgres` and `lvt_app` lacked permission; production table ownership was corrected to `lvt_app`. After correction, suggestion, app_issue, and ai_response reports were successfully submitted from a physical Android device. Three production records were verified with status `new`, `ClientPlatform` `android`, and `ClientVersion` `0.1.0+1`.
+
+Boundaries remain: no CMS report-review screen exists yet, no email workflow exists, no attachments or screenshots are supported, no report button was added to individual chat messages, no automatic moderation or OpenAI forwarding exists, no new Mobile database was created, backend remains the owner of persistence and authenticated `UserId`, and a future CMS list with `new`, `reviewed`, and `resolved` states remains separate work. Flutter interface localization remains pending; billing, analytics, crash reporting, history/progress, signing, Play Console, and store release work remain separate.
+
 ## Repository strategy
 
 Language Voice Tutor Mobile is maintained as a separate repository from the desktop app and backend services.
@@ -102,7 +117,7 @@ Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow
 
 ## Next implementation priority
 
-The next safe implementation work should continue from the green Settings baseline, Home polish, completed lesson/conversation voice flows, and remaining validation boundaries. Keep slices small and mobile-only unless an API gap is explicitly approved. Recommended small next steps are Settings UX polish and lesson runtime planning by inspecting backend lesson/session APIs before implementation. Billing, automatic tutor playback, broader repeated testing on different physical devices and network conditions, analytics, crash reporting, Google Play Billing, Apple billing, and store release setup remain later phases and should not be started without a separate plan. Missing Lesson Chat avatar assets remain a separate issue.
+The next safe implementation work should continue from the green Settings baseline, Home polish, completed lesson/conversation voice flows, completed Feedback & reports submission, and remaining validation boundaries. Keep slices small and mobile-only unless an API gap is explicitly approved. Recommended small next steps are Settings UX polish and lesson runtime planning by inspecting backend lesson/session APIs before implementation. Billing, automatic tutor playback, broader repeated testing on different physical devices and network conditions, analytics, crash reporting, Google Play Billing, Apple billing, and store release setup remain later phases and should not be started without a separate plan. Missing Lesson Chat avatar assets remain a separate issue.
 
 This priority preserves the product boundary:
 

@@ -35,7 +35,7 @@ flutter test
 flutter run -d emulator-5554
 ```
 
-The current green baseline includes the production-verified Android text lesson loop, completed Hint and lesson abandonment, Translation, learner Feedback, tutor-message TTS, learner speech-to-text, and Mobile voice/Conversation mode flows. Settings has stable **Account**, **Learning**, **Audio**, and **Connection status** areas. **Settings -> Learning** reads and saves backend-owned account `CurrentLevel` through `/api/me/settings`, using `lessonLevels` for Mobile labels and mapping. Home **Start lesson** loads that setting and opens Choose Topic directly, followed by Choose Situation and Lesson; Choose Level is removed from the normal flow. CMS-published level profiles remain authoritative for lesson behavior and timing. No backend deployment was required for this Mobile navigation cleanup because backend release `0.1.35-backend.116` already provided the required `CurrentLevel` settings contract. The owner physically verified the saved-level lesson-start flow on an Android phone. History/progress, mobile billing, analytics, crash reporting, and store release remain future work.
+The current green baseline includes the production-verified Android text lesson loop, completed Hint and lesson abandonment, Translation, learner Feedback, tutor-message TTS, learner speech-to-text, Mobile voice/Conversation mode flows, authentication/session resilience, Lesson Chat avatar synchronization, and authenticated Feedback & reports submission. Settings has stable **Account**, **Learning**, **Audio**, and **Connection status** areas. **Settings -> Learning** reads and saves backend-owned account `CurrentLevel` through `/api/me/settings`, using `lessonLevels` for Mobile labels and mapping. Home **Start lesson** loads that setting and opens Choose Topic directly, followed by Choose Situation and Lesson; Choose Level is removed from the normal flow. CMS-published level profiles remain authoritative for lesson behavior and timing. No backend deployment was required for this Mobile navigation cleanup because backend release `0.1.35-backend.116` already provided the required `CurrentLevel` settings contract. The owner physically verified the saved-level lesson-start flow on an Android phone. History/progress, mobile billing, analytics, crash reporting, and store release remain future work.
 
 ## Planned phases
 
@@ -55,13 +55,13 @@ The current green baseline includes the production-verified Android text lesson 
 
 ### Phase 2: Auth, account, subscription-status, and settings baseline — in progress
 
-- Implement login/session flow against the existing backend account system.
-- Implement secure token/session storage.
+- Complete: login/session flow against the existing backend account system.
+- Complete: secure token/session storage with resilient refresh handling that preserves tokens on temporary failures and clears them only for proven invalid sessions.
 - Fetch `/api/me`, account settings, and backend-owned subscription/entitlement status.
-- Add logout and expired-session handling.
+- Complete: logout and invalid-session handling; temporary Splash session-check failures remain retryable rather than automatically routing to Login.
 - Display Premium/subscription status only from backend responses; do not compute entitlement locally.
 - Continue from the green Settings baseline with small, mobile-only changes unless an API gap is explicitly approved.
-- Completed within this phase: Settings selected tutor persistence, product-friendly catalog labels, friendly language labels, Home title/logo polish, and soft colored lesson-selection cards.
+- Completed within this phase: Settings selected tutor persistence, product-friendly catalog labels, friendly language labels, Home title/logo polish, soft colored lesson-selection cards, and the Settings **Feedback & reports** card using `POST /api/me/feedback-reports`.
 
 ### Desktop parity guidance
 
@@ -78,7 +78,8 @@ The reviewed Windows desktop client walkthrough presentation remains a product s
 - Complete: real per-message learner Feedback through `POST /api/lesson-chat/feedback`, with the existing full LessonChatRequest contract, backend-owned correction behavior, persisted learner-message GUID requirement, expandable non-transcript per-message UI, per-message caching, study-language output, and no changes to counters, Finish, Summary, Hint, Translation, abandonment, progression, or entitlement.
 - Complete: manual tutor-message TTS playback through `POST /api/audio/speech`, raw WAV binary handling, temporary per-screen caching, one active lesson `AudioPlayer`, learner-safe retryable errors, and no changes to counters, Finish, Summary, Hint, Translation, Feedback, abandonment, progression, or entitlement.
 - Complete: learner microphone recording and speech-to-text through `POST /api/audio/transcribe`, authenticated multipart WAV upload, Android `RECORD_AUDIO` permission, local WAV/duration/silence validation, editable transcript insertion, no automatic send, and no changes to lesson counters or message creation. Lesson Chat and Conversation mode share the same Mobile transcription request builder; transcription always uses the selected study language definition (ID, English name, native name, transcription language code), not native or explanation language.
-- Keep pending: automatic tutor playback, GIF avatar state binding, realtime/continuous voice conversation, broader repeated testing on different physical devices and network conditions, history/progress screen, mobile billing, analytics, crash reporting, and store release work. Missing Lesson Chat avatar assets remain a separate issue. No backend, Desktop, CMS, website, billing, voice-provider, transcription-provider, semantic resolver, TTS, or database migration changes were made for the saved-level Mobile cleanup.
+- Complete: Lesson Chat avatar header fills the full 240-pixel header, uses top-centered cover layout, removes the washed-out radial overlay, and keeps Back, Finish, level/topic, tutor status, and Conversation mode controls above the avatar. Tutor playback state synchronization is substantially better on a physical Android device; broader repeated testing remains useful and all timing edge cases should not be declared fully stabilized.
+- Keep pending: realtime/continuous voice conversation, broader repeated testing on different physical devices and network conditions, history/progress screen, mobile billing, analytics, crash reporting, and store release work. No backend, Desktop, CMS, website, billing, voice-provider, transcription-provider, semantic resolver, TTS, or database migration changes were made for the saved-level Mobile cleanup.
 - Lesson runtime foundation must not add OpenAI calls from mobile and must not include client-owned tutor methodology or local summary generation.
 
 

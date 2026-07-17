@@ -16,6 +16,14 @@ The committed Mobile client includes a separate Conversation mode screen while n
 
 The lesson experience separately handles published CMS scenarios and free custom scenarios. Known published scenarios can use a local CMS-derived opening after selection; free scenarios continue through the custom-context lesson reply path without invented CMS variants. Hint behavior remains backend-owned and uses the selected lesson context after a scenario has started. Audio playback handles completion and recovery so voice controls return to a usable state after playback ends or fails. Tutor avatar state is handled with preload fallback rather than assuming every possible lesson-chat avatar asset is present. Keyboard-open layout keeps the composer and **Send** button visible without `RenderFlex` overflow.
 
+## Tutor avatar display and state synchronization
+
+Lesson Chat avatar header now fills the complete 240-pixel header instead of the obsolete centered 160 x 190 constraint. It uses `BoxFit.cover` with `Alignment.topCenter`; Back, Finish, level/topic, tutor status, and Conversation mode controls remain above the avatar. The light radial overlay that caused a washed-out glare was removed, and the Conversation mode visual layout was not changed by this Lesson Chat header work.
+
+Tutor state synchronization now follows the active audio operation: `idle` means no active tutor or learner audio operation; `listening` starts after recording successfully starts; `transcribing` starts when recording stops and transcription processing begins; `thinking` represents tutor reply, Hint, Feedback, or speech-generation processing where applicable; `speaking` starts when tutor audio playback actually starts and ends when playback completes, stops, fails, is cancelled, or the screen is left. Manual and automatic tutor playback both use the synchronized playback path. The previous root cause was that the audio-player play `Future` was awaited before the playback-start callback, so `speaking` could start only after playback was already complete. The playback-start callback now runs when playback is launched, while the completion stream remains the source of truth for playback completion. Stale callbacks are protected by operation-generation checks.
+
+Physical Android validation confirmed that state transitions are substantially better synchronized on a device. Do not claim that every timing edge case is fully stabilized; broader repeated testing remains useful.
+
 ## Voice scenario selection
 
 Voice scenario selection is a two-stage flow used only for the initial voice scenario-selection turn.
@@ -95,6 +103,16 @@ The existing backend semantic voice scenario resolver remains in use for unresol
 - Debug APK build succeeded.
 - APK path: `app/build/app/outputs/flutter-apk/app-debug.apk`.
 
+## Verification recorded for authentication resilience, avatar synchronization, and Feedback & reports
+
+- AuthService focused tests for authentication resilience: 44 passed.
+- Splash focused tests for authentication resilience: 2 passed.
+- `flutter analyze`: no issues.
+- AuthService focused tests after Feedback & reports support: 45 passed.
+- Settings focused tests for Feedback & reports: 27 passed.
+- `flutter analyze`: no issues.
+- Physical Android validation confirmed substantially better tutor state synchronization without declaring all timing edge cases fully stabilized.
+
 ## Verification recorded for Desktop-parity transcription
 
 - `dart format`: completed successfully.
@@ -108,7 +126,7 @@ The existing backend semantic voice scenario resolver remains in use for unresol
 
 ## Remaining validation boundary
 
-The saved-level learner-level/start-flow slice has completed owner physical Android validation, including saved-level lesson start, speech recognition, Lesson Chat, Conversation mode, backend-owned completion and summary generation, and summary display. The six-language study-language slice has also completed owner physical Android verification: all six study languages can be selected and saved in Settings; lessons launch using the selected study language; speech recognition uses the selected study language; and Conversation mode works using the selected study language. Broader repeated testing on different physical devices and network conditions may still be useful. Do not declare voice recognition fully stabilized yet. Missing Lesson Chat avatar assets remain a separate issue. The optional Desktop Realtime transcription language issue is outside this Mobile change.
+The saved-level learner-level/start-flow slice has completed owner physical Android validation, including saved-level lesson start, speech recognition, Lesson Chat, Conversation mode, backend-owned completion and summary generation, and summary display. The six-language study-language slice has also completed owner physical Android verification: all six study languages can be selected and saved in Settings; lessons launch using the selected study language; speech recognition uses the selected study language; and Conversation mode works using the selected study language. Broader repeated testing on different physical devices and network conditions may still be useful. Do not declare voice recognition or all tutor-state timing edge cases fully stabilized yet. Missing Lesson Chat avatar assets remain a separate issue. The optional Desktop Realtime transcription language issue is outside this Mobile change.
 
 Further optional validation outside the completed saved-level/start-flow and six-language study-language slices is to run the committed Mobile client repeatedly on different physical Android devices and network conditions and verify:
 
