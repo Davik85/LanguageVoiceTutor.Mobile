@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
+import 'package:language_voice_tutor_mobile/models/audio_speech.dart';
+import 'package:language_voice_tutor_mobile/models/audio_transcription.dart';
 import 'package:language_voice_tutor_mobile/models/language_options.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_chat.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_runtime.dart';
@@ -18,6 +22,7 @@ class FakeApiClient implements ApiClient {
   final bodies = <Map<String, dynamic>?>[];
   final responses = <String, List<ApiResponse>>{};
   final errors = <String, List<Object>>{};
+  Future<ApiResponse>? delayedRefreshResponse;
 
   @override
   Future<ApiResponse> get(String path, {String? accessToken}) async {
@@ -42,6 +47,9 @@ class FakeApiClient implements ApiClient {
     calls.add('POST $path');
     tokens.add(accessToken);
     bodies.add(body);
+    if (path == '/api/auth/refresh' && delayedRefreshResponse != null) {
+      return delayedRefreshResponse!;
+    }
     final queued = responses[path];
     final errorsForPath = errors[path];
     if (errorsForPath != null && errorsForPath.isNotEmpty) {
@@ -97,6 +105,42 @@ class MemoryStorage implements SessionStorage {
   }) async {
     access = accessToken;
     refresh = refreshToken;
+  }
+}
+
+class StaleResponseStorage extends MemoryStorage {
+  var _accessReads = 0;
+
+  @override
+  Future<String?> readAccessToken() async {
+    _accessReads++;
+    return _accessReads == 1 ? 'old-access' : 'new-access';
+  }
+}
+
+class FakeAudioApiClient extends FakeApiClient
+    implements BinaryApiClient, MultipartApiClient {
+  final binaryResponses = <String, List<BinaryApiResponse>>{};
+  final multipartResponses = <String, List<MultipartApiResponse>>{};
+
+  @override
+  Future<BinaryApiResponse> postBinary(String path,
+      {required Map<String, dynamic> body, String? accessToken}) async {
+    calls.add('BINARY $path');
+    tokens.add(accessToken);
+    bodies.add(body);
+    return binaryResponses[path]!.removeAt(0);
+  }
+
+  @override
+  Future<MultipartApiResponse> postMultipartWav(String path,
+      {required Map<String, String> fields,
+      required MultipartWavFile file,
+      String? accessToken}) async {
+    calls.add('MULTIPART $path');
+    tokens.add(accessToken);
+    bodies.add(null);
+    return multipartResponses[path]!.removeAt(0);
   }
 }
 
@@ -314,7 +358,7 @@ void main() {
     expect(result.diagnostic.backendSafeCode, 'scenario_contract_rejected');
   });
 
-  test('voice scenario diagnostics distinguish initial 401 from retry 401',
+  test('voice scenario diagnostics distinguish authentication from transport',
       () async {
     const path = '/api/me/lesson-sessions/session-1/voice-scenario-resolution';
     final initial401Api = FakeApiClient()
@@ -329,9 +373,9 @@ void main() {
       sessionId: 'session-1',
       request: voiceScenarioRequest,
     );
-    expect(initial401.diagnostic.httpStatusCode, 401);
+    expect(initial401.diagnostic.httpStatusCode, isNull);
     expect(initial401.diagnostic.refreshRetry, isFalse);
-    expect(initial401.diagnostic.failureStage, 'refresh_failed');
+    expect(initial401.diagnostic.failureStage, 'authentication_required');
 
     final retry401Api = FakeApiClient()
       ..responses[path] = [
@@ -345,9 +389,9 @@ void main() {
       sessionId: 'session-1',
       request: voiceScenarioRequest,
     );
-    expect(retry401.diagnostic.httpStatusCode, 401);
-    expect(retry401.diagnostic.refreshRetry, isTrue);
-    expect(retry401.diagnostic.failureStage, 'unauthorized_after_refresh');
+    expect(retry401.diagnostic.httpStatusCode, isNull);
+    expect(retry401.diagnostic.refreshRetry, isFalse);
+    expect(retry401.diagnostic.failureStage, 'authentication_required');
   });
 
   test('voice scenario diagnostics classify malformed JSON as response_json',
@@ -1245,5 +1289,178 @@ void main() {
           .status,
       TranslationStatus.authRequired,
     );
+  });
+
+  test('concurrent 401 requests share one refresh and retry with new access',
+      () async {
+    final refresh = Completer<ApiResponse>();
+    final api = FakeApiClient()
+      ..responses['/api/translate'] = [
+        const ApiResponse(statusCode: 401, body: '{}'),
+        const ApiResponse(statusCode: 401, body: '{}'),
+        const ApiResponse(statusCode: 200, body: '{"translatedText":"Hola"}'),
+        const ApiResponse(statusCode: 200, body: '{"translatedText":"Hola"}'),
+      ]
+      ..delayedRefreshResponse = refresh.future;
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final first = service.requestTranslation(request: translationRequest);
+    await Future<void>.delayed(Duration.zero);
+    final second = service.requestTranslation(request: translationRequest);
+    await Future<void>.delayed(Duration.zero);
+    refresh.complete(const ApiResponse(
+      statusCode: 200,
+      body:
+          '{"accessToken":"new-access","tokenType":"Bearer","expiresAtUtc":"2026-07-06T12:30:00Z","refreshToken":"new-refresh","refreshTokenExpiresAtUtc":"2026-08-06T12:00:00Z","user":{"userId":"u1","email":"user@example.com","displayName":"User","createdAt":"2026-07-01T12:00:00Z"}}',
+    ));
+
+    expect((await first).status, TranslationStatus.success);
+    expect((await second).status, TranslationStatus.success);
+    expect(api.calls.where((call) => call == 'POST /api/auth/refresh'),
+        hasLength(1));
+    final translationTokens = <String?>[];
+    for (var i = 0; i < api.calls.length; i++) {
+      if (api.calls[i] == 'POST /api/translate') {
+        translationTokens.add(api.tokens[i]);
+      }
+    }
+    expect(translationTokens, ['access', 'access', 'new-access', 'new-access']);
+  });
+
+  test('stale 401 retries newer stored access without refreshing', () async {
+    final api = FakeApiClient()
+      ..responses['/api/translate'] = [
+        const ApiResponse(statusCode: 401, body: '{}'),
+        const ApiResponse(statusCode: 200, body: '{"translatedText":"Hola"}'),
+      ];
+    final result = await AuthService(
+      apiClient: api,
+      storage: StaleResponseStorage(),
+    ).requestTranslation(request: translationRequest);
+
+    expect(result.status, TranslationStatus.success);
+    expect(api.calls, ['POST /api/translate', 'POST /api/translate']);
+    expect(api.tokens, ['old-access', 'new-access']);
+  });
+
+  test('binary and multipart requests share the single-flight refresh',
+      () async {
+    final refresh = Completer<ApiResponse>();
+    final api = FakeAudioApiClient()
+      ..delayedRefreshResponse = refresh.future
+      ..binaryResponses['/api/audio/speech'] = [
+        BinaryApiResponse(
+            statusCode: 401, bodyBytes: Uint8List(0), headers: {}),
+        BinaryApiResponse(
+            statusCode: 200,
+            bodyBytes: Uint8List.fromList([1]),
+            headers: const {'content-type': 'audio/wav'}),
+      ]
+      ..multipartResponses['/api/audio/transcribe'] = [
+        const MultipartApiResponse(statusCode: 401, body: '{}', headers: {}),
+        const MultipartApiResponse(
+            statusCode: 200, body: '{"text":"Hello"}', headers: {}),
+      ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+    final speech = service.requestTutorSpeech(
+        request: const AudioSpeechRequest(
+            text: 'Hi',
+            speechVoice: 'coral',
+            speechSpeed: 1,
+            targetLanguageId: 'en',
+            targetLanguageName: 'English',
+            targetLanguageNativeName: 'English',
+            targetLanguageCode: 'en',
+            backendSessionId: 'session-1'));
+    await Future<void>.delayed(Duration.zero);
+    final transcription = service.transcribeLearnerAudio(
+        request: const AudioTranscriptionRequest(
+            audioFilePath: 'recording.wav',
+            targetLanguageId: 'en',
+            targetLanguageName: 'English',
+            targetLanguageNativeName: 'English',
+            targetLanguageCode: 'en',
+            lessonPhase: 'active',
+            transcriptionContext: 'lesson',
+            backendSessionId: 'session-1'));
+    await Future<void>.delayed(Duration.zero);
+    refresh.complete(const ApiResponse(
+        statusCode: 200,
+        body:
+            '{"accessToken":"new-access","tokenType":"Bearer","expiresAtUtc":"2026-07-06T12:30:00Z","refreshToken":"new-refresh","refreshTokenExpiresAtUtc":"2026-08-06T12:00:00Z","user":{"userId":"u1","email":"user@example.com","displayName":"User","createdAt":"2026-07-01T12:00:00Z"}}'));
+
+    expect((await speech).status, AudioSpeechStatus.success);
+    expect((await transcription).status, AudioTranscriptionStatus.success);
+    expect(api.calls.where((call) => call == 'POST /api/auth/refresh'),
+        hasLength(1));
+  });
+
+  test(
+      'transcription HTTP 500 stays service unavailable without clearing tokens',
+      () async {
+    final api = FakeAudioApiClient()
+      ..multipartResponses['/api/audio/transcribe'] = [
+        const MultipartApiResponse(statusCode: 500, body: '{}', headers: {}),
+      ];
+    final storage = MemoryStorage();
+    final result = await AuthService(apiClient: api, storage: storage)
+        .transcribeLearnerAudio(
+            request: const AudioTranscriptionRequest(
+                audioFilePath: 'recording.wav',
+                targetLanguageId: 'en',
+                targetLanguageName: 'English',
+                targetLanguageNativeName: 'English',
+                targetLanguageCode: 'en',
+                lessonPhase: 'active',
+                transcriptionContext: 'lesson',
+                backendSessionId: 'session-1'));
+    expect(result.status, AudioTranscriptionStatus.serviceUnavailable);
+    expect(storage.access, 'access');
+    expect(storage.refresh, 'refresh');
+    expect(api.calls, ['MULTIPART /api/audio/transcribe']);
+  });
+
+  test('temporary refresh failures preserve stored tokens', () async {
+    for (final refreshFailure in [
+      const ApiResponse(statusCode: 500, body: '{}'),
+      null,
+    ]) {
+      final api = FakeApiClient()
+        ..responses['/api/translate'] = [
+          const ApiResponse(statusCode: 401, body: '{}'),
+        ];
+      if (refreshFailure == null) {
+        api.errors['/api/auth/refresh'] = [
+          const ApiException('Unable to reach the service.',
+              category: ApiFailureCategory.network),
+        ];
+      } else {
+        api.responses['/api/auth/refresh'] = [refreshFailure];
+      }
+      final storage = MemoryStorage();
+      final result = await AuthService(apiClient: api, storage: storage)
+          .requestTranslation(request: translationRequest);
+
+      expect(result.status, TranslationStatus.unavailable);
+      expect(storage.access, 'access');
+      expect(storage.refresh, 'refresh');
+    }
+  });
+
+  test('invalid refresh token clears stored tokens', () async {
+    final api = FakeApiClient()
+      ..responses['/api/translate'] = [
+        const ApiResponse(statusCode: 401, body: '{}'),
+      ]
+      ..responses['/api/auth/refresh'] = [
+        const ApiResponse(statusCode: 401, body: '{}'),
+      ];
+    final storage = MemoryStorage();
+    final result = await AuthService(apiClient: api, storage: storage)
+        .requestTranslation(request: translationRequest);
+
+    expect(result.status, TranslationStatus.authRequired);
+    expect(storage.access, isNull);
+    expect(storage.refresh, isNull);
   });
 }

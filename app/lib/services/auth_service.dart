@@ -15,6 +15,12 @@ import '../models/user_settings.dart';
 import '../models/voice_scenario_resolution.dart';
 import 'session_storage.dart';
 
+enum SessionCheckResult {
+  authenticated,
+  authenticationRequired,
+  temporaryFailure
+}
+
 class AuthService {
   AuthService({required ApiClient apiClient, required SessionStorage storage})
       : _apiClient = apiClient,
@@ -23,6 +29,22 @@ class AuthService {
   final ApiClient _apiClient;
   final SessionStorage _storage;
   bool _lastMultipartRefreshRetry = false;
+  Future<_RefreshResult>? _activeRefresh;
+
+  /// Checks an existing locally stored session without treating a temporary
+  /// service failure as a logout.
+  Future<SessionCheckResult> checkSession() async {
+    try {
+      await loadCurrentUser();
+      return SessionCheckResult.authenticated;
+    } on _AuthenticationRequiredException {
+      return SessionCheckResult.authenticationRequired;
+    } on ApiException {
+      return SessionCheckResult.temporaryFailure;
+    } catch (_) {
+      return SessionCheckResult.temporaryFailure;
+    }
+  }
 
   Future<AudioSpeechResult> requestTutorSpeech({
     required AudioSpeechRequest request,
@@ -255,30 +277,28 @@ class AuthService {
       );
     }
 
-    String? accessToken;
-    try {
-      accessToken = await _storage.readAccessToken();
-    } catch (_) {
-      return _voiceScenarioFailure(
-        candidateCount: candidateCount,
-        failureStage: 'request_not_started',
-      );
-    }
-    if (accessToken == null || accessToken.isEmpty) {
-      return _voiceScenarioFailure(
-        candidateCount: candidateCount,
-        failureStage: 'request_not_started',
-      );
-    }
-
     final path = '/api/me/lesson-sessions/$sessionId/voice-scenario-resolution';
-    var refreshRetry = false;
+    late final bool refreshRetry;
     ApiResponse response;
     try {
-      response = await _apiClient.post(
-        path,
-        body: request.toJson(),
-        accessToken: accessToken,
+      final result = await _sendWithSessionRecovery(
+        (token) =>
+            _apiClient.post(path, body: request.toJson(), accessToken: token),
+        (response) => response.statusCode,
+      );
+      response = result.response;
+      refreshRetry = result.refreshed;
+    } on _AuthenticationRequiredException {
+      return _voiceScenarioFailure(
+        candidateCount: candidateCount,
+        requestAttempted: true,
+        failureStage: 'authentication_required',
+      );
+    } on _TemporarySessionException {
+      return _voiceScenarioFailure(
+        candidateCount: candidateCount,
+        requestAttempted: true,
+        failureStage: 'temporary_session_failure',
       );
     } catch (_) {
       return _voiceScenarioFailure(
@@ -286,60 +306,6 @@ class AuthService {
         requestAttempted: true,
         failureStage: 'transport',
       );
-    }
-
-    if (response.statusCode == 401) {
-      final initialMetadata = _voiceScenarioResponseMetadata(response.body);
-      if (!await _refreshSession()) {
-        await _storage.clear();
-        return _voiceScenarioFailure(
-          candidateCount: candidateCount,
-          requestAttempted: true,
-          httpStatusCode: 401,
-          failureStage: 'refresh_failed',
-          responseParsed: initialMetadata.parsed,
-          backendSafeCode: initialMetadata.safeCode,
-        );
-      }
-      final refreshedToken = await _storage.readAccessToken();
-      if (refreshedToken == null || refreshedToken.isEmpty) {
-        await _storage.clear();
-        return _voiceScenarioFailure(
-          candidateCount: candidateCount,
-          requestAttempted: true,
-          httpStatusCode: 401,
-          failureStage: 'refresh_failed',
-          responseParsed: initialMetadata.parsed,
-          backendSafeCode: initialMetadata.safeCode,
-        );
-      }
-      refreshRetry = true;
-      try {
-        response = await _apiClient.post(
-          path,
-          body: request.toJson(),
-          accessToken: refreshedToken,
-        );
-      } catch (_) {
-        return _voiceScenarioFailure(
-          candidateCount: candidateCount,
-          requestAttempted: true,
-          refreshRetry: true,
-          failureStage: 'transport',
-        );
-      }
-      if (response.statusCode == 401) {
-        final metadata = _voiceScenarioResponseMetadata(response.body);
-        return _voiceScenarioFailure(
-          candidateCount: candidateCount,
-          requestAttempted: true,
-          httpStatusCode: 401,
-          refreshRetry: true,
-          failureStage: 'unauthorized_after_refresh',
-          responseParsed: metadata.parsed,
-          backendSafeCode: metadata.safeCode,
-        );
-      }
     }
 
     if (!_isSuccess(response.statusCode)) {
@@ -835,25 +801,9 @@ class AuthService {
     Future<ApiResponse> Function(String accessToken) send, {
     String Function(ApiResponse response)? failureMessageForResponse,
   }) async {
-    final accessToken = await _storage.readAccessToken();
-    if (accessToken == null || accessToken.isEmpty) {
-      throw const ApiException('Please sign in again.');
-    }
-
-    var response = await send(accessToken);
-    if (response.statusCode == 401) {
-      final refreshed = await _refreshSession();
-      if (!refreshed) {
-        await _storage.clear();
-        throw const ApiException('Please sign in again.');
-      }
-      final newAccessToken = await _storage.readAccessToken();
-      if (newAccessToken == null || newAccessToken.isEmpty) {
-        await _storage.clear();
-        throw const ApiException('Please sign in again.');
-      }
-      response = await send(newAccessToken);
-    }
+    final request =
+        await _sendWithSessionRecovery(send, (response) => response.statusCode);
+    final response = request.response;
 
     if (!_isSuccess(response.statusCode)) {
       throw ApiException(failureMessageForResponse?.call(response) ??
@@ -867,24 +817,15 @@ class AuthService {
     String path,
     Map<String, dynamic> body,
   ) async {
-    final accessToken = await _storage.readAccessToken();
-    if (accessToken == null || accessToken.isEmpty) {
+    try {
+      return (await _sendWithSessionRecovery(
+        (token) => client.postBinary(path, body: body, accessToken: token),
+        (response) => response.statusCode,
+      ))
+          .response;
+    } on _AuthenticationRequiredException {
       throw const _BinaryAuthenticationException();
     }
-    var response =
-        await client.postBinary(path, body: body, accessToken: accessToken);
-    if (response.statusCode != 401) return response;
-    if (!await _refreshSession()) throw const _BinaryAuthenticationException();
-    final refreshedToken = await _storage.readAccessToken();
-    if (refreshedToken == null || refreshedToken.isEmpty) {
-      throw const _BinaryAuthenticationException();
-    }
-    response =
-        await client.postBinary(path, body: body, accessToken: refreshedToken);
-    if (response.statusCode == 401) {
-      throw const _BinaryAuthenticationException();
-    }
-    return response;
   }
 
   Future<MultipartApiResponse> _authenticatedMultipartWavPost(
@@ -893,10 +834,6 @@ class AuthService {
     AudioTranscriptionRequest request,
   ) async {
     _lastMultipartRefreshRetry = false;
-    final accessToken = await _storage.readAccessToken();
-    if (accessToken == null || accessToken.isEmpty) {
-      throw const _BinaryAuthenticationException();
-    }
     Future<MultipartApiResponse> send(String token) => client.postMultipartWav(
           path,
           fields: request.fields,
@@ -904,19 +841,14 @@ class AuthService {
               MultipartWavFile(path: request.audioFilePath, fieldName: 'file'),
           accessToken: token,
         );
-    var response = await send(accessToken);
-    if (response.statusCode != 401) return response;
-    _lastMultipartRefreshRetry = true;
-    if (!await _refreshSession()) throw const _BinaryAuthenticationException();
-    final refreshedToken = await _storage.readAccessToken();
-    if (refreshedToken == null || refreshedToken.isEmpty) {
+    try {
+      final result = await _sendWithSessionRecovery(
+          send, (response) => response.statusCode);
+      _lastMultipartRefreshRetry = result.refreshed;
+      return result.response;
+    } on _AuthenticationRequiredException {
       throw const _BinaryAuthenticationException();
     }
-    response = await send(refreshedToken);
-    if (response.statusCode == 401) {
-      throw const _BinaryAuthenticationException();
-    }
-    return response;
   }
 
   static bool _isLessonSessionEnded(Uint8List bytes) {
@@ -948,21 +880,115 @@ class AuthService {
     }
   }
 
-  Future<bool> _refreshSession() async {
-    final refreshToken = await _storage.readRefreshToken();
-    if (refreshToken == null || refreshToken.isEmpty) return false;
+  Future<({T response, bool refreshed})> _sendWithSessionRecovery<T>(
+    Future<T> Function(String accessToken) send,
+    int Function(T response) statusCode,
+  ) async {
+    final failedToken = await _storage.readAccessToken();
+    if (failedToken == null || failedToken.isEmpty) {
+      throw const _AuthenticationRequiredException();
+    }
+
+    var response = await send(failedToken);
+    if (statusCode(response) != 401) {
+      return (response: response, refreshed: false);
+    }
+
+    final currentToken = await _storage.readAccessToken();
+    if (currentToken != null &&
+        currentToken.isNotEmpty &&
+        currentToken != failedToken) {
+      _debugRefresh('retry_with_newer_access_token');
+      response = await send(currentToken);
+      if (statusCode(response) != 401) {
+        return (response: response, refreshed: false);
+      }
+    }
+
+    final refresh = await _refreshSession();
+    switch (refresh) {
+      case _RefreshResult.success:
+        final newToken = await _storage.readAccessToken();
+        if (newToken == null || newToken.isEmpty) {
+          await _clearInvalidSession();
+          throw const _AuthenticationRequiredException();
+        }
+        response = await send(newToken);
+        if (statusCode(response) == 401) {
+          await _clearInvalidSession();
+          throw const _AuthenticationRequiredException();
+        }
+        return (response: response, refreshed: true);
+      case _RefreshResult.invalidSession:
+        throw const _AuthenticationRequiredException();
+      case _RefreshResult.temporaryFailure:
+        throw const _TemporarySessionException();
+    }
+  }
+
+  Future<_RefreshResult> _refreshSession() {
+    final active = _activeRefresh;
+    if (active != null) {
+      _debugRefresh('refresh_joined_existing');
+      return active;
+    }
+    final refresh = _performRefresh();
+    _activeRefresh = refresh;
+    return refresh.whenComplete(() {
+      if (identical(_activeRefresh, refresh)) _activeRefresh = null;
+    });
+  }
+
+  Future<_RefreshResult> _performRefresh() async {
+    _debugRefresh('refresh_started');
+    String? refreshToken;
+    try {
+      refreshToken = await _storage.readRefreshToken();
+    } catch (_) {
+      _debugRefresh('refresh_temporary_failure');
+      return _RefreshResult.temporaryFailure;
+    }
+    if (refreshToken == null || refreshToken.trim().isEmpty) {
+      await _clearInvalidSession();
+      _debugRefresh('refresh_invalid_session');
+      return _RefreshResult.invalidSession;
+    }
 
     try {
       final response = await _apiClient.post('/api/auth/refresh',
           body: RefreshTokenRequest(refreshToken: refreshToken).toJson());
-      if (!_isSuccess(response.statusCode)) return false;
+      if (!_isSuccess(response.statusCode)) {
+        if (response.statusCode == 400 ||
+            response.statusCode == 401 ||
+            response.statusCode == 403) {
+          await _clearInvalidSession();
+          _debugRefresh('refresh_invalid_session');
+          return _RefreshResult.invalidSession;
+        }
+        _debugRefresh('refresh_temporary_failure');
+        return _RefreshResult.temporaryFailure;
+      }
       final auth = AuthResponse.fromJson(_decodeObject(response.body));
       await _storage.saveTokens(
           accessToken: auth.accessToken, refreshToken: auth.refreshToken);
-      return true;
+      _debugRefresh('refresh_succeeded');
+      return _RefreshResult.success;
     } catch (_) {
-      return false;
+      _debugRefresh('refresh_temporary_failure');
+      return _RefreshResult.temporaryFailure;
     }
+  }
+
+  Future<void> _clearInvalidSession() async {
+    try {
+      await _storage.clear();
+    } catch (_) {
+      // The explicit invalid-session result still prevents further use.
+    }
+  }
+
+  void _debugRefresh(String event) {
+    if (kDebugMode) debugPrint('auth_session event=$event');
   }
 
   static String _passwordMessage(String body, {required String fallback}) {
@@ -1460,4 +1486,16 @@ class AuthService {
 
 class _BinaryAuthenticationException implements Exception {
   const _BinaryAuthenticationException();
+}
+
+enum _RefreshResult { success, invalidSession, temporaryFailure }
+
+class _AuthenticationRequiredException extends ApiException {
+  const _AuthenticationRequiredException() : super('Please sign in again.');
+}
+
+class _TemporarySessionException extends ApiException {
+  const _TemporarySessionException()
+      : super('Unable to reach the service.',
+            category: ApiFailureCategory.transport);
 }

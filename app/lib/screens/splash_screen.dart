@@ -20,6 +20,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   late final AuthService _authService;
   bool _startedLoading = false;
+  bool _temporaryFailure = false;
 
   @override
   void initState() {
@@ -36,15 +37,20 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _loadSession() async {
-    try {
-      await _authService.loadCurrentUser();
-      if (!mounted) return;
-      await precacheImage(const AssetImage(AppConfig.logoAsset), context);
-      if (!mounted) return;
-      Navigator.pushReplacementNamed(context, HomeScreen.routeName);
-    } catch (_) {
-      if (!mounted) return;
-      Navigator.pushReplacementNamed(context, LoginScreen.routeName);
+    setState(() => _temporaryFailure = false);
+    final result = await _authService.checkSession();
+    switch (result) {
+      case SessionCheckResult.authenticated:
+        if (!mounted) return;
+        await precacheImage(const AssetImage(AppConfig.logoAsset), context);
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, HomeScreen.routeName);
+      case SessionCheckResult.authenticationRequired:
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, LoginScreen.routeName);
+      case SessionCheckResult.temporaryFailure:
+        if (!mounted) return;
+        setState(() => _temporaryFailure = true);
     }
   }
 
@@ -52,13 +58,28 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Image.asset(
-          AppConfig.logoAsset,
-          key: const Key('splash-app-logo'),
-          semanticLabel: AppConfig.logoSemanticLabel,
-          width: 120,
-          height: 120,
-          fit: BoxFit.contain,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              AppConfig.logoAsset,
+              key: const Key('splash-app-logo'),
+              semanticLabel: AppConfig.logoSemanticLabel,
+              width: 120,
+              height: 120,
+              fit: BoxFit.contain,
+            ),
+            if (_temporaryFailure) ...[
+              const SizedBox(height: 24),
+              const Text('Unable to check your session. Please try again.'),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                key: const Key('splash-retry-button'),
+                onPressed: _loadSession,
+                child: const Text('Retry'),
+              ),
+            ],
+          ],
         ),
       ),
     );
