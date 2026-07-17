@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import '../api/api_client.dart';
 import '../models/auth_models.dart';
+import '../models/feedback_report.dart';
 import '../models/audio_speech.dart';
 import '../models/audio_transcription.dart';
 import '../models/lesson_access_decision.dart';
@@ -657,6 +658,27 @@ class AuthService {
       return _safeUserSettingsUpdateResult(error);
     } catch (_) {
       return UserSettingsUpdateResult.ordinaryFailure();
+    }
+  }
+
+  Future<FeedbackReportSubmitResult> submitFeedbackReport(
+      FeedbackReportRequest request) async {
+    try {
+      await _authenticatedPost('/api/me/feedback-reports',
+          body: request.toJson());
+      return FeedbackReportSubmitResult.success();
+    } on _AuthenticationRequiredException {
+      return FeedbackReportSubmitResult.authenticationRequired();
+    } on ApiException catch (error) {
+      if (error.message == 'Please sign in again.') {
+        return FeedbackReportSubmitResult.authenticationRequired();
+      }
+      if (error.message.contains('invalid')) {
+        return FeedbackReportSubmitResult.validationFailure();
+      }
+      return FeedbackReportSubmitResult.temporaryFailure();
+    } catch (_) {
+      return FeedbackReportSubmitResult.temporaryFailure();
     }
   }
 

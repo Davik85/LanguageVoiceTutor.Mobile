@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
+import 'package:language_voice_tutor_mobile/models/feedback_report.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
 import 'package:language_voice_tutor_mobile/models/tutor_options.dart';
 import 'package:language_voice_tutor_mobile/models/user_settings.dart';
@@ -51,6 +52,9 @@ class FakeAuthService extends AuthService {
   String changePasswordMessage = 'Password updated.';
   bool signedIn = true;
   bool keepUserLoading = false;
+  FeedbackReportSubmitResult feedbackResult =
+      FeedbackReportSubmitResult.success();
+  FeedbackReportRequest? submittedFeedback;
   @override
   Future<AuthUser> loadCurrentUser() async {
     if (keepUserLoading) return Completer<AuthUser>().future;
@@ -109,6 +113,13 @@ class FakeAuthService extends AuthService {
     savedSettings = settings;
     return saveResult ??
         UserSettingsUpdateResult.success(confirmedSave ?? settings);
+  }
+
+  @override
+  Future<FeedbackReportSubmitResult> submitFeedbackReport(
+      FeedbackReportRequest request) async {
+    submittedFeedback = request;
+    return feedbackResult;
   }
 }
 
@@ -573,5 +584,42 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Unable to save settings right now.'), findsOneWidget);
     expect(find.text('English'), findsWidgets);
+  });
+
+  testWidgets('feedback card is collapsed then exposes all report types',
+      (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Feedback & reports');
+    expect(find.text('Your suggestion'), findsNothing);
+    await tester.tap(find.text('Feedback & reports'));
+    await tester.pumpAndSettle();
+    expect(find.text('Suggestion'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('feedback-category')));
+    await tester.pumpAndSettle();
+    expect(find.text('App problem'), findsWidgets);
+    expect(find.text('AI response'), findsWidgets);
+  });
+
+  testWidgets('feedback validates blank input and preserves text on failure',
+      (tester) async {
+    final auth = FakeAuthService()
+      ..feedbackResult = FeedbackReportSubmitResult.temporaryFailure();
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Feedback & reports');
+    await tester.tap(find.text('Feedback & reports'));
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Send');
+    await tester.tap(find.text('Send'));
+    await tester.pumpAndSettle();
+    expect(find.text('Please enter a description.'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, 'A problem happened');
+    await _scrollToText(tester, 'Send');
+    await tester.tap(find.text('Send'));
+    await tester.pumpAndSettle();
+    expect(find.text('Feedback is temporarily unavailable. Please try again.'),
+        findsOneWidget);
+    expect(find.text('A problem happened'), findsOneWidget);
   });
 }

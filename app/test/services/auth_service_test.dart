@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/audio_speech.dart';
 import 'package:language_voice_tutor_mobile/models/audio_transcription.dart';
+import 'package:language_voice_tutor_mobile/models/feedback_report.dart';
 import 'package:language_voice_tutor_mobile/models/language_options.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_chat.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_runtime.dart';
@@ -1462,5 +1463,32 @@ void main() {
     expect(result.status, TranslationStatus.authRequired);
     expect(storage.access, isNull);
     expect(storage.refresh, isNull);
+  });
+
+  test('feedback report posts the exact authenticated backend contract',
+      () async {
+    final api = FakeApiClient()
+      ..responses['/api/me/feedback-reports'] = [
+        const ApiResponse(
+            statusCode: 201, body: '{"reportId":"r1","status":"received"}'),
+      ];
+    final result = await AuthService(apiClient: api, storage: MemoryStorage())
+        .submitFeedbackReport(const FeedbackReportRequest(
+      category: FeedbackReportCategory.aiResponse,
+      message: ' The reply was incorrect. ',
+      reportedAiText: ' Example response ',
+      clientPlatform: 'android',
+      clientVersion: '0.1.0+1',
+    ));
+    expect(result.status, FeedbackReportSubmitStatus.success);
+    expect(api.calls, ['POST /api/me/feedback-reports']);
+    expect(api.tokens, ['access']);
+    expect(api.bodies.single, {
+      'category': 'ai_response',
+      'message': 'The reply was incorrect.',
+      'reportedAiText': 'Example response',
+      'clientPlatform': 'android',
+      'clientVersion': '0.1.0+1',
+    });
   });
 }

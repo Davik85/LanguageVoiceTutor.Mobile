@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
 import '../models/auth_models.dart';
+import '../models/feedback_report.dart';
 import '../models/language_option.dart';
 import '../models/language_options.dart';
 import '../models/lesson_start_selection.dart';
@@ -65,6 +66,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isRequestingReset = false;
   bool _isConfirmingReset = false;
   bool _isChangingPassword = false;
+  final _feedbackMessageController = TextEditingController();
+  final _reportedAiTextController = TextEditingController();
+  FeedbackReportCategory _feedbackCategory = FeedbackReportCategory.suggestion;
+  bool _isSubmittingFeedback = false;
+  String? _feedbackMessage;
 
   @override
   void initState() {
@@ -87,6 +93,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _currentPasswordController.dispose();
     _changeNewPasswordController.dispose();
     _changeConfirmPasswordController.dispose();
+    _feedbackMessageController.dispose();
+    _reportedAiTextController.dispose();
     super.dispose();
   }
 
@@ -177,6 +185,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  Future<void> _submitFeedback() async {
+    final message = _feedbackMessageController.text.trim();
+    if (message.isEmpty) {
+      setState(() => _feedbackMessage = 'Please enter a description.');
+      return;
+    }
+    setState(() {
+      _isSubmittingFeedback = true;
+      _feedbackMessage = null;
+    });
+    final result = await _authService.submitFeedbackReport(
+        FeedbackReportRequest(
+            category: _feedbackCategory,
+            message: message,
+            reportedAiText:
+                _feedbackCategory == FeedbackReportCategory.aiResponse
+                    ? _reportedAiTextController.text.trim()
+                    : null,
+            clientPlatform: 'android',
+            clientVersion: '0.1.0+1'));
+    if (!mounted) {
+      return;
+    }
+    if (result.status == FeedbackReportSubmitStatus.authenticationRequired) {
+      return _goToLogin();
+    }
+    setState(() {
+      _isSubmittingFeedback = false;
+      _feedbackMessage = result.message;
+      if (result.status == FeedbackReportSubmitStatus.success) {
+        _feedbackMessageController.clear();
+        _reportedAiTextController.clear();
+      }
+    });
   }
 
   Future<void> _requestPasswordReset() async {
@@ -354,6 +398,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           FilledButton(
             onPressed: _settings == null || _isSaving ? null : _saveSettings,
             child: Text(_isSaving ? 'Saving...' : 'Save settings'),
+          ),
+          const SizedBox(height: 16),
+          _FeedbackReportCard(
+            category: _feedbackCategory,
+            messageController: _feedbackMessageController,
+            aiTextController: _reportedAiTextController,
+            submitting: _isSubmittingFeedback,
+            message: _feedbackMessage,
+            onCategoryChanged: (value) => setState(() {
+              _feedbackCategory = value;
+              _feedbackMessage = null;
+            }),
+            onSubmit: _submitFeedback,
           ),
           const SizedBox(height: 16),
           _DiagnosticsCard(
@@ -738,6 +795,86 @@ class _AudioCard extends StatelessWidget {
                       settings!.copyWith(conversationModeEnabled: v))),
             ],
           ])));
+}
+
+class _FeedbackReportCard extends StatelessWidget {
+  const _FeedbackReportCard(
+      {required this.category,
+      required this.messageController,
+      required this.aiTextController,
+      required this.submitting,
+      required this.message,
+      required this.onCategoryChanged,
+      required this.onSubmit});
+  final FeedbackReportCategory category;
+  final TextEditingController messageController;
+  final TextEditingController aiTextController;
+  final bool submitting;
+  final String? message;
+  final ValueChanged<FeedbackReportCategory> onCategoryChanged;
+  final VoidCallback onSubmit;
+
+  String get _descriptionLabel => switch (category) {
+        FeedbackReportCategory.suggestion => 'Your suggestion',
+        FeedbackReportCategory.appIssue => 'Describe the problem',
+        FeedbackReportCategory.aiResponse =>
+          'What was wrong with the AI response?',
+      };
+
+  @override
+  Widget build(BuildContext context) => Card(
+        child: ExpansionTile(
+          key: const Key('feedback-reports-card'),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          title: Text('Feedback & reports',
+              style: Theme.of(context).textTheme.titleMedium),
+          subtitle: const Text('Send a suggestion or report a problem'),
+          children: [
+            DropdownButtonFormField<FeedbackReportCategory>(
+              key: const Key('feedback-category'),
+              initialValue: category,
+              decoration: const InputDecoration(labelText: 'Report type'),
+              items: FeedbackReportCategory.values
+                  .map((value) =>
+                      DropdownMenuItem(value: value, child: Text(value.label)))
+                  .toList(),
+              onChanged: submitting
+                  ? null
+                  : (value) {
+                      if (value != null) onCategoryChanged(value);
+                    },
+            ),
+            const SizedBox(height: 8),
+            TextField(
+                controller: messageController,
+                enabled: !submitting,
+                maxLines: 4,
+                maxLength: 4000,
+                decoration: InputDecoration(labelText: _descriptionLabel)),
+            if (category == FeedbackReportCategory.aiResponse) ...[
+              const SizedBox(height: 8),
+              TextField(
+                  controller: aiTextController,
+                  enabled: !submitting,
+                  maxLines: 4,
+                  maxLength: 4000,
+                  decoration: const InputDecoration(
+                      labelText: 'Paste the AI response (optional)')),
+            ],
+            const SizedBox(height: 8),
+            Align(
+                alignment: Alignment.centerLeft,
+                child: FilledButton(
+                    onPressed: submitting ? null : onSubmit,
+                    child: Text(submitting ? 'Sending...' : 'Send'))),
+            if (message != null) ...[
+              const SizedBox(height: 8),
+              Align(alignment: Alignment.centerLeft, child: Text(message!))
+            ],
+          ],
+        ),
+      );
 }
 
 class _DiagnosticsCard extends StatelessWidget {
