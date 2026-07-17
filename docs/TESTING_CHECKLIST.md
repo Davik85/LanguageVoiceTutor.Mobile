@@ -187,6 +187,15 @@ Expected boundary checks:
 Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
 
 
+
+## Current authentication resilience and Feedback & reports checks
+
+Authentication resilience verification recorded these focused results: AuthService tests passed with 44 tests, Splash tests passed with 2 tests, and `flutter analyze` reported no issues. Expected behavior is that refresh outcomes are classified as success, invalid session, or temporary failure; only proven invalid sessions clear stored tokens; temporary network, timeout, malformed-response, rate-limit, and backend failures preserve tokens; JSON, binary TTS, multipart transcription, and voice-scenario 401 handling share a single-flight refresh coordinator; stale 401 responses retry a newer stored access token first; and Splash sends the learner to Login only for a proven invalid session.
+
+Feedback & reports verification recorded these focused results after support was added: AuthService tests passed with 45 tests, Settings tests passed with 27 tests, and `flutter analyze` reported no issues. Expected behavior is that Settings exposes a collapsed **Feedback & reports** card; requires description text; rejects blank descriptions locally; optionally accepts reported AI text for AI response reports; disables Send while active; preserves text on temporary failures; clears fields on success; and shows **Thank you. Your message has been received.**
+
+Production integration and physical Android verification are recorded as complete for Feedback & reports: migration `20260717120148_AddUserFeedbackReports` was applied, backend release `0.1.35-backend.117` was deployed, initial HTTP 503 from table ownership was corrected by changing production ownership to `lvt_app`, and suggestion, app_issue, and ai_response submissions from the physical Android device produced three verified production records with status `new`, `ClientPlatform` `android`, and `ClientVersion` `0.1.0+1`. Remaining boundaries: no CMS review screen, no email workflow, no attachments/screenshots, no per-message report button, no automatic moderation/OpenAI forwarding, no Mobile database, and no release-work completion from this slice.
+
 ## Current Feedback validation baseline
 
 Confirmed results for the completed learner-message Feedback baseline:
