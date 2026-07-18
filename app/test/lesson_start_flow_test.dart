@@ -19,6 +19,7 @@ import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
 import 'package:language_voice_tutor_mobile/services/learner_audio_recording_service.dart';
 import 'package:language_voice_tutor_mobile/services/learner_microphone_permission_service.dart';
+import 'package:language_voice_tutor_mobile/widgets/tutor_avatar.dart';
 
 class FakeLearnerRecorder implements LearnerAudioRecorderAdapter {
   bool active = false;
@@ -865,7 +866,7 @@ void main() {
     expect(avatarFinder, findsOneWidget);
     expect(tester.getSize(avatarFinder).height, greaterThanOrEqualTo(220));
     expect(find.text('Tutor'), findsOneWidget);
-    expect(find.byKey(const Key('lesson-avatar-placeholder')), findsOneWidget);
+    expect(find.byType(TutorAvatar), findsOneWidget);
     expect(find.byKey(const Key('lesson-meta-summary')), findsOneWidget);
     expect(find.text('A1 · Daily Life'), findsOneWidget);
     expect(find.text('Ready'), findsNothing);

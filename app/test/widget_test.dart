@@ -6,6 +6,7 @@ import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/main.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
+import 'package:language_voice_tutor_mobile/screens/login_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
 
@@ -21,7 +22,7 @@ class FakeAuthService extends AuthService {
   Future<AuthUser> loadCurrentUser() async {
     final loadCurrentUser = _loadCurrentUser;
     if (loadCurrentUser != null) return loadCurrentUser();
-    throw const ApiException('Please sign in to continue.');
+    return super.loadCurrentUser();
   }
 
   @override
@@ -98,6 +99,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Sign in to Language Voice Tutor'), findsOneWidget);
+    expect(find.byType(LoginScreen), findsOneWidget);
   });
 }

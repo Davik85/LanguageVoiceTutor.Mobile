@@ -8,6 +8,7 @@ import '../models/audio_speech.dart';
 import '../models/audio_transcription.dart';
 import '../models/lesson_access_decision.dart';
 import '../models/lesson_chat.dart';
+import '../models/lesson_history.dart';
 import '../models/lesson_runtime.dart';
 import '../models/lesson_session.dart';
 import '../models/subscription_status.dart';
@@ -207,6 +208,40 @@ class AuthService {
   Future<LessonAccessDecision> fetchLessonAccessDecision() async {
     final response = await _authenticatedGet('/api/me/lesson-access');
     return LessonAccessDecision.fromJson(_decodeObject(response.body));
+  }
+
+  Future<LessonHistoryListResult> fetchLessonHistory() async {
+    try {
+      final response = await _authenticatedGet('/api/me/lesson-history');
+      return LessonHistoryListResult.success(
+        LessonHistoryList.fromJson(_decodeObject(response.body)),
+      );
+    } on ApiException catch (error) {
+      return _safeLessonHistoryListResult(error);
+    } catch (_) {
+      return LessonHistoryListResult.failed();
+    }
+  }
+
+  Future<LessonHistoryDetailResult> fetchLessonHistoryDetail(
+    String sessionId,
+  ) async {
+    final normalizedId = sessionId.trim();
+    if (normalizedId.isEmpty) return LessonHistoryDetailResult.validation();
+
+    try {
+      final response = await _authenticatedGet(
+        '/api/me/lesson-history/${Uri.encodeComponent(normalizedId)}',
+        failureMessageForResponse: _lessonHistoryDetailFailureMessage,
+      );
+      return LessonHistoryDetailResult.success(
+        LessonHistoryDetail.fromJson(_decodeObject(response.body)),
+      );
+    } on ApiException catch (error) {
+      return _safeLessonHistoryDetailResult(error);
+    } catch (_) {
+      return LessonHistoryDetailResult.failed();
+    }
   }
 
   Future<LessonSessionStartResult> startLessonSession({
@@ -1301,6 +1336,42 @@ class AuthService {
       return LessonSessionStartResult.unavailable();
     }
     return LessonSessionStartResult.failed();
+  }
+
+  static String _lessonHistoryDetailFailureMessage(ApiResponse response) {
+    if (response.statusCode == 404) {
+      return 'This lesson is no longer available.';
+    }
+    return 'Could not load lesson details right now.';
+  }
+
+  static LessonHistoryListResult _safeLessonHistoryListResult(
+    ApiException error,
+  ) {
+    if (error.message == 'Please sign in again.') {
+      return LessonHistoryListResult.authRequired();
+    }
+    if (error.message == 'The service took too long to respond.' ||
+        error.message == 'Unable to reach the service.') {
+      return LessonHistoryListResult.unavailable();
+    }
+    return LessonHistoryListResult.failed();
+  }
+
+  static LessonHistoryDetailResult _safeLessonHistoryDetailResult(
+    ApiException error,
+  ) {
+    if (error.message == 'Please sign in again.') {
+      return LessonHistoryDetailResult.authRequired();
+    }
+    if (error.message == 'This lesson is no longer available.') {
+      return LessonHistoryDetailResult.notFound();
+    }
+    if (error.message == 'The service took too long to respond.' ||
+        error.message == 'Unable to reach the service.') {
+      return LessonHistoryDetailResult.unavailable();
+    }
+    return LessonHistoryDetailResult.failed();
   }
 
   static LessonSessionAbandonResult _safeLessonSessionAbandonResult(
