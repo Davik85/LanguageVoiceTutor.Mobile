@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_access_decision.dart';
+import 'package:language_voice_tutor_mobile/models/lesson_history.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
 import 'package:language_voice_tutor_mobile/models/user_settings.dart';
 import 'package:language_voice_tutor_mobile/screens/home_screen.dart';
@@ -92,6 +93,10 @@ class FakeAuthService extends AuthService {
     if (settingsCompleter != null) return settingsCompleter!.future;
     return _settings(currentLevel);
   }
+
+  @override
+  Future<LessonHistoryListResult> fetchLessonHistory() async =>
+      LessonHistoryListResult.success(const LessonHistoryList(items: []));
 }
 
 UserSettings _settings(String currentLevel) => UserSettings(
@@ -293,11 +298,27 @@ void main() {
     await tester.pumpWidget(_home());
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Open Settings'));
+    await tester.dragUntilVisible(
+      find.text('Open Settings'),
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Open Settings'));
     await tester.pumpAndSettle();
 
     expect(find.text('Settings route'), findsOneWidget);
+  });
+
+  testWidgets('home opens Lesson History', (tester) async {
+    await tester.pumpWidget(_home());
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('home-lesson-history')), findsOneWidget);
+    expect(find.text('Review your recent lessons'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('home-lesson-history')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('lesson-history-screen')), findsOneWidget);
   });
 }
