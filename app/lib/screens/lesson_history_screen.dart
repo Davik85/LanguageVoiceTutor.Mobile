@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/lesson_history.dart';
 import '../services/auth_service.dart';
 import '../services/service_factory.dart';
+import 'lesson_history_detail_screen.dart';
 import 'login_screen.dart';
 
 class LessonHistoryScreen extends StatefulWidget {
@@ -21,6 +22,7 @@ class _LessonHistoryScreenState extends State<LessonHistoryScreen> {
   String? _error;
   bool _isLoading = true;
   bool _isRequestInFlight = false;
+  bool _isNavigatingToDetail = false;
 
   @override
   void initState() {
@@ -78,12 +80,30 @@ class _LessonHistoryScreenState extends State<LessonHistoryScreen> {
                             style: Theme.of(context).textTheme.titleMedium),
                         const SizedBox(height: 12),
                         for (final item in items) ...[
-                          _LessonHistoryCard(item: item),
+                          _LessonHistoryCard(
+                            item: item,
+                            onTap: () => _openDetail(item.sessionId),
+                          ),
                           const SizedBox(height: 12),
                         ],
                       ],
                     ),
     );
+  }
+
+  Future<void> _openDetail(String sessionId) async {
+    if (_isNavigatingToDetail || sessionId.trim().isEmpty) return;
+    _isNavigatingToDetail = true;
+    try {
+      await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => LessonHistoryDetailScreen(
+          sessionId: sessionId,
+          authService: _authService,
+        ),
+      ));
+    } finally {
+      if (mounted) _isNavigatingToDetail = false;
+    }
   }
 }
 
@@ -134,8 +154,9 @@ class _HistoryEmpty extends StatelessWidget {
 }
 
 class _LessonHistoryCard extends StatelessWidget {
-  const _LessonHistoryCard({required this.item});
+  const _LessonHistoryCard({required this.item, required this.onTap});
   final LessonHistoryItem item;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -144,35 +165,41 @@ class _LessonHistoryCard extends StatelessWidget {
     final turnLabel =
         item.validTurnCount == 1 ? '1 turn' : '${item.validTurnCount} turns';
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(_fallback(item.topicTitle, 'Lesson'),
-              style: Theme.of(context).textTheme.titleMedium),
-          if (item.subtopicTitle.trim().isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(item.subtopicTitle),
-          ],
-          const SizedBox(height: 8),
-          Wrap(spacing: 12, runSpacing: 4, children: [
-            Text(_fallback(item.level, 'Level')),
-            Text(_formatDate(item.finishedAt ?? item.startedAt)),
-            Text(_modeLabel(item.modeUsed)),
-            Text(item.status.toLowerCase() == 'finished'
-                ? 'Completed'
-                : 'Finished'),
+      key: Key('lesson-history-item-${item.sessionId}'),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(_fallback(item.topicTitle, 'Lesson'),
+                style: Theme.of(context).textTheme.titleMedium),
+            if (item.subtopicTitle.trim().isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(item.subtopicTitle),
+            ],
+            const SizedBox(height: 8),
+            Wrap(spacing: 12, runSpacing: 4, children: [
+              Text(_fallback(item.level, 'Level')),
+              Text(_formatDate(item.finishedAt ?? item.startedAt)),
+              Text(_modeLabel(item.modeUsed)),
+              Text(item.status.toLowerCase() == 'finished'
+                  ? 'Completed'
+                  : 'Finished'),
+            ]),
+            if (contextTitle != null && contextTitle.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(contextTitle),
+            ],
+            const SizedBox(height: 8),
+            Text(turnLabel),
+            if (summary != null && summary.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(summary, maxLines: 2, overflow: TextOverflow.ellipsis),
+            ],
           ]),
-          if (contextTitle != null && contextTitle.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(contextTitle),
-          ],
-          const SizedBox(height: 8),
-          Text(turnLabel),
-          if (summary != null && summary.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(summary, maxLines: 2, overflow: TextOverflow.ellipsis),
-          ],
-        ]),
+        ),
       ),
     );
   }

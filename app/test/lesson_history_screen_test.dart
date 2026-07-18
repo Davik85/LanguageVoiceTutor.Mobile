@@ -36,9 +36,12 @@ class _Storage implements SessionStorage {
 }
 
 class _HistoryAuthService extends AuthService {
-  _HistoryAuthService(this.responses)
-      : super(apiClient: _Api(), storage: _Storage());
+  _HistoryAuthService(this.responses,
+      {List<LessonHistoryDetailResult>? details})
+      : details = details ?? [],
+        super(apiClient: _Api(), storage: _Storage());
   final List<Future<LessonHistoryListResult> Function()> responses;
+  final List<LessonHistoryDetailResult> details;
   int historyCalls = 0;
   int detailCalls = 0;
 
@@ -51,7 +54,7 @@ class _HistoryAuthService extends AuthService {
   @override
   Future<LessonHistoryDetailResult> fetchLessonHistoryDetail(String sessionId) {
     detailCalls += 1;
-    return super.fetchLessonHistoryDetail(sessionId);
+    return Future.value(details.removeAt(0));
   }
 }
 
@@ -193,5 +196,53 @@ void main() {
     await tester.pumpWidget(_screen(auth));
     await tester.pumpAndSettle();
     expect(find.text('Login route'), findsOneWidget);
+  });
+
+  testWidgets('tapping a lesson opens its detail without a prefetch',
+      (tester) async {
+    final now = DateTime.utc(2026, 7, 10);
+    final detail = LessonHistoryDetail(
+      sessionId: 'private-session-id',
+      userId: 'user-id',
+      lessonContentId: 'content-id',
+      studyLanguage: 'Spanish',
+      topicId: 'topic-id',
+      topicTitle: 'Daily Life',
+      subtopicId: 'subtopic-id',
+      subtopicTitle: 'Introductions',
+      level: 'A1',
+      selectedContextId: null,
+      selectedContextTitle: null,
+      modeUsed: 'text',
+      status: 'finished',
+      startedAt: now,
+      finishedAt: now,
+      validTurnCount: 1,
+      estimatedCost: 0,
+      createdAt: now,
+      updatedAt: now,
+      summary: null,
+      messages: const [],
+      feedbackResults: const [],
+    );
+    final auth = _HistoryAuthService([
+      () async => LessonHistoryListResult.success(
+            LessonHistoryList(items: [_item(topic: 'Daily Life')]),
+          ),
+    ], details: [
+      LessonHistoryDetailResult.success(detail)
+    ]);
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    expect(auth.detailCalls, 0);
+    await tester
+        .tap(find.byKey(const Key('lesson-history-item-private-session-id')));
+    await tester.pumpAndSettle();
+    expect(auth.detailCalls, 1);
+    expect(
+        find.byKey(const Key('lesson-history-detail-screen')), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('lesson-history-screen')), findsOneWidget);
   });
 }
