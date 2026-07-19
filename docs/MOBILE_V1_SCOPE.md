@@ -32,6 +32,10 @@ Verified Android build stack:
 
 ## Lesson History current state
 
+## Progress data foundation
+
+Backend `0.1.35-backend.124` provides authenticated `GET /api/me/progress`. Mobile has immutable response models and `fetchProgress()` using the existing authenticated refresh flow, but no Progress screen, Home entry, chart, or local official aggregation. The backend remains the source of truth for UTC/calendar rules, completion rules, totals, windows, and streaks; History remains limited to its recent 50-item contract.
+
 Lesson History is complete in three committed slices: data foundation `4d531e3`, recent-list UI and Home navigation `2c88944`, and detail UI `a200641`. Mobile is another client of the same Language Voice Tutor product: History belongs to the authenticated backend account shared with Desktop and Website. The backend is the source of truth; Mobile neither reads Desktop-local JSON nor calls `/api/dev`, stores an independent local copy of official History, makes ownership decisions, or decides Premium access. The only History routes are:
 
 ```http

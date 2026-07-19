@@ -117,6 +117,10 @@ Possible response concepts:
 
 ## Lesson start, message, history, and progress expectations
 
+## Confirmed Progress V1 contract
+
+Production backend `0.1.35-backend.124` provides authenticated `GET /api/me/progress`. Mobile calls it through the shared bearer-token and refresh-on-401 flow. Official totals, 7-/30-day windows, UTC calendar boundaries, completion eligibility, and streaks are backend-owned; Mobile only parses the response and must not aggregate the bounded recent History list. This data-foundation slice adds models, safe result handling, service call, tests, and documentation only. Progress UI and navigation remain separate.
+
 Desktop parity source flow: `Start -> Settings/preferences -> Choose level -> Pick topic -> Pick situation -> Practice`. Level selection is part of lesson start and must not be a Settings field.
 
 Mobile must follow the existing desktop/CMS/backend lesson flow as a second client. It must not invent a separate lesson runtime, call OpenAI directly, hardcode CMS lesson behavior in Flutter, or duplicate backend-owned prompt/runtime logic. Desktop is a reference client for orchestration, not the owner of lesson behavior. CMS/backend published runtime content is the source of truth for tutor instructions, level behavior, prompt templates, scenario rules, wrap-up behavior, feedback guidance, and lesson methodology.

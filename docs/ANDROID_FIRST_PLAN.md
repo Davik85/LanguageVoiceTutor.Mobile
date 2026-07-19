@@ -2,6 +2,10 @@
 
 ## Approach
 
+## Progress data foundation
+
+The Android-first client consumes backend `0.1.35-backend.124` Progress V1 through authenticated `GET /api/me/progress`. This adds no UI or navigation and does not calculate Progress from History; backend UTC and completion rules remain authoritative.
+
 The mobile app will be built with Flutter using an Android-first delivery path. Android is the first target for implementation, QA, billing integration, and release preparation. iOS should remain a future-compatible consideration, but iOS project files should not be created during the docs-only foundation phase.
 
 ## Study-language parity status

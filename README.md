@@ -1,5 +1,9 @@
 # Language Voice Tutor Mobile
 
+## Progress data foundation
+
+Production backend `0.1.35-backend.124` provides authenticated `GET /api/me/progress`. Mobile now has models and the authenticated `fetchProgress()` service call only; the backend remains the sole source of official totals, windows, streaks, UTC/calendar and completion rules. Mobile never calculates Progress from the recent History list. Progress UI and Home navigation remain separate work.
+
 Language Voice Tutor Mobile is the Android-first Flutter client for the existing Language Voice Tutor product. This repository is intentionally separate from the desktop application and backend services so mobile-specific UI, platform integration, release cadence, and store workflows can evolve independently.
 
 ## Six-language lesson parity

@@ -9,6 +9,7 @@ import '../models/audio_transcription.dart';
 import '../models/lesson_access_decision.dart';
 import '../models/lesson_chat.dart';
 import '../models/lesson_history.dart';
+import '../models/progress.dart';
 import '../models/lesson_runtime.dart';
 import '../models/lesson_session.dart';
 import '../models/subscription_status.dart';
@@ -220,6 +221,26 @@ class AuthService {
       return _safeLessonHistoryListResult(error);
     } catch (_) {
       return LessonHistoryListResult.failed();
+    }
+  }
+
+  Future<ProgressResult> fetchProgress() async {
+    try {
+      final response = await _authenticatedGet('/api/me/progress');
+      return ProgressResult.success(
+        ProgressResponse.fromJson(_decodeObject(response.body)),
+      );
+    } on ApiException catch (error) {
+      if (error.message == 'Please sign in again.') {
+        return ProgressResult.authRequired();
+      }
+      if (error.category == ApiFailureCategory.network ||
+          error.category == ApiFailureCategory.timeout) {
+        return ProgressResult.unavailable();
+      }
+      return ProgressResult.failed();
+    } catch (_) {
+      return ProgressResult.failed();
     }
   }
 

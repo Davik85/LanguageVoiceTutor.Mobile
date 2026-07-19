@@ -1,5 +1,17 @@
 # Testing Checklist
 
+## Progress data foundation checks
+
+Run from `app/`:
+
+```bash
+dart format --set-exit-if-changed lib test
+flutter analyze
+flutter test test/models/progress_test.dart test/services/progress_service_test.dart test/services/auth_service_test.dart test/services/lesson_history_service_test.dart
+```
+
+Verify `GET /api/me/progress` uses the shared authenticated refresh-on-401 path, preserves backend-provided official values, sends no user ID, never calls `/api/dev`, and performs no History aggregation. This is models/service/documentation only; Progress UI and Home navigation remain separate work.
+
 ## Six-language lesson parity checks
 
 - Verify the centralized study-language definitions exactly cover `en`, `fr`, `de`, `pt`, `es`, and `it`, resolve by ID/English/native name case-insensitively, and fall back to English.
