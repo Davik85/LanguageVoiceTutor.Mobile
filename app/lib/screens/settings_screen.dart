@@ -13,9 +13,14 @@ import '../services/auth_service.dart';
 import '../services/backend_health_service.dart';
 import '../services/service_factory.dart';
 import '../services/tutor_options_service.dart';
+import '../theme/app_visuals.dart';
 import 'login_screen.dart';
+import 'lesson_history_screen.dart';
+import 'progress_screen.dart';
 
 enum BackendConnectionState { notChecked, checking, connected, unavailable }
+
+enum _SettingsSection { profile, lessons, app }
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
@@ -71,6 +76,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   FeedbackReportCategory _feedbackCategory = FeedbackReportCategory.suggestion;
   bool _isSubmittingFeedback = false;
   String? _feedbackMessage;
+  _SettingsSection _section = _SettingsSection.profile;
 
   @override
   void initState() {
@@ -348,11 +354,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _updateSettings(UserSettings settings) =>
       setState(() => _settings = settings);
 
+  Future<void> _openLessonHistory() => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LessonHistoryScreen(authService: _authService),
+        ),
+      );
+
+  Future<void> _openProgress() => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ProgressScreen(authService: _authService),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
-      body: ListView(
+      body: AppVisuals.screenBackground(
+        child: switch (_section) {
+          _SettingsSection.profile => _profileContent(),
+          _SettingsSection.lessons => _lessonsContent(),
+          _SettingsSection.app => _appContent(),
+        },
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _section.index,
+        onDestinationSelected: (index) =>
+            setState(() => _section = _SettingsSection.values[index]),
+        destinations: const [
+          NavigationDestination(
+            key: Key('settings-profile-tab'),
+            icon: Icon(Icons.person_outline_rounded),
+            selectedIcon: Icon(Icons.person_rounded),
+            label: 'Profile',
+          ),
+          NavigationDestination(
+            key: Key('settings-lessons-tab'),
+            icon: Icon(Icons.school_outlined),
+            selectedIcon: Icon(Icons.school_rounded),
+            label: 'Lessons',
+          ),
+          NavigationDestination(
+            key: Key('settings-app-tab'),
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings_rounded),
+            label: 'App',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _profileContent() => ListView(
+        key: const Key('settings-profile-content'),
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
         children: [
           _AccountCard(
@@ -362,6 +418,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onLogout: _logout,
           ),
           const SizedBox(height: 12),
+          _LearningCard(
+            settings: _settings,
+            tutorOptions: _tutorOptions,
+            tutorOptionsError: _tutorOptionsError,
+            error: _settingsError,
+            studyLanguageOptions: LanguageOptions.studyLanguages,
+            nativeLanguageOptions: LanguageOptions.nativeLanguages,
+            interfaceLanguageOptions: LanguageOptions.interfaceLanguages,
+            voices: _voices,
+            onChanged: _updateSettings,
+          ),
+          const SizedBox(height: 12),
+          _AudioCard(settings: _settings, onChanged: _updateSettings),
+          const SizedBox(height: 12),
+          _SettingsActionButton(
+            onPressed: _settings == null || _isSaving ? null : _saveSettings,
+            label: _isSaving ? 'Saving...' : 'Save settings',
+          ),
+        ],
+      );
+
+  Widget _lessonsContent() => ListView(
+        key: const Key('settings-lessons-content'),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+        children: [
+          Text('Lessons', style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 12),
+          Card(
+            child: Column(children: [
+              ListTile(
+                key: const Key('settings-lesson-history'),
+                leading: const Icon(Icons.history),
+                title: const Text('Lesson history'),
+                onTap: _openLessonHistory,
+              ),
+              const Divider(height: 1),
+              ListTile(
+                key: const Key('settings-progress'),
+                leading: const Icon(Icons.insights),
+                title: const Text('Progress'),
+                onTap: _openProgress,
+              ),
+            ]),
+          ),
+          const SizedBox(height: 12),
+          const _ComingSoonCard(
+            icon: Icons.workspace_premium_outlined,
+            title: 'Rewards',
+            subtitle: 'Badges and learning rewards are coming soon.',
+          ),
+        ],
+      );
+
+  Widget _appContent() => ListView(
+        key: const Key('settings-app-content'),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+        children: [
           _PasswordRecoveryCard(
             resetEmailController: _resetEmailController,
             resetCodeController: _resetCodeController,
@@ -381,25 +494,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChangePassword: _changePassword,
           ),
           const SizedBox(height: 12),
-          _LearningCard(
-            settings: _settings,
-            tutorOptions: _tutorOptions,
-            tutorOptionsError: _tutorOptionsError,
-            error: _settingsError,
-            studyLanguageOptions: LanguageOptions.studyLanguages,
-            nativeLanguageOptions: LanguageOptions.nativeLanguages,
-            interfaceLanguageOptions: LanguageOptions.interfaceLanguages,
-            voices: _voices,
-            onChanged: _updateSettings,
-          ),
-          const SizedBox(height: 12),
-          _AudioCard(settings: _settings, onChanged: _updateSettings),
-          const SizedBox(height: 12),
-          FilledButton(
-            onPressed: _settings == null || _isSaving ? null : _saveSettings,
-            child: Text(_isSaving ? 'Saving...' : 'Save settings'),
-          ),
-          const SizedBox(height: 16),
           _FeedbackReportCard(
             category: _feedbackCategory,
             messageController: _feedbackMessageController,
@@ -412,7 +506,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             }),
             onSubmit: _submitFeedback,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          const _ComingSoonCard(
+            icon: Icons.notifications_none_rounded,
+            title: 'Notifications & contact',
+            subtitle:
+                'Notification preferences and support details are coming soon.',
+          ),
+          const SizedBox(height: 12),
           _DiagnosticsCard(
             connectionLabel: _connectionLabel,
             connectionMessage: _connectionMessage,
@@ -420,9 +521,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onCheck: _checkBackendConnection,
           ),
         ],
-      ),
-    );
-  }
+      );
 
   String get _connectionLabel => switch (_connectionState) {
         BackendConnectionState.notChecked => 'Not checked',
@@ -439,6 +538,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
         BackendConnectionState.unavailable =>
           'The service is unavailable right now. Please try again later.'
       };
+}
+
+class _ComingSoonCard extends StatelessWidget {
+  const _ComingSoonCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) => Card(
+        child: ListTile(
+          leading: Icon(icon),
+          title: Text(title),
+          subtitle: Text(subtitle),
+        ),
+      );
+}
+
+class _SettingsActionButton extends StatelessWidget {
+  const _SettingsActionButton({required this.onPressed, required this.label});
+  final VoidCallback? onPressed;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: double.infinity,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: AppVisuals.actionButtonGradient,
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x4439679A),
+                blurRadius: 5,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          child: FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              disabledBackgroundColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              minimumSize: const Size.fromHeight(38),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
+            ),
+            onPressed: onPressed,
+            child: Text(label),
+          ),
+        ),
+      );
 }
 
 class _AccountCard extends StatelessWidget {
@@ -651,25 +809,28 @@ class _LearningCard extends StatelessWidget {
                   value: settings!.currentLevel,
                   onChanged: (v) =>
                       onChanged(settings!.copyWith(currentLevel: v))),
+              const SizedBox(height: 10),
               _LanguageDropdown(
                   label: 'Study language',
                   value: settings!.studyLanguage,
                   options: studyLanguageOptions,
                   onChanged: (v) =>
                       onChanged(settings!.copyWith(studyLanguage: v))),
+              const SizedBox(height: 10),
               _LanguageDropdown(
                   label: 'Native language',
                   value: settings!.nativeLanguage,
                   options: nativeLanguageOptions,
                   onChanged: (v) =>
                       onChanged(settings!.copyWith(nativeLanguage: v))),
+              const SizedBox(height: 10),
               _LanguageDropdown(
                   label: 'Interface / explanation language',
                   value: settings!.explanationLanguage,
                   options: interfaceLanguageOptions,
                   onChanged: (v) =>
                       onChanged(settings!.copyWith(explanationLanguage: v))),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               _TutorDropdown(
                 selectedTutorId: settings!.selectedTutorId,
                 tutorOptions: tutorOptions,
@@ -677,6 +838,7 @@ class _LearningCard extends StatelessWidget {
                 onChanged: (v) =>
                     onChanged(settings!.copyWith(selectedTutorId: v)),
               ),
+              const SizedBox(height: 10),
               _Dropdown(
                   label: 'Tutor voice',
                   value: settings!.speechVoice,

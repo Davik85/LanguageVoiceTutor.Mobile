@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/lesson_history.dart';
 import '../services/auth_service.dart';
 import '../services/service_factory.dart';
+import '../theme/app_visuals.dart';
 import 'lesson_history_detail_screen.dart';
 import 'login_screen.dart';
 
@@ -66,28 +67,30 @@ class _LessonHistoryScreenState extends State<LessonHistoryScreen> {
     return Scaffold(
       key: const Key('lesson-history-screen'),
       appBar: AppBar(title: const Text('Lesson history')),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? _HistoryError(message: _error!, onRetry: _loadHistory)
-              : items == null || items.isEmpty
-                  ? _HistoryEmpty(onReturnHome: () => Navigator.pop(context))
-                  : ListView(
-                      key: const Key('lesson-history-list'),
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-                      children: [
-                        Text('Your recent completed lessons',
-                            style: Theme.of(context).textTheme.titleMedium),
-                        const SizedBox(height: 12),
-                        for (final item in items) ...[
-                          _LessonHistoryCard(
-                            item: item,
-                            onTap: () => _openDetail(item.sessionId),
-                          ),
+      body: AppVisuals.screenBackground(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? _HistoryError(message: _error!, onRetry: _loadHistory)
+                : items == null || items.isEmpty
+                    ? _HistoryEmpty(onReturnHome: () => Navigator.pop(context))
+                    : ListView(
+                        key: const Key('lesson-history-list'),
+                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+                        children: [
+                          Text('Your recent completed lessons',
+                              style: Theme.of(context).textTheme.titleMedium),
                           const SizedBox(height: 12),
+                          for (final item in items) ...[
+                            _LessonHistoryCard(
+                              item: item,
+                              onTap: () => _openDetail(item.sessionId),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
                         ],
-                      ],
-                    ),
+                      ),
+      ),
     );
   }
 

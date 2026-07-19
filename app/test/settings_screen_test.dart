@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
 import 'package:language_voice_tutor_mobile/models/feedback_report.dart';
+import 'package:language_voice_tutor_mobile/models/lesson_history.dart';
+import 'package:language_voice_tutor_mobile/models/progress.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
 import 'package:language_voice_tutor_mobile/models/tutor_options.dart';
 import 'package:language_voice_tutor_mobile/models/user_settings.dart';
@@ -93,6 +95,13 @@ class FakeAuthService extends AuthService {
   }
 
   @override
+  Future<LessonHistoryListResult> fetchLessonHistory() async =>
+      LessonHistoryListResult.success(const LessonHistoryList(items: []));
+
+  @override
+  Future<ProgressResult> fetchProgress() async => ProgressResult.failed();
+
+  @override
   Future<String> requestPasswordReset(String email) async =>
       resetRequestMessage;
 
@@ -155,6 +164,27 @@ Widget _screen(FakeAuthService auth) => MaterialApp(
 
 Finder get _settingsScrollable => find.byType(Scrollable).first;
 
+Future<void> _showSectionForText(WidgetTester tester, String text) async {
+  const appTexts = {
+    'Password & recovery',
+    'Forgot password',
+    'Reset password',
+    'Change password',
+    'Feedback & reports',
+    'Send',
+    'Connection status',
+    'Check connection',
+  };
+  const lessonsTexts = {'Lesson history', 'Progress', 'Rewards'};
+  final key = appTexts.contains(text)
+      ? const Key('settings-app-tab')
+      : lessonsTexts.contains(text)
+          ? const Key('settings-lessons-tab')
+          : const Key('settings-profile-tab');
+  await tester.tap(find.byKey(key));
+  await tester.pumpAndSettle();
+}
+
 Future<void> _scrollToFinder(WidgetTester tester, Finder finder) async {
   await tester.scrollUntilVisible(
     finder,
@@ -166,10 +196,12 @@ Future<void> _scrollToFinder(WidgetTester tester, Finder finder) async {
 }
 
 Future<void> _scrollToText(WidgetTester tester, String text) async {
+  await _showSectionForText(tester, text);
   await _scrollToFinder(tester, find.text(text));
 }
 
 Future<void> _scrollToAndTap(WidgetTester tester, String text) async {
+  await _showSectionForText(tester, text);
   final finder = find.text(text);
   await _scrollToFinder(tester, finder);
   await tester.tap(finder);
@@ -208,12 +240,58 @@ void main() {
     await _scrollToText(tester, 'Connection status');
     expect(find.text('Connection status'), findsOneWidget);
     expect(find.text('Backend diagnostics'), findsNothing);
+    await _scrollToText(tester, 'Save settings');
     expect(find.text('Save settings'), findsOneWidget);
+  });
+
+  testWidgets('settings opens the existing Lesson History and Progress screens',
+      (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+
+    await _showSectionForText(tester, 'Lesson history');
+    expect(find.byKey(const Key('settings-lesson-history')), findsOneWidget);
+    expect(find.byKey(const Key('settings-progress')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('settings-lesson-history')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('lesson-history-screen')), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await _showSectionForText(tester, 'Progress');
+    await tester.tap(find.byKey(const Key('settings-progress')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('progress-screen')), findsOneWidget);
+  });
+
+  testWidgets('settings separates profile, lessons, and app controls',
+      (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Profile'), findsOneWidget);
+    expect(find.text('Lessons'), findsOneWidget);
+    expect(find.text('App'), findsOneWidget);
+    expect(find.text('Learning'), findsOneWidget);
+    expect(find.text('Lesson history'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('settings-lessons-tab')));
+    await tester.pumpAndSettle();
+    expect(find.text('Lesson history'), findsOneWidget);
+    expect(find.text('Rewards'), findsOneWidget);
+    expect(find.text('Learning'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('settings-app-tab')));
+    await tester.pumpAndSettle();
+    expect(find.text('Feedback & reports'), findsOneWidget);
+    expect(find.text('Notifications & contact'), findsOneWidget);
   });
 
   testWidgets('password recovery section is visible', (tester) async {
     await tester.pumpWidget(_screen(FakeAuthService()));
     await tester.pumpAndSettle();
+    await _showSectionForText(tester, 'Password & recovery');
     expect(find.text('Password & recovery'), findsOneWidget);
     await _scrollToAndTap(tester, 'Password & recovery');
     expect(find.text('Forgot password'), findsOneWidget);

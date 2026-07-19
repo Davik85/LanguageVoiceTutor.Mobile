@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
 import 'package:language_voice_tutor_mobile/models/progress.dart';
-import 'package:language_voice_tutor_mobile/screens/home_screen.dart';
 import 'package:language_voice_tutor_mobile/screens/progress_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
@@ -96,33 +95,12 @@ ProgressResponse _progress({
           ),
     );
 
-Widget _screen(_ProgressAuthService auth, {bool home = false}) => MaterialApp(
-      home: home
-          ? HomeScreen(authService: auth)
-          : ProgressScreen(authService: auth),
+Widget _screen(_ProgressAuthService auth) => MaterialApp(
+      home: ProgressScreen(authService: auth),
       routes: {'/login': (_) => const Scaffold(body: Text('Login route'))},
     );
 
 void main() {
-  testWidgets('Home opens Progress once after repeated rapid taps',
-      (tester) async {
-    final auth = _ProgressAuthService([
-      () async => ProgressResult.success(_progress()),
-    ]);
-    await tester.pumpWidget(_screen(auth, home: true));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('home-progress')), findsOneWidget);
-    await tester.tap(find.byKey(const Key('home-progress')));
-    await tester.tap(find.byKey(const Key('home-progress')),
-        warnIfMissed: false);
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('progress-screen')), findsOneWidget);
-    expect(auth.progressCalls, 1);
-    expect(find.byKey(const Key('lesson-history-screen')), findsNothing);
-  });
-
   testWidgets(
       'shows loading once then displays exact backend values and content',
       (tester) async {

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/progress.dart';
 import '../services/auth_service.dart';
 import '../services/service_factory.dart';
+import '../theme/app_visuals.dart';
 import 'login_screen.dart';
 
 class ProgressScreen extends StatefulWidget {
@@ -64,13 +65,15 @@ class _ProgressScreenState extends State<ProgressScreen> {
     return Scaffold(
       key: const Key('progress-screen'),
       appBar: AppBar(title: const Text('Progress')),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? _ProgressError(message: _error!, onRetry: _loadProgress)
-              : _isEmpty(_progress)
-                  ? _ProgressEmpty(onReturnHome: () => Navigator.pop(context))
-                  : _ProgressContent(progress: _progress!),
+      body: AppVisuals.screenBackground(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? _ProgressError(message: _error!, onRetry: _loadProgress)
+                : _isEmpty(_progress)
+                    ? _ProgressEmpty(onReturnHome: () => Navigator.pop(context))
+                    : _ProgressContent(progress: _progress!),
+      ),
     );
   }
 

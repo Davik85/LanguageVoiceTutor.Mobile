@@ -14,7 +14,7 @@ Latest known mobile baseline after commit `fcecef5` (`Fix mobile settings parity
 - `dart format --set-exit-if-changed lib test` passed.
 - `flutter analyze` returned `No issues found`.
 - `flutter test` returned `All tests passed`.
-- Settings has stable visible sections: **Account**, **Learning**, **Audio**, and **Connection status**.
+- Settings uses three stable navigation areas: **Profile**, **Lessons**, and **App**.
 - **Save settings** is visible and tested.
 - User level is not in Settings.
 - Home starts the lesson-start skeleton and still ends at a Lesson placeholder.
@@ -59,12 +59,11 @@ Current backend-supported mobile settings fields from `GET /api/me/settings` and
 - `conversationModeEnabled`
 - `selectedTutorId`
 
-Current visible mobile Settings sections are:
+Current visible mobile Settings navigation is:
 
-- **Account**
-- **Learning**
-- **Audio**
-- **Connection status**
+- **Profile**: Account, Learning, Audio, and Save settings.
+- **Lessons**: Lesson history, Progress, and a future Rewards placeholder.
+- **App**: Password & recovery, Feedback & reports, a future Notifications & contact placeholder, and Connection status.
 
 `selectedTutorId` is part of the current settings contract. `GET /api/tutor-options` provides available tutors, and `PUT /api/me/settings` persists a valid selected tutor ID. Tutor voice remains a separate `speechVoice` setting and must not be overwritten automatically when the selected tutor changes.
 

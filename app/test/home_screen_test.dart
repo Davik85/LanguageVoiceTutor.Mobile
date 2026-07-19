@@ -5,8 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_access_decision.dart';
-import 'package:language_voice_tutor_mobile/models/lesson_history.dart';
-import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
+import 'package:language_voice_tutor_mobile/models/progress.dart';
 import 'package:language_voice_tutor_mobile/models/user_settings.dart';
 import 'package:language_voice_tutor_mobile/screens/home_screen.dart';
 import 'package:language_voice_tutor_mobile/screens/settings_screen.dart';
@@ -42,6 +41,7 @@ class FakeAuthService extends AuthService {
     this.currentLevel = 'A1',
     this.settingsFailure,
     this.settingsCompleter,
+    this.progressResult,
   })  : user = user ??
             AuthUser(
               userId: 'user-1',
@@ -56,7 +56,9 @@ class FakeAuthService extends AuthService {
   final String currentLevel;
   final ApiException? settingsFailure;
   final Completer<UserSettings>? settingsCompleter;
+  final ProgressResult? progressResult;
   int fetchUserSettingsCallCount = 0;
+  int fetchProgressCallCount = 0;
 
   @override
   Future<AuthUser> loadCurrentUser() async {
@@ -65,17 +67,6 @@ class FakeAuthService extends AuthService {
   }
 
   @override
-  Future<SubscriptionStatus> fetchSubscriptionStatus() async =>
-      SubscriptionStatus(
-        userId: 'user-1',
-        premiumActive: false,
-        trialActive: false,
-        freeLessonUsedToday: 0,
-        freeLessonRemainingToday: 1,
-        checkedAtUtc: DateTime.parse('2026-07-06T12:00:00Z'),
-        enforcementEnabled: true,
-      );
-
   @override
   Future<LessonAccessDecision> fetchLessonAccessDecision() async =>
       LessonAccessDecision.fromJson({
@@ -95,9 +86,37 @@ class FakeAuthService extends AuthService {
   }
 
   @override
-  Future<LessonHistoryListResult> fetchLessonHistory() async =>
-      LessonHistoryListResult.success(const LessonHistoryList(items: []));
+  Future<ProgressResult> fetchProgress() async {
+    fetchProgressCallCount++;
+    return progressResult ?? ProgressResult.success(_progress());
+  }
 }
+
+ProgressResponse _progress({int currentDays = 6, int last7Days = 4}) =>
+    ProgressResponse(
+      generatedAtUtc: DateTime.utc(2026, 7, 19),
+      calendarTimezone: 'UTC',
+      completedLessons: ProgressCompletedLessons(
+        allTime: 12,
+        last7Days: last7Days,
+        last30Days: 8,
+      ),
+      streaks: ProgressStreaks(currentDays: currentDays, longestDays: 99),
+      lastCompletedLesson: null,
+      completedLessonsByStudyLanguage: const [],
+      completedLessonsByLevel: const [],
+      dailyActivity: List.generate(
+        8,
+        (index) => ProgressDailyActivityItem(
+          activityDate: DateTime.utc(2026, 7, 11 + index),
+          completedLessons: index == 0
+              ? 9
+              : index.isEven
+                  ? 0
+                  : 1,
+        ),
+      ),
+    );
 
 UserSettings _settings(String currentLevel) => UserSettings(
       nativeLanguage: 'en',
@@ -157,44 +176,81 @@ void main() {
     expect(find.bySemanticsLabel('Language Voice Tutor'), findsOneWidget);
     expect(find.byKey(const Key('app-logo')), findsOneWidget);
     expect(find.bySemanticsLabel('Language Voice Tutor logo'), findsOneWidget);
+
+    final wordmark = tester.widget<Text>(
+      find.byKey(const Key('home-branded-title')),
+    );
+    final spans = (wordmark.textSpan! as TextSpan).children!;
+    expect((spans[0] as TextSpan).style?.foreground?.shader, isNotNull);
+    expect((spans[1] as TextSpan).style?.foreground?.shader, isNotNull);
+    expect((spans[2] as TextSpan).style?.foreground?.shader, isNotNull);
   });
 
-  testWidgets('home shows friendly signed-in account status', (tester) async {
+  testWidgets('home uses the compact approved layout', (tester) async {
     await tester.pumpWidget(_home());
     await tester.pumpAndSettle();
 
+    expect(find.text('Home'), findsNothing);
+    expect(find.text('Practice real conversations by text and voice.'),
+        findsNothing);
+    expect(
+        find.text('Choose a topic and situation, then start a guided lesson.'),
+        findsNothing);
+    expect(find.text('Start lesson'), findsOneWidget);
     expect(find.text('Signed in as David'), findsOneWidget);
-    expect(find.text('david@example.com'), findsOneWidget);
+    expect(find.text('Free plan'), findsOneWidget);
+    expect(find.text('Your account'), findsNothing);
+    expect(find.text('david@example.com'), findsNothing);
     expect(find.textContaining('user-1'), findsNothing);
+    expect(find.text('1 free lesson available today'), findsOneWidget);
+    expect(find.text('Refresh status'), findsNothing);
+    expect(find.byKey(const Key('home-lesson-history')), findsNothing);
+    expect(find.byKey(const Key('home-progress')), findsNothing);
+    expect(find.text('Open Settings'), findsOneWidget);
   });
 
-  testWidgets('home shows sign-in sync prompt when account is unavailable',
+  testWidgets('home loads plan and progress once and uses backend fields',
       (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_home(authService: auth));
+    await tester.pumpAndSettle();
+
+    expect(auth.fetchProgressCallCount, 1);
+    expect(find.bySemanticsLabel('6 day learning streak'), findsOneWidget);
+    expect(find.text('4 lessons in the last 7 days'), findsOneWidget);
+    expect(find.byKey(const Key('home-activity-2026-07-11')), findsNothing);
+    expect(find.byKey(const Key('home-activity-2026-07-12')), findsOneWidget);
+    expect(find.byKey(const Key('home-activity-2026-07-18')), findsOneWidget);
+  });
+
+  testWidgets('large streak fits a narrow screen without overflow',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 480));
     await tester.pumpWidget(_home(
       authService: FakeAuthService(
-        user: null,
-        loadFailure: const ApiException('Please sign in again.'),
+        progressResult: ProgressResult.success(_progress(currentDays: 115)),
       ),
     ));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Sign in to keep your settings and progress synced.'),
-      findsOneWidget,
-    );
-    expect(find.text('Please sign in again.'), findsNothing);
+    expect(find.text('115 🍪'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.binding.setSurfaceSize(null);
   });
 
-  testWidgets('home uses learner-friendly account and plan wording',
+  testWidgets('progress unavailability keeps Home actions usable',
       (tester) async {
-    await tester.pumpWidget(_home());
+    await tester.pumpWidget(_home(
+      authService:
+          FakeAuthService(progressResult: ProgressResult.unavailable()),
+    ));
     await tester.pumpAndSettle();
 
-    expect(find.text('Your account'), findsOneWidget);
-    expect(find.text('Free plan'), findsOneWidget);
-    expect(find.text('Refresh status'), findsOneWidget);
-    expect(find.text('Account / access'), findsNothing);
-    expect(find.text('Refresh access'), findsNothing);
+    expect(
+        find.bySemanticsLabel('Learning streak unavailable'), findsOneWidget);
+    expect(find.text('Activity is unavailable right now.'), findsOneWidget);
+    expect(find.text('Start lesson'), findsOneWidget);
+    expect(find.text('Open Settings'), findsOneWidget);
   });
 
   testWidgets('home does not show backend or debug wording', (tester) async {
@@ -283,7 +339,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(auth.fetchUserSettingsCallCount, 1);
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.byType(HomeScreen), findsOneWidget);
     expect(find.text('Start lesson'), findsOneWidget);
     expect(
       find.text(
@@ -308,17 +364,5 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Settings route'), findsOneWidget);
-  });
-
-  testWidgets('home opens Lesson History', (tester) async {
-    await tester.pumpWidget(_home());
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('home-lesson-history')), findsOneWidget);
-    expect(find.text('Review your recent lessons'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('home-lesson-history')));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('lesson-history-screen')), findsOneWidget);
   });
 }
