@@ -34,7 +34,9 @@ Verified Android build stack:
 
 ## Progress data foundation
 
-Backend `0.1.35-backend.124` provides authenticated `GET /api/me/progress`. Mobile has immutable response models and `fetchProgress()` using the existing authenticated refresh flow, but no Progress screen, Home entry, chart, or local official aggregation. The backend remains the source of truth for UTC/calendar rules, completion rules, totals, windows, and streaks; History remains limited to its recent 50-item contract.
+Backend `0.1.35-backend.124` provides authenticated `GET /api/me/progress`. Mobile has immutable response models and `fetchProgress()` using the existing authenticated refresh flow. The backend remains the source of truth for UTC/calendar rules, completion rules, totals, windows, and streaks; History remains limited to its recent 50-item contract.
+
+The authenticated Home screen now includes **Progress**, which opens a dedicated learner-facing screen. It renders backend-provided totals, streaks, daily activity, last lesson, and non-empty distributions without calculating official values locally. Loading, successful empty, authentication-required, unavailable, and retry states are included. No chart dependency, backend/database work, billing, voice, release, or deployment work was added; broader visual polish remains separate.
 
 Lesson History is complete in three committed slices: data foundation `4d531e3`, recent-list UI and Home navigation `2c88944`, and detail UI `a200641`. Mobile is another client of the same Language Voice Tutor product: History belongs to the authenticated backend account shared with Desktop and Website. The backend is the source of truth; Mobile neither reads Desktop-local JSON nor calls `/api/dev`, stores an independent local copy of official History, makes ownership decisions, or decides Premium access. The only History routes are:
 
@@ -238,7 +240,7 @@ Completed and remaining Mobile V1 or later phases:
 - Real per-message Translation. **Complete** in functional commit `9d2476b` (`Add mobile message translation`).
 - Real per-message learner Feedback. **Complete** in functional commit `f1e8f16` (`Add mobile learner message feedback`).
 - Lesson History data foundation, Home navigation, recent-list UI, and detail UI. **Complete** in `4d531e3`, `2c88944`, and `a200641`.
-- Progress. **Pending** a separate backend-owned aggregate endpoint and contract; do not calculate it from the recent History list.
+- Progress. **Complete** through the backend-owned aggregate contract, Home entry, and learner-facing screen; do not calculate it from the recent History list.
 - Tutor TTS playback. **Complete** in functional commit `28356ff` (`Add mobile tutor voice playback`).
 - Learner microphone recording and speech-to-text. **Complete** in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`).
 - Automatic tutor playback.

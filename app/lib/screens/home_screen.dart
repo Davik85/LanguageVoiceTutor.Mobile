@@ -9,6 +9,7 @@ import '../services/auth_service.dart';
 import '../services/service_factory.dart';
 import 'choose_topic_screen.dart';
 import 'lesson_history_screen.dart';
+import 'progress_screen.dart';
 import 'login_screen.dart';
 import 'settings_screen.dart';
 
@@ -34,6 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _lessonAccessError;
   bool _isLoadingLessonSettings = false;
   String? _lessonStartError;
+  bool _isNavigatingToProgress = false;
 
   @override
   void initState() {
@@ -161,23 +163,38 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(_lessonStartError!),
           ],
           const SizedBox(height: 12),
-          OutlinedButton.icon(
-            key: const Key('home-lesson-history'),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => LessonHistoryScreen(authService: _authService),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                key: const Key('home-lesson-history'),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        LessonHistoryScreen(authService: _authService),
+                  ),
+                ),
+                icon: const Icon(Icons.history),
+                label: const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Lesson history'),
+                    Text('Review your recent lessons'),
+                  ],
+                ),
               ),
             ),
-            icon: const Icon(Icons.history),
-            label: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Lesson history'),
-                Text('Review your recent lessons'),
-              ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                key: const Key('home-progress'),
+                onPressed: _openProgress,
+                icon: const Icon(Icons.insights),
+                label: const Text('Progress'),
+              ),
             ),
-          ),
+          ]),
           const SizedBox(height: 20),
           AccountAccessCard(
             user: _currentUser,
@@ -197,6 +214,21 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _openProgress() async {
+    if (_isNavigatingToProgress) return;
+    _isNavigatingToProgress = true;
+    try {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ProgressScreen(authService: _authService),
+        ),
+      );
+    } finally {
+      if (mounted) _isNavigatingToProgress = false;
+    }
   }
 }
 

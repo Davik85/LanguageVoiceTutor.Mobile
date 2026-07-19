@@ -119,7 +119,9 @@ Possible response concepts:
 
 ## Confirmed Progress V1 contract
 
-Production backend `0.1.35-backend.124` provides authenticated `GET /api/me/progress`. Mobile calls it through the shared bearer-token and refresh-on-401 flow. Official totals, 7-/30-day windows, UTC calendar boundaries, completion eligibility, and streaks are backend-owned; Mobile only parses the response and must not aggregate the bounded recent History list. This data-foundation slice adds models, safe result handling, service call, tests, and documentation only. Progress UI and navigation remain separate.
+Production backend `0.1.35-backend.124` provides authenticated `GET /api/me/progress`. Mobile calls it through the shared bearer-token and refresh-on-401 flow. Official totals, 7-/30-day windows, UTC calendar boundaries, completion eligibility, and streaks are backend-owned; Mobile only parses the response and must not aggregate the bounded recent History list. The data foundation supplies models, safe result handling, and the service call for the UI.
+
+Mobile now displays that backend contract through a Home Progress entry and dedicated screen. The UI formats backend values only, uses the backend-provided `dailyActivity` sequence without date shifting, and provides loading, empty, authentication-required, unavailable, and retry states. It does not expose technical contract fields or raw errors.
 
 Desktop parity source flow: `Start -> Settings/preferences -> Choose level -> Pick topic -> Pick situation -> Practice`. Level selection is part of lesson start and must not be a Settings field.
 

@@ -4,7 +4,9 @@
 
 ## Progress data foundation
 
-The Android-first client consumes backend `0.1.35-backend.124` Progress V1 through authenticated `GET /api/me/progress`. This adds no UI or navigation and does not calculate Progress from History; backend UTC and completion rules remain authoritative.
+The Android-first client consumes backend `0.1.35-backend.124` Progress V1 through authenticated `GET /api/me/progress`. It does not calculate Progress from History; backend UTC and completion rules remain authoritative.
+
+The Android client now exposes a Home Progress entry and scrollable learner-facing Progress screen using the existing theme and no chart package. Backend daily activity is rendered as accessible compact day cells; official calculations remain backend-owned. Broader visual polish is separate work.
 
 The mobile app will be built with Flutter using an Android-first delivery path. Android is the first target for implementation, QA, billing integration, and release preparation. iOS should remain a future-compatible consideration, but iOS project files should not be created during the docs-only foundation phase.
 

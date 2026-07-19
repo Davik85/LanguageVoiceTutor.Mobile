@@ -10,7 +10,9 @@ flutter analyze
 flutter test test/models/progress_test.dart test/services/progress_service_test.dart test/services/auth_service_test.dart test/services/lesson_history_service_test.dart
 ```
 
-Verify `GET /api/me/progress` uses the shared authenticated refresh-on-401 path, preserves backend-provided official values, sends no user ID, never calls `/api/dev`, and performs no History aggregation. This is models/service/documentation only; Progress UI and Home navigation remain separate work.
+Verify `GET /api/me/progress` uses the shared authenticated refresh-on-401 path, preserves backend-provided official values, sends no user ID, never calls `/api/dev`, and performs no History aggregation. The learner-facing UI consumes those same backend values without local official calculations.
+
+Progress UI verification covers the authenticated Home entry, duplicate-navigation protection, loading, backend-value success rendering, successful empty state, sign-in-required routing, unavailable/retry behavior, optional distributions, accessible backend daily-activity cells, small-screen scrolling, and no local History aggregation or chart dependency.
 
 ## Six-language lesson parity checks
 
