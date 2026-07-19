@@ -527,3 +527,6 @@ Backend should provide stable error codes for:
 - Backend processing unavailable.
 
 Mobile should map stable backend codes to user-friendly UI states.
+# Achievements V1 data foundation
+
+Production backend baseline: `0.1.35-backend.125`. Mobile reads `GET /api/me/achievements` through the existing authenticated session and refresh-on-401 flow. The backend owns achievement definitions, eligibility, unlock dates, progress, study-language scope, and the selected Home items. This Mobile slice provides models, safe parsing, and service access only: it adds no UI, Home badges, navigation, images, assets, or client-side achievement calculation/selection.

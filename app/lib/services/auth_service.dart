@@ -10,6 +10,7 @@ import '../models/lesson_access_decision.dart';
 import '../models/lesson_chat.dart';
 import '../models/lesson_history.dart';
 import '../models/progress.dart';
+import '../models/achievements.dart';
 import '../models/lesson_runtime.dart';
 import '../models/lesson_session.dart';
 import '../models/subscription_status.dart';
@@ -241,6 +242,26 @@ class AuthService {
       return ProgressResult.failed();
     } catch (_) {
       return ProgressResult.failed();
+    }
+  }
+
+  Future<AchievementsResult> fetchAchievements() async {
+    try {
+      final response = await _authenticatedGet('/api/me/achievements');
+      return AchievementsResult.success(
+        AchievementsResponse.fromJson(_decodeObject(response.body)),
+      );
+    } on ApiException catch (error) {
+      if (error.message == 'Please sign in again.') {
+        return AchievementsResult.authRequired();
+      }
+      if (error.category == ApiFailureCategory.network ||
+          error.category == ApiFailureCategory.timeout) {
+        return AchievementsResult.unavailable();
+      }
+      return AchievementsResult.failed();
+    } catch (_) {
+      return AchievementsResult.failed();
     }
   }
 
