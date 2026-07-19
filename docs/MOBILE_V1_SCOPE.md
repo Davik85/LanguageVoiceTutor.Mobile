@@ -2,7 +2,7 @@
 
 ## Goal
 
-Mobile V1 establishes an Android-first Flutter client for Language Voice Tutor that uses the existing production backend and shared product model. The current Android skeleton baseline is verified locally on Android Emulator, but the app remains placeholder UI only. It should let an existing or new user access the same account, subscription entitlement, usage limits, lesson history, progress, and AI tutor behavior used by the Windows desktop app.
+Mobile V1 establishes an Android-first Flutter client for Language Voice Tutor that uses the existing production backend and shared product model. The current Android skeleton baseline is verified locally on Android Emulator, but the app now includes working authenticated lesson and Lesson History flows. It lets an existing or new user access the same account, subscription entitlement, usage limits, lesson history, progress, and AI tutor behavior used by the Windows desktop app.
 
 ## Supported lesson languages
 
@@ -30,6 +30,23 @@ Verified Android build stack:
 - Java/Kotlin target 17
 
 
+## Lesson History current state
+
+Lesson History is complete in three committed slices: data foundation `4d531e3`, recent-list UI and Home navigation `2c88944`, and detail UI `a200641`. Mobile is another client of the same Language Voice Tutor product: History belongs to the authenticated backend account shared with Desktop and Website. The backend is the source of truth; Mobile neither reads Desktop-local JSON nor calls `/api/dev`, stores an independent local copy of official History, makes ownership decisions, or decides Premium access. The only History routes are:
+
+```http
+GET /api/me/lesson-history
+GET /api/me/lesson-history/{sessionId}
+```
+
+The data foundation provides list and detail models plus summary, transcript-message, and feedback models without duplicating backend business logic. `fetchLessonHistory()` and `fetchLessonHistoryDetail(sessionId)` use the shared authenticated GET and refresh-on-401 behavior. Result/status mapping safely separates success, validation, authentication-required, not-found, temporary network unavailability, malformed/generic failure, and other failures; blank detail IDs are rejected before a request, and detail IDs are safely path-encoded.
+
+Home now exposes the learner-facing **Lesson history** entry. The History screen loads recent backend-provided sessions, preserves backend ordering, and handles initial loading, populated, empty, retry/error, and authentication-required states. Cards show learner-facing topic, subtopic, level, friendly date, selected context, lesson mode, completion state, valid turns/message count, and summary preview where available. They hide session/content IDs, estimated cost, raw timestamps, and backend internals. The list is not described as complete all-time History, and details are not prefetched. Duplicate list retries and duplicate card navigation are guarded.
+
+Tapping a card opens **Lesson details** and then calls `fetchLessonHistoryDetail(sessionId)` once for the initial load. The screen handles loading, local ID validation, not-found, retryable network/generic failure, authentication-required, and success states; only retryable failures show Retry, and duplicate retries are guarded. Success shows a lesson overview, only non-empty backend summary sections, transcript messages in backend order with **You**/**Tutor** distinction, and feedback connected to its transcript message when available. It hides internal IDs, estimated cost, transcript confidence, audio duration, raw source/role codes, and raw timestamps. Back returns to the History list.
+
+The backend list contract currently returns up to **50 recent sessions**. It must not be treated as the official source for all-time learning statistics: Mobile must not derive official totals, streaks, or other local aggregates from this bounded list. Future **Progress** requires a separate backend-owned aggregate endpoint and contract. History did not add Progress, streaks, all-time totals, pagination, local History storage, backend/Desktop changes, billing, voice/transcription/TTS changes, dependency upgrades, Android release configuration, APK/store release work, or deployment work. A physical-device check may still review small-screen spacing, but automated coverage establishes the functional flow and it is not a backend or functional blocker.
+
 ## Authentication and session resilience
 
 Mobile authentication is hardened so temporary backend or network problems do not incorrectly log users out. Refresh outcomes are classified as `success`, `invalid session`, or `temporary failure`; only a proven invalid session clears stored tokens. Temporary network, timeout, malformed-response, rate-limit, and backend failures preserve stored tokens, and temporary Splash session-check failures remain retryable instead of automatically routing to Login. Concurrent HTTP 401 responses share one single-flight refresh operation across JSON, binary TTS, multipart transcription, and voice-scenario paths. A stale HTTP 401 first retries a newer stored access token before starting another refresh. Access tokens remain 60 minutes, refresh tokens remain 30 days, backend refresh tokens rotate, and reuse of a rotated refresh token revokes its token family. No backend change or deployment was required for this Mobile session-resilience fix. Focused verification recorded 44 AuthService tests passed, 2 Splash tests passed, and `flutter analyze` reported no issues.
@@ -42,7 +59,7 @@ Mobile submits `POST /api/me/feedback-reports` through the existing authenticate
 
 Production integration is verified: backend migration `20260717120148_AddUserFeedbackReports` was applied and backend release `0.1.35-backend.117` was deployed. The initial submission returned HTTP 503 because the new table was owned by `postgres` and `lvt_app` lacked permission; production table ownership was corrected to `lvt_app`. After correction, suggestion, app_issue, and ai_response reports were successfully submitted from a physical Android device. Three production records were verified with status `new`, `ClientPlatform` `android`, and `ClientVersion` `0.1.0+1`.
 
-Boundaries remain: no CMS report-review screen exists yet, no email workflow exists, no attachments or screenshots are supported, no report button was added to individual chat messages, no automatic moderation or OpenAI forwarding exists, no new Mobile database was created, backend remains the owner of persistence and authenticated `UserId`, and a future CMS list with `new`, `reviewed`, and `resolved` states remains separate work. Flutter interface localization remains pending; billing, analytics, crash reporting, history/progress, signing, Play Console, and store release work remain separate.
+Boundaries remain: no CMS report-review screen exists yet, no email workflow exists, no attachments or screenshots are supported, no report button was added to individual chat messages, no automatic moderation or OpenAI forwarding exists, no new Mobile database was created, backend remains the owner of persistence and authenticated `UserId`, and a future CMS list with `new`, `reviewed`, and `resolved` states remains separate work. Flutter interface localization remains pending; billing, analytics, crash reporting, Progress, signing, Play Console, and store release work remain separate.
 
 ## Repository strategy
 
@@ -216,7 +233,8 @@ Completed and remaining Mobile V1 or later phases:
 
 - Real per-message Translation. **Complete** in functional commit `9d2476b` (`Add mobile message translation`).
 - Real per-message learner Feedback. **Complete** in functional commit `f1e8f16` (`Add mobile learner message feedback`).
-- Lesson history and progress screens.
+- Lesson History data foundation, Home navigation, recent-list UI, and detail UI. **Complete** in `4d531e3`, `2c88944`, and `a200641`.
+- Progress. **Pending** a separate backend-owned aggregate endpoint and contract; do not calculate it from the recent History list.
 - Tutor TTS playback. **Complete** in functional commit `28356ff` (`Add mobile tutor voice playback`).
 - Learner microphone recording and speech-to-text. **Complete** in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`).
 - Automatic tutor playback.
@@ -229,4 +247,4 @@ Completed and remaining Mobile V1 or later phases:
 
 ## Next isolated engineering task
 
-Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Learner microphone recording plus speech-to-text is complete in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Mobile voice lesson and Conversation mode flows are complete in functional commit `f195dc2` (`feat: add mobile voice lesson and conversation flows`), and Desktop-parity transcription behavior is documented here with no backend deployment requirement; see `docs/MOBILE_VOICE_LESSON_STATE.md` for the broader voice scenario flow and validation record. Keep history/progress screen, mobile billing, analytics, crash reporting, and store release as future work.
+Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Learner microphone recording plus speech-to-text is complete in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Mobile voice lesson and Conversation mode flows are complete in functional commit `f195dc2` (`feat: add mobile voice lesson and conversation flows`), and Desktop-parity transcription behavior is documented here with no backend deployment requirement; see `docs/MOBILE_VOICE_LESSON_STATE.md` for the broader voice scenario flow and validation record. Lesson History is complete. The next safe product step is to plan a separate backend-owned Progress aggregate endpoint and contract; do not implement local Progress from the recent History list. Mobile billing, analytics, crash reporting, and store release remain future work.
