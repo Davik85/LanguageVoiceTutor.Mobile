@@ -65,6 +65,113 @@ class LessonSessionResponse {
   }
 }
 
+/// The minimal authenticated lesson-session list contract needed to discover
+/// whether the backend currently has an active session for the learner.
+class LessonSessionList {
+  const LessonSessionList({required this.items});
+
+  final List<LessonSessionListItem> items;
+
+  factory LessonSessionList.fromJson(Map<String, dynamic> json) {
+    final rawItems = json['items'];
+    if (rawItems is! List) {
+      throw const FormatException('Invalid lesson session list.');
+    }
+    return LessonSessionList(
+      items: rawItems
+          .map((item) => LessonSessionListItem.fromJson(_requiredObject(item)))
+          .toList(growable: false),
+    );
+  }
+}
+
+class LessonSessionListItem {
+  const LessonSessionListItem({
+    required this.sessionId,
+    required this.status,
+    required this.startedAt,
+  });
+
+  final String sessionId;
+  final String status;
+  final DateTime startedAt;
+
+  bool get isActive => status.toLowerCase() == 'active';
+
+  factory LessonSessionListItem.fromJson(Map<String, dynamic> json) {
+    final sessionId = _requiredGuid(json, 'id');
+    final status = _requiredNonBlankString(json, 'status');
+    return LessonSessionListItem(
+      sessionId: sessionId,
+      status: status,
+      startedAt: _requiredDateTime(json, 'startedAt'),
+    );
+  }
+}
+
+enum ActiveLessonSessionDiscoveryStatus {
+  success,
+  authRequired,
+  unavailable,
+  inconsistent,
+  failed,
+}
+
+class ActiveLessonSessionDiscoveryResult {
+  const ActiveLessonSessionDiscoveryResult._({
+    required this.status,
+    required this.message,
+    this.session,
+  });
+
+  final ActiveLessonSessionDiscoveryStatus status;
+  final String message;
+  final LessonSessionListItem? session;
+
+  bool get isSuccess => status == ActiveLessonSessionDiscoveryStatus.success;
+
+  factory ActiveLessonSessionDiscoveryResult.none() =>
+      const ActiveLessonSessionDiscoveryResult._(
+        status: ActiveLessonSessionDiscoveryStatus.success,
+        message: '',
+      );
+
+  factory ActiveLessonSessionDiscoveryResult.active(
+    LessonSessionListItem session,
+  ) =>
+      ActiveLessonSessionDiscoveryResult._(
+        status: ActiveLessonSessionDiscoveryStatus.success,
+        message: '',
+        session: session,
+      );
+
+  factory ActiveLessonSessionDiscoveryResult.authRequired() =>
+      const ActiveLessonSessionDiscoveryResult._(
+        status: ActiveLessonSessionDiscoveryStatus.authRequired,
+        message: 'Please sign in again.',
+      );
+
+  factory ActiveLessonSessionDiscoveryResult.unavailable() =>
+      const ActiveLessonSessionDiscoveryResult._(
+        status: ActiveLessonSessionDiscoveryStatus.unavailable,
+        message:
+            'Lesson sessions are temporarily unavailable. Please try again.',
+      );
+
+  factory ActiveLessonSessionDiscoveryResult.inconsistent() =>
+      const ActiveLessonSessionDiscoveryResult._(
+        status: ActiveLessonSessionDiscoveryStatus.inconsistent,
+        message:
+            'Your lesson session state needs to be checked. Please try again.',
+      );
+
+  factory ActiveLessonSessionDiscoveryResult.failed() =>
+      const ActiveLessonSessionDiscoveryResult._(
+        status: ActiveLessonSessionDiscoveryStatus.failed,
+        message: 'Could not check your lesson sessions. Please try again.',
+      );
+}
+
 class FinishLessonSessionRequest {
   const FinishLessonSessionRequest({required this.validTurnCount});
 
@@ -268,6 +375,35 @@ class LessonSessionStartResult {
 Map<String, dynamic>? _object(Map<String, dynamic> json, String key) {
   final value = json[key];
   return value is Map<String, dynamic> ? value : null;
+}
+
+Map<String, dynamic> _requiredObject(Object? value) {
+  if (value is Map<String, dynamic>) return value;
+  throw const FormatException('Invalid lesson session.');
+}
+
+String _requiredNonBlankString(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value is! String || value.trim().isEmpty) {
+    throw FormatException('Invalid $key.');
+  }
+  return value;
+}
+
+String _requiredGuid(Map<String, dynamic> json, String key) {
+  final value = _requiredNonBlankString(json, key);
+  if (!RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  ).hasMatch(value)) {
+    throw FormatException('Invalid $key.');
+  }
+  return value;
+}
+
+DateTime _requiredDateTime(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value is! String) throw FormatException('Invalid $key.');
+  return DateTime.parse(value).toUtc();
 }
 
 String _firstString(Map<String, dynamic> json, List<String> keys) {

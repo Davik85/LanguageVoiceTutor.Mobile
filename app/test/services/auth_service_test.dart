@@ -336,6 +336,128 @@ void main() {
     });
   });
 
+  test(
+      'discovers no active lesson session from the authenticated production list',
+      () async {
+    final api = FakeApiClient()
+      ..responses['/api/me/lesson-sessions'] = [
+        const ApiResponse(statusCode: 200, body: '{"items":[]}'),
+      ];
+    final result = await AuthService(apiClient: api, storage: MemoryStorage())
+        .discoverActiveLessonSession();
+
+    expect(result.status, ActiveLessonSessionDiscoveryStatus.success);
+    expect(result.session, isNull);
+    expect(api.calls, ['GET /api/me/lesson-sessions']);
+    expect(api.tokens, ['access']);
+    expect(api.calls.single, isNot(contains('/api/dev')));
+  });
+
+  test(
+      'discovers the single active lesson session and rejects multiple active sessions',
+      () async {
+    const finished =
+        '{"id":"11111111-1111-1111-1111-111111111111","status":"Finished","startedAt":"2026-07-20T10:00:00Z"}';
+    const active =
+        '{"id":"33333333-3333-3333-3333-333333333333","status":"Active","startedAt":"2026-07-20T11:00:00Z"}';
+    final api = FakeApiClient()
+      ..responses['/api/me/lesson-sessions'] = [
+        const ApiResponse(
+            statusCode: 200, body: '{"items":[$finished,$active]}'),
+        const ApiResponse(statusCode: 200, body: '{"items":[$active,$active]}'),
+      ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final one = await service.discoverActiveLessonSession();
+    expect(one.status, ActiveLessonSessionDiscoveryStatus.success);
+    expect(one.session?.sessionId, '33333333-3333-3333-3333-333333333333');
+
+    final multiple = await service.discoverActiveLessonSession();
+    expect(multiple.status, ActiveLessonSessionDiscoveryStatus.inconsistent);
+    expect(multiple.session, isNull);
+  });
+
+  test(
+      'active lesson discovery refreshes after 401 and safely handles failures',
+      () async {
+    const activeBody =
+        '{"items":[{"id":"33333333-3333-3333-3333-333333333333","status":"Active","startedAt":"2026-07-20T11:00:00Z"}]}';
+    final refreshApi = FakeApiClient()
+      ..responses['/api/me/lesson-sessions'] = [
+        const ApiResponse(statusCode: 401, body: '{}'),
+        const ApiResponse(statusCode: 200, body: activeBody),
+      ];
+    final refreshed = await AuthService(
+      apiClient: refreshApi,
+      storage: MemoryStorage(),
+    ).discoverActiveLessonSession();
+    expect(refreshed.session, isNotNull);
+    expect(refreshApi.calls, [
+      'GET /api/me/lesson-sessions',
+      'POST /api/auth/refresh',
+      'GET /api/me/lesson-sessions',
+    ]);
+
+    final invalidRefreshApi = FakeApiClient()
+      ..responses['/api/me/lesson-sessions'] = [
+        const ApiResponse(statusCode: 401, body: '{}'),
+      ]
+      ..responses['/api/auth/refresh'] = [
+        const ApiResponse(statusCode: 401, body: '{}'),
+      ];
+    final invalidStorage = MemoryStorage();
+    final invalid = await AuthService(
+      apiClient: invalidRefreshApi,
+      storage: invalidStorage,
+    ).discoverActiveLessonSession();
+    expect(invalid.status, ActiveLessonSessionDiscoveryStatus.authRequired);
+    expect(invalidStorage.access, isNull);
+    expect(invalidStorage.refresh, isNull);
+
+    final unavailableApi = FakeApiClient()
+      ..responses['/api/me/lesson-sessions'] = [
+        const ApiResponse(statusCode: 503, body: '{}'),
+      ];
+    final unavailableStorage = MemoryStorage();
+    final unavailable = await AuthService(
+      apiClient: unavailableApi,
+      storage: unavailableStorage,
+    ).discoverActiveLessonSession();
+    expect(unavailable.status, ActiveLessonSessionDiscoveryStatus.unavailable);
+    expect(unavailableStorage.access, 'access');
+    expect(unavailableStorage.refresh, 'refresh');
+
+    final networkApi = FakeApiClient()
+      ..errors['/api/me/lesson-sessions'] = [
+        const ApiException(
+          'Unable to reach the service.',
+          category: ApiFailureCategory.network,
+        ),
+      ];
+    final networkStorage = MemoryStorage();
+    final network = await AuthService(
+      apiClient: networkApi,
+      storage: networkStorage,
+    ).discoverActiveLessonSession();
+    expect(network.status, ActiveLessonSessionDiscoveryStatus.unavailable);
+    expect(networkStorage.access, 'access');
+    expect(networkStorage.refresh, 'refresh');
+
+    final malformedApi = FakeApiClient()
+      ..responses['/api/me/lesson-sessions'] = [
+        const ApiResponse(
+            statusCode: 200,
+            body:
+                '{"items":[{"id":"bad","status":"Active","startedAt":"2026-07-20T11:00:00Z"}]}'),
+      ];
+    expect(
+      (await AuthService(apiClient: malformedApi, storage: MemoryStorage())
+              .discoverActiveLessonSession())
+          .status,
+      ActiveLessonSessionDiscoveryStatus.failed,
+    );
+  });
+
   test('voice scenario diagnostics preserve exact non-2xx HTTP status',
       () async {
     final api = FakeApiClient()

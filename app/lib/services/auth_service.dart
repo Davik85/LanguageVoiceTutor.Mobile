@@ -212,6 +212,38 @@ class AuthService {
     return LessonAccessDecision.fromJson(_decodeObject(response.body));
   }
 
+  Future<ActiveLessonSessionDiscoveryResult>
+      discoverActiveLessonSession() async {
+    try {
+      final response = await _authenticatedGet(
+        '/api/me/lesson-sessions',
+        failureMessageForResponse: _lessonSessionDiscoveryFailureMessage,
+      );
+      final sessions = LessonSessionList.fromJson(_decodeObject(response.body));
+      final active =
+          sessions.items.where((session) => session.isActive).toList();
+      if (active.isEmpty) return ActiveLessonSessionDiscoveryResult.none();
+      if (active.length == 1) {
+        return ActiveLessonSessionDiscoveryResult.active(active.single);
+      }
+      return ActiveLessonSessionDiscoveryResult.inconsistent();
+    } on ApiException catch (error) {
+      if (error.message == 'Please sign in again.') {
+        return ActiveLessonSessionDiscoveryResult.authRequired();
+      }
+      if (error.category == ApiFailureCategory.network ||
+          error.category == ApiFailureCategory.timeout ||
+          error.category == ApiFailureCategory.transport ||
+          error.message ==
+              'Lesson sessions are temporarily unavailable. Please try again.') {
+        return ActiveLessonSessionDiscoveryResult.unavailable();
+      }
+      return ActiveLessonSessionDiscoveryResult.failed();
+    } catch (_) {
+      return ActiveLessonSessionDiscoveryResult.failed();
+    }
+  }
+
   Future<LessonHistoryListResult> fetchLessonHistory() async {
     try {
       final response = await _authenticatedGet('/api/me/lesson-history');
@@ -1385,6 +1417,14 @@ class AuthService {
       return 'This lesson is no longer available.';
     }
     return 'Could not load lesson details right now.';
+  }
+
+  static String _lessonSessionDiscoveryFailureMessage(ApiResponse response) {
+    if (response.statusCode == 401) return 'Please sign in again.';
+    if (response.statusCode >= 500) {
+      return 'Lesson sessions are temporarily unavailable. Please try again.';
+    }
+    return 'Could not check your lesson sessions. Please try again.';
   }
 
   static LessonHistoryListResult _safeLessonHistoryListResult(
