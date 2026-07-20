@@ -13,20 +13,22 @@ Home is a compact, vertically scrollable learner dashboard: current backend-owne
 Settings is divided by a three-item bottom navigation bar:
 
 - **Profile**: account/subscription, learner level, language choices, tutor, audio, and Save settings.
-- **Lessons**: Lesson history, Progress, and a visible future Rewards placeholder.
+- **Lessons**: Lesson history, Progress, and **Rewards**, which opens the complete achievement catalogue.
 - **App**: password recovery, Feedback & reports, future Notifications & contact placeholder, and Connection status.
 
 Settings, Progress, Lesson History, Choose Topic, and Choose Situation use the same light-blue-to-golden background. Cards are softly rounded translucent surfaces; settings fields and expansion panels use rounded filled controls. Backend contracts, entitlement ownership, and lesson behavior remain unchanged.
 
 ## Achievements
 
-Home includes a single shared **Achievements** surface with the backend-selected unlocked items, and **View all** opens the complete achievement catalogue. Achievement artwork is transparent and is shown directly on the shared surface rather than inside an additional per-item card. Unlocked artwork can be opened over the current page, closed by tapping anywhere, and enlarged or moved with the standard two-finger gesture; locked artwork remains subdued and cannot be opened. The complete catalogue uses a two-column layout.
+Home includes a single shared **Achievements** surface with the backend-selected unlocked items, and **View all** opens the complete achievement catalogue. The **Settings -> Lessons -> Rewards** row opens that same catalogue. Achievement artwork is transparent and is shown directly on the shared surface rather than inside an additional per-item card. Unlocked artwork can be opened over the current page, closed by tapping anywhere, and enlarged or moved with the standard two-finger gesture; locked artwork remains subdued and cannot be opened. The complete catalogue uses a two-column layout.
 
 When Home discovers an unlocked achievement that has not yet been presented on the current device for the signed-in user, it opens it automatically once. Multiple new unlocks are shown in sequence; closing one shows the next, while the visible close-all control dismisses the remaining queue. This presentation history is local, user-scoped secure-storage state only and never changes backend achievement eligibility, progress, ordering, or unlock data. Full API and ownership details are in `docs/API_CONTRACTS_ASSUMPTIONS.md`.
 
 ## Lesson visual boundary
 
-The blue product typography remains available to Home and Settings. Active lesson screens deliberately use a local neutral typography theme so lesson content, learner feedback, and the completion summary retain their own readable hierarchy. Feedback is rendered as a warm support panel with distinct white sections; the summary uses separate positive, improvement, and phrase panels inspired by the Desktop structure. This is presentation-only: lesson runtime, feedback payloads, summary contracts, and backend ownership are unchanged.
+The blue product typography remains available to Home and Settings. Active lesson screens deliberately use a local neutral typography theme so lesson content, learner feedback, and the completion summary retain their own readable hierarchy. Feedback is rendered as a warm support panel with distinct white sections; the summary uses separate positive, improvement, and phrase panels inspired by the Desktop structure. The Lesson Chat dock keeps its microphone as the larger centered bottom action, with keyboard and Hint controls aligned to the left and right edges. This is presentation-only: lesson runtime, feedback payloads, summary contracts, and backend ownership are unchanged.
+
+The Home weekly-activity bars remain backend-owned visualizations. Tapping a day selects and outlines that bar and displays its backend-provided completed-lesson count; Mobile does not calculate or infer totals locally.
 
 Language Voice Tutor Mobile is the Android-first Flutter client for the existing Language Voice Tutor product. This repository is intentionally separate from the desktop application and backend services so mobile-specific UI, platform integration, release cadence, and store workflows can evolve independently.
 

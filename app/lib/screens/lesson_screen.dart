@@ -2992,39 +2992,51 @@ class _LessonComposer extends StatelessWidget {
           ],
           Align(
             key: const Key('lesson-action-row'),
-            alignment: Alignment.centerLeft,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                OutlinedButton(
-                  key: const Key('lesson-action-record'),
-                  style: compactButtonStyle,
-                  onPressed: canRecord ? onToggleRecordingPlaceholder : null,
-                  child: Icon(
-                    isRecordingPlaceholderActive ? Icons.stop : Icons.mic_none,
-                    size: 20,
+            child: SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton(
+                      key: const Key('lesson-action-keyboard'),
+                      style: compactButtonStyle,
+                      onPressed: onToggleTextComposer,
+                      child: Icon(
+                        isTextComposerVisible
+                            ? Icons.keyboard_hide_outlined
+                            : Icons.keyboard_alt_outlined,
+                        size: 20,
+                      ),
+                    ),
                   ),
-                ),
-                OutlinedButton.icon(
-                  key: const Key('lesson-action-hint'),
-                  style: compactButtonStyle,
-                  onPressed: canHint ? onHint : null,
-                  icon: const Icon(Icons.lightbulb_outline, size: 19),
-                  label: const Text('Hint'),
-                ),
-                OutlinedButton(
-                  key: const Key('lesson-action-keyboard'),
-                  style: compactButtonStyle,
-                  onPressed: onToggleTextComposer,
-                  child: Icon(
-                    isTextComposerVisible
-                        ? Icons.keyboard_hide_outlined
-                        : Icons.keyboard_alt_outlined,
-                    size: 20,
+                  OutlinedButton(
+                    key: const Key('lesson-action-record'),
+                    style: compactButtonStyle.copyWith(
+                      minimumSize: const WidgetStatePropertyAll(Size(52, 44)),
+                    ),
+                    onPressed: canRecord ? onToggleRecordingPlaceholder : null,
+                    child: Icon(
+                      isRecordingPlaceholderActive
+                          ? Icons.stop
+                          : Icons.mic_none,
+                      size: 23,
+                    ),
                   ),
-                ),
-              ],
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: OutlinedButton.icon(
+                      key: const Key('lesson-action-hint'),
+                      style: compactButtonStyle,
+                      onPressed: canHint ? onHint : null,
+                      icon: const Icon(Icons.lightbulb_outline, size: 19),
+                      label: const Text('Hint'),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

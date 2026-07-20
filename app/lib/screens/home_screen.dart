@@ -759,40 +759,76 @@ class _ActivityUnavailable extends StatelessWidget {
       );
 }
 
-class _ActivityBars extends StatelessWidget {
+class _ActivityBars extends StatefulWidget {
   const _ActivityBars({required this.items});
   final List<ProgressDailyActivityItem> items;
 
   @override
+  State<_ActivityBars> createState() => _ActivityBarsState();
+}
+
+class _ActivityBarsState extends State<_ActivityBars> {
+  int? _selectedIndex;
+
+  @override
   Widget build(BuildContext context) {
     var maximum = 1;
-    for (final item in items) {
+    for (final item in widget.items) {
       if (item.completedLessons > maximum) {
         maximum = item.completedLessons;
       }
     }
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
+    final selectedItem =
+        _selectedIndex == null ? null : widget.items[_selectedIndex!];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (var index = 0; index < items.length; index++)
-          Expanded(
-            child: _ActivityBar(
-              item: items[index],
-              maximum: maximum,
-              isLatest: index == items.length - 1,
-            ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            for (var index = 0; index < widget.items.length; index++)
+              Expanded(
+                child: _ActivityBar(
+                  item: widget.items[index],
+                  maximum: maximum,
+                  isLatest: index == widget.items.length - 1,
+                  isSelected: index == _selectedIndex,
+                  onTap: () => setState(() => _selectedIndex = index),
+                ),
+              ),
+          ],
+        ),
+        if (selectedItem != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            '${_weekday(selectedItem.activityDate)}: '
+            '${selectedItem.completedLessons} '
+            '${selectedItem.completedLessons == 1 ? 'lesson' : 'lessons'} completed',
+            key: const Key('home-activity-detail'),
+            style: Theme.of(context).textTheme.labelMedium,
           ),
+        ],
       ],
     );
   }
+
+  String _weekday(DateTime date) =>
+      const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][date.weekday - 1];
 }
 
 class _ActivityBar extends StatelessWidget {
-  const _ActivityBar(
-      {required this.item, required this.maximum, required this.isLatest});
+  const _ActivityBar({
+    required this.item,
+    required this.maximum,
+    required this.isLatest,
+    required this.isSelected,
+    required this.onTap,
+  });
   final ProgressDailyActivityItem item;
   final int maximum;
   final bool isLatest;
+  final bool isSelected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -802,61 +838,83 @@ class _ActivityBar extends StatelessWidget {
         : 12 + (40 * item.completedLessons / maximum);
     return Semantics(
       label: '$date: ${item.completedLessons} completed lessons',
+      button: true,
+      selected: isSelected,
       container: true,
       child: ExcludeSemantics(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          SizedBox(
-            height: 52,
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                key: Key('home-activity-$date'),
-                height: height,
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                decoration: BoxDecoration(
-                  gradient: item.completedLessons > 0
-                      ? const LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            AppVisuals.activityEmeraldLight,
-                            AppVisuals.activityEmeraldDark,
-                          ],
-                        )
-                      : null,
-                  color: item.completedLessons == 0
-                      ? Theme.of(context).colorScheme.surfaceContainerHighest
-                      : null,
-                  borderRadius: BorderRadius.circular(8),
-                  border: isLatest
-                      ? Border.all(color: AppVisuals.learningGreen, width: 1.5)
-                      : null,
-                ),
-                child: item.completedLessons > 0
-                    ? Align(
-                        alignment: Alignment.centerRight,
-                        child: Container(
-                          width: 3,
-                          decoration: const BoxDecoration(
-                            borderRadius: BorderRadius.horizontal(
-                              right: Radius.circular(8),
-                            ),
-                            gradient: LinearGradient(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(8),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              SizedBox(
+                height: 52,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                    key: Key('home-activity-$date'),
+                    height: height,
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    decoration: BoxDecoration(
+                      gradient: item.completedLessons > 0
+                          ? const LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
-                              colors: [Color(0xBBFFFFFF), Color(0x00FFFFFF)],
+                              colors: [
+                                AppVisuals.activityEmeraldLight,
+                                AppVisuals.activityEmeraldDark,
+                              ],
+                            )
+                          : null,
+                      color: item.completedLessons == 0
+                          ? Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest
+                          : null,
+                      borderRadius: BorderRadius.circular(8),
+                      border: isSelected
+                          ? Border.all(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 2,
+                            )
+                          : isLatest
+                              ? Border.all(
+                                  color: AppVisuals.learningGreen,
+                                  width: 1.5,
+                                )
+                              : null,
+                    ),
+                    child: item.completedLessons > 0
+                        ? Align(
+                            alignment: Alignment.centerRight,
+                            child: Container(
+                              width: 3,
+                              decoration: const BoxDecoration(
+                                borderRadius: BorderRadius.horizontal(
+                                  right: Radius.circular(8),
+                                ),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Color(0xBBFFFFFF),
+                                    Color(0x00FFFFFF),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      )
-                    : null,
+                          )
+                        : null,
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 4),
+              Text(_weekday(item.activityDate),
+                  style: Theme.of(context).textTheme.labelSmall),
+            ]),
           ),
-          const SizedBox(height: 4),
-          Text(_weekday(item.activityDate),
-              style: Theme.of(context).textTheme.labelSmall),
-        ]),
+        ),
       ),
     );
   }

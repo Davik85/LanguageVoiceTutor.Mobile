@@ -289,6 +289,23 @@ void main() {
     expect(find.byKey(const Key('home-activity-2026-07-18')), findsOneWidget);
   });
 
+  testWidgets('tapping a daily activity bar shows its completed lesson count',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(_home());
+    await tester.pumpAndSettle();
+
+    final bar = find.byKey(const Key('home-activity-2026-07-18'));
+    await tester.tap(bar);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('home-activity-detail')), findsOneWidget);
+    expect(find.text('Sat: 1 lesson completed'), findsOneWidget);
+  });
+
   testWidgets(
       'home preserves backend achievement Home order and opens view all',
       (tester) async {

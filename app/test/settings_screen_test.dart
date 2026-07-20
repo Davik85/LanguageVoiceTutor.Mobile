@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
+import 'package:language_voice_tutor_mobile/models/achievements.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
 import 'package:language_voice_tutor_mobile/models/feedback_report.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_history.dart';
@@ -100,6 +101,10 @@ class FakeAuthService extends AuthService {
 
   @override
   Future<ProgressResult> fetchProgress() async => ProgressResult.failed();
+
+  @override
+  Future<AchievementsResult> fetchAchievements() async =>
+      AchievementsResult.unavailable();
 
   @override
   Future<String> requestPasswordReset(String email) async =>
@@ -263,6 +268,22 @@ void main() {
     await tester.tap(find.byKey(const Key('settings-progress')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('progress-screen')), findsOneWidget);
+  });
+
+  testWidgets('settings Rewards opens the complete achievements screen',
+      (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+
+    await _showSectionForText(tester, 'Rewards');
+    await tester.tap(find.byKey(const Key('settings-rewards')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Achievements'), findsOneWidget);
+    expect(
+        find.text(
+            'Achievements are temporarily unavailable. Please try again.'),
+        findsOneWidget);
   });
 
   testWidgets('settings separates profile, lessons, and app controls',
@@ -633,7 +654,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Settings are temporarily unavailable. Please try again.'),
         findsOneWidget);
-    await tester.tap(find.text('Save settings'));
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    final retryButton = find.widgetWithText(FilledButton, 'Save settings');
+    await _scrollToFinder(tester, retryButton);
+    await tester.tap(retryButton);
     await tester.pumpAndSettle();
     expect(auth.saveCalls, 2);
   });

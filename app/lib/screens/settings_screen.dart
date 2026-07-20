@@ -14,6 +14,7 @@ import '../services/backend_health_service.dart';
 import '../services/service_factory.dart';
 import '../services/tutor_options_service.dart';
 import '../theme/app_visuals.dart';
+import 'achievements_screen.dart';
 import 'login_screen.dart';
 import 'lesson_history_screen.dart';
 import 'progress_screen.dart';
@@ -368,6 +369,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
 
+  Future<void> _openAchievements() => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AchievementsScreen(authService: _authService),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -463,10 +471,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ]),
           ),
           const SizedBox(height: 12),
-          const _ComingSoonCard(
-            icon: Icons.workspace_premium_outlined,
-            title: 'Rewards',
-            subtitle: 'Badges and learning rewards are coming soon.',
+          Card(
+            child: ListTile(
+              key: const Key('settings-rewards'),
+              leading: const Icon(Icons.workspace_premium_outlined),
+              title: const Text('Rewards'),
+              subtitle: const Text('View all badges and learning rewards.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _openAchievements,
+            ),
           ),
         ],
       );

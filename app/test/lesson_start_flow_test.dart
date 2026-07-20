@@ -669,6 +669,26 @@ void main() {
   });
 
   testWidgets(
+      'microphone action is centered with keyboard and Hint at the edges',
+      (tester) async {
+    await tester.pumpWidget(_lessonScreen(FakeAuthService()));
+    await tester.pumpAndSettle();
+
+    final keyboard =
+        tester.getRect(find.byKey(const Key('lesson-action-keyboard')));
+    final microphone =
+        tester.getRect(find.byKey(const Key('lesson-action-record')));
+    final hint = tester.getRect(find.byKey(const Key('lesson-action-hint')));
+    final actionRow =
+        tester.getRect(find.byKey(const Key('lesson-action-row')));
+
+    expect(microphone.center.dx, closeTo(actionRow.center.dx, 0.1));
+    expect(keyboard.left, closeTo(actionRow.left, 0.1));
+    expect(hint.right, closeTo(actionRow.right, 0.1));
+    expect(microphone.width, greaterThan(keyboard.width));
+  });
+
+  testWidgets(
       'composer opens directly above action row and closes back to bottom-only dock',
       (tester) async {
     await tester.pumpWidget(_lessonScreen(FakeAuthService()));
