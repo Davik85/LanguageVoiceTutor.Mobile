@@ -337,6 +337,45 @@ class AuthService {
     }
   }
 
+  Future<LessonSessionHeartbeatResult> heartbeatLessonSession({
+    required String sessionId,
+  }) async {
+    final normalizedId = sessionId.trim();
+    if (!_isGuid(normalizedId)) return LessonSessionHeartbeatResult.failed();
+    try {
+      final response = await _authenticatedPostWithoutBody(
+        '/api/lesson-sessions/${Uri.encodeComponent(normalizedId)}/heartbeat',
+        failureMessageForResponse: _lessonSessionHeartbeatFailureMessage,
+      );
+      final session = _decodeObject(response.body);
+      final status = _jsonString(session, 'status').trim();
+      if (status.toLowerCase() != 'active') {
+        return LessonSessionHeartbeatResult.sessionEnded();
+      }
+      return LessonSessionHeartbeatResult.active();
+    } on ApiException catch (error) {
+      if (error.message == 'Please sign in again.') {
+        return LessonSessionHeartbeatResult.authRequired();
+      }
+      if (error.message == 'This lesson session is no longer available.') {
+        return LessonSessionHeartbeatResult.notFound();
+      }
+      if (error.message == 'This lesson has already ended.') {
+        return LessonSessionHeartbeatResult.sessionEnded();
+      }
+      if (error.category == ApiFailureCategory.network ||
+          error.category == ApiFailureCategory.timeout ||
+          error.category == ApiFailureCategory.transport ||
+          error.message ==
+              'Lesson session heartbeat is temporarily unavailable.') {
+        return LessonSessionHeartbeatResult.unavailable();
+      }
+      return LessonSessionHeartbeatResult.failed();
+    } catch (_) {
+      return LessonSessionHeartbeatResult.failed();
+    }
+  }
+
   Future<LessonRuntimeScenario> fetchLessonRuntimeScenario({
     required String scenarioKey,
   }) async {
@@ -1340,6 +1379,18 @@ class AuthService {
     return 'Could not leave the lesson. Please try again.';
   }
 
+  static String _lessonSessionHeartbeatFailureMessage(ApiResponse response) {
+    if (response.statusCode == 401) return 'Please sign in again.';
+    if (response.statusCode == 404) {
+      return 'This lesson session is no longer available.';
+    }
+    if (response.statusCode == 409) return 'This lesson has already ended.';
+    if (response.statusCode >= 500) {
+      return 'Lesson session heartbeat is temporarily unavailable.';
+    }
+    return 'Could not refresh the lesson session.';
+  }
+
   static String _lessonSummaryFailureMessage(ApiResponse response) {
     if (response.statusCode == 401) {
       return 'Please sign in again to finish the lesson.';
@@ -1649,6 +1700,10 @@ class AuthService {
 
   static bool _isSuccess(int statusCode) =>
       statusCode >= 200 && statusCode < 300;
+
+  static bool _isGuid(String value) => RegExp(
+        r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+      ).hasMatch(value);
 
   static Map<String, dynamic> _decodeObject(String body) {
     final decoded = jsonDecode(body);

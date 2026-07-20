@@ -1141,6 +1141,72 @@ void main() {
     expect(api.calls.join(' '), isNot(contains('/active/abandon')));
   });
 
+  test('heartbeat uses the authenticated shared endpoint with no body',
+      () async {
+    const sessionId = '11111111-1111-1111-1111-111111111111';
+    final api = FakeApiClient()
+      ..responses['/api/lesson-sessions/$sessionId/heartbeat'] = [
+        const ApiResponse(
+          statusCode: 200,
+          body: '{"id":"$sessionId","status":"Active"}',
+        ),
+      ];
+
+    final result = await AuthService(apiClient: api, storage: MemoryStorage())
+        .heartbeatLessonSession(sessionId: sessionId);
+
+    expect(result.status, LessonSessionHeartbeatStatus.active);
+    expect(api.calls, ['POST /api/lesson-sessions/$sessionId/heartbeat']);
+    expect(api.bodies.single, isNull);
+    expect(api.tokens.single, 'access');
+  });
+
+  test('heartbeat refreshes once and keeps temporary failures learner-safe',
+      () async {
+    const sessionId = '11111111-1111-1111-1111-111111111111';
+    const path = '/api/lesson-sessions/$sessionId/heartbeat';
+    final refreshedApi = FakeApiClient()
+      ..responses[path] = [
+        const ApiResponse(statusCode: 401, body: '{}'),
+        const ApiResponse(statusCode: 200, body: '{"status":"Active"}'),
+      ];
+    final refreshed = await AuthService(
+      apiClient: refreshedApi,
+      storage: MemoryStorage(),
+    ).heartbeatLessonSession(sessionId: sessionId);
+    expect(refreshed.status, LessonSessionHeartbeatStatus.active);
+    expect(refreshedApi.calls, [
+      'POST $path',
+      'POST /api/auth/refresh',
+      'POST $path',
+    ]);
+
+    final unavailableApi = FakeApiClient()
+      ..responses[path] = [const ApiResponse(statusCode: 503, body: '{}')];
+    final unavailableStorage = MemoryStorage();
+    final unavailable = await AuthService(
+      apiClient: unavailableApi,
+      storage: unavailableStorage,
+    ).heartbeatLessonSession(sessionId: sessionId);
+    expect(unavailable.status, LessonSessionHeartbeatStatus.unavailable);
+    expect(unavailableStorage.access, 'access');
+    expect(unavailableStorage.refresh, 'refresh');
+
+    final authFailureApi = FakeApiClient()
+      ..responses[path] = [const ApiResponse(statusCode: 401, body: '{}')]
+      ..responses['/api/auth/refresh'] = [
+        const ApiResponse(statusCode: 401, body: '{}'),
+      ];
+    final authFailureStorage = MemoryStorage();
+    final authFailure = await AuthService(
+      apiClient: authFailureApi,
+      storage: authFailureStorage,
+    ).heartbeatLessonSession(sessionId: sessionId);
+    expect(authFailure.status, LessonSessionHeartbeatStatus.authRequired);
+    expect(authFailureStorage.access, isNull);
+    expect(authFailureStorage.refresh, isNull);
+  });
+
   test('abandon refreshes once after 401 and keeps failures safe', () async {
     final api = FakeApiClient();
     api.responses['/api/lesson-sessions/session-1/abandon'] = [

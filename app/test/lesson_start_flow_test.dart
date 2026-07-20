@@ -372,6 +372,12 @@ class FakeAuthService extends AuthService {
   }
 
   @override
+  Future<LessonSessionHeartbeatResult> heartbeatLessonSession({
+    required String sessionId,
+  }) async =>
+      LessonSessionHeartbeatResult.active();
+
+  @override
   Future<LessonCompletionResult> loadLessonSummary(
       {required String sessionId}) async {
     loadLessonSummaryCallCount += 1;
@@ -421,7 +427,7 @@ const _introLessonSelectionWithContext = LessonStartSelection(
 LessonSessionStartResult _readyLessonStartResult() =>
     LessonSessionStartResult.ready(
       const LessonSessionResponse(
-        lessonSessionId: 'session-1',
+        lessonSessionId: '11111111-1111-1111-1111-111111111111',
         lessonContentId: 'everyday_english_introductions',
         studyLanguage: 'Spanish',
       ),
@@ -2014,27 +2020,20 @@ void main() {
     expect(find.text('Home'), findsOneWidget);
   });
 
-  testWidgets('abandon failure keeps the lesson open and allows retry',
+  testWidgets('temporary abandon failure still lets the learner leave',
       (tester) async {
     final auth = FakeAuthService(
       abandonResult: LessonSessionAbandonResult.failed(),
     );
-    await tester.pumpWidget(_lessonScreen(auth));
+    await tester.pumpWidget(_lessonScreenWithHome(auth));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('lesson-back-button')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Leave lesson'));
     await tester.pumpAndSettle();
-    expect(find.text('Could not leave the lesson. Please try again.'),
-        findsOneWidget);
-    expect(find.byKey(const Key('lesson-action-keyboard')), findsOneWidget);
-
-    await tester.tap(find.byKey(const Key('lesson-back-button')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Leave lesson'));
-    await tester.pumpAndSettle();
-    expect(auth.abandonLessonSessionCallCount, 2);
+    expect(auth.abandonLessonSessionCallCount, 1);
+    expect(find.text('Home'), findsOneWidget);
   });
 
   testWidgets('finish sends once and shows unavailable completed state',

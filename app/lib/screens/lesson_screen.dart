@@ -18,6 +18,7 @@ import '../models/voice_scenario_resolution.dart';
 import 'conversation_mode_screen.dart';
 import '../services/auth_service.dart';
 import '../services/lesson_context_selection_resolver.dart';
+import '../services/lesson_session_lifecycle_coordinator.dart';
 import '../services/localized_lesson_text_service.dart';
 import '../services/lesson_roleplay_opening_builder.dart';
 import '../services/lesson_turn_request_builder.dart';
@@ -109,6 +110,7 @@ class _LessonScreenState extends State<LessonScreen>
   late final TutorAudioPlaybackService _audioPlaybackService;
   late final LearnerAudioRecordingService _recordingService;
   late final LearnerMicrophonePermissionService _microphonePermissionService;
+  late final LessonSessionLifecycleCoordinator _sessionLifecycle;
   late final StreamSubscription<void> _playbackCompletedSubscription;
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _transcriptController = ScrollController();
@@ -173,6 +175,8 @@ class _LessonScreenState extends State<LessonScreen>
         widget._recordingService ?? LearnerAudioRecordingService();
     _microphonePermissionService = widget._microphonePermissionService ??
         PermissionHandlerLearnerMicrophonePermissionService();
+    _sessionLifecycle =
+        LessonSessionLifecycleCoordinator(authService: _authService);
     _playbackCompletedSubscription =
         _audioPlaybackService.completed.listen((_) => _onPlaybackCompleted());
     WidgetsBinding.instance.addObserver(this);
@@ -187,6 +191,7 @@ class _LessonScreenState extends State<LessonScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    unawaited(_sessionLifecycle.stop());
     unawaited(_cancelLearnerRecording(forDeparture: true));
     unawaited(_recordingService.dispose());
     unawaited(_disposeAudio());
@@ -229,6 +234,7 @@ class _LessonScreenState extends State<LessonScreen>
     final result = await _startSelectedLesson(selection);
 
     if (result.isReady) {
+      _sessionLifecycle.start(result.session!.lessonSessionId);
       await _loadLessonRuntime(selection, result.session!);
     }
 
@@ -1267,11 +1273,11 @@ class _LessonScreenState extends State<LessonScreen>
       _finishError = null;
       _recordingState = LearnerRecordingUiState.idle;
     });
-    final result = await _authService.abandonLessonSession(
-      sessionId: session.lessonSessionId,
-    );
+    final result = await _sessionLifecycle.abandon();
     if (!mounted) return;
-    if (result.canLeave) {
+    if (result.canLeave ||
+        result.status == LessonSessionAbandonStatus.unavailable ||
+        result.status == LessonSessionAbandonStatus.failed) {
       setState(() {
         _isAbandoning = false;
         _lessonSessionEnded = true;
@@ -1332,6 +1338,7 @@ class _LessonScreenState extends State<LessonScreen>
     );
     if (!mounted) return;
     if (result.isCompleted) {
+      await _sessionLifecycle.stop();
       setState(() {
         _isFinishing = false;
         _isCompleted = true;

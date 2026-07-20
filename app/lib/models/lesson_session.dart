@@ -243,6 +243,42 @@ enum LessonSessionAbandonStatus {
   failed,
 }
 
+enum LessonSessionHeartbeatStatus {
+  active,
+  authRequired,
+  notFound,
+  sessionEnded,
+  unavailable,
+  failed,
+}
+
+class LessonSessionHeartbeatResult {
+  const LessonSessionHeartbeatResult._(this.status);
+
+  final LessonSessionHeartbeatStatus status;
+  bool get isActive => status == LessonSessionHeartbeatStatus.active;
+  bool get isTerminal =>
+      status == LessonSessionHeartbeatStatus.notFound ||
+      status == LessonSessionHeartbeatStatus.sessionEnded;
+
+  factory LessonSessionHeartbeatResult.active() =>
+      const LessonSessionHeartbeatResult._(LessonSessionHeartbeatStatus.active);
+  factory LessonSessionHeartbeatResult.authRequired() =>
+      const LessonSessionHeartbeatResult._(
+          LessonSessionHeartbeatStatus.authRequired);
+  factory LessonSessionHeartbeatResult.notFound() =>
+      const LessonSessionHeartbeatResult._(
+          LessonSessionHeartbeatStatus.notFound);
+  factory LessonSessionHeartbeatResult.sessionEnded() =>
+      const LessonSessionHeartbeatResult._(
+          LessonSessionHeartbeatStatus.sessionEnded);
+  factory LessonSessionHeartbeatResult.unavailable() =>
+      const LessonSessionHeartbeatResult._(
+          LessonSessionHeartbeatStatus.unavailable);
+  factory LessonSessionHeartbeatResult.failed() =>
+      const LessonSessionHeartbeatResult._(LessonSessionHeartbeatStatus.failed);
+}
+
 class LessonSessionAbandonResult {
   const LessonSessionAbandonResult._(
       {required this.status, required this.message});
