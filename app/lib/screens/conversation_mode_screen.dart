@@ -82,6 +82,8 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
   bool _operationEligible = true;
   int _operationGeneration = 0;
   bool _disposed = false;
+  bool _showOpenMicrophoneSettings = false;
+  bool _openingMicrophoneSettings = false;
   DateTime? _hintDismissedAt;
 
   @override
@@ -118,6 +120,9 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
       unawaited(widget.audioPlaybackService.stop());
       if (mounted) setState(() => _state = _ConversationState.idle);
     }
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refreshMicrophonePermissionAfterResume());
+    }
   }
 
   void _invalidateOperation() {
@@ -146,6 +151,7 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
     setState(() {
       _error = null;
       _hint = null;
+      _showOpenMicrophoneSettings = false;
     });
     try {
       var permission = await widget.microphonePermissionService.check();
@@ -156,7 +162,13 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
       if (permission != LearnerMicrophonePermissionStatus.granted) {
         setState(() {
           _state = _ConversationState.idle;
-          _error = 'Microphone access was not granted. Please try again.';
+          final requiresSettings = permission ==
+                  LearnerMicrophonePermissionStatus.permanentlyDenied ||
+              permission == LearnerMicrophonePermissionStatus.restricted;
+          _error = requiresSettings
+              ? 'Microphone access is blocked. Open Android settings to enable it.'
+              : 'Microphone access was not granted. Tap the microphone to try again.';
+          _showOpenMicrophoneSettings = requiresSettings;
         });
         return;
       }
@@ -399,6 +411,53 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
     _recordingFilePath = null;
   }
 
+  Future<void> _openMicrophoneSettings() async {
+    if (_openingMicrophoneSettings) return;
+    setState(() => _openingMicrophoneSettings = true);
+    try {
+      final opened = await widget.microphonePermissionService.openSettings();
+      if (mounted && !opened) {
+        setState(() {
+          _error = 'Could not open Android settings. Please try again.';
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _error = 'Could not open Android settings. Please try again.';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _openingMicrophoneSettings = false);
+    }
+  }
+
+  Future<void> _refreshMicrophonePermissionAfterResume() async {
+    try {
+      final permission = await widget.microphonePermissionService.check();
+      if (!mounted) return;
+      final requiresSettings =
+          permission == LearnerMicrophonePermissionStatus.permanentlyDenied ||
+              permission == LearnerMicrophonePermissionStatus.restricted;
+      setState(() {
+        _showOpenMicrophoneSettings = requiresSettings;
+        if (permission == LearnerMicrophonePermissionStatus.granted &&
+            _state == _ConversationState.error) {
+          _state = _ConversationState.idle;
+          _error = null;
+        } else if (requiresSettings) {
+          _error =
+              'Microphone access is blocked. Open Android settings to enable it.';
+        } else if (permission == LearnerMicrophonePermissionStatus.denied) {
+          _error =
+              'Microphone access was not granted. Tap the microphone to try again.';
+        }
+      });
+    } catch (_) {
+      // Retain the existing learner-safe permission state.
+    }
+  }
+
   Future<void> _deletePlaybackFile() async {
     final path = _playbackFilePath;
     _playbackFilePath = null;
@@ -579,6 +638,17 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
                             ),
                           ),
                         ),
+                      ),
+                    ],
+                    if (_showOpenMicrophoneSettings) ...[
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        key: const Key('conversation-open-microphone-settings'),
+                        onPressed: _openingMicrophoneSettings
+                            ? null
+                            : _openMicrophoneSettings,
+                        icon: const Icon(Icons.settings),
+                        label: const Text('Open Android settings'),
                       ),
                     ],
                     const SizedBox(height: 12),

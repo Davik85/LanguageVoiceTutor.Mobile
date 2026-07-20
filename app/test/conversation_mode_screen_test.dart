@@ -98,14 +98,40 @@ class _RecorderAdapter implements LearnerAudioRecorderAdapter {
 }
 
 class _Permission implements LearnerMicrophonePermissionService {
+  _Permission({
+    List<LearnerMicrophonePermissionStatus>? statuses,
+    this.openResult = true,
+    this.openSettingsFuture,
+  }) : _statuses = statuses ?? [LearnerMicrophonePermissionStatus.granted];
+
+  final List<LearnerMicrophonePermissionStatus> _statuses;
+  final bool openResult;
+  final Future<bool>? openSettingsFuture;
+  int checkCalls = 0;
+  int requestCalls = 0;
+  int openSettingsCalls = 0;
+
+  LearnerMicrophonePermissionStatus get _nextStatus => _statuses.isEmpty
+      ? LearnerMicrophonePermissionStatus.denied
+      : _statuses.removeAt(0);
+
   @override
-  Future<LearnerMicrophonePermissionStatus> check() async =>
-      LearnerMicrophonePermissionStatus.granted;
+  Future<LearnerMicrophonePermissionStatus> check() async {
+    checkCalls++;
+    return _nextStatus;
+  }
+
   @override
-  Future<LearnerMicrophonePermissionStatus> request() async =>
-      LearnerMicrophonePermissionStatus.granted;
+  Future<LearnerMicrophonePermissionStatus> request() async {
+    requestCalls++;
+    return _nextStatus;
+  }
+
   @override
-  Future<bool> openSettings() async => true;
+  Future<bool> openSettings() async {
+    openSettingsCalls++;
+    return openSettingsFuture ?? openResult;
+  }
 }
 
 final _scenario = LessonRuntimeScenario.fromJson({
@@ -127,11 +153,12 @@ final _scenario = LessonRuntimeScenario.fromJson({
   'runtimeContent': {},
 });
 
-Widget _screen({_Recording? recording}) => ConversationModeScreen(
+Widget _screen({_Recording? recording, _Permission? permission}) =>
+    ConversationModeScreen(
       authService: AuthService(apiClient: _Api(), storage: _Storage()),
       audioPlaybackService: _Playback(),
       recordingService: recording ?? _Recording(),
-      microphonePermissionService: _Permission(),
+      microphonePermissionService: permission ?? _Permission(),
       session: const LessonSessionResponse(
           lessonSessionId: 's',
           lessonContentId: 'scenario',
@@ -155,8 +182,8 @@ Widget _screen({_Recording? recording}) => ConversationModeScreen(
       ownsAudioPlaybackService: false,
     );
 
-Widget _conversation({_Recording? recording}) =>
-    MaterialApp(home: _screen(recording: recording));
+Widget _conversation({_Recording? recording, _Permission? permission}) =>
+    MaterialApp(home: _screen(recording: recording, permission: permission));
 
 void main() {
   test('Conversation turn prerequisites are resolved before submission', () {
@@ -219,6 +246,133 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('conversation-hint-card')), findsNothing);
     expect(recording.recording, isTrue);
+  });
+
+  testWidgets('temporary microphone denial stays retryable without settings',
+      (tester) async {
+    final recording = _Recording();
+    final permission = _Permission(statuses: [
+      LearnerMicrophonePermissionStatus.denied,
+      LearnerMicrophonePermissionStatus.denied,
+      LearnerMicrophonePermissionStatus.granted,
+    ]);
+    await tester.pumpWidget(
+        _conversation(recording: recording, permission: permission));
+    await tester.tap(find.byKey(const Key('conversation-mode-record-button')));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.text(
+            'Microphone access was not granted. Tap the microphone to try again.'),
+        findsOneWidget);
+    expect(find.byKey(const Key('conversation-open-microphone-settings')),
+        findsNothing);
+    expect(permission.requestCalls, 1);
+    expect(recording.recording, isFalse);
+
+    await tester.tap(find.byKey(const Key('conversation-mode-record-button')));
+    await tester.pumpAndSettle();
+    expect(recording.recording, isTrue);
+    expect(permission.openSettingsCalls, 0);
+  });
+
+  testWidgets(
+      'permanent and restricted denial expose Android settings recovery',
+      (tester) async {
+    for (final status in [
+      LearnerMicrophonePermissionStatus.permanentlyDenied,
+      LearnerMicrophonePermissionStatus.restricted,
+    ]) {
+      final permission = _Permission(statuses: [status]);
+      await tester.pumpWidget(_conversation(permission: permission));
+      await tester
+          .tap(find.byKey(const Key('conversation-mode-record-button')));
+      await tester.pumpAndSettle();
+
+      expect(
+          find.text(
+              'Microphone access is blocked. Open Android settings to enable it.'),
+          findsOneWidget);
+      expect(find.byKey(const Key('conversation-open-microphone-settings')),
+          findsOneWidget);
+      expect(permission.requestCalls, 0);
+      await tester.pumpWidget(const SizedBox());
+    }
+  });
+
+  testWidgets('settings action is single-flight and keeps the lesson usable',
+      (tester) async {
+    final opening = Completer<bool>();
+    final permission = _Permission(
+      statuses: [LearnerMicrophonePermissionStatus.permanentlyDenied],
+      openSettingsFuture: opening.future,
+    );
+    await tester.pumpWidget(_conversation(permission: permission));
+    await tester.tap(find.byKey(const Key('conversation-mode-record-button')));
+    await tester.pumpAndSettle();
+
+    final settings =
+        find.byKey(const Key('conversation-open-microphone-settings'));
+    await tester.tap(settings);
+    await tester.pump();
+    await tester.tap(settings, warnIfMissed: false);
+    await tester.pump();
+    expect(permission.openSettingsCalls, 1);
+    opening.complete(true);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('conversation-mode-record-button')),
+        findsOneWidget);
+  });
+
+  testWidgets(
+      'settings return rechecks permission and allows the next recording',
+      (tester) async {
+    final recording = _Recording();
+    final permission = _Permission(statuses: [
+      LearnerMicrophonePermissionStatus.permanentlyDenied,
+      LearnerMicrophonePermissionStatus.granted,
+      LearnerMicrophonePermissionStatus.granted,
+    ]);
+    await tester.pumpWidget(
+        _conversation(recording: recording, permission: permission));
+    await tester.tap(find.byKey(const Key('conversation-mode-record-button')));
+    await tester.pumpAndSettle();
+    await tester
+        .tap(find.byKey(const Key('conversation-open-microphone-settings')));
+    await tester.pumpAndSettle();
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('conversation-open-microphone-settings')),
+        findsNothing);
+    await tester.tap(find.byKey(const Key('conversation-mode-record-button')));
+    await tester.pumpAndSettle();
+    expect(recording.recording, isTrue);
+  });
+
+  testWidgets('remaining denial and settings-open failure stay learner-safe',
+      (tester) async {
+    final permission = _Permission(
+      statuses: [
+        LearnerMicrophonePermissionStatus.permanentlyDenied,
+        LearnerMicrophonePermissionStatus.restricted,
+      ],
+      openResult: false,
+    );
+    await tester.pumpWidget(_conversation(permission: permission));
+    await tester.tap(find.byKey(const Key('conversation-mode-record-button')));
+    await tester.pumpAndSettle();
+    await tester
+        .tap(find.byKey(const Key('conversation-open-microphone-settings')));
+    await tester.pumpAndSettle();
+    expect(find.text('Could not open Android settings. Please try again.'),
+        findsOneWidget);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('conversation-open-microphone-settings')),
+        findsOneWidget);
+    expect(find.textContaining('Exception'), findsNothing);
   });
 
   testWidgets('Back dismisses Hint and pops the Conversation route',
