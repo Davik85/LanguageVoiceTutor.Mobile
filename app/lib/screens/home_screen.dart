@@ -5,24 +5,36 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../config/app_config.dart';
 import '../models/auth_models.dart';
+import '../models/achievements.dart';
 import '../models/lesson_access_decision.dart';
 import '../models/lesson_start_selection.dart';
 import '../models/progress.dart';
 import '../services/auth_service.dart';
+import '../services/achievement_presentation_store.dart';
 import '../services/service_factory.dart';
 import '../theme/app_visuals.dart';
+import '../widgets/achievement_badge.dart';
+import '../widgets/achievement_preview.dart';
+import 'achievements_screen.dart';
 import 'choose_topic_screen.dart';
 import 'login_screen.dart';
 import 'settings_screen.dart';
 
 enum _HomeProgressState { loading, ready, unavailable }
 
+enum _HomeAchievementsState { loading, ready, unavailable }
+
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, AuthService? authService})
-      : _authService = authService;
+  const HomeScreen({
+    super.key,
+    AuthService? authService,
+    AchievementPresentationStore? achievementPresentationStore,
+  })  : _authService = authService,
+        _achievementPresentationStore = achievementPresentationStore;
 
   static const String routeName = '/home';
   final AuthService? _authService;
+  final AchievementPresentationStore? _achievementPresentationStore;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -30,20 +42,132 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final AuthService _authService;
+  late final AchievementPresentationStore _achievementPresentationStore;
   AuthUser? _currentUser;
   LessonAccessDecision? _lessonAccess;
   ProgressResponse? _progress;
+  AchievementsResponse? _achievements;
   _HomeProgressState _progressState = _HomeProgressState.loading;
+  _HomeAchievementsState _achievementsState = _HomeAchievementsState.loading;
   bool _isLoadingSummary = false;
   bool _isLoadingLessonSettings = false;
   bool _isOpeningSettings = false;
+  bool _isOpeningAchievements = false;
+  bool _isCheckingAchievementPresentations = false;
+  bool _isShowingAchievementPresentation = false;
+  final List<AchievementItem> _achievementPresentationQueue = [];
   String? _lessonStartError;
 
   @override
   void initState() {
     super.initState();
     _authService = widget._authService ?? createAuthService();
+    _achievementPresentationStore = widget._achievementPresentationStore ??
+        SecureAchievementPresentationStore();
     _loadHomeSummary();
+    _loadAchievements();
+  }
+
+  Future<void> _loadAchievements() async {
+    if (_achievementsState == _HomeAchievementsState.loading &&
+        _achievements != null) {
+      return;
+    }
+    if (mounted) {
+      setState(() => _achievementsState = _HomeAchievementsState.loading);
+    }
+    final result = await _authService.fetchAchievements();
+    if (!mounted) {
+      return;
+    }
+    if (result.status == AchievementsStatus.authRequired) {
+      Navigator.pushNamedAndRemoveUntil(
+          context, LoginScreen.routeName, (_) => false);
+      return;
+    }
+    setState(() {
+      _achievements = result.achievements;
+      _achievementsState = result.isSuccess
+          ? _HomeAchievementsState.ready
+          : _HomeAchievementsState.unavailable;
+    });
+    _queueNewAchievementPresentations();
+  }
+
+  Future<void> _queueNewAchievementPresentations() async {
+    final userId = _currentUser?.userId;
+    final achievements = _achievements;
+    if (_isCheckingAchievementPresentations ||
+        userId == null ||
+        achievements == null) {
+      return;
+    }
+    _isCheckingAchievementPresentations = true;
+    try {
+      final presented =
+          await _achievementPresentationStore.readPresentedIds(userId);
+      if (!mounted) return;
+      final queuedIds =
+          _achievementPresentationQueue.map((item) => item.id).toSet();
+      _achievementPresentationQueue.addAll(achievements.achievements.where(
+          (item) =>
+              item.unlocked &&
+              !presented.contains(item.id) &&
+              !queuedIds.contains(item.id)));
+      _showNextAchievementPresentation();
+    } catch (_) {
+      // A storage failure must not interrupt Home.
+    } finally {
+      _isCheckingAchievementPresentations = false;
+    }
+  }
+
+  Future<void> _showNextAchievementPresentation() async {
+    if (!mounted ||
+        _isShowingAchievementPresentation ||
+        _achievementPresentationQueue.isEmpty) {
+      return;
+    }
+    final achievement = _achievementPresentationQueue.first;
+    final userId = _currentUser?.userId;
+    if (userId == null) return;
+    _isShowingAchievementPresentation = true;
+    final dismissal = await showQueuedAchievementPreview(context, achievement);
+    if (dismissal == AchievementPreviewDismissal.closeAll) {
+      final queuedItems =
+          List<AchievementItem>.from(_achievementPresentationQueue);
+      _achievementPresentationQueue.clear();
+      try {
+        for (final queued in queuedItems) {
+          await _achievementPresentationStore.markPresented(userId, queued.id);
+        }
+      } catch (_) {
+        // It is safe to show items again later if local persistence fails.
+      }
+    } else {
+      _achievementPresentationQueue.removeAt(0);
+      try {
+        await _achievementPresentationStore.markPresented(
+            userId, achievement.id);
+      } catch (_) {
+        // It is safe to show the item again later if local persistence fails.
+      }
+    }
+    _isShowingAchievementPresentation = false;
+    if (mounted) _showNextAchievementPresentation();
+  }
+
+  Future<void> _openAchievements() async {
+    if (_isOpeningAchievements) return;
+    _isOpeningAchievements = true;
+    try {
+      await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => AchievementsScreen(authService: _authService)));
+    } finally {
+      if (mounted) _isOpeningAchievements = false;
+    }
   }
 
   Future<void> _loadHomeSummary() async {
@@ -91,6 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ? _HomeProgressState.ready
           : _HomeProgressState.unavailable;
     });
+    _queueNewAchievementPresentations();
   }
 
   Future<void> _startLesson() async {
@@ -113,7 +238,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       );
-      if (mounted) _loadHomeSummary();
+      if (mounted) {
+        _loadHomeSummary();
+        _loadAchievements();
+      }
     } on ApiException catch (error) {
       if (!mounted) return;
       if (error.message == 'Please sign in again.') {
@@ -175,6 +303,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 _AccountSummary(
                     user: _currentUser, lessonAccess: _lessonAccess),
                 const SizedBox(height: 12),
+                _HomeAchievements(
+                  state: _achievementsState,
+                  achievements: _achievements,
+                  onOpen: _isOpeningAchievements ? null : _openAchievements,
+                  onRetry: _loadAchievements,
+                ),
+                const SizedBox(height: 12),
                 _WeeklyActivity(state: _progressState, progress: _progress),
                 const SizedBox(height: 16),
                 _HomeActionButton(
@@ -184,6 +319,114 @@ class _HomeScreenState extends State<HomeScreen> {
                   label: 'Open Settings',
                 ),
               ],
+            ),
+          ),
+        ),
+      );
+}
+
+class _HomeAchievements extends StatelessWidget {
+  const _HomeAchievements(
+      {required this.state,
+      required this.achievements,
+      required this.onOpen,
+      required this.onRetry});
+  final _HomeAchievementsState state;
+  final AchievementsResponse? achievements;
+  final VoidCallback? onOpen;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state == _HomeAchievementsState.loading) {
+      return const _FrostedHomeCard(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Achievements'),
+              SizedBox(height: 10),
+              _AchievementsPlaceholder(),
+            ],
+          ),
+        ),
+      );
+    }
+    if (state == _HomeAchievementsState.unavailable || achievements == null) {
+      return _FrostedHomeCard(
+          child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(children: [
+                const Expanded(
+                    child: Text('Achievements are temporarily unavailable')),
+                TextButton(onPressed: onRetry, child: const Text('Retry'))
+              ])));
+    }
+    final items = achievements!.homeItems;
+    return _FrostedHomeCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Expanded(
+              child: Text(
+                'Achievements',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            TextButton(
+                key: const Key('home-achievements-view-all'),
+                onPressed: onOpen,
+                child: const Text('View all'))
+          ]),
+          if (items.isEmpty)
+            const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text('Your achievements will appear here.')),
+          if (items.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Row(children: [
+              for (final item in items)
+                Expanded(
+                    child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: InkWell(
+                            key: Key('home-achievement-${item.id}'),
+                            onTap: item.unlocked
+                                ? () => showAchievementPreview(context, item)
+                                : null,
+                            borderRadius: BorderRadius.circular(14),
+                            child: AchievementBadge(
+                                achievement: item, compact: true))))
+            ]),
+          ],
+        ]),
+      ),
+    );
+  }
+}
+
+class _AchievementsPlaceholder extends StatelessWidget {
+  const _AchievementsPlaceholder();
+  @override
+  Widget build(BuildContext context) => Row(
+        children: List.generate(
+          3,
+          (_) => const Expanded(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 2),
+              child: SizedBox(
+                height: 82,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Color(0xFFE0E7EF),
+                    borderRadius: BorderRadius.all(Radius.circular(14)),
+                  ),
+                ),
+              ),
             ),
           ),
         ),

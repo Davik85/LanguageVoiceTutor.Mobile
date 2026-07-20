@@ -529,4 +529,23 @@ Backend should provide stable error codes for:
 Mobile should map stable backend codes to user-friendly UI states.
 # Achievements V1 data foundation
 
-Production backend baseline: `0.1.35-backend.125`. Mobile reads `GET /api/me/achievements` through the existing authenticated session and refresh-on-401 flow. The backend owns achievement definitions, eligibility, unlock dates, progress, study-language scope, and the selected Home items. This Mobile slice provides models, safe parsing, and service access only: it adds no UI, Home badges, navigation, images, assets, or client-side achievement calculation/selection.
+Production backend baseline: `0.1.35-backend.125`. Mobile reads `GET /api/me/achievements` through the existing authenticated session and refresh-on-401 flow. The backend owns achievement definitions, eligibility, unlock dates, progress, study-language scope, and the selected Home items. Mobile does not perform client-side achievement calculation or selection.
+
+Achievements now has an authenticated Home section and a dedicated learner-facing screen. Both consume backend-provided achievement state and Home ordering without local selection or eligibility logic.
+
+### Achievement artwork and interaction
+
+- Approved transparent WebP artwork is bundled under `app/assets/achievements/`.
+- Mobile resolves artwork only from the stable backend achievement definition ID. `iconKey` remains the deterministic Material-icon fallback because it is not unique across all definitions.
+- Home renders the backend-selected `homeItems` in backend order. The complete screen preserves backend achievement order within its backend categories and displays items in a two-column grid.
+- Known artwork uses `Image.asset` with `BoxFit.contain`; missing, corrupt, unknown, or unsupported artwork safely falls back to a Material icon.
+- Locked achievements remain visually subdued and non-interactive. Unlocked achievements can be opened manually from Home or the complete screen.
+- An opened achievement is transparent over the current screen, closes on a tap anywhere, and supports standard two-finger zoom and pan.
+
+### Newly unlocked presentation queue
+
+- On Home, Mobile queues unlocked backend achievements whose definition IDs have not previously been presented on the current device for the signed-in user.
+- The queue is stored locally in secure storage, scoped by `userId`; it does not alter backend unlock state, Home selection, ordering, progress, or eligibility.
+- Closing one automatically presented achievement marks it as presented and then opens the next queued item.
+- The queue's close-all action marks every remaining queued achievement as presented on that device. Manual achievement viewing never changes this queue state.
+- Mobile refreshes achievements after returning from a lesson so new backend unlocks can be queued immediately.

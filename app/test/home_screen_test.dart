@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
+import 'package:language_voice_tutor_mobile/models/achievements.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_access_decision.dart';
 import 'package:language_voice_tutor_mobile/models/progress.dart';
 import 'package:language_voice_tutor_mobile/models/user_settings.dart';
 import 'package:language_voice_tutor_mobile/screens/home_screen.dart';
 import 'package:language_voice_tutor_mobile/screens/settings_screen.dart';
+import 'package:language_voice_tutor_mobile/services/achievement_presentation_store.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
 
@@ -42,6 +44,7 @@ class FakeAuthService extends AuthService {
     this.settingsFailure,
     this.settingsCompleter,
     this.progressResult,
+    this.achievementsResult,
   })  : user = user ??
             AuthUser(
               userId: 'user-1',
@@ -57,8 +60,10 @@ class FakeAuthService extends AuthService {
   final ApiException? settingsFailure;
   final Completer<UserSettings>? settingsCompleter;
   final ProgressResult? progressResult;
+  final AchievementsResult? achievementsResult;
   int fetchUserSettingsCallCount = 0;
   int fetchProgressCallCount = 0;
+  int fetchAchievementsCallCount = 0;
 
   @override
   Future<AuthUser> loadCurrentUser() async {
@@ -90,7 +95,38 @@ class FakeAuthService extends AuthService {
     fetchProgressCallCount++;
     return progressResult ?? ProgressResult.success(_progress());
   }
+
+  @override
+  Future<AchievementsResult> fetchAchievements() async {
+    fetchAchievementsCallCount++;
+    return achievementsResult ?? AchievementsResult.success(_achievements());
+  }
 }
+
+AchievementsResponse _achievements() => AchievementsResponse(
+      generatedAtUtc: DateTime.utc(2026, 7, 19),
+      calendarTimezone: 'UTC',
+      activeStudyLanguage: 'English',
+      summary: const AchievementSummary(unlocked: 1, total: 41),
+      achievements: [_achievement('streak-7-v1'), _achievement('lessons-1-v1')],
+      homeItems: [_achievement('lessons-1-v1'), _achievement('streak-7-v1')],
+    );
+
+AchievementItem _achievement(String id, {bool? unlocked}) => AchievementItem(
+      id: id,
+      category: 'streak',
+      scope: 'account',
+      studyLanguage: null,
+      topicId: null,
+      lessonContentId: null,
+      title: id,
+      description: 'Practice.',
+      iconKey: id.startsWith('lessons') ? 'lesson-milestone' : 'streak',
+      unlocked: unlocked ?? id == 'streak-7-v1',
+      unlockedAtUtc: null,
+      currentProgress: 2,
+      targetProgress: 7,
+    );
 
 ProgressResponse _progress({int currentDays = 6, int last7Days = 4}) =>
     ProgressResponse(
@@ -146,8 +182,32 @@ class MemoryStorage implements SessionStorage {
   }) async {}
 }
 
-Widget _home({FakeAuthService? authService}) => MaterialApp(
-      home: HomeScreen(authService: authService ?? FakeAuthService()),
+class MemoryAchievementPresentationStore
+    implements AchievementPresentationStore {
+  MemoryAchievementPresentationStore([Set<String>? presented])
+      : presented = {...?presented};
+
+  final Set<String> presented;
+
+  @override
+  Future<void> markPresented(String userId, String achievementId) async {
+    presented.add(achievementId);
+  }
+
+  @override
+  Future<Set<String>> readPresentedIds(String userId) async => {...presented};
+}
+
+Widget _home({
+  FakeAuthService? authService,
+  AchievementPresentationStore? presentationStore,
+}) =>
+    MaterialApp(
+      home: HomeScreen(
+        authService: authService ?? FakeAuthService(),
+        achievementPresentationStore: presentationStore ??
+            MemoryAchievementPresentationStore({'streak-7-v1'}),
+      ),
       routes: {
         '/login': (_) => const Scaffold(body: Text('Login route')),
         SettingsScreen.routeName: (_) =>
@@ -206,6 +266,11 @@ void main() {
     expect(find.text('Refresh status'), findsNothing);
     expect(find.byKey(const Key('home-lesson-history')), findsNothing);
     expect(find.byKey(const Key('home-progress')), findsNothing);
+    await tester.dragUntilVisible(
+      find.text('Open Settings'),
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
     expect(find.text('Open Settings'), findsOneWidget);
   });
 
@@ -216,11 +281,132 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(auth.fetchProgressCallCount, 1);
+    expect(auth.fetchAchievementsCallCount, 1);
     expect(find.bySemanticsLabel('6 day learning streak'), findsOneWidget);
     expect(find.text('4 lessons in the last 7 days'), findsOneWidget);
     expect(find.byKey(const Key('home-activity-2026-07-11')), findsNothing);
     expect(find.byKey(const Key('home-activity-2026-07-12')), findsOneWidget);
     expect(find.byKey(const Key('home-activity-2026-07-18')), findsOneWidget);
+  });
+
+  testWidgets(
+      'home preserves backend achievement Home order and opens view all',
+      (tester) async {
+    await tester.pumpWidget(_home());
+    await tester.pumpAndSettle();
+
+    final lesson = tester
+        .getTopLeft(find.byKey(const Key('home-achievement-lessons-1-v1')));
+    final streak = tester
+        .getTopLeft(find.byKey(const Key('home-achievement-streak-7-v1')));
+    expect(lesson.dx, lessThan(streak.dx));
+    expect(
+        find.byWidgetPredicate((widget) =>
+            widget is Image &&
+            widget.image is AssetImage &&
+            (widget.image as AssetImage)
+                .assetName
+                .startsWith('assets/achievements/')),
+        findsNWidgets(2));
+    expect(tester.getTopLeft(find.text('Achievements')).dy,
+        lessThan(tester.getTopLeft(find.text('Your week')).dy));
+
+    await tester.tap(find.byKey(const Key('home-achievement-streak-7-v1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('achievement-preview')), findsOneWidget);
+    expect(find.byType(InteractiveViewer), findsOneWidget);
+    await tester.tapAt(const Offset(4, 4));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('achievement-preview')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('home-achievements-view-all')));
+    await tester.pumpAndSettle();
+    expect(find.text('Achievements'), findsOneWidget);
+    expect(find.text('1 of 41 unlocked'), findsOneWidget);
+  });
+
+  testWidgets('new unlocked achievements are shown once in backend order',
+      (tester) async {
+    final presentationStore = MemoryAchievementPresentationStore();
+    final response = AchievementsResponse(
+      generatedAtUtc: DateTime.utc(2026, 7, 20),
+      calendarTimezone: 'UTC',
+      activeStudyLanguage: 'English',
+      summary: const AchievementSummary(unlocked: 2, total: 41),
+      achievements: [
+        _achievement('lessons-1-v1', unlocked: true),
+        _achievement('streak-7-v1', unlocked: true),
+      ],
+      homeItems: const [],
+    );
+    await tester.pumpWidget(_home(
+      authService: FakeAuthService(
+        achievementsResult: AchievementsResult.success(response),
+      ),
+      presentationStore: presentationStore,
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('Close lessons-1-v1'), findsOneWidget);
+    await tester.tapAt(const Offset(4, 4));
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('Close streak-7-v1'), findsOneWidget);
+    await tester.tapAt(const Offset(4, 4));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('achievement-preview')), findsNothing);
+    expect(presentationStore.presented, {'lessons-1-v1', 'streak-7-v1'});
+
+    await tester.pumpWidget(_home(
+      authService: FakeAuthService(
+        achievementsResult: AchievementsResult.success(response),
+      ),
+      presentationStore: presentationStore,
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('achievement-preview')), findsNothing);
+  });
+
+  testWidgets('close all dismisses and records every queued achievement',
+      (tester) async {
+    final presentationStore = MemoryAchievementPresentationStore();
+    final response = AchievementsResponse(
+      generatedAtUtc: DateTime.utc(2026, 7, 20),
+      calendarTimezone: 'UTC',
+      activeStudyLanguage: 'English',
+      summary: const AchievementSummary(unlocked: 2, total: 41),
+      achievements: [
+        _achievement('lessons-1-v1', unlocked: true),
+        _achievement('streak-7-v1', unlocked: true),
+      ],
+      homeItems: const [],
+    );
+    await tester.pumpWidget(_home(
+      authService: FakeAuthService(
+        achievementsResult: AchievementsResult.success(response),
+      ),
+      presentationStore: presentationStore,
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('achievement-preview-close-all')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('achievement-preview')), findsNothing);
+    expect(presentationStore.presented, {'lessons-1-v1', 'streak-7-v1'});
+  });
+
+  testWidgets('unavailable achievements leave Home actions usable',
+      (tester) async {
+    await tester.pumpWidget(_home(
+        authService: FakeAuthService(
+      achievementsResult: AchievementsResult.unavailable(),
+    )));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.text('Achievements are temporarily unavailable'), findsOneWidget);
+    expect(find.text('Start lesson'), findsOneWidget);
+    expect(find.text('Open Settings'), findsOneWidget);
   });
 
   testWidgets('large streak fits a narrow screen without overflow',
@@ -248,8 +434,18 @@ void main() {
 
     expect(
         find.bySemanticsLabel('Learning streak unavailable'), findsOneWidget);
+    await tester.dragUntilVisible(
+      find.text('Activity is unavailable right now.'),
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
     expect(find.text('Activity is unavailable right now.'), findsOneWidget);
     expect(find.text('Start lesson'), findsOneWidget);
+    await tester.dragUntilVisible(
+      find.text('Open Settings'),
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
     expect(find.text('Open Settings'), findsOneWidget);
   });
 
