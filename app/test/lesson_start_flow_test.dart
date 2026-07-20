@@ -5,10 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
 import 'package:language_voice_tutor_mobile/models/audio_transcription.dart';
+import 'package:language_voice_tutor_mobile/models/achievements.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_chat.dart';
+import 'package:language_voice_tutor_mobile/models/lesson_access_decision.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_runtime.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_session.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_start_selection.dart';
+import 'package:language_voice_tutor_mobile/models/progress.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
 import 'package:language_voice_tutor_mobile/models/translation.dart';
 import 'package:language_voice_tutor_mobile/models/user_settings.dart';
@@ -239,6 +242,23 @@ class FakeAuthService extends AuthService {
         checkedAtUtc: DateTime.parse('2026-07-06T12:00:00Z'),
         enforcementEnabled: true,
       );
+
+  @override
+  Future<LessonAccessDecision> fetchLessonAccessDecision() async =>
+      LessonAccessDecision.fromJson({
+        'canStartNewLesson': true,
+        'premiumActive': false,
+        'trialActive': false,
+        'freeLessonRemainingToday': 1,
+        'reason': 'A free lesson is available.',
+      });
+
+  @override
+  Future<ProgressResult> fetchProgress() async => ProgressResult.unavailable();
+
+  @override
+  Future<AchievementsResult> fetchAchievements() async =>
+      AchievementsResult.unavailable();
 
   @override
   Future<UserSettings> fetchUserSettings() async {

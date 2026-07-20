@@ -2024,111 +2024,126 @@ class _LessonScreenState extends State<LessonScreen>
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _handleLeaveRequest();
       },
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        body: Padding(
-          padding: EdgeInsets.only(bottom: keyboardInset),
-          child: SafeArea(
-            child: selection == null
-                ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text(
-                        'Choose a level, topic, and situation to start a lesson.',
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  )
-                : _isCompleted
-                    ? _LessonSummaryView(
-                        summary: _lessonSummary,
-                        status: _summaryStatus ??
-                            LessonCompletionStatus.summaryLoadError,
-                        onDone: () => Navigator.of(context).maybePop(),
-                        onRetrySummary: _retrySummary,
-                      )
-                    : Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                        child: Column(
-                          children: [
-                            Expanded(
-                              child: _LessonWorkspace(
-                                selection: selection,
-                                scenario: _scenario,
-                                tutorDisplayName: _tutorDisplayName,
-                                tutorId: _settings?.selectedTutorId ?? '',
-                                tutorStatus: _tutorStatus,
-                                compactLevel: _compactLevel,
-                                isStarting: _isStarting,
-                                startResult: _startResult,
-                                lessonLoadError: _lessonLoadError,
-                                isLoadingScenario: _isLoadingScenario,
-                                messages: _messages,
-                                sendError: _sendError,
-                                voiceClarificationChoices:
-                                    _voiceClarificationChoices,
-                                onSelectVoiceClarification: (variant) =>
-                                    _sendMessageInternal(
-                                  overrideText: variant.title,
-                                  source: 'voice_transcript',
-                                ),
-                                hintText: _hintText,
-                                hintError: _hintError,
-                                isHintLoading: _isHintLoading,
-                                isSending: _isSending,
-                                controller: _messageController,
-                                actionAvailability: _actionAvailability,
-                                isRecordingPlaceholderActive: _recordingState ==
-                                    LearnerRecordingUiState.recording,
-                                isTranscribing: _recordingState ==
-                                    LearnerRecordingUiState.transcribing,
-                                recordingMessage: _recordingMessage,
-                                showOpenMicrophoneSettings:
-                                    _showOpenMicrophoneSettings,
-                                onOpenMicrophoneSettings:
-                                    _openMicrophoneSettings,
-                                isFinishing: _isFinishing,
-                                canFinish: _canFinish,
-                                finishError: _finishError,
-                                onBack: _handleLeaveRequest,
-                                onFinish: _confirmFinishLesson,
-                                onRetryStart: _isStarting
-                                    ? null
-                                    : () => _startLessonSession(),
-                                onRetryLoad: _retryLessonRuntime,
-                                transcriptController: _transcriptController,
-                                onPlayVoice: _playTutorVoice,
-                                onTranslateMessage: _translateMessage,
-                                onFeedback: _requestFeedback,
-                                onToggleRecordingPlaceholder: () {
-                                  unawaited(_toggleRecording());
-                                },
-                                onHint: _requestHint,
-                                isTextComposerVisible: _isTextComposerVisible,
-                                onToggleTextComposer: () => setState(() {
-                                  _isTextComposerVisible =
-                                      !_isTextComposerVisible;
-                                }),
-                                onDismissHint: () =>
-                                    setState(() => _hintText = null),
-                                onSend: _sendMessage,
-                                autoSendVoice: _autoSendVoice,
-                                autoPlayBotVoice: _autoPlayBotVoice,
-                                canOpenConversationMode:
-                                    _actionAvailability.canUsePlaceholders,
-                                onAutoSendVoiceChanged: (value) =>
-                                    setState(() => _autoSendVoice = value),
-                                onAutoPlayBotVoiceChanged: (value) =>
-                                    setState(() => _autoPlayBotVoice = value),
-                                onOpenConversationMode: _openConversationMode,
-                              ),
-                            ),
-                          ],
+      child: Theme(
+        data: _lessonTheme(Theme.of(context)),
+        child: Scaffold(
+          resizeToAvoidBottomInset: false,
+          body: Padding(
+            padding: EdgeInsets.only(bottom: keyboardInset),
+            child: SafeArea(
+              child: selection == null
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text(
+                          'Choose a level, topic, and situation to start a lesson.',
+                          textAlign: TextAlign.center,
                         ),
                       ),
+                    )
+                  : _isCompleted
+                      ? _LessonSummaryView(
+                          summary: _lessonSummary,
+                          status: _summaryStatus ??
+                              LessonCompletionStatus.summaryLoadError,
+                          onDone: () => Navigator.of(context).maybePop(),
+                          onRetrySummary: _retrySummary,
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: _LessonWorkspace(
+                                  selection: selection,
+                                  scenario: _scenario,
+                                  tutorDisplayName: _tutorDisplayName,
+                                  tutorId: _settings?.selectedTutorId ?? '',
+                                  tutorStatus: _tutorStatus,
+                                  compactLevel: _compactLevel,
+                                  isStarting: _isStarting,
+                                  startResult: _startResult,
+                                  lessonLoadError: _lessonLoadError,
+                                  isLoadingScenario: _isLoadingScenario,
+                                  messages: _messages,
+                                  sendError: _sendError,
+                                  voiceClarificationChoices:
+                                      _voiceClarificationChoices,
+                                  onSelectVoiceClarification: (variant) =>
+                                      _sendMessageInternal(
+                                    overrideText: variant.title,
+                                    source: 'voice_transcript',
+                                  ),
+                                  hintText: _hintText,
+                                  hintError: _hintError,
+                                  isHintLoading: _isHintLoading,
+                                  isSending: _isSending,
+                                  controller: _messageController,
+                                  actionAvailability: _actionAvailability,
+                                  isRecordingPlaceholderActive:
+                                      _recordingState ==
+                                          LearnerRecordingUiState.recording,
+                                  isTranscribing: _recordingState ==
+                                      LearnerRecordingUiState.transcribing,
+                                  recordingMessage: _recordingMessage,
+                                  showOpenMicrophoneSettings:
+                                      _showOpenMicrophoneSettings,
+                                  onOpenMicrophoneSettings:
+                                      _openMicrophoneSettings,
+                                  isFinishing: _isFinishing,
+                                  canFinish: _canFinish,
+                                  finishError: _finishError,
+                                  onBack: _handleLeaveRequest,
+                                  onFinish: _confirmFinishLesson,
+                                  onRetryStart: _isStarting
+                                      ? null
+                                      : () => _startLessonSession(),
+                                  onRetryLoad: _retryLessonRuntime,
+                                  transcriptController: _transcriptController,
+                                  onPlayVoice: _playTutorVoice,
+                                  onTranslateMessage: _translateMessage,
+                                  onFeedback: _requestFeedback,
+                                  onToggleRecordingPlaceholder: () {
+                                    unawaited(_toggleRecording());
+                                  },
+                                  onHint: _requestHint,
+                                  isTextComposerVisible: _isTextComposerVisible,
+                                  onToggleTextComposer: () => setState(() {
+                                    _isTextComposerVisible =
+                                        !_isTextComposerVisible;
+                                  }),
+                                  onDismissHint: () =>
+                                      setState(() => _hintText = null),
+                                  onSend: _sendMessage,
+                                  autoSendVoice: _autoSendVoice,
+                                  autoPlayBotVoice: _autoPlayBotVoice,
+                                  canOpenConversationMode:
+                                      _actionAvailability.canUsePlaceholders,
+                                  onAutoSendVoiceChanged: (value) =>
+                                      setState(() => _autoSendVoice = value),
+                                  onAutoPlayBotVoiceChanged: (value) =>
+                                      setState(() => _autoPlayBotVoice = value),
+                                  onOpenConversationMode: _openConversationMode,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  ThemeData _lessonTheme(ThemeData appTheme) {
+    final neutralTheme = ThemeData(
+      colorScheme: appTheme.colorScheme,
+      useMaterial3: true,
+    );
+    return appTheme.copyWith(
+      textTheme: neutralTheme.textTheme,
+      primaryTextTheme: neutralTheme.primaryTextTheme,
     );
   }
 
@@ -3062,35 +3077,66 @@ class _FeedbackCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final sections = <(String, String)>[
-      ('Quick feedback', feedback.shortText),
+      ('Quick summary', feedback.shortText),
       ('Corrected version', feedback.correctedVersion),
-      ('Grammar', feedback.grammarTip),
-      ('Vocabulary', feedback.vocabularyTip),
-      ('Culture', feedback.cultureTip),
+      ('Grammar tip', feedback.grammarTip),
+      ('Vocabulary tip', feedback.vocabularyTip),
+      ('Culture tip', feedback.cultureTip),
       ('More natural version', feedback.naturalVersion),
     ].where((section) => section.$2.trim().isNotEmpty).toList();
-    return Card(
+    return Container(
       key: const Key('lesson-message-feedback-card'),
-      margin: EdgeInsets.zero,
-      color: colorScheme.surfaceContainerLowest,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (final section in sections) ...[
-              Text(section.$1, style: Theme.of(context).textTheme.labelLarge),
-              const SizedBox(height: 2),
-              Text(section.$2),
-              if (section != sections.last) const SizedBox(height: 10),
-            ],
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF1CB),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFECC45F)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Feedback',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: const Color(0xFF174A7C),
+                    fontWeight: FontWeight.w700,
+                  )),
+          const SizedBox(height: 8),
+          for (final section in sections) ...[
+            _FeedbackSectionCard(title: section.$1, text: section.$2),
+            if (section != sections.last) const SizedBox(height: 8),
           ],
-        ),
+        ],
       ),
     );
   }
+}
+
+class _FeedbackSectionCard extends StatelessWidget {
+  const _FeedbackSectionCard({required this.title, required this.text});
+
+  final String title;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFD5E3F2)),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: const Color(0xFF174A7C),
+                    fontWeight: FontWeight.w700,
+                  )),
+          const SizedBox(height: 4),
+          Text(text, style: Theme.of(context).textTheme.bodyMedium),
+        ]),
+      );
 }
 
 class _TutorHeader extends StatelessWidget {
@@ -3290,49 +3336,62 @@ class _LessonSummaryView extends StatelessWidget {
     final unavailable = status == LessonCompletionStatus.summaryUnavailable;
     final canRetrySummary = status == LessonCompletionStatus.summaryLoadError;
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFD),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: SingleChildScrollView(
-            key: const Key('lesson-summary-scroll'),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Lesson summary',
-                    style: Theme.of(context).textTheme.headlineSmall),
-                const SizedBox(height: 16),
-                if (!ready) ...[
-                  const Text('Lesson completed',
-                      style: TextStyle(fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 8),
-                  Text(unavailable
+        child: SingleChildScrollView(
+          key: const Key('lesson-summary-scroll'),
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Lesson summary',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: const Color(0xFF123D68),
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const SizedBox(height: 10),
+              if (ready) _SummaryContext(summary: summary!),
+              const SizedBox(height: 20),
+              if (!ready) ...[
+                _SummaryMessagePanel(
+                  title: 'Lesson completed',
+                  message: unavailable
                       ? 'Your lesson was saved, but a summary could not be created for this lesson.'
                       : status == LessonCompletionStatus.authRequired
                           ? 'Please sign in again to load your lesson summary.'
-                          : 'Your lesson was saved, but we could not load the summary right now.'),
-                  const SizedBox(height: 20),
-                  if (canRetrySummary)
-                    OutlinedButton.icon(
-                      onPressed: onRetrySummary,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Retry summary'),
-                    ),
-                ] else ...[
-                  _SummaryContext(summary: summary!),
-                  if (summary!.summary?.trim().isNotEmpty ?? false) ...[
-                    const SizedBox(height: 20),
-                    Text(summary!.summary!),
-                  ],
-                  _SummarySection('Strengths', summary!.strengths),
-                  _SummarySection('Improvements', summary!.improvements),
-                  _SummarySection('Vocabulary', summary!.vocabulary),
-                  _SummarySection('Grammar', summary!.grammar),
-                  _SummarySection('Next steps', summary!.nextSteps),
+                          : 'Your lesson was saved, but we could not load the summary right now.',
+                ),
+                const SizedBox(height: 16),
+                if (canRetrySummary)
+                  Center(
+                      child: OutlinedButton.icon(
+                    onPressed: onRetrySummary,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry summary'),
+                  )),
+              ] else ...[
+                if (summary!.summary?.trim().isNotEmpty ?? false) ...[
+                  _SummaryMessagePanel(
+                    title: 'What went well',
+                    message: summary!.summary!,
+                  ),
+                  const SizedBox(height: 14),
                 ],
-                const SizedBox(height: 28),
-                FilledButton(onPressed: onDone, child: const Text('Done')),
+                _SummarySection('Strengths', summary!.strengths),
+                _SummarySection('Improvements', summary!.improvements),
+                _SummarySection('Vocabulary', summary!.vocabulary),
+                _SummarySection('Grammar', summary!.grammar),
+                _SummarySection('Next steps', summary!.nextSteps),
               ],
-            ),
+              const SizedBox(height: 28),
+              Center(
+                child:
+                    FilledButton(onPressed: onDone, child: const Text('Done')),
+              ),
+            ],
           ),
         ),
       ),
@@ -3349,8 +3408,42 @@ class _SummaryContext extends StatelessWidget {
         .whereType<String>()
         .where((value) => value.trim().isNotEmpty)
         .toList();
-    return parts.isEmpty ? const SizedBox.shrink() : Text(parts.join(' · '));
+    return parts.isEmpty
+        ? const SizedBox.shrink()
+        : Text(
+            parts.join(' · '),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF52718F),
+                ),
+          );
   }
+}
+
+class _SummaryMessagePanel extends StatelessWidget {
+  const _SummaryMessagePanel({required this.title, required this.message});
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF4F8FC),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFD8E7F5)),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: const Color(0xFF174A7C),
+                    fontWeight: FontWeight.w700,
+                  )),
+          const SizedBox(height: 8),
+          Text(message, style: Theme.of(context).textTheme.bodyMedium),
+        ]),
+      );
 }
 
 class _SummarySection extends StatelessWidget {
@@ -3360,24 +3453,44 @@ class _SummarySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
+    final isImprovement = title == 'Improvements';
     return Padding(
-      padding: const EdgeInsets.only(top: 20),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 6),
-        ...items.map(
-          (item) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('• '),
-                Expanded(child: Text(item)),
-              ],
-            ),
+      padding: const EdgeInsets.only(top: 14),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color:
+              isImprovement ? const Color(0xFFFFF1CB) : const Color(0xFFF4F8FC),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isImprovement
+                ? const Color(0xFFECC45F)
+                : const Color(0xFFD8E7F5),
           ),
         ),
-      ]),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: const Color(0xFF174A7C),
+                    fontWeight: FontWeight.w700,
+                  )),
+          const SizedBox(height: 8),
+          ...items.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 5),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('• '),
+                  Expanded(
+                      child: Text(item,
+                          style: Theme.of(context).textTheme.bodyMedium)),
+                ],
+              ),
+            ),
+          ),
+        ]),
+      ),
     );
   }
 }

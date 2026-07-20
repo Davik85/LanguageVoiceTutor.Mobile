@@ -124,6 +124,14 @@ The existing backend semantic voice scenario resolver remains in use for unresol
 - Full Flutter suite: 197 passed, 0 failed.
 - Debug Android APK build succeeded.
 
+## Lesson feedback and summary presentation boundary
+
+The global Mobile product typography remains in effect for Home and Settings. `LessonScreen` applies a local neutral text theme so an application-wide visual style cannot flatten the active lesson's content hierarchy. This boundary applies only to lesson presentation; it does not change lesson messages, feedback fields, summary data, accessibility labels, backend requests, or completion behavior.
+
+Learner feedback uses a warm supporting container with separate white cards for quick summary, corrected version, grammar, vocabulary, culture, and more-natural phrasing. The completed lesson summary uses a distinct "What went well" panel, a warm "What to improve" panel, and separate phrase/section panels. These structures are visual adaptations of the Desktop feedback and summary hierarchy for the smaller Mobile viewport.
+
+Automated regression coverage in `test/lesson_start_flow_test.dart` provides the Home dependencies used by the start-flow fixture: a permitted lesson-access decision plus unavailable Progress and Achievements responses. This keeps the fixture on its intended in-app route instead of allowing an inherited authenticated-service call to navigate to an unregistered `/login` route. The production authentication and Home behavior are not changed by this test-only fake.
+
 ## Remaining validation boundary
 
 The saved-level learner-level/start-flow slice has completed owner physical Android validation, including saved-level lesson start, speech recognition, Lesson Chat, Conversation mode, backend-owned completion and summary generation, and summary display. The six-language study-language slice has also completed owner physical Android verification: all six study languages can be selected and saved in Settings; lessons launch using the selected study language; speech recognition uses the selected study language; and Conversation mode works using the selected study language. Broader repeated testing on different physical devices and network conditions may still be useful. Do not declare voice recognition or all tutor-state timing edge cases fully stabilized yet. Missing Lesson Chat avatar assets remain a separate issue. The optional Desktop Realtime transcription language issue is outside this Mobile change.
