@@ -520,6 +520,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onSubmit: _submitFeedback,
           ),
           const SizedBox(height: 12),
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Privacy & voice'),
+                  SizedBox(height: 6),
+                  Text(
+                    'Voice responses are sent securely to Language Voice Tutor for transcription. You can choose text input instead of voice.',
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
           const _ComingSoonCard(
             icon: Icons.notifications_none_rounded,
             title: 'Notifications & contact',

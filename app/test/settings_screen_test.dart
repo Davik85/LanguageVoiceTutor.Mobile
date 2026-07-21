@@ -218,6 +218,24 @@ Future<void> _expandPasswordRecovery(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets('app settings explain how voice responses are used',
+      (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('settings-app-tab')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Privacy & voice'), findsOneWidget);
+    expect(
+      find.text(
+        'Voice responses are sent securely to Language Voice Tutor for transcription. You can choose text input instead of voice.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Privacy Policy'), findsNothing);
+  });
+
   testWidgets('settings screen loaded state shows account, learning, audio',
       (tester) async {
     await tester.pumpWidget(_screen(FakeAuthService()));
