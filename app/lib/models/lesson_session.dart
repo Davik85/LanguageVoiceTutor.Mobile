@@ -346,6 +346,12 @@ class LessonCompletionResult {
       const LessonCompletionResult._(status: LessonCompletionStatus.failed);
 }
 
+/// The outcome returned when a learner leaves a lesson route.
+///
+/// A completed result is emitted only after the backend finish operation has
+/// succeeded. Callers must not infer completion from a route pop alone.
+enum LessonExitResult { completed, unfinished, abandoned }
+
 enum LessonSessionStartStatus {
   ready,
   blocked,

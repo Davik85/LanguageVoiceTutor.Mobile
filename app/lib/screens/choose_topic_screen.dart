@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/lesson_start_selection.dart';
+import '../models/lesson_session.dart';
 import '../services/auth_service.dart';
 import '../widgets/lesson_option_card.dart';
 import '../theme/app_visuals.dart';
@@ -40,16 +41,21 @@ class ChooseTopicScreen extends StatelessWidget {
                 kind: 'topic',
                 option: topic,
                 style: lessonCardStyleForTopic(topic),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ChooseSituationScreen(
-                      selectedLevel: selectedLevel,
-                      selectedTopic: topic,
-                      authService: _authService,
+                onTap: () async {
+                  final result = await Navigator.push<LessonExitResult>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChooseSituationScreen(
+                        selectedLevel: selectedLevel,
+                        selectedTopic: topic,
+                        authService: _authService,
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                  if (context.mounted && result == LessonExitResult.completed) {
+                    Navigator.of(context).pop(result);
+                  }
+                },
               );
             },
           ),

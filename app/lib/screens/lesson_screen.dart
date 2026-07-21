@@ -1234,7 +1234,7 @@ class _LessonScreenState extends State<LessonScreen>
     await _cancelLearnerRecording();
     if (!mounted) return;
     if (!_hasActiveLessonSession) {
-      await Navigator.of(context).maybePop();
+      await Navigator.of(context).maybePop(LessonExitResult.unfinished);
       return;
     }
     if (!_canAbandon) return;
@@ -1284,7 +1284,7 @@ class _LessonScreenState extends State<LessonScreen>
       });
       await WidgetsBinding.instance.endOfFrame;
       if (!mounted) return;
-      await Navigator.of(context).maybePop();
+      await Navigator.of(context).maybePop(LessonExitResult.abandoned);
       return;
     }
     setState(() {
@@ -2053,7 +2053,8 @@ class _LessonScreenState extends State<LessonScreen>
                           summary: _lessonSummary,
                           status: _summaryStatus ??
                               LessonCompletionStatus.summaryLoadError,
-                          onDone: () => Navigator.of(context).maybePop(),
+                          onDone: () => Navigator.of(context)
+                              .maybePop(LessonExitResult.completed),
                           onRetrySummary: _retrySummary,
                         )
                       : Padding(

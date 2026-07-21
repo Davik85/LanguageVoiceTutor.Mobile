@@ -8,6 +8,7 @@ import '../models/auth_models.dart';
 import '../models/achievements.dart';
 import '../models/lesson_access_decision.dart';
 import '../models/lesson_start_selection.dart';
+import '../models/lesson_session.dart';
 import '../models/progress.dart';
 import '../services/auth_service.dart';
 import '../services/achievement_presentation_store.dart';
@@ -50,6 +51,8 @@ class _HomeScreenState extends State<HomeScreen> {
   _HomeProgressState _progressState = _HomeProgressState.loading;
   _HomeAchievementsState _achievementsState = _HomeAchievementsState.loading;
   bool _isLoadingSummary = false;
+  bool _isLoadingAchievements = false;
+  bool _isRefreshingAfterCompletion = false;
   bool _isLoadingLessonSettings = false;
   bool _isOpeningSettings = false;
   bool _isOpeningAchievements = false;
@@ -68,30 +71,32 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadAchievements();
   }
 
-  Future<void> _loadAchievements() async {
-    if (_achievementsState == _HomeAchievementsState.loading &&
-        _achievements != null) {
-      return;
+  Future<void> _loadAchievements({bool preserveExisting = false}) async {
+    if (_isLoadingAchievements) return;
+    _isLoadingAchievements = true;
+    try {
+      if (mounted && !(preserveExisting && _achievements != null)) {
+        setState(() => _achievementsState = _HomeAchievementsState.loading);
+      }
+      final result = await _authService.fetchAchievements();
+      if (!mounted) return;
+      if (result.status == AchievementsStatus.authRequired) {
+        Navigator.pushNamedAndRemoveUntil(
+            context, LoginScreen.routeName, (_) => false);
+        return;
+      }
+      if (result.isSuccess) {
+        setState(() {
+          _achievements = result.achievements;
+          _achievementsState = _HomeAchievementsState.ready;
+        });
+        _queueNewAchievementPresentations();
+      } else if (!(preserveExisting && _achievements != null)) {
+        setState(() => _achievementsState = _HomeAchievementsState.unavailable);
+      }
+    } finally {
+      _isLoadingAchievements = false;
     }
-    if (mounted) {
-      setState(() => _achievementsState = _HomeAchievementsState.loading);
-    }
-    final result = await _authService.fetchAchievements();
-    if (!mounted) {
-      return;
-    }
-    if (result.status == AchievementsStatus.authRequired) {
-      Navigator.pushNamedAndRemoveUntil(
-          context, LoginScreen.routeName, (_) => false);
-      return;
-    }
-    setState(() {
-      _achievements = result.achievements;
-      _achievementsState = result.isSuccess
-          ? _HomeAchievementsState.ready
-          : _HomeAchievementsState.unavailable;
-    });
-    _queueNewAchievementPresentations();
   }
 
   Future<void> _queueNewAchievementPresentations() async {
@@ -229,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final settings = await _authService.fetchUserSettings();
       if (!mounted) return;
       final selectedLevel = lessonLevelFor(settings.currentLevel);
-      await Navigator.push(
+      final result = await Navigator.push<LessonExitResult>(
         context,
         MaterialPageRoute(
           builder: (_) => ChooseTopicScreen(
@@ -238,9 +243,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       );
-      if (mounted) {
+      if (!mounted) return;
+      if (result == LessonExitResult.completed) {
+        _refreshAfterCompletedLesson();
+      } else {
         _loadHomeSummary();
-        _loadAchievements();
       }
     } on ApiException catch (error) {
       if (!mounted) return;
@@ -257,6 +264,63 @@ class _HomeScreenState extends State<HomeScreen> {
           'Unable to load your learning settings right now. Please try again.');
     } finally {
       if (mounted) setState(() => _isLoadingLessonSettings = false);
+    }
+  }
+
+  Future<void> _refreshAfterCompletedLesson() async {
+    if (_isRefreshingAfterCompletion) return;
+    _isRefreshingAfterCompletion = true;
+    try {
+      await Future.wait([
+        _refreshHomeSummaryAfterCompletion(),
+        _loadAchievements(preserveExisting: true),
+      ]);
+    } finally {
+      _isRefreshingAfterCompletion = false;
+    }
+  }
+
+  Future<void> _refreshHomeSummaryAfterCompletion() async {
+    if (_isLoadingSummary) return;
+    _isLoadingSummary = true;
+    var shouldSignInAgain = false;
+    AuthUser? user;
+    LessonAccessDecision? lessonAccess;
+    ProgressResult? progressResult;
+    try {
+      try {
+        user = await _authService.loadCurrentUser();
+      } on ApiException catch (error) {
+        shouldSignInAgain = error.message == 'Please sign in again.';
+      } catch (_) {}
+      if (!shouldSignInAgain) {
+        try {
+          lessonAccess = await _authService.fetchLessonAccessDecision();
+        } on ApiException catch (error) {
+          shouldSignInAgain = error.message == 'Please sign in again.';
+        } catch (_) {}
+      }
+      if (!shouldSignInAgain) {
+        progressResult = await _authService.fetchProgress();
+        shouldSignInAgain =
+            progressResult.status == ProgressStatus.authRequired;
+      }
+      if (!mounted) return;
+      if (shouldSignInAgain) {
+        Navigator.pushNamedAndRemoveUntil(
+            context, LoginScreen.routeName, (_) => false);
+        return;
+      }
+      setState(() {
+        if (user != null) _currentUser = user;
+        if (lessonAccess != null) _lessonAccess = lessonAccess;
+        if (progressResult?.isSuccess == true) {
+          _progress = progressResult!.progress;
+          _progressState = _HomeProgressState.ready;
+        }
+      });
+    } finally {
+      _isLoadingSummary = false;
     }
   }
 

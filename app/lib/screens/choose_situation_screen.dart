@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/lesson_start_selection.dart';
+import '../models/lesson_session.dart';
 import '../services/auth_service.dart';
 import '../widgets/lesson_option_card.dart';
 import '../theme/app_visuals.dart';
@@ -46,25 +47,30 @@ class ChooseSituationScreen extends StatelessWidget {
                 kind: 'situation',
                 option: situation,
                 style: situationStyle,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => LessonScreen(
-                      authService: _authService,
-                      selection: LessonStartSelection(
-                        level: selectedLevel.label,
-                        topicId: situation.topicId,
-                        topicTitle: situation.topicTitle,
-                        subtopicId: situation.subtopicId,
-                        subtopicTitle: situation.subtopicTitle,
-                        situation: situation.label,
-                        lessonContentId: situation.lessonContentId,
-                        selectedContextId: situation.selectedContextId,
-                        selectedContextTitle: situation.selectedContextTitle,
+                onTap: () async {
+                  final result = await Navigator.push<LessonExitResult>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => LessonScreen(
+                        authService: _authService,
+                        selection: LessonStartSelection(
+                          level: selectedLevel.label,
+                          topicId: situation.topicId,
+                          topicTitle: situation.topicTitle,
+                          subtopicId: situation.subtopicId,
+                          subtopicTitle: situation.subtopicTitle,
+                          situation: situation.label,
+                          lessonContentId: situation.lessonContentId,
+                          selectedContextId: situation.selectedContextId,
+                          selectedContextTitle: situation.selectedContextTitle,
+                        ),
                       ),
                     ),
-                  ),
-                ),
+                  );
+                  if (context.mounted && result == LessonExitResult.completed) {
+                    Navigator.of(context).pop(result);
+                  }
+                },
               );
             },
           ),

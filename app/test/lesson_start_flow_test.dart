@@ -603,6 +603,44 @@ Widget _lessonScreenWithHome(FakeAuthService authService) => MaterialApp(
       },
     );
 
+class _LessonResultCapture extends StatefulWidget {
+  const _LessonResultCapture({required this.authService, required this.result});
+
+  final FakeAuthService authService;
+  final ValueNotifier<LessonExitResult?> result;
+
+  @override
+  State<_LessonResultCapture> createState() => _LessonResultCaptureState();
+}
+
+class _LessonResultCaptureState extends State<_LessonResultCapture> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final result = await Navigator.of(context).push<LessonExitResult>(
+        MaterialPageRoute(
+          builder: (_) => LessonScreen(
+            authService: widget.authService,
+            selection: _introLessonSelection,
+          ),
+        ),
+      );
+      widget.result.value = result;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const Scaffold(body: Text('Home'));
+}
+
+Widget _lessonScreenWithResultCapture(
+  FakeAuthService authService,
+  ValueNotifier<LessonExitResult?> result,
+) =>
+    MaterialApp(
+        home: _LessonResultCapture(authService: authService, result: result));
+
 Future<void> _expectVisibleAfterScroll(WidgetTester tester, String text) async {
   final finder = find.text(text);
   if (!tester.any(finder)) {
@@ -2092,6 +2130,26 @@ void main() {
 
     await tester.tap(find.text('Done'));
     await tester.pumpAndSettle();
+    expect(find.text('Home'), findsOneWidget);
+  });
+
+  testWidgets(
+      'backend-confirmed completion returns an explicit completed result',
+      (tester) async {
+    final result = ValueNotifier<LessonExitResult?>(null);
+    addTearDown(result.dispose);
+    await tester
+        .pumpWidget(_lessonScreenWithResultCapture(FakeAuthService(), result));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('lesson-action-finish')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Finish lesson'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    expect(result.value, LessonExitResult.completed);
     expect(find.text('Home'), findsOneWidget);
   });
 
