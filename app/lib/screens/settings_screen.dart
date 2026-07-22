@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
 import '../models/auth_models.dart';
+import '../models/account_deletion_request.dart';
 import '../models/feedback_report.dart';
 import '../models/language_option.dart';
 import '../models/language_options.dart';
@@ -338,6 +339,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _goToLogin();
   }
 
+  Future<void> _openAccountDeletionRequest() async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => _AccountDeletionRequestDialog(
+        authService: _authService,
+        onAuthenticationRequired: _goToLogin,
+      ),
+    );
+  }
+
   void _goToLogin() => Navigator.pushNamedAndRemoveUntil(
         context,
         LoginScreen.routeName,
@@ -424,6 +435,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subscription: _subscription,
             error: _accountError,
             onLogout: _logout,
+            onRequestAccountDeletion: _openAccountDeletionRequest,
           ),
           const SizedBox(height: 12),
           _LearningCard(
@@ -630,11 +642,16 @@ class _SettingsActionButton extends StatelessWidget {
 
 class _AccountCard extends StatelessWidget {
   const _AccountCard(
-      {this.user, this.subscription, this.error, required this.onLogout});
+      {this.user,
+      this.subscription,
+      this.error,
+      required this.onLogout,
+      required this.onRequestAccountDeletion});
   final AuthUser? user;
   final SubscriptionStatus? subscription;
   final String? error;
   final VoidCallback onLogout;
+  final VoidCallback onRequestAccountDeletion;
   @override
   Widget build(BuildContext context) => Card(
       child: Padding(
@@ -660,7 +677,131 @@ class _AccountCard extends StatelessWidget {
             const SizedBox(height: 12),
             FilledButton.tonal(
                 onPressed: onLogout, child: const Text('Logout')),
+            const SizedBox(height: 8),
+            TextButton(
+              key: const Key('settings-request-account-deletion'),
+              onPressed: onRequestAccountDeletion,
+              child: const Text('Request account deletion'),
+            ),
           ])));
+}
+
+class _AccountDeletionRequestDialog extends StatefulWidget {
+  const _AccountDeletionRequestDialog({
+    required this.authService,
+    required this.onAuthenticationRequired,
+  });
+
+  final AuthService authService;
+  final VoidCallback onAuthenticationRequired;
+
+  @override
+  State<_AccountDeletionRequestDialog> createState() =>
+      _AccountDeletionRequestDialogState();
+}
+
+class _AccountDeletionRequestDialogState
+    extends State<_AccountDeletionRequestDialog> {
+  final _passwordController = TextEditingController();
+  final _reasonController = TextEditingController();
+  bool _submitting = false;
+  String? _message;
+  AccountDeletionRequestResponse? _response;
+
+  @override
+  void dispose() {
+    _passwordController.clear();
+    _reasonController.clear();
+    _passwordController.dispose();
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_submitting) return;
+    if (_passwordController.text.trim().isEmpty) {
+      setState(() => _message = 'Current password is required.');
+      return;
+    }
+    setState(() {
+      _submitting = true;
+      _message = null;
+    });
+    final result = await widget.authService.submitAccountDeletionRequest(
+      AccountDeletionRequest(
+        currentPassword: _passwordController.text,
+        reason: _reasonController.text,
+      ),
+    );
+    _passwordController.clear();
+    if (!mounted) return;
+    if (result.status ==
+        AccountDeletionRequestSubmitStatus.authenticationRequired) {
+      Navigator.of(context).pop();
+      widget.onAuthenticationRequired();
+      return;
+    }
+    setState(() {
+      _submitting = false;
+      _message = result.message;
+      _response = result.response;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: const Text('Request account deletion'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Submitting this request does not delete your account immediately. Support will review and process it, and may ask for more information. Their response will be sent to the email address associated with your account. Your account is not considered deleted just because you submitted this request.',
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                key: const Key('account-deletion-current-password'),
+                controller: _passwordController,
+                obscureText: true,
+                enabled: !_submitting,
+                decoration:
+                    const InputDecoration(labelText: 'Current password'),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                key: const Key('account-deletion-reason'),
+                controller: _reasonController,
+                enabled: !_submitting,
+                minLines: 2,
+                maxLines: 4,
+                decoration:
+                    const InputDecoration(labelText: 'Reason (optional)'),
+              ),
+              if (_message != null) ...[
+                const SizedBox(height: 12),
+                Text(_message!, key: const Key('account-deletion-message')),
+              ],
+              if (_response != null) ...[
+                const SizedBox(height: 8),
+                Text('Request ID: ${_response!.reportId}'),
+                Text('Status: ${_response!.status}'),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _submitting ? null : () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const Key('account-deletion-submit'),
+            onPressed: _submitting ? null : _submit,
+            child: Text(_submitting ? 'Submitting...' : 'Submit request'),
+          ),
+        ],
+      );
 }
 
 class _PasswordRecoveryCard extends StatelessWidget {

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/achievements.dart';
+import 'package:language_voice_tutor_mobile/models/account_deletion_request.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
 import 'package:language_voice_tutor_mobile/models/feedback_report.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_history.dart';
@@ -58,6 +59,13 @@ class FakeAuthService extends AuthService {
   FeedbackReportSubmitResult feedbackResult =
       FeedbackReportSubmitResult.success();
   FeedbackReportRequest? submittedFeedback;
+  AccountDeletionRequestSubmitResult accountDeletionResult =
+      AccountDeletionRequestSubmitResult.success(
+    const AccountDeletionRequestResponse(
+        reportId: 'request-1', status: 'new', alreadyRequested: false),
+  );
+  AccountDeletionRequest? submittedAccountDeletion;
+  Completer<AccountDeletionRequestSubmitResult>? pendingAccountDeletion;
   @override
   Future<AuthUser> loadCurrentUser() async {
     if (keepUserLoading) return Completer<AuthUser>().future;
@@ -134,6 +142,15 @@ class FakeAuthService extends AuthService {
       FeedbackReportRequest request) async {
     submittedFeedback = request;
     return feedbackResult;
+  }
+
+  @override
+  Future<AccountDeletionRequestSubmitResult> submitAccountDeletionRequest(
+      AccountDeletionRequest request) async {
+    submittedAccountDeletion = request;
+    final pending = pendingAccountDeletion;
+    if (pending != null) return pending.future;
+    return accountDeletionResult;
   }
 }
 
@@ -336,6 +353,126 @@ void main() {
     expect(find.text('Forgot password'), findsOneWidget);
     expect(find.text('Reset password'), findsOneWidget);
     expect(find.text('Change password'), findsOneWidget);
+  });
+
+  testWidgets(
+      'account deletion form warns, obscures password, and validates it',
+      (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+
+    await tester
+        .tap(find.byKey(const Key('settings-request-account-deletion')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Request account deletion'), findsWidgets);
+    expect(find.textContaining('does not delete your account immediately'),
+        findsOneWidget);
+    expect(
+      tester
+          .widget<TextField>(
+              find.byKey(const Key('account-deletion-current-password')))
+          .obscureText,
+      isTrue,
+    );
+    final submit = find.byKey(const Key('account-deletion-submit'));
+    await tester.ensureVisible(submit);
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+    expect(find.text('Current password is required.'), findsOneWidget);
+  });
+
+  testWidgets('account deletion submits reason and shows backend result',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    await tester
+        .tap(find.byKey(const Key('settings-request-account-deletion')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('account-deletion-current-password')), 'current');
+    await tester.enterText(
+        find.byKey(const Key('account-deletion-reason')), 'No longer needed');
+    final submit = find.byKey(const Key('account-deletion-submit'));
+    await tester.ensureVisible(submit);
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+
+    expect(auth.submittedAccountDeletion?.reason, 'No longer needed');
+    expect(find.text('Request ID: request-1'), findsOneWidget);
+    expect(find.text('Status: new'), findsOneWidget);
+    expect(find.textContaining('submitted for support processing'),
+        findsOneWidget);
+  });
+
+  testWidgets('account deletion disables submit while processing',
+      (tester) async {
+    final auth = FakeAuthService()
+      ..pendingAccountDeletion =
+          Completer<AccountDeletionRequestSubmitResult>();
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    await tester
+        .tap(find.byKey(const Key('settings-request-account-deletion')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('account-deletion-current-password')), 'current');
+    final submit = find.byKey(const Key('account-deletion-submit'));
+    await tester.ensureVisible(submit);
+    await tester.tap(submit);
+    await tester.pump();
+    expect(tester.widget<FilledButton>(submit).onPressed, isNull);
+
+    auth.pendingAccountDeletion!.complete(
+      AccountDeletionRequestSubmitResult.success(
+        const AccountDeletionRequestResponse(
+            reportId: 'request-2', status: 'new', alreadyRequested: false),
+      ),
+    );
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('account deletion shows an existing active request status',
+      (tester) async {
+    final auth = FakeAuthService()
+      ..accountDeletionResult = AccountDeletionRequestSubmitResult.success(
+        const AccountDeletionRequestResponse(
+            reportId: 'existing-1', status: 'reviewed', alreadyRequested: true),
+      );
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    await tester
+        .tap(find.byKey(const Key('settings-request-account-deletion')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('account-deletion-current-password')), 'current');
+    final submit = find.byKey(const Key('account-deletion-submit'));
+    await tester.ensureVisible(submit);
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+    expect(find.text('Request ID: existing-1'), findsOneWidget);
+    expect(find.text('Status: reviewed'), findsOneWidget);
+  });
+
+  testWidgets('account deletion keeps incorrect-password feedback safe',
+      (tester) async {
+    final auth = FakeAuthService()
+      ..accountDeletionResult =
+          AccountDeletionRequestSubmitResult.incorrectPassword();
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    await tester
+        .tap(find.byKey(const Key('settings-request-account-deletion')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('account-deletion-current-password')), 'wrong');
+    final submit = find.byKey(const Key('account-deletion-submit'));
+    await tester.ensureVisible(submit);
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+    expect(find.text('Your current password is incorrect.'), findsOneWidget);
+    expect(find.text('wrong'), findsNothing);
   });
 
   testWidgets('reset request validates empty email', (tester) async {

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/audio_speech.dart';
 import 'package:language_voice_tutor_mobile/models/audio_transcription.dart';
+import 'package:language_voice_tutor_mobile/models/account_deletion_request.dart';
 import 'package:language_voice_tutor_mobile/models/feedback_report.dart';
 import 'package:language_voice_tutor_mobile/models/language_options.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_chat.dart';
@@ -1678,5 +1679,89 @@ void main() {
       'clientPlatform': 'android',
       'clientVersion': '0.1.0+1',
     });
+  });
+
+  test('account deletion posts only its backend contract and parses results',
+      () async {
+    final api = FakeApiClient()
+      ..responses['/api/me/account-deletion-requests'] = [
+        const ApiResponse(
+          statusCode: 201,
+          body:
+              '{"reportId":"request-1","status":"new","alreadyRequested":false}',
+        ),
+        const ApiResponse(
+          statusCode: 200,
+          body:
+              '{"reportId":"request-existing","status":"reviewed","alreadyRequested":true}',
+        ),
+      ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+
+    final created = await service.submitAccountDeletionRequest(
+      const AccountDeletionRequest(
+          currentPassword: 'current-password', reason: ' Please delete it. '),
+    );
+    final existing = await service.submitAccountDeletionRequest(
+      const AccountDeletionRequest(currentPassword: 'current-password'),
+    );
+
+    expect(created.status, AccountDeletionRequestSubmitStatus.success);
+    expect(created.response?.reportId, 'request-1');
+    expect(existing.response?.alreadyRequested, isTrue);
+    expect(existing.response?.status, 'reviewed');
+    expect(api.calls, [
+      'POST /api/me/account-deletion-requests',
+      'POST /api/me/account-deletion-requests',
+    ]);
+    expect(api.bodies.first, {
+      'currentPassword': 'current-password',
+      'reason': 'Please delete it.',
+    });
+    expect(api.bodies.last, {'currentPassword': 'current-password'});
+    for (final body in api.bodies) {
+      expect(body!.containsKey('userId'), isFalse);
+      expect(body.containsKey('email'), isFalse);
+    }
+  });
+
+  test('account deletion distinguishes password rejection from session refresh',
+      () async {
+    final passwordApi = FakeApiClient()
+      ..responses['/api/me/account-deletion-requests'] = [
+        const ApiResponse(
+            statusCode: 401,
+            body: '{"error":"The password confirmation was not accepted."}'),
+      ];
+    final passwordResult = await AuthService(
+      apiClient: passwordApi,
+      storage: MemoryStorage(),
+    ).submitAccountDeletionRequest(
+      const AccountDeletionRequest(currentPassword: 'wrong'),
+    );
+    expect(passwordResult.status,
+        AccountDeletionRequestSubmitStatus.incorrectPassword);
+    expect(passwordApi.calls, ['POST /api/me/account-deletion-requests']);
+
+    final refreshApi = FakeApiClient()
+      ..responses['/api/me/account-deletion-requests'] = [
+        const ApiResponse(statusCode: 401, body: '{}'),
+        const ApiResponse(
+            statusCode: 201,
+            body:
+                '{"reportId":"request-2","status":"new","alreadyRequested":false}'),
+      ];
+    final refreshed = await AuthService(
+      apiClient: refreshApi,
+      storage: MemoryStorage(),
+    ).submitAccountDeletionRequest(
+      const AccountDeletionRequest(currentPassword: 'current-password'),
+    );
+    expect(refreshed.status, AccountDeletionRequestSubmitStatus.success);
+    expect(refreshApi.calls, [
+      'POST /api/me/account-deletion-requests',
+      'POST /api/auth/refresh',
+      'POST /api/me/account-deletion-requests',
+    ]);
   });
 }

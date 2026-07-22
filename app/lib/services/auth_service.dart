@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import '../api/api_client.dart';
 import '../models/auth_models.dart';
+import '../models/account_deletion_request.dart';
 import '../models/feedback_report.dart';
 import '../models/audio_speech.dart';
 import '../models/audio_transcription.dart';
@@ -433,7 +434,7 @@ class AuthService {
       final result = await _sendWithSessionRecovery(
         (token) =>
             _apiClient.post(path, body: request.toJson(), accessToken: token),
-        (response) => response.statusCode,
+        (response) => response.statusCode == 401,
       );
       response = result.response;
       refreshRetry = result.refreshed;
@@ -830,6 +831,44 @@ class AuthService {
     }
   }
 
+  Future<AccountDeletionRequestSubmitResult> submitAccountDeletionRequest(
+      AccountDeletionRequest request) async {
+    if (request.currentPassword.trim().isEmpty) {
+      return AccountDeletionRequestSubmitResult.failed();
+    }
+    try {
+      final response = await _authenticatedPost(
+        '/api/me/account-deletion-requests',
+        body: request.toJson(),
+        failureMessageForResponse: (response) =>
+            _isAccountDeletionPasswordRejected(response)
+                ? 'Your current password is incorrect.'
+                : 'Unable to submit your request right now. Please try again.',
+        recoverUnauthorized: (response) =>
+            !_isAccountDeletionPasswordRejected(response),
+      );
+      return AccountDeletionRequestSubmitResult.success(
+        AccountDeletionRequestResponse.fromJson(_decodeObject(response.body)),
+      );
+    } on _AuthenticationRequiredException {
+      return AccountDeletionRequestSubmitResult.authenticationRequired();
+    } on ApiException catch (error) {
+      if (error.message == 'Your current password is incorrect.') {
+        return AccountDeletionRequestSubmitResult.incorrectPassword();
+      }
+      if (error.category == ApiFailureCategory.network ||
+          error.category == ApiFailureCategory.timeout ||
+          error.category == ApiFailureCategory.transport) {
+        return AccountDeletionRequestSubmitResult.networkFailure();
+      }
+      return AccountDeletionRequestSubmitResult.failed();
+    } on FormatException {
+      return AccountDeletionRequestSubmitResult.malformedResponse();
+    } catch (_) {
+      return AccountDeletionRequestSubmitResult.malformedResponse();
+    }
+  }
+
   Future<String> requestPasswordReset(String email) async {
     try {
       final response = await _apiClient.post(
@@ -935,11 +974,13 @@ class AuthService {
     String path, {
     required Map<String, dynamic> body,
     String Function(ApiResponse response)? failureMessageForResponse,
+    bool Function(ApiResponse response)? recoverUnauthorized,
   }) async {
     return _authenticatedSend(
       path,
       (token) => _apiClient.post(path, body: body, accessToken: token),
       failureMessageForResponse: failureMessageForResponse,
+      recoverUnauthorized: recoverUnauthorized,
     );
   }
 
@@ -970,9 +1011,13 @@ class AuthService {
     String path,
     Future<ApiResponse> Function(String accessToken) send, {
     String Function(ApiResponse response)? failureMessageForResponse,
+    bool Function(ApiResponse response)? recoverUnauthorized,
   }) async {
-    final request =
-        await _sendWithSessionRecovery(send, (response) => response.statusCode);
+    final request = await _sendWithSessionRecovery(
+        send,
+        (response) =>
+            response.statusCode == 401 &&
+            (recoverUnauthorized?.call(response) ?? true));
     final response = request.response;
 
     if (!_isSuccess(response.statusCode)) {
@@ -990,7 +1035,7 @@ class AuthService {
     try {
       return (await _sendWithSessionRecovery(
         (token) => client.postBinary(path, body: body, accessToken: token),
-        (response) => response.statusCode,
+        (response) => response.statusCode == 401,
       ))
           .response;
     } on _AuthenticationRequiredException {
@@ -1013,7 +1058,7 @@ class AuthService {
         );
     try {
       final result = await _sendWithSessionRecovery(
-          send, (response) => response.statusCode);
+          send, (response) => response.statusCode == 401);
       _lastMultipartRefreshRetry = result.refreshed;
       return result.response;
     } on _AuthenticationRequiredException {
@@ -1052,7 +1097,7 @@ class AuthService {
 
   Future<({T response, bool refreshed})> _sendWithSessionRecovery<T>(
     Future<T> Function(String accessToken) send,
-    int Function(T response) statusCode,
+    bool Function(T response) isUnauthorized,
   ) async {
     final failedToken = await _storage.readAccessToken();
     if (failedToken == null || failedToken.isEmpty) {
@@ -1060,7 +1105,7 @@ class AuthService {
     }
 
     var response = await send(failedToken);
-    if (statusCode(response) != 401) {
+    if (!isUnauthorized(response)) {
       return (response: response, refreshed: false);
     }
 
@@ -1070,7 +1115,7 @@ class AuthService {
         currentToken != failedToken) {
       _debugRefresh('retry_with_newer_access_token');
       response = await send(currentToken);
-      if (statusCode(response) != 401) {
+      if (!isUnauthorized(response)) {
         return (response: response, refreshed: false);
       }
     }
@@ -1084,7 +1129,7 @@ class AuthService {
           throw const _AuthenticationRequiredException();
         }
         response = await send(newToken);
-        if (statusCode(response) == 401) {
+        if (isUnauthorized(response)) {
           await _clearInvalidSession();
           throw const _AuthenticationRequiredException();
         }
@@ -1093,6 +1138,16 @@ class AuthService {
         throw const _AuthenticationRequiredException();
       case _RefreshResult.temporaryFailure:
         throw const _TemporarySessionException();
+    }
+  }
+
+  static bool _isAccountDeletionPasswordRejected(ApiResponse response) {
+    if (response.statusCode != 401) return false;
+    try {
+      return _jsonString(_decodeObject(response.body), 'error') ==
+          'The password confirmation was not accepted.';
+    } catch (_) {
+      return false;
     }
   }
 
