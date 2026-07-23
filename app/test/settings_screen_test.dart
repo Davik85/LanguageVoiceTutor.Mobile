@@ -341,7 +341,8 @@ void main() {
     await tester.tap(find.byKey(const Key('settings-app-tab')));
     await tester.pumpAndSettle();
     expect(find.text('Feedback & reports'), findsOneWidget);
-    expect(find.text('Notifications & contact'), findsOneWidget);
+    expect(find.text('Notifications & contact'), findsNothing);
+    expect(find.text('Practice reminders'), findsOneWidget);
   });
 
   testWidgets('password recovery section is visible', (tester) async {

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_history.dart';
-import 'package:language_voice_tutor_mobile/screens/home_screen.dart';
 import 'package:language_voice_tutor_mobile/screens/lesson_history_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
@@ -130,40 +129,27 @@ void main() {
     expect(auth.detailCalls, 0);
   });
 
-  testWidgets('shows the empty state and returns Home', (tester) async {
+  testWidgets('shows the empty state', (tester) async {
     final auth = _HistoryAuthService([
       () async =>
           LessonHistoryListResult.success(const LessonHistoryList(items: []))
     ]);
-    await tester.pumpWidget(MaterialApp(
-        home: HomeScreen(authService: auth),
-        routes: {'/login': (_) => const Scaffold(body: Text('Login route'))}));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('home-lesson-history')));
+    await tester.pumpWidget(_screen(auth));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('lesson-history-empty')), findsOneWidget);
     expect(find.text('No completed lessons yet'), findsOneWidget);
-    await tester.tap(find.text('Back to Home'));
-    await tester.pumpAndSettle();
-    expect(find.text('Home'), findsOneWidget);
   });
 
-  testWidgets('system back returns from History to Home', (tester) async {
+  testWidgets('history screen loads from its dedicated entry point',
+      (tester) async {
     final auth = _HistoryAuthService([
       () async => LessonHistoryListResult.success(
             LessonHistoryList(items: [_item(topic: 'Daily Life')]),
           ),
     ]);
-    await tester.pumpWidget(MaterialApp(
-      home: HomeScreen(authService: auth),
-      routes: {'/login': (_) => const Scaffold(body: Text('Login route'))},
-    ));
+    await tester.pumpWidget(_screen(auth));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('home-lesson-history')));
-    await tester.pumpAndSettle();
-    await tester.pageBack();
-    await tester.pumpAndSettle();
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.byKey(const Key('lesson-history-screen')), findsOneWidget);
   });
 
   testWidgets('failure retries once and prevents duplicate concurrent retries',

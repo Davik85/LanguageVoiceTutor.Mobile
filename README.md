@@ -14,7 +14,7 @@ Settings is divided by a three-item bottom navigation bar:
 
 - **Profile**: account/subscription, learner level, language choices, tutor, audio, and Save settings.
 - **Lessons**: Lesson history, Progress, and **Rewards**, which opens the complete achievement catalogue.
-- **App**: password recovery, Feedback & reports, future Notifications & contact placeholder, and Connection status.
+- **App**: password recovery, Feedback & reports, device-local Practice reminders, and Connection status. Practice reminders default to 09:00 and 20:00 device-local time, remain blocked until Android notification permission is granted after a learner-facing explanation, and can be edited or disabled entirely in Settings.
 
 Settings, Progress, Lesson History, Choose Topic, and Choose Situation use the same light-blue-to-golden background. Cards are softly rounded translucent surfaces; settings fields and expansion panels use rounded filled controls. Backend contracts, entitlement ownership, and lesson behavior remain unchanged.
 

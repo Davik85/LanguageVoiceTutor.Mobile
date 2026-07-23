@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'config/app_config.dart';
 import 'services/auth_service.dart';
 import 'services/service_factory.dart';
+import 'services/practice_reminder_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/lesson_screen.dart';
 import 'screens/login_screen.dart';
@@ -10,17 +11,26 @@ import 'screens/settings_screen.dart';
 import 'screens/splash_screen.dart';
 import 'theme/app_visuals.dart';
 
-void main() {
-  runApp(LanguageVoiceTutorApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final reminders = LocalPracticeReminderService();
+  try {
+    await reminders.initialize();
+  } catch (_) {}
+  runApp(LanguageVoiceTutorApp(practiceReminderService: reminders));
 }
 
 class LanguageVoiceTutorApp extends StatelessWidget {
   LanguageVoiceTutorApp({
     super.key,
     AuthService? authService,
-  }) : _authService = authService ?? createAuthService();
+    PracticeReminderService? practiceReminderService,
+  })  : _authService = authService ?? createAuthService(),
+        _practiceReminderService =
+            practiceReminderService ?? LocalPracticeReminderService();
 
   final AuthService _authService;
+  final PracticeReminderService _practiceReminderService;
 
   @override
   Widget build(BuildContext context) {
@@ -112,10 +122,13 @@ class LanguageVoiceTutorApp extends StatelessWidget {
       routes: {
         SplashScreen.routeName: (_) => SplashScreen(authService: _authService),
         LoginScreen.routeName: (_) => LoginScreen(authService: _authService),
-        HomeScreen.routeName: (_) => HomeScreen(authService: _authService),
+        HomeScreen.routeName: (_) => HomeScreen(
+            authService: _authService,
+            practiceReminderService: _practiceReminderService),
         LessonScreen.routeName: (_) => LessonScreen(authService: _authService),
-        SettingsScreen.routeName: (_) =>
-            SettingsScreen(authService: _authService),
+        SettingsScreen.routeName: (_) => SettingsScreen(
+            authService: _authService,
+            practiceReminderService: _practiceReminderService),
       },
     );
   }

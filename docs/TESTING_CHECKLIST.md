@@ -300,6 +300,8 @@ Before any Mobile account-deletion UX change, verify that submission remains a b
 
 ## Future local-notification and localization checks
 
+Local Android practice reminders are implemented with `flutter_local_notifications`, `flutter_timezone`, and `timezone`. Automated verification runs `flutter test test/services/practice_reminder_service_test.dart test/services/practice_reminder_preferences_test.dart`, `flutter test test/home_screen_test.dart test/settings_screen_test.dart`, `flutter test`, and `flutter build apk --debug`. Physical Android checks remain: Android 13+ permission timing and denial/settings recovery, notification delivery at device-local times across timezone changes, and receiver-based restoration after reboot.
+
 Implement and verify in the approved order: local Android practice reminders, complete Premium UI and purchase entry points, Google Play Billing with backend verification and restore/reconciliation, then complete 14-language static-interface localization.
 
 - Verify Notifications V1 is local-only: no Firebase, remote/server push, push token, backend endpoint/state, remote provider, or background microphone behavior.

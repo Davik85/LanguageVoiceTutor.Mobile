@@ -13,6 +13,7 @@ import '../models/progress.dart';
 import '../services/auth_service.dart';
 import '../services/achievement_presentation_store.dart';
 import '../services/service_factory.dart';
+import '../services/practice_reminder_service.dart';
 import '../theme/app_visuals.dart';
 import '../widgets/achievement_badge.dart';
 import '../widgets/achievement_preview.dart';
@@ -30,20 +31,24 @@ class HomeScreen extends StatefulWidget {
     super.key,
     AuthService? authService,
     AchievementPresentationStore? achievementPresentationStore,
+    PracticeReminderService? practiceReminderService,
   })  : _authService = authService,
-        _achievementPresentationStore = achievementPresentationStore;
+        _achievementPresentationStore = achievementPresentationStore,
+        _practiceReminderService = practiceReminderService;
 
   static const String routeName = '/home';
   final AuthService? _authService;
   final AchievementPresentationStore? _achievementPresentationStore;
+  final PracticeReminderService? _practiceReminderService;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late final AuthService _authService;
   late final AchievementPresentationStore _achievementPresentationStore;
+  late final PracticeReminderService _practiceReminderService;
   AuthUser? _currentUser;
   LessonAccessDecision? _lessonAccess;
   ProgressResponse? _progress;
@@ -58,17 +63,92 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isOpeningAchievements = false;
   bool _isCheckingAchievementPresentations = false;
   bool _isShowingAchievementPresentation = false;
+  bool _isShowingReminderExplanation = false;
+  bool _checkedReminderExplanation = false;
   final List<AchievementItem> _achievementPresentationQueue = [];
   String? _lessonStartError;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _authService = widget._authService ?? createAuthService();
     _achievementPresentationStore = widget._achievementPresentationStore ??
         SecureAchievementPresentationStore();
+    _practiceReminderService =
+        widget._practiceReminderService ?? LocalPracticeReminderService();
+    _prepareReminders();
     _loadHomeSummary();
     _loadAchievements();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _prepareReminders();
+    }
+  }
+
+  Future<void> _prepareReminders() async {
+    try {
+      await _practiceReminderService.initialize();
+      await _practiceReminderService.reconcile();
+    } catch (_) {}
+  }
+
+  Future<void> _maybeShowReminderExplanation() async {
+    if (_checkedReminderExplanation ||
+        _isShowingReminderExplanation ||
+        _isShowingAchievementPresentation ||
+        !mounted ||
+        _currentUser == null) {
+      return;
+    }
+    _checkedReminderExplanation = true;
+    try {
+      final preferences = await _practiceReminderService.preferences();
+      final permission = await _practiceReminderService.permissionState();
+      if (!preferences.enabled) return;
+      if (permission == ReminderPermissionState.granted) {
+        if (!preferences.permissionExplanationHandled) {
+          await _practiceReminderService.markExplanationHandled();
+        }
+        await _practiceReminderService.reconcile();
+        return;
+      }
+      if (preferences.permissionExplanationHandled || !mounted) {
+        return;
+      }
+      _isShowingReminderExplanation = true;
+      final allow = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+                  title: const Text('Keep your learning rhythm'),
+                  content: const Text(
+                      'Language Voice Tutor can send two cheerful daily reminders so practice does not get lost in a busy day. You can change the times or turn reminders off in Settings.'),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Not now')),
+                    FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Allow reminders'))
+                  ]));
+      await _practiceReminderService.markExplanationHandled();
+      if (allow == true) {
+        await _practiceReminderService.requestPermission();
+        await _practiceReminderService.reconcile();
+      }
+    } catch (_) {
+    } finally {
+      _isShowingReminderExplanation = false;
+    }
   }
 
   Future<void> _loadAchievements({bool preserveExisting = false}) async {
@@ -221,6 +301,8 @@ class _HomeScreenState extends State<HomeScreen> {
           : _HomeProgressState.unavailable;
     });
     _queueNewAchievementPresentations();
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _maybeShowReminderExplanation());
   }
 
   Future<void> _startLesson() async {

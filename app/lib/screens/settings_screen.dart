@@ -14,7 +14,10 @@ import '../services/auth_service.dart';
 import '../services/backend_health_service.dart';
 import '../services/service_factory.dart';
 import '../services/tutor_options_service.dart';
+import '../services/practice_reminder_service.dart';
+import '../services/practice_reminder_preferences.dart';
 import '../theme/app_visuals.dart';
+import '../widgets/practice_reminders_card.dart';
 import 'achievements_screen.dart';
 import 'login_screen.dart';
 import 'lesson_history_screen.dart';
@@ -30,26 +33,35 @@ class SettingsScreen extends StatefulWidget {
     BackendHealthService? healthService,
     AuthService? authService,
     TutorOptionsService? tutorOptionsService,
+    PracticeReminderService? practiceReminderService,
   })  : _healthService = healthService,
         _authService = authService,
-        _tutorOptionsService = tutorOptionsService;
+        _tutorOptionsService = tutorOptionsService,
+        _practiceReminderService = practiceReminderService;
 
   static const String routeName = '/settings';
 
   final BackendHealthService? _healthService;
   final AuthService? _authService;
   final TutorOptionsService? _tutorOptionsService;
+  final PracticeReminderService? _practiceReminderService;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen>
+    with WidgetsBindingObserver {
   static const _voices = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
 
   late final BackendHealthService _healthService;
   late final AuthService _authService;
   late final TutorOptionsService _tutorOptionsService;
+  late final PracticeReminderService _practiceReminderService;
+  PracticeReminderPreferences? _reminderPreferences;
+  ReminderPermissionState _reminderPermission =
+      ReminderPermissionState.unavailable;
+  String? _reminderError;
   BackendConnectionState _connectionState = BackendConnectionState.notChecked;
   AuthUser? _user;
   SubscriptionStatus? _subscription;
@@ -83,17 +95,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _healthService = widget._healthService ??
         BackendHealthService(apiClient: HttpApiClient());
     _authService = widget._authService ?? createAuthService();
     _tutorOptionsService = widget._tutorOptionsService ??
         TutorOptionsService(apiClient: HttpApiClient());
+    _practiceReminderService =
+        widget._practiceReminderService ?? LocalPracticeReminderService();
+    _loadReminders();
     _loadAccount();
     _loadSettings();
   }
 
+  Future<void> _loadReminders() async {
+    try {
+      await _practiceReminderService.initialize();
+      final p = await _practiceReminderService.preferences();
+      final state = await _practiceReminderService.permissionState();
+      if (mounted) {
+        setState(() {
+          _reminderPreferences = p;
+          _reminderPermission = state;
+          _reminderError = null;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() =>
+            _reminderError = 'Practice reminders are temporarily unavailable.');
+      }
+    }
+  }
+
+  Future<void> _updateReminder(Future<bool> Function() action) async {
+    final ok = await action();
+    await _loadReminders();
+    if (!ok && mounted) {
+      setState(() => _reminderError =
+          'Unable to update reminders right now. Please try again.');
+    }
+  }
+
+  Future<void> _pickReminderTime(bool morning) async {
+    final p = _reminderPreferences;
+    if (p == null) {
+      return;
+    }
+    final time = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay(
+            hour: morning ? p.morningHour : p.eveningHour,
+            minute: morning ? p.morningMinute : p.eveningMinute));
+    if (time != null) {
+      await _updateReminder(() => morning
+          ? _practiceReminderService.setMorningTime(time.hour, time.minute)
+          : _practiceReminderService.setEveningTime(time.hour, time.minute));
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _resetEmailController.dispose();
     _resetCodeController.dispose();
     _resetNewPasswordController.dispose();
@@ -104,6 +167,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _feedbackMessageController.dispose();
     _reportedAiTextController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadReminders();
+      _practiceReminderService.reconcile();
+    }
   }
 
   Future<void> _loadAccount() async {
@@ -548,11 +619,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          const _ComingSoonCard(
-            icon: Icons.notifications_none_rounded,
-            title: 'Notifications & contact',
-            subtitle:
-                'Notification preferences and support details are coming soon.',
+          PracticeRemindersCard(
+            preferences: _reminderPreferences,
+            permission: _reminderPermission,
+            error: _reminderError,
+            onEnabled: (value) => _updateReminder(() async {
+              final ok = await _practiceReminderService.setEnabled(value);
+              if (value &&
+                  await _practiceReminderService.permissionState() !=
+                      ReminderPermissionState.granted) {
+                await _practiceReminderService.requestPermission();
+              }
+              return ok;
+            }),
+            onMorning: () => _pickReminderTime(true),
+            onEvening: () => _pickReminderTime(false),
+            onAllow: () => _updateReminder(() async {
+              final granted =
+                  await _practiceReminderService.requestPermission();
+              if (granted) return _practiceReminderService.reconcile();
+              return false;
+            }),
+            onSettings: () => _practiceReminderService
+                .openAndroidSettings()
+                .then((_) => _loadReminders()),
           ),
           const SizedBox(height: 12),
           _DiagnosticsCard(
@@ -579,27 +669,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         BackendConnectionState.unavailable =>
           'The service is unavailable right now. Please try again later.'
       };
-}
-
-class _ComingSoonCard extends StatelessWidget {
-  const _ComingSoonCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) => Card(
-        child: ListTile(
-          leading: Icon(icon),
-          title: Text(title),
-          subtitle: Text(subtitle),
-        ),
-      );
 }
 
 class _SettingsActionButton extends StatelessWidget {

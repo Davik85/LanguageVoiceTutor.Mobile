@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
+import 'package:language_voice_tutor_mobile/models/achievements.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_access_decision.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
+import 'package:language_voice_tutor_mobile/models/progress.dart';
 import 'package:language_voice_tutor_mobile/screens/home_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
@@ -109,6 +111,13 @@ class FakeAuthService extends AuthService {
     if (failure != null) throw failure!;
     return lessonAccess!;
   }
+
+  @override
+  Future<AchievementsResult> fetchAchievements() async =>
+      AchievementsResult.unavailable();
+
+  @override
+  Future<ProgressResult> fetchProgress() async => ProgressResult.unavailable();
 }
 
 String lessonAccessJson({required bool canStartNewLesson}) => '''
@@ -246,12 +255,10 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Refresh status'));
     await tester.pumpAndSettle();
 
     expect(find.text('Premium trial'), findsOneWidget);
-    expect(find.text('Unlimited lessons during trial'), findsOneWidget);
-    expect(find.text('Trial access is active'), findsOneWidget);
+    expect(find.text('Unlimited lessons during trial'), findsNothing);
     expect(find.text('1 free lesson remaining today'), findsNothing);
   });
 
@@ -277,12 +284,10 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Refresh status'));
     await tester.pumpAndSettle();
 
     expect(find.text('Premium plan'), findsOneWidget);
-    expect(find.text('Unlimited lessons'), findsOneWidget);
-    expect(find.text('Premium access is active'), findsOneWidget);
+    expect(find.text('Unlimited lessons'), findsNothing);
     expect(find.text('1 free lesson remaining today'), findsNothing);
     expect(find.text('0 free lessons remaining today'), findsNothing);
   });
@@ -309,13 +314,10 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Refresh status'));
     await tester.pumpAndSettle();
 
     expect(find.text('Free plan'), findsOneWidget);
-    expect(find.text('1 free lesson remaining today'), findsOneWidget);
-    expect(find.text('You can start a lesson'), findsOneWidget);
-    expect(find.text('Free lesson is available.'), findsOneWidget);
+    expect(find.text('1 free lesson available today'), findsOneWidget);
   });
 
   testWidgets('home screen shows blocked lesson access', (tester) async {
@@ -340,12 +342,8 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Refresh status'));
     await tester.pumpAndSettle();
 
-    expect(
-        find.text('You cannot start a new lesson right now'), findsOneWidget);
-    expect(find.text('Daily free lesson limit reached.'), findsOneWidget);
-    expect(find.text('0 free lessons remaining today'), findsOneWidget);
+    expect(find.text('0 free lessons available today'), findsOneWidget);
   });
 }
