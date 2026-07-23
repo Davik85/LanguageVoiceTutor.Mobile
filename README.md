@@ -246,6 +246,12 @@ https://api.languagevoicetutor.com
 
 The mobile client must use the same backend account, subscription and entitlement state, usage limits, lesson history, progress records, and AI tutor behavior as the Windows desktop app. The mobile repository remains a separate client repository; it is not the desktop/backend repository and must not duplicate backend-owned product logic.
 
+## Current Mobile planning boundary
+
+Account deletion is completed by the shared backend/Admin workflow. Mobile submission remains a support request, not immediate local deletion. After backend anonymization, new login and refresh fail; an already-issued access token may remain usable only until normal expiry, after which Mobile must clear the invalid session when refresh proves invalid. This is accepted current behavior and no Mobile code change is requested.
+
+The next product planning tracks are separate: notifications; Premium purchase entry points and the related purchase flow; and interface localization for eight languages. Notifications are planned, not implemented: the first review must decide between local scheduled reminders, remote push, or both, without assuming Firebase, content, cadence, permission timing, or background microphone access. Premium remains backend-owned and backend-verified: a local CTA or unverified store result must never unlock it, no Paddle change is part of Google Play work, and restoration plus backend verification must be planned before billing is called complete. The exact eight interface languages are a required product decision before implementation; they are separate from the six study languages. ARB and `flutter_localizations` are a planned direction only. Interface localization does not translate backend-generated tutor replies, CMS canonical IDs, lesson runtime metadata, or user content; once approved, new Notifications and Premium UI must use localization-ready strings.
+
 ## Architecture principles
 
 - Android-first Flutter app, with iOS considered after the Android path is validated.
@@ -336,7 +342,7 @@ flutter test
 
 ## Next safe implementation focus
 
-The next safe implementation focus is broader repeated testing of the completed Mobile voice/transcription flows on different physical devices and network conditions, or smaller Home/Settings UX polish. Account, entitlement, access decisions, lesson runtime, transcription, TTS, and AI behavior remain backend-owned. Do not declare voice recognition fully stabilized yet, and do not jump directly into automatic tutor playback, realtime/continuous voice conversation, billing, Google Play Billing, Apple billing, analytics, or store release work without a separate plan.
+First inspect the current Mobile UI, dependencies, Android configuration, backend contracts, and existing placeholders. Then choose small isolated implementation slices for notifications, Premium purchase entry points/purchase flow, and eight-language interface localization; do not combine notifications, billing, and full localization in one change. Consider a minimal localization foundation before new Notifications and Premium UI. Account, entitlement, access decisions, lesson runtime, transcription, TTS, and AI behavior remain backend-owned.
 
 Future lesson runtime implementation rule: do not combine service, models, navigation, UI, and widget tests in one large PR. The first PR after planning should be read-only investigation or service-only, and the following PR should be UI-only using an already-tested service. The lesson runtime foundation must not add OpenAI calls from mobile and must not include voice, TTS, realtime, billing, analytics, history, or unrelated runtime features.
 

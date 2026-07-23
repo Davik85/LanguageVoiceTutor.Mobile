@@ -86,7 +86,7 @@ The repository must not duplicate backend business logic or become a fork of bac
 
 The reviewed Windows desktop client walkthrough presentation is now a product reference source for mobile parity. Mobile must match desktop product logic, not desktop pixel layout, and should translate desktop screens into phone-first layouts. The desktop source flow was `Start -> Settings/preferences -> Choose level -> Pick topic -> Pick situation -> Practice`, but Mobile now uses the accepted saved-level flow. Learner level selection lives only in **Settings -> Learning** for the normal user flow, and lesson start proceeds through `Home -> Choose Topic -> Choose Situation -> Lesson`.
 
-Study language, native language, and interface/explanation language are separate concepts. Mobile has an explicit study-language definition containing ID, English name, native name, and transcription language code. Supported study languages remain English, French, German, Portuguese, Spanish, Italian. Release-ready interface languages remain `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `pl`, `ar`, `ja`, `ko`, `sr`, `hr`, and `bg`. The native/explanation language catalog is broader than both the study-language and interface-language catalogs. Mobile Settings shows user-friendly language names while storing and sending backend language IDs.
+Study language, native language, and interface/explanation language are separate concepts. Mobile has an explicit study-language definition containing ID, English name, native name, and transcription language code. Supported study languages remain English, French, German, Portuguese, Spanish, and Italian. Interface localization has not started; the approved target is eight interface languages, but the exact set is a required product decision before implementation and is not invented here. The native/explanation language catalog is broader than the study-language catalog. Mobile Settings shows user-friendly language names while storing and sending backend language IDs.
 
 Tutor profiles currently represented by desktop are Lana, Nelli, and David. Tutor choice is product-significant because it affects display name, profile/persona, and preferred voice behavior in lessons.
 
@@ -140,7 +140,15 @@ Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow
 
 ## Next implementation priority
 
-The next safe implementation work should continue from the green Settings baseline, Home polish, completed lesson/conversation voice flows, completed Feedback & reports submission, and remaining validation boundaries. Keep slices small and mobile-only unless an API gap is explicitly approved. Recommended small next steps are Settings UX polish and lesson runtime planning by inspecting backend lesson/session APIs before implementation. Billing, automatic tutor playback, broader repeated testing on different physical devices and network conditions, analytics, crash reporting, Google Play Billing, Apple billing, and store release setup remain later phases and should not be started without a separate plan. Missing Lesson Chat avatar assets remain a separate issue.
+Account deletion is completed by the shared backend/Admin workflow. Mobile submission remains a support request rather than immediate local deletion. After anonymization, new login and refresh fail; an already-issued access token may continue until normal expiry, and Mobile must clear the session when refresh proves invalid. This accepted boundary does not request a Mobile change.
+
+First inspect the current Mobile UI, dependencies, Android configuration, backend contracts, and the existing Notifications/contact placeholder. Then choose small, isolated implementation slices. The next separate planning tracks are:
+
+1. Notifications, planned but not implemented. The first review decides between local scheduled reminders, remote push notifications, or both; it must not assume Firebase, scheduling, content, cadence, or permission timing. Do not request unnecessary permissions or use background microphone access.
+2. Premium purchase entry points and the purchase flow. First decide whether the slice is CTA/navigation only or complete Google Play Billing. Premium remains backend-owned and backend-verified; no local button or unverified store result may unlock it. Plan restoration and backend verification before billing completion, and make no Paddle change for Mobile Google Play work.
+3. Interface localization for eight languages. The exact set is a product decision before work begins. It remains separate from the six study languages and does not translate backend-generated tutor replies, CMS canonical IDs, lesson runtime metadata, or user content. ARB and `flutter_localizations` are planned implementation directions only; once the foundation is approved, Notifications and Premium UI must use localization-ready strings.
+
+Do not combine notifications, billing, and full localization in one change. Consider whether a minimal localization foundation should precede new Notifications and Premium UI.
 
 This priority preserves the product boundary:
 

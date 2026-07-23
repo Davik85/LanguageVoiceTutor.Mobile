@@ -32,6 +32,10 @@ Open contract questions:
 - Logout and session revocation endpoint.
 - Device/session listing requirements.
 
+## Account-deletion session boundary
+
+Account deletion is completed by the shared backend/Admin workflow; Mobile only submits a support request and must not perform local deletion. After backend anonymization, original-email login and refresh fail because refresh tokens are removed. An already-issued access token may remain usable until its normal configured expiry. This is accepted for the current product scale, not an active backend defect: when refresh proves the session invalid, Mobile must clear its stored session. No additional Mobile or backend authentication change is requested for this boundary.
+
 ## `/api/me` and settings expectations
 
 Expected `/api/me` behavior:
@@ -89,6 +93,8 @@ Expected behavior:
 - Backend returns the authoritative entitlement state.
 - Mobile displays the returned state but does not compute Premium locally.
 - Backend handles provider reconciliation across Paddle, Google Play, Apple, or future providers.
+
+For future Mobile purchase work, separate visible Premium entry points from store purchase integration and backend verification/entitlement activation. Mobile must never grant Premium from a local button press or an unverified store result. The next review must decide whether the first slice is CTA/navigation only or a complete Google Play Billing flow, and must plan restoration plus backend verification before billing is described as complete. No Paddle change is part of Mobile Google Play work.
 
 Possible response concepts:
 

@@ -147,12 +147,15 @@ Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow
 - Complete: manual tutor-message TTS playback.
 - Keep automatic tutor playback, GIF avatar state integration, broader repeated testing on different physical devices and network conditions, and realtime/continuous voice conversation as future isolated work.
 
-### Phase 5: Google Play Billing bridge — later, not the next safe phase
+### Phase 5: Separate next planning tracks
 
-- Add Google Play Billing runtime integration.
-- Send purchase tokens to backend for verification.
-- Refresh entitlement status from backend.
-- Validate restore/reconciliation flows.
+Before implementation, inspect the current UI, dependencies, Android configuration, backend contracts, and Settings placeholders. Do not combine these tracks in one change:
+
+- **Notifications:** planned, not implemented. Decide whether V1 needs local scheduled reminders, remote push, or both before assuming Firebase, content, cadence, permission timing, or background behavior. Do not request unnecessary permissions or use background microphone access.
+- **Premium purchase entry points and purchase flow:** decide whether the first slice is CTA/navigation only or a complete Google Play Billing bridge. A local CTA or unverified store result must never unlock Premium; backend verification, entitlement refresh, restoration, and reconciliation must be planned before billing completion. No Paddle change is part of Mobile Google Play work.
+- **Eight-language interface localization:** the exact eight languages are a required product decision before implementation. This is separate from the six study languages. ARB and `flutter_localizations` are only a planned direction; localized UI must not translate backend-generated replies, CMS canonical IDs, lesson runtime metadata, or user content. New Notifications and Premium UI must use localization-ready strings once the foundation is approved.
+
+Consider a minimal localization foundation before new Notifications or Premium UI so those screens do not need rework.
 
 ## Android implementation considerations
 
