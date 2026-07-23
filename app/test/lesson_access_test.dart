@@ -258,6 +258,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Premium trial'), findsOneWidget);
+    expect(find.text('Premium details'), findsOneWidget);
     expect(find.text('Unlimited lessons during trial'), findsNothing);
     expect(find.text('1 free lesson remaining today'), findsNothing);
   });
@@ -287,6 +288,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Premium plan'), findsOneWidget);
+    expect(find.text('Premium details'), findsOneWidget);
     expect(find.text('Unlimited lessons'), findsNothing);
     expect(find.text('1 free lesson remaining today'), findsNothing);
     expect(find.text('0 free lessons remaining today'), findsNothing);
@@ -317,6 +319,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Free plan'), findsOneWidget);
+    expect(find.text('Explore Premium'), findsOneWidget);
     expect(find.text('1 free lesson available today'), findsOneWidget);
   });
 

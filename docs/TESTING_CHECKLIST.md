@@ -1,5 +1,9 @@
 # Testing Checklist
 
+## Premium UI verification
+
+Premium UI verification: formatting and analysis passed; the focused Premium, Home lesson-access, Settings, and Home screen suite passed with 70 tests; Android debug APK build passed. The screen reads only `GET /api/me/subscription-status`, and Google Play Billing, purchase tokens, product IDs, and restoration runtime remain intentionally out of scope.
+
 ## Progress data foundation checks
 
 Run from `app/`:

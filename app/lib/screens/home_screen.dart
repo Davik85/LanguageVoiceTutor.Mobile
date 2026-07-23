@@ -20,6 +20,7 @@ import '../widgets/achievement_preview.dart';
 import 'achievements_screen.dart';
 import 'choose_topic_screen.dart';
 import 'login_screen.dart';
+import 'premium_screen.dart';
 import 'settings_screen.dart';
 
 enum _HomeProgressState { loading, ready, unavailable }
@@ -417,6 +418,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _openPremium() async {
+    await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => PremiumScreen(authService: _authService)));
+    if (mounted) _loadHomeSummary();
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
         body: AppVisuals.screenBackground(
@@ -447,7 +454,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ],
                 const SizedBox(height: 16),
                 _AccountSummary(
-                    user: _currentUser, lessonAccess: _lessonAccess),
+                    user: _currentUser,
+                    lessonAccess: _lessonAccess,
+                    onOpenPremium: _openPremium),
                 const SizedBox(height: 12),
                 _HomeAchievements(
                   state: _achievementsState,
@@ -782,9 +791,13 @@ class _StreakBadge extends StatelessWidget {
 }
 
 class _AccountSummary extends StatelessWidget {
-  const _AccountSummary({required this.user, required this.lessonAccess});
+  const _AccountSummary(
+      {required this.user,
+      required this.lessonAccess,
+      required this.onOpenPremium});
   final AuthUser? user;
   final LessonAccessDecision? lessonAccess;
+  final VoidCallback onOpenPremium;
 
   String get _name {
     final value = user?.displayName?.trim() ?? '';
@@ -815,12 +828,32 @@ class _AccountSummary extends StatelessWidget {
             Text('Signed in as $_name',
                 style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 4),
-            Text(
-              _plan,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: AppVisuals.learningGreen,
+            Row(children: [
+              Expanded(
+                child: Text(
+                  _plan,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: AppVisuals.learningGreen,
+                      ),
+                ),
+              ),
+              Semantics(
+                button: true,
+                label: (lessonAccess?.premiumActive ?? false) ||
+                        (lessonAccess?.trialActive ?? false)
+                    ? 'Premium details'
+                    : 'Explore Premium',
+                child: InkWell(
+                  onTap: onOpenPremium,
+                  child: Text(
+                    (lessonAccess?.premiumActive ?? false) ||
+                            (lessonAccess?.trialActive ?? false)
+                        ? 'Premium details'
+                        : 'Explore Premium',
                   ),
-            ),
+                ),
+              ),
+            ]),
             if (_freeLessonsLabel != null) ...[
               const SizedBox(height: 3),
               Text(_freeLessonsLabel!),

@@ -8,6 +8,8 @@ Mobile has a dedicated learner-facing Progress screen, opened from **Settings ->
 
 ## Current mobile navigation and visual system
 
+Mobile now includes a learner-facing Premium screen with backend-confirmed Free, Trial, and Premium status plus non-charging purchase and restore placeholders; Google Play Billing remains a later stage.
+
 Home is a compact, vertically scrollable learner dashboard: current backend-owned streak, existing logo with the three-part Language Voice Tutor wordmark, **Start lesson**, account/plan summary, the final seven backend activity entries, and **Open Settings**. The wordmark uses blue, orange/red, and green vertical gradients; Home action buttons use the blue/white brand gradient. Account and activity surfaces are matte translucent cards over the shared light-blue-to-golden background.
 
 Settings is divided by a three-item bottom navigation bar:

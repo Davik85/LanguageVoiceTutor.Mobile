@@ -192,6 +192,8 @@ Future<void> _showSectionForText(WidgetTester tester, String text) async {
     'Forgot password',
     'Reset password',
     'Change password',
+    'Account deletion',
+    'Request account deletion',
     'Feedback & reports',
     'Send',
     'Connection status',
@@ -234,8 +236,16 @@ Future<void> _expandPasswordRecovery(WidgetTester tester) async {
   await _scrollToAndTap(tester, 'Password & recovery');
 }
 
+Future<void> _openAccountDeletion(WidgetTester tester) async {
+  await _showSectionForText(tester, 'Account deletion');
+  final action = find.byKey(const Key('settings-request-account-deletion'));
+  await _scrollToFinder(tester, action);
+  await tester.tap(action);
+  await tester.pumpAndSettle();
+}
+
 void main() {
-  testWidgets('app settings explain how voice responses are used',
+  testWidgets('app settings omit the removed privacy and voice card',
       (tester) async {
     await tester.pumpWidget(_screen(FakeAuthService()));
     await tester.pumpAndSettle();
@@ -243,12 +253,12 @@ void main() {
     await tester.tap(find.byKey(const Key('settings-app-tab')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Privacy & voice'), findsOneWidget);
+    expect(find.text('Privacy & voice'), findsNothing);
     expect(
       find.text(
         'Voice responses are sent securely to Language Voice Tutor for transcription. You can choose text input instead of voice.',
       ),
-      findsOneWidget,
+      findsNothing,
     );
     expect(find.text('Privacy Policy'), findsNothing);
   });
@@ -258,6 +268,8 @@ void main() {
     await tester.pumpWidget(_screen(FakeAuthService()));
     await tester.pumpAndSettle();
     expect(find.text('Account'), findsOneWidget);
+    expect(find.text('Premium & subscription'), findsOneWidget);
+    expect(find.text('Request account deletion'), findsNothing);
     expect(find.text('User'), findsOneWidget);
     expect(find.text('Premium Monthly'), findsOneWidget);
     await _scrollToText(tester, 'Learning');
@@ -341,6 +353,8 @@ void main() {
     await tester.tap(find.byKey(const Key('settings-app-tab')));
     await tester.pumpAndSettle();
     expect(find.text('Feedback & reports'), findsOneWidget);
+    expect(find.text('Account deletion'), findsOneWidget);
+    expect(find.text('Request account deletion'), findsOneWidget);
     expect(find.text('Notifications & contact'), findsNothing);
     expect(find.text('Practice reminders'), findsOneWidget);
   });
@@ -362,9 +376,7 @@ void main() {
     await tester.pumpWidget(_screen(FakeAuthService()));
     await tester.pumpAndSettle();
 
-    await tester
-        .tap(find.byKey(const Key('settings-request-account-deletion')));
-    await tester.pumpAndSettle();
+    await _openAccountDeletion(tester);
 
     expect(find.text('Request account deletion'), findsWidgets);
     expect(find.textContaining('does not delete your account immediately'),
@@ -388,9 +400,7 @@ void main() {
     final auth = FakeAuthService();
     await tester.pumpWidget(_screen(auth));
     await tester.pumpAndSettle();
-    await tester
-        .tap(find.byKey(const Key('settings-request-account-deletion')));
-    await tester.pumpAndSettle();
+    await _openAccountDeletion(tester);
     await tester.enterText(
         find.byKey(const Key('account-deletion-current-password')), 'current');
     await tester.enterText(
@@ -414,9 +424,7 @@ void main() {
           Completer<AccountDeletionRequestSubmitResult>();
     await tester.pumpWidget(_screen(auth));
     await tester.pumpAndSettle();
-    await tester
-        .tap(find.byKey(const Key('settings-request-account-deletion')));
-    await tester.pumpAndSettle();
+    await _openAccountDeletion(tester);
     await tester.enterText(
         find.byKey(const Key('account-deletion-current-password')), 'current');
     final submit = find.byKey(const Key('account-deletion-submit'));
@@ -443,9 +451,7 @@ void main() {
       );
     await tester.pumpWidget(_screen(auth));
     await tester.pumpAndSettle();
-    await tester
-        .tap(find.byKey(const Key('settings-request-account-deletion')));
-    await tester.pumpAndSettle();
+    await _openAccountDeletion(tester);
     await tester.enterText(
         find.byKey(const Key('account-deletion-current-password')), 'current');
     final submit = find.byKey(const Key('account-deletion-submit'));
@@ -463,9 +469,7 @@ void main() {
           AccountDeletionRequestSubmitResult.incorrectPassword();
     await tester.pumpWidget(_screen(auth));
     await tester.pumpAndSettle();
-    await tester
-        .tap(find.byKey(const Key('settings-request-account-deletion')));
-    await tester.pumpAndSettle();
+    await _openAccountDeletion(tester);
     await tester.enterText(
         find.byKey(const Key('account-deletion-current-password')), 'wrong');
     final submit = find.byKey(const Key('account-deletion-submit'));

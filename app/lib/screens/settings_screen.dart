@@ -20,6 +20,7 @@ import '../theme/app_visuals.dart';
 import '../widgets/practice_reminders_card.dart';
 import 'achievements_screen.dart';
 import 'login_screen.dart';
+import 'premium_screen.dart';
 import 'lesson_history_screen.dart';
 import 'progress_screen.dart';
 
@@ -197,6 +198,12 @@ class _SettingsScreenState extends State<SettingsScreen>
       setState(
           () => _accountError = 'Unable to load account details right now.');
     }
+  }
+
+  Future<void> _openPremium() async {
+    await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => PremiumScreen(authService: _authService)));
+    if (mounted) _loadAccount();
   }
 
   Future<void> _loadSettings() async {
@@ -505,8 +512,8 @@ class _SettingsScreenState extends State<SettingsScreen>
             user: _user,
             subscription: _subscription,
             error: _accountError,
+            onOpenPremium: _openPremium,
             onLogout: _logout,
-            onRequestAccountDeletion: _openAccountDeletionRequest,
           ),
           const SizedBox(height: 12),
           _LearningCard(
@@ -590,6 +597,29 @@ class _SettingsScreenState extends State<SettingsScreen>
             onChangePassword: _changePassword,
           ),
           const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Account deletion',
+                      style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Send a request to permanently delete your Language Voice Tutor account and personal data.',
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    key: const Key('settings-request-account-deletion'),
+                    onPressed: _openAccountDeletionRequest,
+                    child: const Text('Request account deletion'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
           _FeedbackReportCard(
             category: _feedbackCategory,
             messageController: _feedbackMessageController,
@@ -601,22 +631,6 @@ class _SettingsScreenState extends State<SettingsScreen>
               _feedbackMessage = null;
             }),
             onSubmit: _submitFeedback,
-          ),
-          const SizedBox(height: 12),
-          const Card(
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Privacy & voice'),
-                  SizedBox(height: 6),
-                  Text(
-                    'Voice responses are sent securely to Language Voice Tutor for transcription. You can choose text input instead of voice.',
-                  ),
-                ],
-              ),
-            ),
           ),
           const SizedBox(height: 12),
           PracticeRemindersCard(
@@ -714,13 +728,13 @@ class _AccountCard extends StatelessWidget {
       {this.user,
       this.subscription,
       this.error,
-      required this.onLogout,
-      required this.onRequestAccountDeletion});
+      required this.onOpenPremium,
+      required this.onLogout});
   final AuthUser? user;
   final SubscriptionStatus? subscription;
   final String? error;
+  final VoidCallback onOpenPremium;
   final VoidCallback onLogout;
-  final VoidCallback onRequestAccountDeletion;
   @override
   Widget build(BuildContext context) => Card(
       child: Padding(
@@ -745,13 +759,13 @@ class _AccountCard extends StatelessWidget {
               Text(error!),
             const SizedBox(height: 12),
             FilledButton.tonal(
-                onPressed: onLogout, child: const Text('Logout')),
-            const SizedBox(height: 8),
-            TextButton(
-              key: const Key('settings-request-account-deletion'),
-              onPressed: onRequestAccountDeletion,
-              child: const Text('Request account deletion'),
+              key: const Key('settings-open-premium'),
+              onPressed: onOpenPremium,
+              child: const Text('Premium & subscription'),
             ),
+            const SizedBox(height: 8),
+            FilledButton.tonal(
+                onPressed: onLogout, child: const Text('Logout')),
           ])));
 }
 

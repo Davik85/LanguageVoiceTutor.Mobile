@@ -7,6 +7,7 @@ import 'services/practice_reminder_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/lesson_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/premium_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/splash_screen.dart';
 import 'theme/app_visuals.dart';
@@ -129,6 +130,8 @@ class LanguageVoiceTutorApp extends StatelessWidget {
         SettingsScreen.routeName: (_) => SettingsScreen(
             authService: _authService,
             practiceReminderService: _practiceReminderService),
+        PremiumScreen.routeName: (_) =>
+            PremiumScreen(authService: _authService),
       },
     );
   }
