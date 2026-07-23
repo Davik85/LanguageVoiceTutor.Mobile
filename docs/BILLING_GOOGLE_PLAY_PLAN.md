@@ -2,6 +2,10 @@
 
 ## Billing model
 
+## Mobile adapter foundation
+
+Mobile includes a Google Play adapter foundation, but it remains disabled: production composes `UnavailablePremiumPurchaseAdapter` and cannot open billing. Real activation still requires Play Console product configuration, backend token verification, post-verification acknowledgment, restoration/reconciliation, and RTDN. No product IDs or live billing configuration are present.
+
 Google Play Billing must be implemented as a client-to-backend verification bridge, not as a client-side entitlement system.
 
 Premium UI and Google Play Billing are separate implementation stages. First add complete learner-facing Premium UI and purchase entry points; then add the Billing bridge. A Premium button, local purchase callback, or Google Play result never grants Premium. Google Play Billing is complete only when purchase-token submission, backend verification, entitlement refresh, restore/reconciliation, and relevant subscription lifecycle states are implemented. Paddle remains unchanged for website/desktop, and Google Play purchases map through the shared provider-neutral backend entitlement model so valid Premium remains visible to other clients.

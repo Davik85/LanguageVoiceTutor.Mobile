@@ -4,6 +4,7 @@ import 'config/app_config.dart';
 import 'services/auth_service.dart';
 import 'services/service_factory.dart';
 import 'services/practice_reminder_service.dart';
+import 'services/premium_purchase_adapter.dart';
 import 'screens/home_screen.dart';
 import 'screens/lesson_screen.dart';
 import 'screens/login_screen.dart';
@@ -28,10 +29,12 @@ class LanguageVoiceTutorApp extends StatelessWidget {
     PracticeReminderService? practiceReminderService,
   })  : _authService = authService ?? createAuthService(),
         _practiceReminderService =
-            practiceReminderService ?? LocalPracticeReminderService();
+            practiceReminderService ?? LocalPracticeReminderService(),
+        _premiumPurchaseAdapter = const UnavailablePremiumPurchaseAdapter();
 
   final AuthService _authService;
   final PracticeReminderService _practiceReminderService;
+  final PremiumPurchaseAdapter _premiumPurchaseAdapter;
 
   @override
   Widget build(BuildContext context) {
@@ -130,8 +133,9 @@ class LanguageVoiceTutorApp extends StatelessWidget {
         SettingsScreen.routeName: (_) => SettingsScreen(
             authService: _authService,
             practiceReminderService: _practiceReminderService),
-        PremiumScreen.routeName: (_) =>
-            PremiumScreen(authService: _authService),
+        PremiumScreen.routeName: (_) => PremiumScreen(
+            authService: _authService,
+            purchaseAdapter: _premiumPurchaseAdapter),
       },
     );
   }

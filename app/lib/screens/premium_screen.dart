@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../models/subscription_status.dart';
 import '../services/auth_service.dart';
+import '../services/premium_purchase_adapter.dart';
 import '../services/service_factory.dart';
 import '../theme/app_visuals.dart';
 import 'login_screen.dart';
@@ -15,13 +16,18 @@ class PremiumScreen extends StatefulWidget {
   const PremiumScreen({
     super.key,
     AuthService? authService,
+    PremiumPurchaseAdapter? purchaseAdapter,
     this.purchaseAction,
     this.restoreAction,
-  }) : _authService = authService;
+  })  : _authService = authService,
+        _purchaseAdapter = purchaseAdapter;
 
   static const routeName = '/premium';
   final AuthService? _authService;
+  final PremiumPurchaseAdapter? _purchaseAdapter;
+  @Deprecated('Use purchaseAdapter in new code.')
   final PurchaseEntryAction? purchaseAction;
+  @Deprecated('Use purchaseAdapter in new code.')
   final PurchaseEntryAction? restoreAction;
 
   @override
@@ -30,6 +36,7 @@ class PremiumScreen extends StatefulWidget {
 
 class _PremiumScreenState extends State<PremiumScreen> {
   late final AuthService _authService;
+  late final PremiumPurchaseAdapter _purchaseAdapter;
   SubscriptionStatus? _status;
   String? _error;
   bool _loading = false;
@@ -40,6 +47,9 @@ class _PremiumScreenState extends State<PremiumScreen> {
   void initState() {
     super.initState();
     _authService = widget._authService ?? createAuthService();
+    _purchaseAdapter =
+        widget._purchaseAdapter ?? const UnavailablePremiumPurchaseAdapter();
+    _purchaseAdapter.initialize();
     _load();
   }
 
@@ -83,14 +93,51 @@ class _PremiumScreenState extends State<PremiumScreen> {
 
   Future<void> _runAction({required bool restore}) async {
     if (_runningAction) return;
-    final action = restore ? widget.restoreAction : widget.purchaseAction;
-    if (action == null) {
+    final legacyAction = restore ? widget.restoreAction : widget.purchaseAction;
+    if (legacyAction != null) {
+      setState(() => _runningAction = true);
+      try {
+        final result = await legacyAction();
+        if (result == PurchaseEntryResult.completed) {
+          await _load(refresh: true);
+          if (mounted &&
+              _status != null &&
+              !_status!.premiumActive &&
+              !_status!.trialActive) {
+            setState(() => _error =
+                'Purchase processing is not confirmed yet. Refresh your status again shortly.');
+          }
+        } else if (result == PurchaseEntryResult.failed && mounted) {
+          setState(() => _error =
+              'Unable to complete that request right now. Please try again.');
+        } else if (result == PurchaseEntryResult.unavailable) {
+          await _showUnavailable(restore: restore);
+        }
+      } finally {
+        if (mounted) setState(() => _runningAction = false);
+      }
+      return;
+    }
+    if (!await _purchaseAdapter.isAvailable) {
       await _showUnavailable(restore: restore);
       return;
     }
     setState(() => _runningAction = true);
     try {
-      final result = await action();
+      if (restore) {
+        await _purchaseAdapter.restorePurchases();
+        return;
+      }
+      // Production has no configured catalog, so it can never launch a store flow.
+      final catalog = await _purchaseAdapter.loadSubscriptionProducts(const {});
+      if (catalog.products.isEmpty) {
+        await _showUnavailable(restore: false);
+        return;
+      }
+      final result =
+          await _purchaseAdapter.launchSubscriptionOffer(catalog.products.first)
+              ? PurchaseEntryResult.completed
+              : PurchaseEntryResult.failed;
       if (!mounted) return;
       switch (result) {
         case PurchaseEntryResult.completed:
