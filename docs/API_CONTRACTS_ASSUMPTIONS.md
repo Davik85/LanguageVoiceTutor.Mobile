@@ -94,7 +94,7 @@ Expected behavior:
 - Mobile displays the returned state but does not compute Premium locally.
 - Backend handles provider reconciliation across Paddle, Google Play, Apple, or future providers.
 
-For future Mobile purchase work, separate visible Premium entry points from store purchase integration and backend verification/entitlement activation. Mobile must never grant Premium from a local button press or an unverified store result. The next review must decide whether the first slice is CTA/navigation only or a complete Google Play Billing flow, and must plan restoration plus backend verification before billing is described as complete. No Paddle change is part of Mobile Google Play work.
+For future Mobile purchase work, first implement complete learner-facing Premium UI and purchase entry points, then separately implement store purchase integration and backend verification/entitlement activation. Mobile must never grant Premium from a local button press, purchase callback, or unverified store result. Google Play Billing is complete only after purchase-token submission, backend verification, entitlement refresh, restore/reconciliation, and relevant lifecycle states; the shared provider-neutral backend entitlement model makes valid provider purchases visible to other clients. No Paddle change is part of Mobile Google Play work.
 
 Possible response concepts:
 

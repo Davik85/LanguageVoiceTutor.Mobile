@@ -147,15 +147,19 @@ Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow
 - Complete: manual tutor-message TTS playback.
 - Keep automatic tutor playback, GIF avatar state integration, broader repeated testing on different physical devices and network conditions, and realtime/continuous voice conversation as future isolated work.
 
-### Phase 5: Separate next planning tracks
+### Phase 5: Approved next implementation sequence
 
-Before implementation, inspect the current UI, dependencies, Android configuration, backend contracts, and Settings placeholders. Do not combine these tracks in one change:
+1. Update and align documentation.
+2. Implement local Android practice reminders.
+3. Add complete learner-facing Premium UI and purchase entry points.
+4. Implement the Google Play Billing bridge with backend verification and restore/reconciliation.
+5. Localize the complete static Mobile interface into all 14 approved languages.
 
-- **Notifications:** planned, not implemented. Decide whether V1 needs local scheduled reminders, remote push, or both before assuming Firebase, content, cadence, permission timing, or background behavior. Do not request unnecessary permissions or use background microphone access.
-- **Premium purchase entry points and purchase flow:** decide whether the first slice is CTA/navigation only or a complete Google Play Billing bridge. A local CTA or unverified store result must never unlock Premium; backend verification, entitlement refresh, restoration, and reconciliation must be planned before billing completion. No Paddle change is part of Mobile Google Play work.
-- **Eight-language interface localization:** the exact eight languages are a required product decision before implementation. This is separate from the six study languages. ARB and `flutter_localizations` are only a planned direction; localized UI must not translate backend-generated replies, CMS canonical IDs, lesson runtime metadata, or user content. New Notifications and Premium UI must use localization-ready strings once the foundation is approved.
+Notifications V1 is local-only: no Firebase, remote/server push, backend endpoint, push-token registration, remote provider, backend notification state, or background microphone behavior. Product settings enable reminders by default at device-local 09:00 and 20:00; learners can edit both times or disable all reminders. Android notification permission is still required. Explain the benefit and ask only after the learner sees the product experience, do not reprompt on every launch after denial, and offer Android settings recovery where practical. Do not request exact-alarm permission unless later investigation proves it necessary. Preserve device-local schedule semantics across timezone changes and restore reminders after reboot when Android requires it; local reminders are not synchronized backend account state and cannot always be suppressed after a lesson on another device.
 
-Consider a minimal localization foundation before new Notifications or Premium UI so those screens do not need rework.
+Premium UI precedes Google Play Billing. A local button, purchase callback, or Play Store result never grants Premium. Billing is complete only after purchase-token submission, backend verification, entitlement refresh, restore/reconciliation, and relevant subscription lifecycle states. Paddle remains unchanged for website/desktop; purchases map through the shared provider-neutral backend entitlement model.
+
+Interface localization remains separate from the six study languages. The approved interface languages are `en` English, `es` Spanish, `fr` French, `de` German, `it` Italian, `pt` Portuguese, `ru` Russian, `pl` Polish, `ar` Arabic, `ja` Japanese, `ko` Korean, `sr` Serbian, `hr` Croatian, and `bg` Bulgarian. On first use, interface and explanation/translation language default from the device locale, normalizing supported variants to their base language and falling back to English when unsupported; saved backend-owned settings take precedence after explicit save. Localization applies only to static UI, validation, notification, Premium, and billing content, never AI replies, learner messages, backend-generated content, CMS identifiers, canonical scenario keys, internal IDs, or backend data. Arabic requires right-to-left verification. ARB and `flutter_localizations` are deferred until phase 5, deliberately after the Notifications, Premium, and billing surfaces exist.
 
 ## Android implementation considerations
 

@@ -4,6 +4,8 @@
 
 Google Play Billing must be implemented as a client-to-backend verification bridge, not as a client-side entitlement system.
 
+Premium UI and Google Play Billing are separate implementation stages. First add complete learner-facing Premium UI and purchase entry points; then add the Billing bridge. A Premium button, local purchase callback, or Google Play result never grants Premium. Google Play Billing is complete only when purchase-token submission, backend verification, entitlement refresh, restore/reconciliation, and relevant subscription lifecycle states are implemented. Paddle remains unchanged for website/desktop, and Google Play purchases map through the shared provider-neutral backend entitlement model so valid Premium remains visible to other clients.
+
 The mobile app may initiate a Google Play purchase and receive a purchase token from Google Play. The app must send that purchase token to the Language Voice Tutor backend. The backend verifies the purchase with Google, reconciles the account, updates entitlement state, and returns authoritative subscription status through backend APIs.
 
 ## Required flow

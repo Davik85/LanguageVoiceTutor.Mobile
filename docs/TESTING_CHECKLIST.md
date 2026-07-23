@@ -298,9 +298,18 @@ After additional runtime code exists, add checks for:
 
 Before any Mobile account-deletion UX change, verify that submission remains a backend support request rather than local deletion. After backend anonymization, verify that a new login and refresh fail, while an already-issued access token is handled only until normal expiry; when refresh proves the session invalid, Mobile clears the session. This accepted expiry window does not itself require a Mobile or backend authentication change.
 
-## Notifications and localization planning checks
+## Future local-notification and localization checks
 
-Before implementation, inspect the current UI, dependencies, Android configuration, backend contracts, and the Notifications/contact placeholder. Decide whether V1 needs local scheduled reminders, remote push notifications, or both before choosing Firebase, content, cadence, permission timing, or scheduling. Do not request unnecessary permissions or use background microphone access. Confirm the exact eight interface languages as a product decision; keep them separate from the six study languages. ARB and `flutter_localizations` remain planned only. Future Notifications and Premium UI must use localization-ready strings and must not translate backend-generated tutor replies, CMS canonical IDs, lesson runtime metadata, or user content.
+Implement and verify in the approved order: local Android practice reminders, complete Premium UI and purchase entry points, Google Play Billing with backend verification and restore/reconciliation, then complete 14-language static-interface localization.
+
+- Verify Notifications V1 is local-only: no Firebase, remote/server push, push token, backend endpoint/state, remote provider, or background microphone behavior.
+- Verify product settings default reminders to enabled, schedule cheerful learner-facing morning and evening reminders at device-local 09:00 and 20:00, allow both times to be changed, and allow all reminders to be disabled.
+- Verify Android notification permission is required for delivery, is not requested on Splash or before the learner sees the product experience, follows a benefit explanation, does not reprompt on every launch after denial, and offers Android settings recovery where practical.
+- Verify local schedules retain device-local 09:00/20:00 semantics across timezone changes and are restored after reboot where Android requires it. Do not require exact-alarm permission without evidence it is needed.
+- Verify reminder wording does not imply continuous cross-device synchronization or guaranteed suppression after a Desktop or other-device lesson.
+- Verify the 14 interface languages are exactly `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `pl`, `ar`, `ja`, `ko`, `sr`, `hr`, and `bg`, separate from the six study languages.
+- Verify first-use interface and explanation/translation language initialization normalizes supported regional locales to the base language, falls back to English for unsupported device languages, and yields to saved backend-owned settings after explicit save.
+- Verify localization covers static UI, validation, notification, Premium, and billing content but does not translate AI replies, learner messages, backend-generated content, CMS identifiers, canonical scenario keys, internal IDs, or backend data. Verify Arabic right-to-left layout.
 
 ## Future billing checks
 
@@ -316,7 +325,7 @@ After Google Play Billing runtime code exists, add checks for:
 - Restore or reconciliation flow.
 - Grace period, account hold, cancellation, and expiration states.
 
-Before billing implementation, decide whether the first slice is Premium CTA/navigation only or a complete Google Play Billing flow. Confirm that local buttons and unverified store results never unlock Premium, backend verification and entitlement refresh are required, restoration/reconciliation is planned, and no Paddle change is included in Mobile Google Play work.
+Before billing implementation, complete the separate learner-facing Premium UI and purchase-entry-point stage. Confirm that local buttons, purchase callbacks, and unverified store results never unlock Premium; billing requires purchase-token submission, backend verification, entitlement refresh, restore/reconciliation, relevant lifecycle states, and no Paddle change for website/desktop.
 
 ## Future release-readiness checks
 
