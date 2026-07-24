@@ -1146,8 +1146,7 @@ void main() {
     expect(english.lastScenarioKey, spanish.lastScenarioKey);
   });
 
-  testWidgets('tutor header renders large avatar area and compact metadata',
-      (tester) async {
+  testWidgets('lesson header metadata removal', (tester) async {
     final auth = FakeAuthService();
 
     await tester.pumpWidget(_lessonScreen(auth));
@@ -1156,13 +1155,13 @@ void main() {
     final avatarFinder = find.byKey(const Key('lesson-avatar'));
     expect(avatarFinder, findsOneWidget);
     expect(tester.getSize(avatarFinder).height, greaterThanOrEqualTo(220));
-    expect(find.text('Tutor'), findsOneWidget);
     expect(find.byType(TutorAvatar), findsOneWidget);
-    expect(find.byKey(const Key('lesson-meta-summary')), findsOneWidget);
-    expect(find.text('A1 · Daily Life'), findsOneWidget);
-    expect(find.text('Ready'), findsNothing);
-    expect(find.text('Introductions'), findsNothing);
-    expect(find.byKey(const Key('lesson-meta-situation')), findsNothing);
+    expect(find.byKey(const Key('lesson-meta-summary')), findsNothing);
+    expect(find.byKey(const Key('lesson-meta-tutor')), findsNothing);
+    expect(find.byKey(const Key('lesson-conversation-mode-button')),
+        findsOneWidget);
+    expect(find.byKey(const Key('lesson-back-button')), findsOneWidget);
+    expect(find.byKey(const Key('lesson-action-finish')), findsOneWidget);
     expect(find.byType(CircleAvatar), findsNothing);
     expect(find.text('Lana avatar area'), findsNothing);
     expect(find.text('Future animated GIF placeholder'), findsNothing);

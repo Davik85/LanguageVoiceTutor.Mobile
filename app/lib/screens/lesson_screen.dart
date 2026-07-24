@@ -1370,16 +1370,6 @@ class _LessonScreenState extends State<LessonScreen>
     return 'Tutor';
   }
 
-  String get _compactLevel {
-    final selectionLevel = widget.selection?.level.trim() ?? '';
-    final runtimeLevel = _scenario?.runtimeContent.resolvedLevelId.trim() ?? '';
-    for (final candidate in [runtimeLevel, selectionLevel]) {
-      final match = RegExp(r'\b(A1|A2|B1|B2|C1|C2)\b').firstMatch(candidate);
-      if (match != null) return match.group(1)!;
-    }
-    return selectionLevel.isEmpty ? 'Level' : selectionLevel;
-  }
-
   void _scrollTranscriptToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_transcriptController.hasClients) return;
@@ -2077,12 +2067,9 @@ class _LessonScreenState extends State<LessonScreen>
                             children: [
                               Expanded(
                                 child: _LessonWorkspace(
-                                  selection: selection,
-                                  scenario: _scenario,
                                   tutorDisplayName: _tutorDisplayName,
                                   tutorId: _settings?.selectedTutorId ?? '',
                                   tutorStatus: _tutorStatus,
-                                  compactLevel: _compactLevel,
                                   isStarting: _isStarting,
                                   startResult: _startResult,
                                   lessonLoadError: _lessonLoadError,
@@ -2184,12 +2171,9 @@ class _LessonScreenState extends State<LessonScreen>
 
 class _LessonWorkspace extends StatelessWidget {
   const _LessonWorkspace({
-    required this.selection,
-    required this.scenario,
     required this.tutorDisplayName,
     required this.tutorId,
     required this.tutorStatus,
-    required this.compactLevel,
     required this.isStarting,
     required this.startResult,
     required this.lessonLoadError,
@@ -2234,12 +2218,9 @@ class _LessonWorkspace extends StatelessWidget {
     required this.onOpenConversationMode,
   });
 
-  final LessonStartSelection selection;
-  final LessonRuntimeScenario? scenario;
   final String tutorDisplayName;
   final String tutorId;
   final LessonTutorStatus tutorStatus;
-  final String compactLevel;
   final bool isStarting;
   final LessonSessionStartResult? startResult;
   final String? lessonLoadError;
@@ -2309,10 +2290,6 @@ class _LessonWorkspace extends StatelessWidget {
               displayName: tutorDisplayName,
               tutorId: tutorId,
               status: tutorStatus,
-              compactLevel: compactLevel,
-              topic: scenario?.metadata.topic.isNotEmpty ?? false
-                  ? scenario!.metadata.topic
-                  : selection.topicTitle,
               onBack: onBack,
               canFinish: canFinish,
               onFinish: onFinish,
@@ -3206,8 +3183,6 @@ class _TutorHeader extends StatelessWidget {
     required this.displayName,
     required this.tutorId,
     required this.status,
-    required this.compactLevel,
-    required this.topic,
     required this.onBack,
     required this.canFinish,
     required this.onFinish,
@@ -3218,8 +3193,6 @@ class _TutorHeader extends StatelessWidget {
   final String displayName;
   final String tutorId;
   final LessonTutorStatus status;
-  final String compactLevel;
-  final String topic;
   final VoidCallback onBack;
   final bool canFinish;
   final VoidCallback onFinish;
@@ -3232,14 +3205,6 @@ class _TutorHeader extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final tutorInitial =
         displayName.isEmpty ? 'T' : displayName.substring(0, 1);
-    final statusColor = switch (status) {
-      LessonTutorStatus.ready => colorScheme.onSurfaceVariant,
-      LessonTutorStatus.thinking => colorScheme.primary,
-      LessonTutorStatus.listening => colorScheme.tertiary,
-      LessonTutorStatus.transcribing => colorScheme.tertiary,
-      LessonTutorStatus.speaking => colorScheme.secondary,
-      LessonTutorStatus.error => colorScheme.error,
-    };
     return Container(
       key: const Key('lesson-tutor-header'),
       clipBehavior: Clip.antiAlias,
@@ -3323,49 +3288,20 @@ class _TutorHeader extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    left: 0,
                     right: 0,
                     bottom: 0,
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _HeaderMetaChip(
-                            key: const Key('lesson-meta-summary'),
-                            label: '$compactLevel · $topic',
-                          ),
-                          if (displayName.isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            _HeaderMetaChip(
-                              key: const Key('lesson-meta-tutor'),
-                              label: displayName,
-                              trailing: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: statusColor,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          ],
-                          const SizedBox(width: 8),
-                          DecoratedBox(
-                            decoration: BoxDecoration(
-                              color:
-                                  colorScheme.surface.withValues(alpha: 0.78),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: IconButton(
-                              key: const Key('lesson-conversation-mode-button'),
-                              tooltip: 'Open Conversation mode',
-                              onPressed: canOpenConversationMode
-                                  ? onOpenConversationMode
-                                  : null,
-                              icon: const Icon(Icons.open_in_full),
-                            ),
-                          ),
-                        ],
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface.withValues(alpha: 0.78),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: IconButton(
+                        key: const Key('lesson-conversation-mode-button'),
+                        tooltip: 'Open Conversation mode',
+                        onPressed: canOpenConversationMode
+                            ? onOpenConversationMode
+                            : null,
+                        icon: const Icon(Icons.open_in_full),
                       ),
                     ),
                   ),
@@ -3581,38 +3517,6 @@ class _SummarySection extends StatelessWidget {
             ),
           ),
         ]),
-      ),
-    );
-  }
-}
-
-class _HeaderMetaChip extends StatelessWidget {
-  const _HeaderMetaChip({
-    super.key,
-    required this.label,
-    this.trailing,
-  });
-
-  final String label;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.78),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(label),
-          if (trailing != null) ...[
-            const SizedBox(width: 8),
-            trailing!,
-          ],
-        ],
       ),
     );
   }
