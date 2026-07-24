@@ -18,7 +18,6 @@ import '../services/tutor_audio_playback_service.dart';
 import '../services/tutor_speech_request_builder.dart';
 import '../services/transcript_script_normalizer.dart';
 import '../widgets/tutor_avatar.dart';
-import '../widgets/voice_transcription_disclosure.dart';
 
 class ConversationModeScreen extends StatefulWidget {
   const ConversationModeScreen({
@@ -652,12 +651,6 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
                         label: const Text('Open Android settings'),
                       ),
                     ],
-                    const SizedBox(height: 12),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12),
-                      child: VoiceTranscriptionDisclosure(color: Colors.white),
-                    ),
-                    const SizedBox(height: 8),
                     Row(
                       key: const Key('conversation-bottom-controls'),
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,

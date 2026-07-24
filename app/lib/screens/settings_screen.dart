@@ -10,6 +10,8 @@ import '../models/lesson_start_selection.dart';
 import '../models/subscription_status.dart';
 import '../models/tutor_options.dart';
 import '../models/user_settings.dart';
+import '../l10n/app_localizations_context.dart';
+import '../l10n/lesson_selection_localization.dart';
 import '../services/auth_service.dart';
 import '../services/backend_health_service.dart';
 import '../services/service_factory.dart';
@@ -35,10 +37,12 @@ class SettingsScreen extends StatefulWidget {
     AuthService? authService,
     TutorOptionsService? tutorOptionsService,
     PracticeReminderService? practiceReminderService,
+    ValueChanged<String>? onInterfaceLanguageSaved,
   })  : _healthService = healthService,
         _authService = authService,
         _tutorOptionsService = tutorOptionsService,
-        _practiceReminderService = practiceReminderService;
+        _practiceReminderService = practiceReminderService,
+        _onInterfaceLanguageSaved = onInterfaceLanguageSaved;
 
   static const String routeName = '/settings';
 
@@ -46,6 +50,7 @@ class SettingsScreen extends StatefulWidget {
   final AuthService? _authService;
   final TutorOptionsService? _tutorOptionsService;
   final PracticeReminderService? _practiceReminderService;
+  final ValueChanged<String>? _onInterfaceLanguageSaved;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -124,7 +129,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     } catch (_) {
       if (mounted) {
         setState(() =>
-            _reminderError = 'Practice reminders are temporarily unavailable.');
+            _reminderError = context.l10n.remindersTemporarilyUnavailable);
       }
     }
   }
@@ -133,8 +138,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     final ok = await action();
     await _loadReminders();
     if (!ok && mounted) {
-      setState(() => _reminderError =
-          'Unable to update reminders right now. Please try again.');
+      setState(() => _reminderError = context.l10n.unableToUpdateReminders);
     }
   }
 
@@ -191,12 +195,10 @@ class _SettingsScreenState extends State<SettingsScreen>
     } on ApiException catch (error) {
       if (!mounted) return;
       if (error.message == 'Please sign in again.') return _goToLogin();
-      setState(
-          () => _accountError = 'Unable to load account details right now.');
+      setState(() => _accountError = context.l10n.unableToLoadAccount);
     } catch (_) {
       if (!mounted) return;
-      setState(
-          () => _accountError = 'Unable to load account details right now.');
+      setState(() => _accountError = context.l10n.unableToLoadAccount);
     }
   }
 
@@ -210,28 +212,29 @@ class _SettingsScreenState extends State<SettingsScreen>
     try {
       final settings = await _authService.fetchUserSettings();
       TutorOptions? tutorOptions;
-      String? tutorOptionsError;
+      var tutorOptionsUnavailable = false;
       try {
         tutorOptions = await _tutorOptionsService.fetchTutorOptions();
       } catch (_) {
-        tutorOptionsError =
-            'Tutor choices are unavailable right now. You can still review and save your other settings.';
+        tutorOptionsUnavailable = true;
       }
       if (!mounted) return;
       setState(() {
         _settings = settings;
         _confirmedSettings = settings;
         _tutorOptions = tutorOptions;
-        _tutorOptionsError = tutorOptionsError;
+        _tutorOptionsError = tutorOptionsUnavailable
+            ? context.l10n.tutorChoicesUnavailable
+            : null;
         _settingsError = null;
       });
     } on ApiException catch (error) {
       if (!mounted) return;
       if (error.message == 'Please sign in again.') return _goToLogin();
-      setState(() => _settingsError = 'Unable to load settings right now.');
+      setState(() => _settingsError = context.l10n.unableToLoadSettings);
     } catch (_) {
       if (!mounted) return;
-      setState(() => _settingsError = 'Unable to load settings right now.');
+      setState(() => _settingsError = context.l10n.unableToLoadSettings);
     }
   }
 
@@ -251,8 +254,9 @@ class _SettingsScreenState extends State<SettingsScreen>
           _confirmedSettings = saved;
           _settingsError = null;
         });
+        widget._onInterfaceLanguageSaved?.call(saved.explanationLanguage);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Settings saved.')),
+          SnackBar(content: Text(context.l10n.settingsSaved)),
         );
         return;
       }
@@ -260,13 +264,19 @@ class _SettingsScreenState extends State<SettingsScreen>
       if (result.status == UserSettingsUpdateStatus.authenticationRequired) {
         return _goToLogin();
       }
+      final message = switch (result.status) {
+        UserSettingsUpdateStatus.validationFailure => result.message,
+        UserSettingsUpdateStatus.serviceUnavailable =>
+          context.l10n.settingsTemporarilyUnavailable,
+        _ => context.l10n.unableToSaveSettings,
+      };
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(result.message)));
+          .showSnackBar(SnackBar(content: Text(message)));
     } catch (_) {
       if (!mounted) return;
       setState(() => _settings = _confirmedSettings);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to save settings right now.')),
+        SnackBar(content: Text(context.l10n.unableToSaveSettings)),
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -276,7 +286,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   Future<void> _submitFeedback() async {
     final message = _feedbackMessageController.text.trim();
     if (message.isEmpty) {
-      setState(() => _feedbackMessage = 'Please enter a description.');
+      setState(() => _feedbackMessage = context.l10n.pleaseEnterDescription);
       return;
     }
     setState(() {
@@ -301,7 +311,12 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
     setState(() {
       _isSubmittingFeedback = false;
-      _feedbackMessage = result.message;
+      _feedbackMessage = switch (result.status) {
+        FeedbackReportSubmitStatus.success => context.l10n.feedbackReceived,
+        FeedbackReportSubmitStatus.validationFailure =>
+          context.l10n.feedbackValidationFailure,
+        _ => context.l10n.feedbackUnavailable,
+      };
       if (result.status == FeedbackReportSubmitStatus.success) {
         _feedbackMessageController.clear();
         _reportedAiTextController.clear();
@@ -311,7 +326,7 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   Future<void> _requestPasswordReset() async {
     if (_resetEmailController.text.trim().isEmpty) {
-      setState(() => _resetRequestMessage = 'Email is required.');
+      setState(() => _resetRequestMessage = context.l10n.emailRequired);
       return;
     }
     setState(() {
@@ -334,14 +349,13 @@ class _SettingsScreenState extends State<SettingsScreen>
   Future<void> _confirmPasswordReset() async {
     if (_resetCodeController.text.trim().isEmpty ||
         _resetNewPasswordController.text.isEmpty) {
-      setState(() =>
-          _resetConfirmMessage = 'Reset code and new password are required.');
+      setState(
+          () => _resetConfirmMessage = context.l10n.resetCodePasswordRequired);
       return;
     }
     if (_resetNewPasswordController.text !=
         _resetConfirmPasswordController.text) {
-      setState(() =>
-          _resetConfirmMessage = 'New password and confirmation must match.');
+      setState(() => _resetConfirmMessage = context.l10n.passwordsMustMatch);
       return;
     }
     setState(() {
@@ -365,18 +379,18 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   Future<void> _changePassword() async {
     if (_user == null) {
-      setState(() =>
-          _changePasswordMessage = 'Please sign in to change your password.');
+      setState(
+          () => _changePasswordMessage = context.l10n.signInToChangePassword);
       return;
     }
     if (_currentPasswordController.text.isEmpty) {
-      setState(() => _changePasswordMessage = 'Current password is required.');
+      setState(
+          () => _changePasswordMessage = context.l10n.currentPasswordRequired);
       return;
     }
     if (_changeNewPasswordController.text !=
         _changeConfirmPasswordController.text) {
-      setState(() =>
-          _changePasswordMessage = 'New password and confirmation must match.');
+      setState(() => _changePasswordMessage = context.l10n.passwordsMustMatch);
       return;
     }
     setState(() {
@@ -468,7 +482,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(context.l10n.settings)),
       body: AppVisuals.screenBackground(
         child: switch (_section) {
           _SettingsSection.profile => _profileContent(),
@@ -480,24 +494,24 @@ class _SettingsScreenState extends State<SettingsScreen>
         selectedIndex: _section.index,
         onDestinationSelected: (index) =>
             setState(() => _section = _SettingsSection.values[index]),
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            key: Key('settings-profile-tab'),
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'Profile',
+            key: const Key('settings-profile-tab'),
+            icon: const Icon(Icons.person_outline_rounded),
+            selectedIcon: const Icon(Icons.person_rounded),
+            label: context.l10n.profile,
           ),
           NavigationDestination(
-            key: Key('settings-lessons-tab'),
-            icon: Icon(Icons.school_outlined),
-            selectedIcon: Icon(Icons.school_rounded),
-            label: 'Lessons',
+            key: const Key('settings-lessons-tab'),
+            icon: const Icon(Icons.school_outlined),
+            selectedIcon: const Icon(Icons.school_rounded),
+            label: context.l10n.lessons,
           ),
           NavigationDestination(
-            key: Key('settings-app-tab'),
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings_rounded),
-            label: 'App',
+            key: const Key('settings-app-tab'),
+            icon: const Icon(Icons.settings_outlined),
+            selectedIcon: const Icon(Icons.settings_rounded),
+            label: context.l10n.app,
           ),
         ],
       ),
@@ -532,7 +546,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           const SizedBox(height: 12),
           _SettingsActionButton(
             onPressed: _settings == null || _isSaving ? null : _saveSettings,
-            label: _isSaving ? 'Saving...' : 'Save settings',
+            label: _isSaving ? context.l10n.saving : context.l10n.saveSettings,
           ),
         ],
       );
@@ -541,21 +555,22 @@ class _SettingsScreenState extends State<SettingsScreen>
         key: const Key('settings-lessons-content'),
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
         children: [
-          Text('Lessons', style: Theme.of(context).textTheme.headlineSmall),
+          Text(context.l10n.lessons,
+              style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 12),
           Card(
             child: Column(children: [
               ListTile(
                 key: const Key('settings-lesson-history'),
                 leading: const Icon(Icons.history),
-                title: const Text('Lesson history'),
+                title: Text(context.l10n.lessonHistory),
                 onTap: _openLessonHistory,
               ),
               const Divider(height: 1),
               ListTile(
                 key: const Key('settings-progress'),
                 leading: const Icon(Icons.insights),
-                title: const Text('Progress'),
+                title: Text(context.l10n.progress),
                 onTap: _openProgress,
               ),
             ]),
@@ -565,8 +580,8 @@ class _SettingsScreenState extends State<SettingsScreen>
             child: ListTile(
               key: const Key('settings-rewards'),
               leading: const Icon(Icons.workspace_premium_outlined),
-              title: const Text('Rewards'),
-              subtitle: const Text('View all badges and learning rewards.'),
+              title: Text(context.l10n.rewards),
+              subtitle: Text(context.l10n.viewAllRewards),
               trailing: const Icon(Icons.chevron_right),
               onTap: _openAchievements,
             ),
@@ -603,17 +618,15 @@ class _SettingsScreenState extends State<SettingsScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Account deletion',
+                  Text(context.l10n.accountDeletion,
                       style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Send a request to permanently delete your Language Voice Tutor account and personal data.',
-                  ),
+                  Text(context.l10n.accountDeletionDescription),
                   const SizedBox(height: 8),
                   TextButton(
                     key: const Key('settings-request-account-deletion'),
                     onPressed: _openAccountDeletionRequest,
-                    child: const Text('Request account deletion'),
+                    child: Text(context.l10n.requestAccountDeletion),
                   ),
                 ],
               ),
@@ -660,28 +673,29 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
           const SizedBox(height: 12),
           _DiagnosticsCard(
-            connectionLabel: _connectionLabel,
-            connectionMessage: _connectionMessage,
+            connectionLabel: _connectionLabel(context),
+            connectionMessage: _connectionMessage(context),
             checking: _connectionState == BackendConnectionState.checking,
             onCheck: _checkBackendConnection,
           ),
         ],
       );
 
-  String get _connectionLabel => switch (_connectionState) {
-        BackendConnectionState.notChecked => 'Not checked',
-        BackendConnectionState.checking => 'Checking...',
-        BackendConnectionState.connected => 'Connected',
-        BackendConnectionState.unavailable => 'Unavailable'
+  String _connectionLabel(BuildContext context) => switch (_connectionState) {
+        BackendConnectionState.notChecked => context.l10n.connectionNotChecked,
+        BackendConnectionState.checking => context.l10n.connectionChecking,
+        BackendConnectionState.connected => context.l10n.connectionConnected,
+        BackendConnectionState.unavailable => context.l10n.connectionUnavailable
       };
-  String get _connectionMessage => switch (_connectionState) {
+  String _connectionMessage(BuildContext context) => switch (_connectionState) {
         BackendConnectionState.notChecked =>
-          'Tap the button to confirm the app can reach the Language Voice Tutor service.',
-        BackendConnectionState.checking => 'Checking the service now.',
+          context.l10n.connectionNotCheckedDescription,
+        BackendConnectionState.checking =>
+          context.l10n.connectionCheckingDescription,
         BackendConnectionState.connected =>
-          'The app can reach the Language Voice Tutor service.',
+          context.l10n.connectionConnectedDescription,
         BackendConnectionState.unavailable =>
-          'The service is unavailable right now. Please try again later.'
+          context.l10n.connectionUnavailableDescription
       };
 }
 
@@ -741,31 +755,38 @@ class _AccountCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Account', style: Theme.of(context).textTheme.titleMedium),
+            Text(context.l10n.account,
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             if (user == null && error == null)
-              const Text('Loading account...')
+              Text(context.l10n.loadingAccount)
             else if (user != null) ...[
               Text(user!.displayName?.isNotEmpty == true
                   ? user!.displayName!
-                  : 'No display name'),
+                  : context.l10n.noDisplayName),
               Text(user!.email),
               const SizedBox(height: 8),
-              Text(subscription?.displayLabel ?? 'Subscription unavailable'),
+              Text(subscription == null
+                  ? context.l10n.subscriptionUnavailable
+                  : subscription!.premiumActive
+                      ? context.l10n.premiumPlan
+                      : subscription!.trialActive
+                          ? context.l10n.premiumTrial
+                          : context.l10n.freePlan),
               Text(subscription?.planName ??
                   subscription?.currentTariffName ??
-                  'No paid plan'),
+                  context.l10n.noPaidPlan),
             ] else
               Text(error!),
             const SizedBox(height: 12),
             FilledButton.tonal(
               key: const Key('settings-open-premium'),
               onPressed: onOpenPremium,
-              child: const Text('Premium & subscription'),
+              child: Text(context.l10n.premiumAndSubscription),
             ),
             const SizedBox(height: 8),
             FilledButton.tonal(
-                onPressed: onLogout, child: const Text('Logout')),
+                onPressed: onLogout, child: Text(context.l10n.logout)),
           ])));
 }
 
@@ -803,7 +824,7 @@ class _AccountDeletionRequestDialogState
   Future<void> _submit() async {
     if (_submitting) return;
     if (_passwordController.text.trim().isEmpty) {
-      setState(() => _message = 'Current password is required.');
+      setState(() => _message = context.l10n.currentPasswordRequired);
       return;
     }
     setState(() {
@@ -826,22 +847,32 @@ class _AccountDeletionRequestDialogState
     }
     setState(() {
       _submitting = false;
-      _message = result.message;
+      _message = switch (result.status) {
+        AccountDeletionRequestSubmitStatus.success =>
+          result.response?.alreadyRequested == true
+              ? context.l10n.deletionRequestAlreadyExists
+              : context.l10n.deletionRequestSubmitted,
+        AccountDeletionRequestSubmitStatus.incorrectPassword =>
+          context.l10n.incorrectCurrentPassword,
+        AccountDeletionRequestSubmitStatus.networkFailure =>
+          context.l10n.unableToReachService,
+        AccountDeletionRequestSubmitStatus.malformedResponse =>
+          context.l10n.unexpectedServiceResponse,
+        _ => context.l10n.unableToSubmitRequest,
+      };
       _response = result.response;
     });
   }
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-        title: const Text('Request account deletion'),
+        title: Text(context.l10n.requestAccountDeletion),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Submitting this request does not delete your account immediately. Support will review and process it, and may ask for more information. Their response will be sent to the email address associated with your account. Your account is not considered deleted just because you submitted this request.',
-              ),
+              Text(context.l10n.accountDeletionNotice),
               const SizedBox(height: 16),
               TextField(
                 key: const Key('account-deletion-current-password'),
@@ -849,7 +880,7 @@ class _AccountDeletionRequestDialogState
                 obscureText: true,
                 enabled: !_submitting,
                 decoration:
-                    const InputDecoration(labelText: 'Current password'),
+                    InputDecoration(labelText: context.l10n.currentPassword),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -859,7 +890,7 @@ class _AccountDeletionRequestDialogState
                 minLines: 2,
                 maxLines: 4,
                 decoration:
-                    const InputDecoration(labelText: 'Reason (optional)'),
+                    InputDecoration(labelText: context.l10n.reasonOptional),
               ),
               if (_message != null) ...[
                 const SizedBox(height: 12),
@@ -867,8 +898,8 @@ class _AccountDeletionRequestDialogState
               ],
               if (_response != null) ...[
                 const SizedBox(height: 8),
-                Text('Request ID: ${_response!.reportId}'),
-                Text('Status: ${_response!.status}'),
+                Text(context.l10n.requestId(_response!.reportId)),
+                Text(context.l10n.statusValue(_response!.status)),
               ],
             ],
           ),
@@ -876,12 +907,13 @@ class _AccountDeletionRequestDialogState
         actions: [
           TextButton(
             onPressed: _submitting ? null : () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             key: const Key('account-deletion-submit'),
             onPressed: _submitting ? null : _submit,
-            child: Text(_submitting ? 'Submitting...' : 'Submit request'),
+            child: Text(
+                _submitting ? context.l10n.submitting : context.l10n.submit),
           ),
         ],
       );
@@ -929,12 +961,12 @@ class _PasswordRecoveryCard extends StatelessWidget {
           child: ExpansionTile(
               tilePadding: const EdgeInsets.symmetric(horizontal: 16),
               childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              title: Text('Password & recovery',
+              title: Text(context.l10n.passwordRecovery,
                   style: Theme.of(context).textTheme.titleMedium),
               children: [
             TextField(
               controller: resetEmailController,
-              decoration: const InputDecoration(labelText: 'Account email'),
+              decoration: InputDecoration(labelText: context.l10n.accountEmail),
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 8),
@@ -943,8 +975,8 @@ class _PasswordRecoveryCard extends StatelessWidget {
               child: FilledButton.tonal(
                 onPressed: requestingReset ? null : onRequestReset,
                 child: Text(requestingReset
-                    ? 'Sending reset instructions...'
-                    : 'Forgot password'),
+                    ? context.l10n.sendingResetInstructions
+                    : context.l10n.forgotPassword),
               ),
             ),
             if (resetRequestMessage != null) ...[
@@ -957,17 +989,17 @@ class _PasswordRecoveryCard extends StatelessWidget {
             const Divider(height: 28),
             TextField(
               controller: resetCodeController,
-              decoration: const InputDecoration(labelText: 'Reset code'),
+              decoration: InputDecoration(labelText: context.l10n.resetCode),
             ),
             TextField(
               controller: resetNewPasswordController,
-              decoration: const InputDecoration(labelText: 'New password'),
+              decoration: InputDecoration(labelText: context.l10n.newPassword),
               obscureText: true,
             ),
             TextField(
               controller: resetConfirmPasswordController,
               decoration:
-                  const InputDecoration(labelText: 'Confirm new password'),
+                  InputDecoration(labelText: context.l10n.confirmNewPassword),
               obscureText: true,
             ),
             const SizedBox(height: 8),
@@ -976,8 +1008,8 @@ class _PasswordRecoveryCard extends StatelessWidget {
               child: FilledButton.tonal(
                 onPressed: confirmingReset ? null : onConfirmReset,
                 child: Text(confirmingReset
-                    ? 'Updating password...'
-                    : 'Reset password'),
+                    ? context.l10n.updatingPassword
+                    : context.l10n.resetPassword),
               ),
             ),
             if (resetConfirmMessage != null) ...[
@@ -990,19 +1022,20 @@ class _PasswordRecoveryCard extends StatelessWidget {
             const Divider(height: 28),
             TextField(
               controller: currentPasswordController,
-              decoration: const InputDecoration(labelText: 'Current password'),
+              decoration:
+                  InputDecoration(labelText: context.l10n.currentPassword),
               obscureText: true,
             ),
             TextField(
               controller: changeNewPasswordController,
               decoration:
-                  const InputDecoration(labelText: 'New account password'),
+                  InputDecoration(labelText: context.l10n.newAccountPassword),
               obscureText: true,
             ),
             TextField(
               controller: changeConfirmPasswordController,
-              decoration: const InputDecoration(
-                  labelText: 'Confirm new account password'),
+              decoration: InputDecoration(
+                  labelText: context.l10n.confirmNewAccountPassword),
               obscureText: true,
             ),
             const SizedBox(height: 8),
@@ -1011,8 +1044,8 @@ class _PasswordRecoveryCard extends StatelessWidget {
               child: FilledButton.tonal(
                 onPressed: changingPassword ? null : onChangePassword,
                 child: Text(changingPassword
-                    ? 'Changing password...'
-                    : 'Change password'),
+                    ? context.l10n.changingPassword
+                    : context.l10n.changePassword),
               ),
             ),
             if (changePasswordMessage != null) ...[
@@ -1051,10 +1084,11 @@ class _LearningCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Learning', style: Theme.of(context).textTheme.titleMedium),
+            Text(context.l10n.learning,
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             if (settings == null && error == null)
-              const Text('Loading settings...')
+              Text(context.l10n.loadingSettings)
             else if (settings == null)
               Text(error!)
             else ...[
@@ -1064,21 +1098,21 @@ class _LearningCard extends StatelessWidget {
                       onChanged(settings!.copyWith(currentLevel: v))),
               const SizedBox(height: 10),
               _LanguageDropdown(
-                  label: 'Study language',
+                  label: context.l10n.studyLanguage,
                   value: settings!.studyLanguage,
                   options: studyLanguageOptions,
                   onChanged: (v) =>
                       onChanged(settings!.copyWith(studyLanguage: v))),
               const SizedBox(height: 10),
               _LanguageDropdown(
-                  label: 'Native language',
+                  label: context.l10n.nativeLanguage,
                   value: settings!.nativeLanguage,
                   options: nativeLanguageOptions,
                   onChanged: (v) =>
                       onChanged(settings!.copyWith(nativeLanguage: v))),
               const SizedBox(height: 10),
               _LanguageDropdown(
-                  label: 'Interface / explanation language',
+                  label: context.l10n.interfaceExplanationLanguage,
                   value: settings!.explanationLanguage,
                   options: interfaceLanguageOptions,
                   onChanged: (v) =>
@@ -1093,7 +1127,7 @@ class _LearningCard extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               _Dropdown(
-                  label: 'Tutor voice',
+                  label: context.l10n.tutorVoice,
                   value: settings!.speechVoice,
                   values: voices,
                   onChanged: (v) =>
@@ -1110,12 +1144,12 @@ class _LessonLevelDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => DropdownButtonFormField<String>(
-        decoration: const InputDecoration(labelText: 'Current level'),
+        decoration: InputDecoration(labelText: context.l10n.currentLevel),
         initialValue: canonicalLessonLevel(value),
         items: lessonLevels
             .map((level) => DropdownMenuItem(
                   value: canonicalLessonLevel(level.id),
-                  child: Text(level.label),
+                  child: Text(context.l10n.localizedLevel(level).label),
                 ))
             .toList(),
         onChanged: (v) {
@@ -1147,15 +1181,15 @@ class _TutorDropdown extends StatelessWidget {
       );
     }
     if (tutorOptions == null) {
-      return const Padding(
-        padding: EdgeInsets.only(bottom: 8),
-        child: Text('Loading tutors...'),
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(context.l10n.loadingTutors),
       );
     }
     if (tutors.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.only(bottom: 8),
-        child: Text('No tutors are available right now.'),
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(context.l10n.noTutorsAvailable),
       );
     }
 
@@ -1165,7 +1199,7 @@ class _TutorDropdown extends StatelessWidget {
         : tutors.first.tutorId;
 
     return DropdownButtonFormField<String>(
-      decoration: const InputDecoration(labelText: 'Selected tutor'),
+      decoration: InputDecoration(labelText: context.l10n.selectedTutor),
       initialValue: value,
       items: tutors
           .map((t) => DropdownMenuItem(value: t.tutorId, child: Text(t.label)))
@@ -1187,13 +1221,14 @@ class _AudioCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Audio', style: Theme.of(context).textTheme.titleMedium),
+            Text(context.l10n.audio,
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             if (settings == null)
-              const Text('Loading audio settings...')
+              Text(context.l10n.loadingAudioSettings)
             else ...[
-              Text(
-                  'Speech speed: ${settings!.speechSpeed.toStringAsFixed(1)}x'),
+              Text(context.l10n
+                  .speechSpeed(settings!.speechSpeed.toStringAsFixed(1))),
               Slider(
                   value: settings!.speechSpeed.clamp(0.5, 2.0),
                   min: 0.5,
@@ -1204,7 +1239,7 @@ class _AudioCard extends StatelessWidget {
                       speechSpeed: double.parse(v.toStringAsFixed(1))))),
               SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Conversation mode enabled'),
+                  title: Text(context.l10n.conversationModeEnabled),
                   value: settings!.conversationModeEnabled,
                   onChanged: (v) => onChanged(
                       settings!.copyWith(conversationModeEnabled: v))),
@@ -1229,11 +1264,17 @@ class _FeedbackReportCard extends StatelessWidget {
   final ValueChanged<FeedbackReportCategory> onCategoryChanged;
   final VoidCallback onSubmit;
 
-  String get _descriptionLabel => switch (category) {
-        FeedbackReportCategory.suggestion => 'Your suggestion',
-        FeedbackReportCategory.appIssue => 'Describe the problem',
-        FeedbackReportCategory.aiResponse =>
-          'What was wrong with the AI response?',
+  String _descriptionLabel(BuildContext context) => switch (category) {
+        FeedbackReportCategory.suggestion => context.l10n.yourSuggestion,
+        FeedbackReportCategory.appIssue => context.l10n.describeProblem,
+        FeedbackReportCategory.aiResponse => context.l10n.aiResponseProblem,
+      };
+
+  String _categoryLabel(BuildContext context, FeedbackReportCategory value) =>
+      switch (value) {
+        FeedbackReportCategory.suggestion => context.l10n.feedbackSuggestion,
+        FeedbackReportCategory.appIssue => context.l10n.feedbackAppProblem,
+        FeedbackReportCategory.aiResponse => context.l10n.feedbackAiResponse,
       };
 
   @override
@@ -1242,17 +1283,18 @@ class _FeedbackReportCard extends StatelessWidget {
           key: const Key('feedback-reports-card'),
           tilePadding: const EdgeInsets.symmetric(horizontal: 16),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          title: Text('Feedback & reports',
+          title: Text(context.l10n.feedbackAndReports,
               style: Theme.of(context).textTheme.titleMedium),
-          subtitle: const Text('Send a suggestion or report a problem'),
+          subtitle: Text(context.l10n.sendSuggestionOrReport),
           children: [
             DropdownButtonFormField<FeedbackReportCategory>(
               key: const Key('feedback-category'),
               initialValue: category,
-              decoration: const InputDecoration(labelText: 'Report type'),
+              decoration: InputDecoration(labelText: context.l10n.reportType),
               items: FeedbackReportCategory.values
-                  .map((value) =>
-                      DropdownMenuItem(value: value, child: Text(value.label)))
+                  .map((value) => DropdownMenuItem(
+                      value: value,
+                      child: Text(_categoryLabel(context, value))))
                   .toList(),
               onChanged: submitting
                   ? null
@@ -1266,7 +1308,8 @@ class _FeedbackReportCard extends StatelessWidget {
                 enabled: !submitting,
                 maxLines: 4,
                 maxLength: 4000,
-                decoration: InputDecoration(labelText: _descriptionLabel)),
+                decoration:
+                    InputDecoration(labelText: _descriptionLabel(context))),
             if (category == FeedbackReportCategory.aiResponse) ...[
               const SizedBox(height: 8),
               TextField(
@@ -1274,15 +1317,17 @@ class _FeedbackReportCard extends StatelessWidget {
                   enabled: !submitting,
                   maxLines: 4,
                   maxLength: 4000,
-                  decoration: const InputDecoration(
-                      labelText: 'Paste the AI response (optional)')),
+                  decoration: InputDecoration(
+                      labelText: context.l10n.pasteAiResponseOptional)),
             ],
             const SizedBox(height: 8),
             Align(
                 alignment: Alignment.centerLeft,
                 child: FilledButton(
                     onPressed: submitting ? null : onSubmit,
-                    child: Text(submitting ? 'Sending...' : 'Send'))),
+                    child: Text(submitting
+                        ? context.l10n.sending
+                        : context.l10n.send))),
             if (message != null) ...[
               const SizedBox(height: 8),
               Align(alignment: Alignment.centerLeft, child: Text(message!))
@@ -1311,7 +1356,7 @@ class _DiagnosticsCard extends StatelessWidget {
             ExpansionTile(
               tilePadding: EdgeInsets.zero,
               childrenPadding: const EdgeInsets.only(top: 8),
-              title: Text('Connection status',
+              title: Text(context.l10n.connectionStatus,
                   style: Theme.of(context).textTheme.titleMedium),
               subtitle: Text(connectionLabel),
               children: [
@@ -1324,7 +1369,7 @@ class _DiagnosticsCard extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: FilledButton(
                       onPressed: checking ? null : onCheck,
-                      child: const Text('Check connection')),
+                      child: Text(context.l10n.checkConnection)),
                 ),
               ],
             ),
@@ -1348,8 +1393,11 @@ class _LanguageDropdown extends StatelessWidget {
       decoration: InputDecoration(labelText: label),
       initialValue: supportedIds.contains(value) ? value : null,
       items: options
-          .map((option) =>
-              DropdownMenuItem(value: option.id, child: Text(option.label)))
+          .map((option) => DropdownMenuItem(
+              value: option.id,
+              child: Text(context.l10n.localeName.startsWith('en')
+                  ? option.label
+                  : _nativeLanguageName(option.id, option.label))))
           .toList(),
       onChanged: (v) {
         if (v != null) onChanged(v);
@@ -1357,6 +1405,68 @@ class _LanguageDropdown extends StatelessWidget {
     );
   }
 }
+
+// Language names are intentionally shown as stable autonyms in every UI
+// locale. IDs and the English backend-facing labels remain unchanged.
+String _nativeLanguageName(String id, String fallback) =>
+    const {
+      'en': 'English',
+      'es': 'Español',
+      'fr': 'Français',
+      'de': 'Deutsch',
+      'it': 'Italiano',
+      'pt': 'Português',
+      'ru': 'Русский',
+      'uk': 'Українська',
+      'pl': 'Polski',
+      'nl': 'Nederlands',
+      'tr': 'Türkçe',
+      'ar': 'العربية',
+      'hi': 'हिन्दी',
+      'zh-Hans': '简体中文',
+      'ja': '日本語',
+      'ko': '한국어',
+      'vi': 'Tiếng Việt',
+      'id': 'Bahasa Indonesia',
+      'fa': 'فارسی',
+      'ur': 'اردو',
+      'bn': 'বাংলা',
+      'ta': 'தமிழ்',
+      'te': 'తెలుగు',
+      'mr': 'मराठी',
+      'gu': 'ગુજરાતી',
+      'th': 'ไทย',
+      'sv': 'Svenska',
+      'no': 'Norsk',
+      'da': 'Dansk',
+      'cs': 'Čeština',
+      'ro': 'Română',
+      'el': 'Ελληνικά',
+      'he': 'עברית',
+      'sr': 'Srpski / Српски',
+      'hr': 'Hrvatski',
+      'bs': 'Bosanski',
+      'sl': 'Slovenščina',
+      'sk': 'Slovenčina',
+      'bg': 'Български',
+      'hu': 'Magyar',
+      'fi': 'Suomi',
+      'et': 'Eesti',
+      'lv': 'Latviešu',
+      'lt': 'Lietuvių',
+      'sq': 'Shqip',
+      'mk': 'Македонски',
+      'be': 'Беларуская',
+      'is': 'Íslenska',
+      'ga': 'Gaeilge',
+      'cy': 'Cymraeg',
+      'ca': 'Català',
+      'eu': 'Euskara',
+      'gl': 'Galego',
+      'mt': 'Malti',
+      'lb': 'Lëtzebuergesch',
+    }[id] ??
+    fallback;
 
 class _Dropdown extends StatelessWidget {
   const _Dropdown(

@@ -3,12 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
+import 'package:language_voice_tutor_mobile/l10n/app_localizations.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
 import 'package:language_voice_tutor_mobile/models/achievements.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_access_decision.dart';
 import 'package:language_voice_tutor_mobile/models/progress.dart';
 import 'package:language_voice_tutor_mobile/models/user_settings.dart';
 import 'package:language_voice_tutor_mobile/screens/home_screen.dart';
+import 'package:language_voice_tutor_mobile/screens/choose_topic_screen.dart';
 import 'package:language_voice_tutor_mobile/screens/settings_screen.dart';
 import 'package:language_voice_tutor_mobile/services/achievement_presentation_store.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
@@ -201,8 +203,12 @@ class MemoryAchievementPresentationStore
 Widget _home({
   FakeAuthService? authService,
   AchievementPresentationStore? presentationStore,
+  Locale locale = const Locale('en'),
 }) =>
     MaterialApp(
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: HomeScreen(
         authService: authService ?? FakeAuthService(),
         achievementPresentationStore: presentationStore ??
@@ -216,6 +222,39 @@ Widget _home({
     );
 
 void main() {
+  testWidgets('Russian Home localizes primary learner-facing sections',
+      (tester) async {
+    await tester.pumpWidget(_home(locale: const Locale('ru')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Начать урок'), findsOneWidget);
+    expect(find.text('Вы вошли как David'), findsOneWidget);
+    expect(find.text('Бесплатный план'), findsOneWidget);
+    expect(find.text('Достижения'), findsOneWidget);
+    expect(find.text('Все'), findsOneWidget);
+    expect(find.text('Ваша неделя'), findsOneWidget);
+    await tester.dragUntilVisible(
+      find.text('Открыть настройки'),
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
+    expect(find.text('Открыть настройки'), findsOneWidget);
+  });
+
+  for (final localeAndAction in const {
+    'es': 'Empezar lección',
+    'fr': 'Commencer la leçon',
+    'de': 'Lektion starten',
+  }.entries) {
+    testWidgets('${localeAndAction.key} Home localizes the main action',
+        (tester) async {
+      await tester.pumpWidget(_home(locale: Locale(localeAndAction.key)));
+      await tester.pumpAndSettle();
+      expect(find.text(localeAndAction.value), findsOneWidget);
+      expect(find.text('Start lesson'), findsNothing);
+    });
+  }
+
   testWidgets('home hides tutor diagnostics', (tester) async {
     await tester.pumpWidget(_home());
     await tester.pumpAndSettle();
@@ -475,21 +514,30 @@ void main() {
     expect(find.textContaining('debug'), findsNothing);
   });
 
-  testWidgets('A1 start lesson loads settings and opens Choose Topic directly',
+  testWidgets('Home starts lesson at topic selection using saved level',
       (tester) async {
-    final auth = FakeAuthService();
-    await tester.pumpWidget(_home(authService: auth));
+    final auth = FakeAuthService(currentLevel: 'A2');
+    await tester.pumpWidget(
+      _home(authService: auth, locale: const Locale('ru')),
+    );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Start lesson'));
+    await tester.tap(find.text('Начать урок'));
     await tester.pumpAndSettle();
 
     expect(auth.fetchUserSettingsCallCount, 1);
-    expect(find.text('Choose Topic'), findsOneWidget);
-    expect(find.text('Level: A1 Beginner'), findsOneWidget);
+    expect(find.text('Выбор темы'), findsOneWidget);
+    expect(find.text('Уровень: A2 Базовый'), findsOneWidget);
+    expect(find.text('Выбор уровня'), findsNothing);
+    expect(find.text('Choose Level'), findsNothing);
+    final topicScreen = tester.widget<ChooseTopicScreen>(
+      find.byType(ChooseTopicScreen),
+    );
+    expect(topicScreen.selectedLevel.id, 'a2');
+    expect(topicScreen.selectedLevel.label, 'A2 Elementary');
   });
 
-  testWidgets('B2 start lesson opens Choose Topic with centralized label',
+  testWidgets('B2 start lesson opens Choose Topic with localized context',
       (tester) async {
     final auth = FakeAuthService(currentLevel: 'B2');
     await tester.pumpWidget(_home(authService: auth));

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/lesson_history.dart';
+import '../l10n/app_localizations_context.dart';
 import '../services/auth_service.dart';
 import '../services/service_factory.dart';
 import '../theme/app_visuals.dart';
@@ -66,7 +67,7 @@ class _LessonHistoryScreenState extends State<LessonHistoryScreen> {
     final items = _history?.items;
     return Scaffold(
       key: const Key('lesson-history-screen'),
-      appBar: AppBar(title: const Text('Lesson history')),
+      appBar: AppBar(title: Text(context.l10n.lessonHistory)),
       body: AppVisuals.screenBackground(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -78,7 +79,7 @@ class _LessonHistoryScreenState extends State<LessonHistoryScreen> {
                         key: const Key('lesson-history-list'),
                         padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
                         children: [
-                          Text('Your recent completed lessons',
+                          Text(context.l10n.lessonHistoryHeading,
                               style: Theme.of(context).textTheme.titleMedium),
                           const SizedBox(height: 12),
                           for (final item in items) ...[
@@ -126,7 +127,7 @@ class _HistoryError extends StatelessWidget {
               key: const Key('lesson-history-retry'),
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.retry),
             ),
           ]),
         ),
@@ -143,14 +144,14 @@ class _HistoryEmpty extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text('No completed lessons yet',
+            Text(context.l10n.noCompletedLessons,
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
-            const Text('Completed lessons will appear here.',
+            Text(context.l10n.completedLessonsAppearHere,
                 textAlign: TextAlign.center),
             const SizedBox(height: 16),
             OutlinedButton(
-                onPressed: onReturnHome, child: const Text('Back to Home')),
+                onPressed: onReturnHome, child: Text(context.l10n.backToHome)),
           ]),
         ),
       );
@@ -165,8 +166,7 @@ class _LessonHistoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final contextTitle = item.selectedContextTitle?.trim();
     final summary = item.summaryPreview?.trim();
-    final turnLabel =
-        item.validTurnCount == 1 ? '1 turn' : '${item.validTurnCount} turns';
+    final turnLabel = context.l10n.turnCount(item.validTurnCount);
     return Card(
       key: Key('lesson-history-item-${item.sessionId}'),
       clipBehavior: Clip.antiAlias,
@@ -176,7 +176,7 @@ class _LessonHistoryCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(_fallback(item.topicTitle, 'Lesson'),
+            Text(_fallback(item.topicTitle, context.l10n.lesson),
                 style: Theme.of(context).textTheme.titleMedium),
             if (item.subtopicTitle.trim().isNotEmpty) ...[
               const SizedBox(height: 4),
@@ -184,12 +184,12 @@ class _LessonHistoryCard extends StatelessWidget {
             ],
             const SizedBox(height: 8),
             Wrap(spacing: 12, runSpacing: 4, children: [
-              Text(_fallback(item.level, 'Level')),
+              Text(_fallback(item.level, context.l10n.level)),
               Text(_formatDate(item.finishedAt ?? item.startedAt)),
-              Text(_modeLabel(item.modeUsed)),
+              Text(_modeLabel(context, item.modeUsed)),
               Text(item.status.toLowerCase() == 'finished'
-                  ? 'Completed'
-                  : 'Finished'),
+                  ? context.l10n.completed
+                  : context.l10n.finished),
             ]),
             if (contextTitle != null && contextTitle.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -211,15 +211,15 @@ class _LessonHistoryCard extends StatelessWidget {
 String _fallback(String value, String fallback) =>
     value.trim().isEmpty ? fallback : value;
 
-String _modeLabel(String mode) {
+String _modeLabel(BuildContext context, String mode) {
   switch (mode.trim().toLowerCase()) {
     case 'text':
-      return 'Lesson chat';
+      return context.l10n.lessonChat;
     case 'voice':
     case 'conversation':
-      return 'Conversation';
+      return context.l10n.conversation;
     default:
-      return 'Lesson';
+      return context.l10n.lesson;
   }
 }
 

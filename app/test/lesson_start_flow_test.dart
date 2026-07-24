@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
+import 'package:language_voice_tutor_mobile/l10n/app_localizations.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
 import 'package:language_voice_tutor_mobile/models/audio_transcription.dart';
 import 'package:language_voice_tutor_mobile/models/achievements.dart';
@@ -165,6 +166,8 @@ class FakeAuthService extends AuthService {
     List<Completer<void>>? persistenceCompleters,
     this.persistenceFailure,
     this.studyLanguage = 'en',
+    this.nativeLanguage = 'en',
+    this.explanationLanguage = 'en',
     this.currentLevel = 'A1',
     this.transcriptionText = 'Hello there',
     this.voiceScenarioResponse,
@@ -202,6 +205,8 @@ class FakeAuthService extends AuthService {
   final List<Completer<void>> persistenceCompleters;
   final Object? persistenceFailure;
   final String studyLanguage;
+  final String nativeLanguage;
+  final String explanationLanguage;
   final String currentLevel;
   final String transcriptionText;
   final VoiceScenarioSemanticResponse? voiceScenarioResponse;
@@ -219,6 +224,7 @@ class FakeAuthService extends AuthService {
   int resolveVoiceScenarioCallCount = 0;
   int? lastValidTurnCount;
   StartLessonSessionRequest? lastStartRequest;
+  String? lastScenarioKey;
   LessonChatRequest? lastLessonChatRequest;
   LessonChatRequest? lastHintRequest;
   TranslationRequest? lastTranslationRequest;
@@ -264,9 +270,9 @@ class FakeAuthService extends AuthService {
   Future<UserSettings> fetchUserSettings() async {
     if (settingsFailure != null) throw settingsFailure!;
     return UserSettings(
-      nativeLanguage: 'en',
+      nativeLanguage: nativeLanguage,
       studyLanguage: studyLanguage,
-      explanationLanguage: 'en',
+      explanationLanguage: explanationLanguage,
       speechVoice: 'nova',
       speechSpeed: 1.0,
       conversationModeEnabled: true,
@@ -289,6 +295,7 @@ class FakeAuthService extends AuthService {
     required String scenarioKey,
   }) async {
     fetchScenarioCallCount += 1;
+    lastScenarioKey = scenarioKey;
     if (scenarioFailure != null) throw scenarioFailure!;
     return scenario;
   }
@@ -566,7 +573,14 @@ TranslationResult _defaultTranslationResult() => TranslationResult.success(
       const TranslationResponse(translatedText: 'Hola, ¿cómo estás?'),
     );
 
-Widget _home({FakeAuthService? authService}) => MaterialApp(
+Widget _home({
+  FakeAuthService? authService,
+  Locale locale = const Locale('en'),
+}) =>
+    MaterialApp(
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: HomeScreen(authService: authService ?? FakeAuthService()),
     );
 
@@ -576,8 +590,12 @@ Widget _lessonScreen(
   LearnerAudioRecordingService? recordingService,
   LearnerMicrophonePermissionService? microphonePermissionService,
   TextScaler? textScaler,
+  Locale locale = const Locale('en'),
 }) =>
     MaterialApp(
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       builder: textScaler == null
           ? null
           : (context, child) => MediaQuery(
@@ -585,6 +603,7 @@ Widget _lessonScreen(
                 child: child!,
               ),
       home: LessonScreen(
+        key: ValueKey(authService),
         authService: authService,
         recordingService: recordingService,
         microphonePermissionService: microphonePermissionService,
@@ -654,6 +673,25 @@ Future<void> _expectVisibleAfterScroll(WidgetTester tester, String text) async {
 }
 
 Finder _sendButton() => find.byKey(const Key('lesson-send-button'));
+
+void _expectCanonicalIntroRequest(
+  FakeAuthService auth, {
+  required String studyLanguage,
+}) {
+  final request = auth.lastStartRequest;
+  expect(request, isNotNull);
+  expect(request!.lessonContentId, 'everyday_english_introductions');
+  expect(request.studyLanguage, studyLanguage);
+  expect(request.topicId, '1');
+  expect(request.topicTitle, 'Daily Life');
+  expect(request.subtopicId, '101');
+  expect(request.subtopicTitle, 'Introductions');
+  expect(request.level, 'A2 Elementary');
+  expect(request.selectedContextId, isNull);
+  expect(request.selectedContextTitle, isNull);
+  expect(request.modeUsed, 'text');
+  expect(auth.lastScenarioKey, 'everyday_english_introductions');
+}
 
 Future<void> _showWidget(WidgetTester tester, Finder finder) async {
   await tester.ensureVisible(finder);
@@ -937,6 +975,156 @@ void main() {
     expect(auth.lastStartRequest?.lessonContentId,
         'everyday_english_introductions');
     expect(auth.lastStartRequest?.level, 'A1 Beginner');
+  });
+
+  for (final localeCase in const [
+    (
+      locale: Locale('en'),
+      start: 'Start lesson',
+      topic: 'Daily Life',
+      situation: 'Introductions',
+    ),
+    (
+      locale: Locale('ru'),
+      start: 'Начать урок',
+      topic: 'Повседневная жизнь',
+      situation: 'Знакомство',
+    ),
+    (
+      locale: Locale('es'),
+      start: 'Empezar lección',
+      topic: 'Vida diaria',
+      situation: 'Presentaciones',
+    ),
+    (
+      locale: Locale('fr'),
+      start: 'Commencer la leçon',
+      topic: 'Vie quotidienne',
+      situation: 'Présentations',
+    ),
+    (
+      locale: Locale('de'),
+      start: 'Lektion starten',
+      topic: 'Alltag',
+      situation: 'Vorstellungen',
+    ),
+  ]) {
+    testWidgets(
+        '${localeCase.locale.languageCode} localized selection sends identical canonical request and scenario key',
+        (tester) async {
+      final auth = FakeAuthService(currentLevel: 'A2');
+      await tester.pumpWidget(
+        _home(authService: auth, locale: localeCase.locale),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(localeCase.start));
+      await tester.pumpAndSettle();
+      expect(find.text('Choose Level'), findsNothing);
+      expect(find.text('Выбор уровня'), findsNothing);
+
+      await tester.tap(find.text(localeCase.topic));
+      await tester.pumpAndSettle();
+      await _expectVisibleAfterScroll(tester, localeCase.situation);
+      await tester.tap(find.text(localeCase.situation));
+      await tester.pumpAndSettle();
+
+      _expectCanonicalIntroRequest(auth, studyLanguage: 'English');
+      expect(auth.fetchScenarioCallCount, 1);
+    });
+  }
+
+  for (final level in lessonLevels) {
+    testWidgets('${level.id} keeps its pre-localization request level',
+        (tester) async {
+      final situation = lessonSituationsByTopic['daily_life']!.first;
+      final auth = FakeAuthService();
+
+      await tester.pumpWidget(
+        _lessonScreen(
+          auth,
+          selection: lessonStartSelectionFor(level, situation),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(auth.lastStartRequest?.level, level.label);
+      expect(auth.lastScenarioKey, situation.lessonContentId);
+    });
+  }
+
+  testWidgets(
+      'Free Conversation preserves its canonical request and runtime key',
+      (tester) async {
+    final level = lessonLevels.last;
+    final situation = lessonSituationsByTopic['free_conversation']!.single;
+    final auth = FakeAuthService();
+
+    await tester.pumpWidget(
+      _lessonScreen(
+        auth,
+        selection: lessonStartSelectionFor(level, situation),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final request = auth.lastStartRequest!;
+    expect(request.lessonContentId, 'free_conversation_open_conversation');
+    expect(request.topicId, '6');
+    expect(request.topicTitle, 'Free Conversation');
+    expect(request.subtopicId, '601');
+    expect(request.subtopicTitle, 'Open conversation');
+    expect(request.level, 'B2 Upper-Intermediate');
+    expect(request.selectedContextId, isNull);
+    expect(request.selectedContextTitle, isNull);
+    expect(request.modeUsed, 'text');
+    expect(auth.lastScenarioKey, 'free_conversation_open_conversation');
+    expect(auth.fetchScenarioCallCount, 1);
+  });
+
+  testWidgets(
+      'explanation and native languages do not alter scenario construction',
+      (tester) async {
+    final situation = lessonSituationsByTopic['daily_life']!.first;
+    final selection = lessonStartSelectionFor(lessonLevels[1], situation);
+    final baseline = FakeAuthService();
+    await tester.pumpWidget(_lessonScreen(baseline, selection: selection));
+    await tester.pumpAndSettle();
+    final baselineRequest = baseline.lastStartRequest!.toJson();
+
+    final changedLanguages = FakeAuthService(
+      explanationLanguage: 'ru',
+      nativeLanguage: 'de',
+    );
+    await tester.pumpWidget(
+      _lessonScreen(changedLanguages, selection: selection),
+    );
+    await tester.pumpAndSettle();
+
+    expect(changedLanguages.lastStartRequest!.toJson(), baselineRequest);
+    expect(changedLanguages.lastScenarioKey, baseline.lastScenarioKey);
+  });
+
+  testWidgets('study language changes only the study-language request field',
+      (tester) async {
+    final situation = lessonSituationsByTopic['daily_life']!.first;
+    final selection = lessonStartSelectionFor(lessonLevels[1], situation);
+    final english = FakeAuthService();
+    await tester.pumpWidget(_lessonScreen(english, selection: selection));
+    await tester.pumpAndSettle();
+
+    final spanish = FakeAuthService(studyLanguage: 'es');
+    await tester.pumpWidget(_lessonScreen(spanish, selection: selection));
+    await tester.pumpAndSettle();
+
+    final englishRequest = english.lastStartRequest!.toJson()
+      ..remove('studyLanguage');
+    final spanishRequest = spanish.lastStartRequest!.toJson()
+      ..remove('studyLanguage');
+    expect(englishRequest, spanishRequest);
+    expect(english.lastStartRequest!.studyLanguage, 'English');
+    expect(spanish.lastStartRequest!.studyLanguage, 'Spanish');
+    expect(english.lastScenarioKey, spanish.lastScenarioKey);
   });
 
   testWidgets('tutor header renders large avatar area and compact metadata',

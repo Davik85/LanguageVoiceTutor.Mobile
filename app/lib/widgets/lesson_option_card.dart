@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/lesson_selection_localization.dart';
 import '../models/lesson_start_selection.dart';
 
 class LessonSelectionIntro extends StatelessWidget {
@@ -60,21 +61,31 @@ class LessonOptionCard extends StatelessWidget {
     required this.option,
     required this.style,
     required this.onTap,
+    this.displayText,
+    this.semanticLabel,
+    this.tooltip,
   });
 
   final String kind;
   final LessonOption option;
   final LessonCardStyle style;
   final VoidCallback onTap;
+  final LessonDisplayText? displayText;
+  final String? semanticLabel;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
     final borderRadius = BorderRadius.circular(8);
     final textTheme = Theme.of(context).textTheme;
 
-    return MergeSemantics(
+    final displayText =
+        this.displayText ?? LessonDisplayText(option.label, option.description);
+    final card = MergeSemantics(
       child: Semantics(
         button: true,
+        label: semanticLabel,
+        excludeSemantics: semanticLabel != null,
         child: Material(
           color: style.backgroundColor,
           borderRadius: borderRadius,
@@ -110,7 +121,7 @@ class LessonOptionCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          option.label,
+                          displayText.label,
                           style: textTheme.titleMedium?.copyWith(
                             color: style.foregroundColor,
                             fontWeight: FontWeight.w700,
@@ -119,7 +130,7 @@ class LessonOptionCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          option.description,
+                          displayText.description,
                           style: textTheme.bodyMedium?.copyWith(
                             color: style.foregroundColor,
                             height: 1.25,
@@ -133,7 +144,6 @@ class LessonOptionCard extends StatelessWidget {
                   Icon(
                     Icons.chevron_right_rounded,
                     color: style.accentColor,
-                    semanticLabel: 'Open',
                   ),
                 ],
               ),
@@ -142,5 +152,7 @@ class LessonOptionCard extends StatelessWidget {
         ),
       ),
     );
+    final tooltip = this.tooltip;
+    return tooltip == null ? card : Tooltip(message: tooltip, child: card);
   }
 }

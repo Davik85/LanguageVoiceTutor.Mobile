@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/config/app_config.dart';
+import 'package:language_voice_tutor_mobile/l10n/app_localizations.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
 import 'package:language_voice_tutor_mobile/screens/home_screen.dart';
 import 'package:language_voice_tutor_mobile/screens/splash_screen.dart';
@@ -96,6 +97,8 @@ Widget _app(
   AssetBundle? assetBundle,
 }) =>
     MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => assetBundle == null
           ? child!
           : DefaultAssetBundle(bundle: assetBundle, child: child!),
@@ -165,6 +168,7 @@ void main() {
       'GET /api/auth/me',
       'POST /api/auth/refresh',
       'GET /api/auth/me',
+      'GET /api/me/settings',
     ]);
     expect(find.byKey(const Key('home-branded-title')), findsOneWidget);
   });

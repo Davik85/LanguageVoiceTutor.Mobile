@@ -2,6 +2,14 @@
 
 ## Approach
 
+## Stage 1 interface localization checkpoint
+
+The Android-first client now has a Flutter `gen-l10n`/ARB localization foundation for `en`, `ru`, `es`, `fr`, and `de`, with 277 matching messages in each catalog. `explanationLanguage` alone controls the Flutter interface locale; `studyLanguage` continues to control lesson/tutor/speech-recognition behavior and `nativeLanguage` continues to control requested lesson/dialogue translation. Unsupported interface values display English without replacing the saved backend value. Successful Settings saves apply the confirmed interface language immediately, while failed saves preserve the previous locale.
+
+Localized scope currently includes Splash/authentication, Home, Settings and its three navigation sections, account/deletion/feedback/reminder/connection controls, fixed level display, and topic/situation selection with localized headings, helper text, validation, semantics, and tooltips. Premium, Progress, Lesson History details, remaining Achievement catalogue text, Lesson Chat, Conversation mode, and other static strings remain later Stage 1 work.
+
+Lesson-selection display localization is isolated from the backend contract. Navigation uses stable topic IDs, unknown catalog IDs fall back to canonical text, and `LessonStartSelection` reconstructs canonical data from the authoritative catalog using stable IDs. Session payloads and runtime scenario keys remain identical across the five interface locales; `scenarioKey` remains `lessonContentId`, including Free Conversation. The accepted flow remains **Home -> Choose Topic -> Choose Situation -> Lesson**, with level selection only in **Settings -> Learning**.
+
 ## Progress data foundation
 
 The Android-first client consumes backend `0.1.35-backend.124` Progress V1 through authenticated `GET /api/me/progress`. It does not calculate Progress from History; backend UTC and completion rules remain authoritative.
@@ -12,7 +20,7 @@ The mobile app will be built with Flutter using an Android-first delivery path. 
 
 ## Study-language parity status
 
-The lesson flow now carries English, French, German, Portuguese, Spanish, and Italian through deterministic tutor setup text, canonical scenario selection, known-context openings, local Hints, backend lesson requests, transcription, and Lesson Chat/Conversation TTS. One Mobile study-language definition supplies the exact ID, English name, native name, BCP-47/transcription code, tutor instruction name, and language-lock name. Native/translation language and interface language stay separate. CMS canonical IDs and English semantic metadata are preserved, and CMS/backend still own tutor methodology and generated replies. Interface localization, ARB files, and `flutter_localizations` remain pending as a separate phase. This Mobile-only work required no backend deployment. Owner physical Android verification is complete for the six-language study-language slice: all six study languages can be selected and saved in Settings; lessons launch using the selected study language; speech recognition uses the selected study language; and Conversation mode works using the selected study language. Supported study-language entries are `en` — English — English, `fr` — French — Français, `de` — German — Deutsch, `pt` — Portuguese — Português, `es` — Spanish — Español, and `it` — Italian — Italiano. Implementation commit `f046f82` (`feat: add six-language mobile lesson parity`) delivered this slice.
+The lesson flow carries English, French, German, Portuguese, Spanish, and Italian through deterministic tutor setup text, canonical scenario selection, known-context openings, local Hints, backend lesson requests, transcription, and Lesson Chat/Conversation TTS. One Mobile study-language definition supplies the exact ID, English name, native name, BCP-47/transcription code, tutor instruction name, and language-lock name. Native/translation and interface languages stay separate. CMS canonical IDs and English semantic metadata are preserved, and CMS/backend still own tutor methodology and generated replies. The five-locale interface foundation described above does not change this six-language study-language behavior. This Mobile-only work required no backend deployment.
 
 ## Why Android first
 
@@ -153,13 +161,13 @@ Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow
 2. Implement local Android practice reminders.
 3. Add complete learner-facing Premium UI and purchase entry points.
 4. Implement the Google Play Billing bridge with backend verification and restore/reconciliation.
-5. Localize the complete static Mobile interface into all 14 approved languages.
+5. Continue the Stage 1 interface work from its verified five-locale foundation to the remaining screens and approved languages.
 
 Notifications V1 is local-only: no Firebase, remote/server push, backend endpoint, push-token registration, remote provider, backend notification state, or background microphone behavior. Product settings enable reminders by default at device-local 09:00 and 20:00; learners can edit both times or disable all reminders. Android notification permission is still required. Explain the benefit and ask only after the learner sees the product experience, do not reprompt on every launch after denial, and offer Android settings recovery where practical. Do not request exact-alarm permission unless later investigation proves it necessary. Preserve device-local schedule semantics across timezone changes and restore reminders after reboot when Android requires it; local reminders are not synchronized backend account state and cannot always be suppressed after a lesson on another device.
 
 Premium UI precedes Google Play Billing. A local button, purchase callback, or Play Store result never grants Premium. Billing is complete only after purchase-token submission, backend verification, entitlement refresh, restore/reconciliation, and relevant subscription lifecycle states. Paddle remains unchanged for website/desktop; purchases map through the shared provider-neutral backend entitlement model.
 
-Interface localization remains separate from the six study languages. The approved interface languages are `en` English, `es` Spanish, `fr` French, `de` German, `it` Italian, `pt` Portuguese, `ru` Russian, `pl` Polish, `ar` Arabic, `ja` Japanese, `ko` Korean, `sr` Serbian, `hr` Croatian, and `bg` Bulgarian. On first use, interface and explanation/translation language default from the device locale, normalizing supported variants to their base language and falling back to English when unsupported; saved backend-owned settings take precedence after explicit save. Localization applies only to static UI, validation, notification, Premium, and billing content, never AI replies, learner messages, backend-generated content, CMS identifiers, canonical scenario keys, internal IDs, or backend data. Arabic requires right-to-left verification. ARB and `flutter_localizations` are deferred until phase 5, deliberately after the Notifications, Premium, and billing surfaces exist.
+Interface localization remains separate from the six study languages. The long-term approved interface languages are `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `pl`, `ar`, `ja`, `ko`, `sr`, `hr`, and `bg`; the current Stage 1 implementation covers `en`, `ru`, `es`, `fr`, and `de`. Localization applies only to interface presentation and never to AI replies, learner messages, backend-generated content, CMS identifiers, canonical scenario keys, internal IDs, or backend data. Remaining languages, remaining screens, and Arabic right-to-left verification are later work.
 
 ## Android implementation considerations
 

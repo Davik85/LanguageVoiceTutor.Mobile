@@ -6,7 +6,11 @@ The reviewed Windows desktop client walkthrough presentation is now a product re
 
 ## Study-language parity model
 
-Desktop confirms three independent concepts: study language selects the language practiced in lessons; native language selects translation/explanation output; interface language selects application chrome. Mobile now mirrors this separation for English, French, German, Portuguese, Spanish, and Italian. A single Mobile study-language definition supplies request, transcription, and TTS metadata, while Desktop-equivalent deterministic local lesson text builds target-language setup, scenario labels, known-context openings, and local Hints from English CMS semantics. Localized learner-facing scenario text always maps back to the canonical CMS ID, canonical English title, runtime variant, and scenario key. Backend `LessonPromptBuilder` and CMS runtime remain the owners of tutor replies, roleplay, Hint, Feedback, corrections, examples, wrap-up, and final replies. Interface localization is not part of this phase; no Desktop, backend, or CMS change and no deployment were required. Owner physical Android verification is complete for the six-language study-language slice: all six study languages can be selected and saved in Settings; lessons launch using the selected study language; speech recognition uses the selected study language; and Conversation mode works using the selected study language. Supported study-language entries are `en` — English — English, `fr` — French — Français, `de` — German — Deutsch, `pt` — Portuguese — Português, `es` — Spanish — Español, and `it` — Italian — Italiano. Implementation commit `f046f82` (`feat: add six-language mobile lesson parity`) delivered this slice.
+Desktop confirms three independent concepts: study language selects the language practiced in lessons; native language selects translation output; interface/explanation language selects application chrome. Mobile preserves that separation. A single Mobile study-language definition supplies request, transcription, and TTS metadata, while Desktop-equivalent deterministic local lesson text builds target-language setup, scenario labels, known-context openings, and local Hints from English CMS semantics. Localized learner-facing scenario text always maps back to the canonical CMS ID, canonical English title, runtime variant, and scenario key. Backend `LessonPromptBuilder` and CMS runtime remain the owners of tutor replies, roleplay, Hint, Feedback, corrections, examples, wrap-up, and final replies.
+
+The current Mobile Stage 1 interface foundation uses Flutter `gen-l10n`/ARB for `en`, `ru`, `es`, `fr`, and `de`, with 277 matching messages per catalog. `explanationLanguage` alone controls the interface locale; unsupported values display English without replacing the saved backend value. Completed scope covers Splash/authentication, Home, Settings and its three sections, account/deletion/feedback/reminder/connection UI, fixed levels, and topic/situation selection. Premium, Progress, Lesson History details, remaining Achievement catalogue text, Lesson Chat, Conversation mode, and other static strings remain later work.
+
+Desktop parity at the lesson-selection boundary means canonical data is never translated. Stable topic IDs drive navigation; localized labels/descriptions are presentation-only; unknown IDs fall back to canonical text; and `LessonStartSelection` reconstructs canonical catalog values from stable IDs. Session requests and runtime scenario keys are invariant across the five interface locales, and Free Conversation retains its canonical `lessonContentId` runtime path.
 
 Latest known mobile baseline after commit `fcecef5` (`Fix mobile settings parity foundation`):
 
@@ -16,8 +20,8 @@ Latest known mobile baseline after commit `fcecef5` (`Fix mobile settings parity
 - `flutter test` returned `All tests passed`.
 - Settings uses three stable navigation areas: **Profile**, **Lessons**, and **App**.
 - **Save settings** is visible and tested.
-- User level is not in Settings.
-- Home starts the lesson-start skeleton and still ends at a Lesson placeholder.
+- User level is selected only in Settings -> Learning.
+- Home loads the saved level and follows Choose Topic -> Choose Situation -> Lesson.
 - `selectedTutorId` is persisted through `GET /api/me/settings` and `PUT /api/me/settings`.
 - Study, native, and interface/explanation language selectors show user-friendly names while storing backend IDs.
 
@@ -62,8 +66,8 @@ Current backend-supported mobile settings fields from `GET /api/me/settings` and
 Current visible mobile Settings navigation is:
 
 - **Profile**: Account, Learning, Audio, and Save settings.
-- **Lessons**: Lesson history, Progress, and a future Rewards placeholder.
-- **App**: Password & recovery, Feedback & reports, a future Notifications & contact placeholder, and Connection status.
+- **Lessons**: Lesson history, Progress, and Rewards.
+- **App**: Password & recovery, Feedback & reports, Practice reminders, and Connection status.
 
 `selectedTutorId` is part of the current settings contract. `GET /api/tutor-options` provides available tutors, and `PUT /api/me/settings` persists a valid selected tutor ID. Tutor voice remains a separate `speechVoice` setting and must not be overwritten automatically when the selected tutor changes.
 
@@ -78,7 +82,7 @@ Supported study languages remain:
 - Spanish
 - Italian
 
-Release-ready interface languages remain:
+The long-term approved interface-language list remains:
 
 - `en`
 - `es`
@@ -96,6 +100,8 @@ Release-ready interface languages remain:
 - `bg`
 
 The native/explanation language catalog is broader than the study-language catalog and broader than the release-ready interface-language catalog. Mobile Settings must display friendly names for these choices while sending IDs such as `en`, `es`, or `pl` to the backend.
+
+Stage 1 currently implements `en`, `ru`, `es`, `fr`, and `de`; the remaining approved languages and Arabic right-to-left verification are future work.
 
 ## Tutor model
 

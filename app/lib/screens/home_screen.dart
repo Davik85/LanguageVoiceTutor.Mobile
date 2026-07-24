@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
 import '../config/app_config.dart';
+import '../l10n/app_localizations_context.dart';
 import '../models/auth_models.dart';
 import '../models/achievements.dart';
 import '../models/lesson_access_decision.dart';
@@ -130,16 +131,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       final allow = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-                  title: const Text('Keep your learning rhythm'),
-                  content: const Text(
-                      'Language Voice Tutor can send two cheerful daily reminders so practice does not get lost in a busy day. You can change the times or turn reminders off in Settings.'),
+                  title: Text(context.l10n.keepLearningRhythm),
+                  content: Text(context.l10n.reminderPermissionExplanation),
                   actions: [
                     TextButton(
                         onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Not now')),
+                        child: Text(context.l10n.notNow)),
                     FilledButton(
                         onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Allow reminders'))
+                        child: Text(context.l10n.allowReminders))
                   ]));
       await _practiceReminderService.markExplanationHandled();
       if (allow == true) {
@@ -339,12 +339,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             context, LoginScreen.routeName, (_) => false);
         return;
       }
-      setState(() => _lessonStartError =
-          'Unable to load your learning settings right now. Please try again.');
+      setState(
+          () => _lessonStartError = context.l10n.unableToLoadLearningSettings);
     } catch (_) {
       if (!mounted) return;
-      setState(() => _lessonStartError =
-          'Unable to load your learning settings right now. Please try again.');
+      setState(
+          () => _lessonStartError = context.l10n.unableToLoadLearningSettings);
     } finally {
       if (mounted) setState(() => _isLoadingLessonSettings = false);
     }
@@ -445,8 +445,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   onPressed: _isLoadingLessonSettings ? null : _startLesson,
                   icon: Icons.school,
                   label: _isLoadingLessonSettings
-                      ? 'Loading settings...'
-                      : 'Start lesson',
+                      ? context.l10n.loadingSettings
+                      : context.l10n.startLesson,
                 ),
                 if (_lessonStartError != null) ...[
                   const SizedBox(height: 8),
@@ -471,7 +471,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   key: const Key('home-open-settings'),
                   onPressed: _isOpeningSettings ? null : _openSettings,
                   icon: Icons.settings,
-                  label: 'Open Settings',
+                  label: context.l10n.openSettings,
                 ),
               ],
             ),
@@ -494,15 +494,15 @@ class _HomeAchievements extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (state == _HomeAchievementsState.loading) {
-      return const _FrostedHomeCard(
+      return _FrostedHomeCard(
         child: Padding(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Achievements'),
-              SizedBox(height: 10),
-              _AchievementsPlaceholder(),
+              Text(context.l10n.achievements),
+              const SizedBox(height: 10),
+              const _AchievementsPlaceholder(),
             ],
           ),
         ),
@@ -513,9 +513,10 @@ class _HomeAchievements extends StatelessWidget {
           child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(children: [
-                const Expanded(
-                    child: Text('Achievements are temporarily unavailable')),
-                TextButton(onPressed: onRetry, child: const Text('Retry'))
+                Expanded(
+                    child:
+                        Text(context.l10n.achievementsTemporarilyUnavailable)),
+                TextButton(onPressed: onRetry, child: Text(context.l10n.retry))
               ])));
     }
     final items = achievements!.homeItems;
@@ -526,7 +527,7 @@ class _HomeAchievements extends StatelessWidget {
           Row(children: [
             Expanded(
               child: Text(
-                'Achievements',
+                context.l10n.achievements,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium,
@@ -535,12 +536,12 @@ class _HomeAchievements extends StatelessWidget {
             TextButton(
                 key: const Key('home-achievements-view-all'),
                 onPressed: onOpen,
-                child: const Text('View all'))
+                child: Text(context.l10n.viewAll))
           ]),
           if (items.isEmpty)
-            const Padding(
-                padding: EdgeInsets.only(top: 4),
-                child: Text('Your achievements will appear here.')),
+            Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(context.l10n.achievementsEmpty)),
           if (items.isNotEmpty) ...[
             const SizedBox(height: 6),
             Row(children: [
@@ -762,10 +763,10 @@ class _StreakBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final isReady = state == _HomeProgressState.ready && currentDays != null;
     final label = isReady
-        ? '$currentDays day learning streak'
+        ? context.l10n.learningStreak(currentDays!)
         : state == _HomeProgressState.loading
-            ? 'Learning streak loading'
-            : 'Learning streak unavailable';
+            ? context.l10n.learningStreakLoading
+            : context.l10n.learningStreakUnavailable;
     final text = isReady
         ? '$currentDays 🍪'
         : state == _HomeProgressState.loading
@@ -799,24 +800,23 @@ class _AccountSummary extends StatelessWidget {
   final LessonAccessDecision? lessonAccess;
   final VoidCallback onOpenPremium;
 
-  String get _name {
+  String _name(BuildContext context) {
     final value = user?.displayName?.trim() ?? '';
-    return value.isEmpty ? 'Learner' : value;
+    return value.isEmpty ? context.l10n.learnerFallbackName : value;
   }
 
-  String get _plan {
-    if (lessonAccess?.premiumActive ?? false) return 'Premium plan';
-    if (lessonAccess?.trialActive ?? false) return 'Premium trial';
-    return 'Free plan';
+  String _plan(BuildContext context) {
+    if (lessonAccess?.premiumActive ?? false) return context.l10n.premiumPlan;
+    if (lessonAccess?.trialActive ?? false) return context.l10n.premiumTrial;
+    return context.l10n.freePlan;
   }
 
-  String? get _freeLessonsLabel {
+  String? _freeLessonsLabel(BuildContext context) {
     if (lessonAccess?.premiumActive ?? false) return null;
     if (lessonAccess?.trialActive ?? false) return null;
     final remaining = lessonAccess?.freeLessonRemainingToday;
     if (remaining == null) return null;
-    final lesson = remaining == 1 ? 'lesson' : 'lessons';
-    return '$remaining free $lesson available today';
+    return context.l10n.freeLessonsAvailableToday(remaining);
   }
 
   @override
@@ -825,13 +825,13 @@ class _AccountSummary extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Signed in as $_name',
+            Text(context.l10n.signedInAs(_name(context)),
                 style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 4),
             Row(children: [
               Expanded(
                 child: Text(
-                  _plan,
+                  _plan(context),
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         color: AppVisuals.learningGreen,
                       ),
@@ -841,22 +841,22 @@ class _AccountSummary extends StatelessWidget {
                 button: true,
                 label: (lessonAccess?.premiumActive ?? false) ||
                         (lessonAccess?.trialActive ?? false)
-                    ? 'Premium details'
-                    : 'Explore Premium',
+                    ? context.l10n.premiumDetails
+                    : context.l10n.explorePremium,
                 child: InkWell(
                   onTap: onOpenPremium,
                   child: Text(
                     (lessonAccess?.premiumActive ?? false) ||
                             (lessonAccess?.trialActive ?? false)
-                        ? 'Premium details'
-                        : 'Explore Premium',
+                        ? context.l10n.premiumDetails
+                        : context.l10n.explorePremium,
                   ),
                 ),
               ),
             ]),
-            if (_freeLessonsLabel != null) ...[
+            if (_freeLessonsLabel(context) != null) ...[
               const SizedBox(height: 3),
-              Text(_freeLessonsLabel!),
+              Text(_freeLessonsLabel(context)!),
             ],
           ]),
         ),
@@ -883,15 +883,16 @@ class _WeeklyActivity extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Your week', style: Theme.of(context).textTheme.titleMedium),
+          Text(context.l10n.yourWeek,
+              style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 14),
           _ActivityBars(items: items),
           const SizedBox(height: 12),
-          Text(
-              '${progress!.completedLessons.last7Days} lessons in the last 7 days'),
+          Text(context.l10n
+              .lessonsLastSevenDays(progress!.completedLessons.last7Days)),
           if (progress!.completedLessons.last7Days == 0) ...[
             const SizedBox(height: 4),
-            const Text('Start your streak today'),
+            Text(context.l10n.startStreakToday),
           ],
         ]),
       ),
@@ -907,7 +908,8 @@ class _ActivityPlaceholder extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Your week', style: Theme.of(context).textTheme.titleMedium),
+            Text(context.l10n.yourWeek,
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             Container(
               key: const Key('home-activity-loading'),
@@ -930,9 +932,10 @@ class _ActivityUnavailable extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Your week', style: Theme.of(context).textTheme.titleMedium),
+            Text(context.l10n.yourWeek,
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 6),
-            const Text('Activity is unavailable right now.'),
+            Text(context.l10n.activityUnavailable),
           ]),
         ),
       );
@@ -980,9 +983,8 @@ class _ActivityBarsState extends State<_ActivityBars> {
         if (selectedItem != null) ...[
           const SizedBox(height: 8),
           Text(
-            '${_weekday(selectedItem.activityDate)}: '
-            '${selectedItem.completedLessons} '
-            '${selectedItem.completedLessons == 1 ? 'lesson' : 'lessons'} completed',
+            '${_weekday(context, selectedItem.activityDate)}: '
+            '${context.l10n.lessonsCompleted(selectedItem.completedLessons)}',
             key: const Key('home-activity-detail'),
             style: Theme.of(context).textTheme.labelMedium,
           ),
@@ -991,8 +993,15 @@ class _ActivityBarsState extends State<_ActivityBars> {
     );
   }
 
-  String _weekday(DateTime date) =>
-      const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][date.weekday - 1];
+  String _weekday(BuildContext context, DateTime date) => [
+        context.l10n.weekdayMon,
+        context.l10n.weekdayTue,
+        context.l10n.weekdayWed,
+        context.l10n.weekdayThu,
+        context.l10n.weekdayFri,
+        context.l10n.weekdaySat,
+        context.l10n.weekdaySun,
+      ][date.weekday - 1];
 }
 
 class _ActivityBar extends StatelessWidget {
@@ -1016,7 +1025,7 @@ class _ActivityBar extends StatelessWidget {
         ? 8.0
         : 12 + (40 * item.completedLessons / maximum);
     return Semantics(
-      label: '$date: ${item.completedLessons} completed lessons',
+      label: context.l10n.activityDaySemantics(date, item.completedLessons),
       button: true,
       selected: isSelected,
       container: true,
@@ -1089,7 +1098,7 @@ class _ActivityBar extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              Text(_weekday(item.activityDate),
+              Text(_weekday(context, item.activityDate),
                   style: Theme.of(context).textTheme.labelSmall),
             ]),
           ),
@@ -1098,6 +1107,13 @@ class _ActivityBar extends StatelessWidget {
     );
   }
 
-  String _weekday(DateTime date) =>
-      const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][date.weekday - 1];
+  String _weekday(BuildContext context, DateTime date) => [
+        context.l10n.weekdayMon,
+        context.l10n.weekdayTue,
+        context.l10n.weekdayWed,
+        context.l10n.weekdayThu,
+        context.l10n.weekdayFri,
+        context.l10n.weekdaySat,
+        context.l10n.weekdaySun,
+      ][date.weekday - 1];
 }

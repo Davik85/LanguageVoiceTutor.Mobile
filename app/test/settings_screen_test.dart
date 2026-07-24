@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:language_voice_tutor_mobile/l10n/app_localizations.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/achievements.dart';
 import 'package:language_voice_tutor_mobile/models/account_deletion_request.dart';
@@ -175,14 +176,21 @@ class _MemoryStorage implements SessionStorage {
       {required String accessToken, required String refreshToken}) async {}
 }
 
-Widget _screen(FakeAuthService auth) => MaterialApp(
+Widget _screen(FakeAuthService auth,
+        {Locale locale = const Locale('en'),
+        ValueChanged<String>? onInterfaceLanguageSaved}) =>
+    MaterialApp(
+        locale: locale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         routes: {
           '/login': (_) => const Scaffold(body: Text('Login')),
         },
         home: SettingsScreen(
             healthService: BackendHealthService(apiClient: FakeApiClient()),
             authService: auth,
-            tutorOptionsService: FakeTutorOptionsService()));
+            tutorOptionsService: FakeTutorOptionsService(),
+            onInterfaceLanguageSaved: onInterfaceLanguageSaved));
 
 Finder get _settingsScrollable => find.byType(Scrollable).first;
 
@@ -245,6 +253,113 @@ Future<void> _openAccountDeletion(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets('successful save applies the confirmed explanation language',
+      (tester) async {
+    String? appliedLanguage;
+    final auth = FakeAuthService(
+      confirmedSave: const UserSettings(
+        nativeLanguage: 'en',
+        studyLanguage: 'es',
+        explanationLanguage: 'ru',
+        speechVoice: 'nova',
+        speechSpeed: 1,
+        conversationModeEnabled: true,
+        selectedTutorId: 'nelli',
+        currentLevel: 'A1',
+      ),
+    );
+    await tester.pumpWidget(_screen(auth,
+        onInterfaceLanguageSaved: (value) => appliedLanguage = value));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Save settings'), 400,
+        scrollable: _settingsScrollable);
+    await tester.tap(find.text('Save settings'));
+    await tester.pumpAndSettle();
+    expect(appliedLanguage, 'ru');
+  });
+
+  testWidgets('failed save does not apply a new interface language',
+      (tester) async {
+    String? appliedLanguage;
+    final auth =
+        FakeAuthService(saveResult: UserSettingsUpdateResult.ordinaryFailure());
+    await tester.pumpWidget(_screen(auth,
+        onInterfaceLanguageSaved: (value) => appliedLanguage = value));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Save settings'), 400,
+        scrollable: _settingsScrollable);
+    await tester.tap(find.text('Save settings'));
+    await tester.pumpAndSettle();
+    expect(appliedLanguage, isNull);
+  });
+
+  testWidgets('Russian Settings localizes account, app and status controls',
+      (tester) async {
+    await tester
+        .pumpWidget(_screen(FakeAuthService(), locale: const Locale('ru')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Настройки'), findsOneWidget);
+    expect(find.text('Профиль'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Сохранить настройки'),
+      400,
+      scrollable: _settingsScrollable,
+    );
+    expect(find.text('Сохранить настройки'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('settings-app-tab')));
+    await tester.pumpAndSettle();
+    expect(find.text('Пароль и восстановление'), findsOneWidget);
+
+    for (final text in const [
+      'Удаление аккаунта',
+      'Отзывы и отчёты',
+      'Напоминания о занятиях',
+      'Статус подключения',
+    ]) {
+      await tester.scrollUntilVisible(
+        find.text(text),
+        400,
+        scrollable: _settingsScrollable,
+      );
+      expect(find.text(text), findsWidgets);
+    }
+    expect(find.text('Не проверено'), findsOneWidget);
+    await tester.tap(find.text('Статус подключения'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Проверить подключение'),
+      250,
+      scrollable: _settingsScrollable,
+    );
+    await tester.drag(_settingsScrollable, const Offset(0, -150));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Проверить подключение'));
+    await tester.pumpAndSettle();
+    expect(find.text('Подключено'), findsOneWidget);
+  });
+
+  for (final localeText in const {
+    'es': ('Configuración', 'Guardar configuración'),
+    'fr': ('Paramètres', 'Enregistrer les paramètres'),
+    'de': ('Einstellungen', 'Einstellungen speichern'),
+  }.entries) {
+    testWidgets('${localeText.key} Settings localizes heading and save action',
+        (tester) async {
+      await tester.pumpWidget(
+          _screen(FakeAuthService(), locale: Locale(localeText.key)));
+      await tester.pumpAndSettle();
+      expect(find.text(localeText.value.$1), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text(localeText.value.$2),
+        400,
+        scrollable: _settingsScrollable,
+      );
+      expect(find.text(localeText.value.$2), findsOneWidget);
+    });
+  }
+
   testWidgets('app settings omit the removed privacy and voice card',
       (tester) async {
     await tester.pumpWidget(_screen(FakeAuthService()));

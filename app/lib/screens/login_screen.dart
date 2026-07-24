@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
+import '../l10n/app_localizations_context.dart';
 import '../services/auth_service.dart';
 import '../services/service_factory.dart';
 import 'home_screen.dart';
@@ -70,22 +71,24 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isRegistering ? 'Register' : 'Login')),
+      appBar: AppBar(
+          title: Text(
+              _isRegistering ? context.l10n.register : context.l10n.login)),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
-            Text('Sign in to Language Voice Tutor',
+            Text(context.l10n.signInToApp,
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 16),
             TextFormField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               autofillHints: const [AutofillHints.email],
-              decoration: const InputDecoration(labelText: 'Email'),
+              decoration: InputDecoration(labelText: context.l10n.email),
               validator: (value) => value == null || !value.contains('@')
-                  ? 'Enter a valid email address.'
+                  ? context.l10n.invalidEmail
                   : null,
             ),
             const SizedBox(height: 12),
@@ -93,17 +96,17 @@ class _LoginScreenState extends State<LoginScreen> {
               controller: _passwordController,
               obscureText: true,
               autofillHints: const [AutofillHints.password],
-              decoration: const InputDecoration(labelText: 'Password'),
+              decoration: InputDecoration(labelText: context.l10n.password),
               validator: (value) => value == null || value.length < 6
-                  ? 'Enter your password.'
+                  ? context.l10n.enterPassword
                   : null,
             ),
             if (_isRegistering) ...[
               const SizedBox(height: 12),
               TextFormField(
                 controller: _displayNameController,
-                decoration:
-                    const InputDecoration(labelText: 'Display name (optional)'),
+                decoration: InputDecoration(
+                    labelText: context.l10n.displayNameOptional),
               ),
             ],
             if (_error != null) ...[
@@ -117,8 +120,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ? null
                   : () => _submit(register: _isRegistering),
               child: Text(_isSubmitting
-                  ? 'Please wait...'
-                  : (_isRegistering ? 'Register' : 'Login')),
+                  ? context.l10n.pleaseWait
+                  : (_isRegistering
+                      ? context.l10n.register
+                      : context.l10n.login)),
             ),
             TextButton(
               onPressed: _isSubmitting
@@ -128,8 +133,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         _error = null;
                       }),
               child: Text(_isRegistering
-                  ? 'I already have an account'
-                  : 'Create an account'),
+                  ? context.l10n.alreadyHaveAccount
+                  : context.l10n.createAccount),
             ),
           ],
         ),

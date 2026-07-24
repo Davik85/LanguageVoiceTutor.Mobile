@@ -29,7 +29,6 @@ import '../services/tutor_speech_request_builder.dart';
 import '../services/transcript_script_normalizer.dart';
 import '../services/voice_scenario_intent_resolver.dart';
 import '../widgets/tutor_avatar.dart';
-import '../widgets/voice_transcription_disclosure.dart';
 import '../services/learner_audio_recording_service.dart';
 import '../services/learner_microphone_permission_service.dart';
 import '../services/service_factory.dart';
@@ -2364,11 +2363,6 @@ class _LessonWorkspace extends StatelessWidget {
                           ],
                         ),
                       ),
-                    ),
-                  if (!keyboardOpen)
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 0, 16, 6),
-                      child: VoiceTranscriptionDisclosure(),
                     ),
                   Expanded(
                     child: _LessonBody(

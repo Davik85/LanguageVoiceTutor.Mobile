@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations_context.dart';
 import '../services/practice_reminder_preferences.dart';
 import '../services/practice_reminder_service.dart';
 
@@ -31,29 +32,29 @@ class PracticeRemindersCard extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Practice reminders'),
+              Text(context.l10n.practiceReminders),
               const SizedBox(height: 4),
-              const Text('These reminders are local to this device.'),
+              Text(context.l10n.localRemindersDescription),
               SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Daily practice reminders'),
+                  title: Text(context.l10n.dailyPracticeReminders),
                   value: p.enabled,
                   onChanged: onEnabled),
               ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Morning reminder'),
+                  title: Text(context.l10n.morningReminder),
                   trailing: Text(time(p.morningHour, p.morningMinute)),
                   onTap: onMorning),
               ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Evening reminder'),
+                  title: Text(context.l10n.eveningReminder),
                   trailing: Text(time(p.eveningHour, p.eveningMinute)),
                   onTap: onEvening),
               Text(permission == ReminderPermissionState.granted
-                  ? 'Notifications allowed'
+                  ? context.l10n.notificationsAllowed
                   : permission == ReminderPermissionState.unavailable
-                      ? 'Notification status unavailable'
-                      : 'Notifications are blocked by Android.'),
+                      ? context.l10n.notificationStatusUnavailable
+                      : context.l10n.notificationsBlocked),
               if (error != null)
                 Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -62,10 +63,10 @@ class PracticeRemindersCard extends StatelessWidget {
                 Wrap(spacing: 8, children: [
                   TextButton(
                       onPressed: onAllow,
-                      child: const Text('Allow notifications')),
+                      child: Text(context.l10n.allowNotifications)),
                   TextButton(
                       onPressed: onSettings,
-                      child: const Text('Open Android settings'))
+                      child: Text(context.l10n.openAndroidSettings))
                 ])
             ])));
   }

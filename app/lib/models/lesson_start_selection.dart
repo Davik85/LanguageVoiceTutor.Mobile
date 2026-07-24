@@ -81,6 +81,33 @@ class LessonStartSelection {
   String get topic => topicTitle;
 }
 
+LessonStartSelection lessonStartSelectionFor(
+  LessonOption level,
+  LessonSituationOption situation,
+) {
+  final canonicalLevel = lessonLevels.firstWhere(
+    (candidate) => candidate.id == level.id,
+    orElse: () => level,
+  );
+  final canonicalSituation = lessonSituationsByTopic.values
+      .expand((situations) => situations)
+      .firstWhere(
+        (candidate) => candidate.id == situation.id,
+        orElse: () => situation,
+      );
+  return LessonStartSelection(
+    level: canonicalLevel.label,
+    topicId: canonicalSituation.topicId,
+    topicTitle: canonicalSituation.topicTitle,
+    subtopicId: canonicalSituation.subtopicId,
+    subtopicTitle: canonicalSituation.subtopicTitle,
+    situation: canonicalSituation.label,
+    lessonContentId: canonicalSituation.lessonContentId,
+    selectedContextId: canonicalSituation.selectedContextId,
+    selectedContextTitle: canonicalSituation.selectedContextTitle,
+  );
+}
+
 const lessonLevels = [
   LessonOption(
     id: 'a1',
@@ -214,8 +241,8 @@ const travelSituations = [
 ];
 
 const Map<String, List<LessonSituationOption>> lessonSituationsByTopic = {
-  'Travel': travelSituations,
-  'Daily Life': [
+  'travel': travelSituations,
+  'daily_life': [
     LessonSituationOption(
       id: 'introductions',
       label: 'Introductions',
@@ -267,7 +294,7 @@ const Map<String, List<LessonSituationOption>> lessonSituationsByTopic = {
       lessonContentId: 'everyday_english_making_plans',
     ),
   ],
-  'Work & Business': [
+  'work_business': [
     LessonSituationOption(
       id: 'asking_for_clarification',
       label: 'Asking for clarification',
@@ -319,7 +346,7 @@ const Map<String, List<LessonSituationOption>> lessonSituationsByTopic = {
       lessonContentId: 'work_business_first_meeting',
     ),
   ],
-  'Job Interview': [
+  'job_interview': [
     LessonSituationOption(
       id: 'tell_me_about_yourself',
       label: 'Tell me about yourself',
@@ -371,7 +398,7 @@ const Map<String, List<LessonSituationOption>> lessonSituationsByTopic = {
       lessonContentId: 'job_interview_strengths_and_weaknesses',
     ),
   ],
-  'Restaurant & Cafe': [
+  'restaurant_cafe': [
     LessonSituationOption(
       id: 'wrong_order',
       label: 'Handling a wrong order',
@@ -423,7 +450,7 @@ const Map<String, List<LessonSituationOption>> lessonSituationsByTopic = {
       lessonContentId: 'restaurant_and_cafe_paying_the_bill',
     ),
   ],
-  'Free Conversation': [
+  'free_conversation': [
     LessonSituationOption(
       id: 'open_conversation',
       label: 'Open conversation',
@@ -501,19 +528,6 @@ LessonCardStyle lessonCardStyleForTopic(LessonOption topic) {
   return lessonTopicCardStylesById[topic.id] ?? _defaultLessonCardStyle;
 }
 
-LessonCardStyle lessonCardStyleForTopicLabel(String topicLabel) {
-  return lessonCardStyleForTopic(
-    lessonTopics.firstWhere(
-      (topic) => topic.label == topicLabel,
-      orElse: () => LessonOption(
-        id: 'unknown',
-        label: topicLabel,
-        description: '',
-      ),
-    ),
-  );
-}
-
-LessonCardStyle lessonCardStyleForSituationTopic(String topicLabel) {
-  return lessonCardStyleForTopicLabel(topicLabel);
+LessonCardStyle lessonCardStyleForSituationTopic(String topicId) {
+  return lessonTopicCardStylesById[topicId] ?? _defaultLessonCardStyle;
 }

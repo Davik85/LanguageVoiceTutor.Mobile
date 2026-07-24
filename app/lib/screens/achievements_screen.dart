@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/achievements.dart';
+import '../l10n/app_localizations_context.dart';
 import '../services/auth_service.dart';
 import '../theme/app_visuals.dart';
 import '../widgets/achievement_badge.dart';
@@ -38,7 +39,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Achievements')),
+        appBar: AppBar(title: Text(context.l10n.achievements)),
         body: AppVisuals.screenBackground(
           child: SafeArea(
             child: _result == null
@@ -62,16 +63,16 @@ class _AchievementsContent extends StatelessWidget {
     }
     final response = result.achievements!;
     if (response.achievements.isEmpty) {
-      return const Center(child: Text('No achievements are available yet.'));
+      return Center(child: Text(context.l10n.achievementsUnavailable));
     }
     final groups = <String, List<AchievementItem>>{};
     for (final item in response.achievements) {
       final title = switch (item.category) {
-        'streak' => 'Streaks',
-        'lesson' => 'Lesson milestones',
-        'topic' => 'Topics',
-        'subtopic' => 'Situations',
-        _ => 'Other achievements',
+        'streak' => context.l10n.streaks,
+        'lesson' => context.l10n.lessonMilestones,
+        'topic' => context.l10n.topics,
+        'subtopic' => context.l10n.situations,
+        _ => context.l10n.otherAchievements,
       };
       (groups[title] ??= []).add(item);
     }
@@ -79,11 +80,12 @@ class _AchievementsContent extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       children: [
         Text(
-            '${response.summary.unlocked} of ${response.summary.total} unlocked',
+            context.l10n.unlockedCount(
+                response.summary.unlocked, response.summary.total),
             style: Theme.of(context).textTheme.titleMedium),
         if (response.activeStudyLanguage?.trim().isNotEmpty == true) ...[
           const SizedBox(height: 4),
-          Text('Learning ${response.activeStudyLanguage}',
+          Text(context.l10n.learningLanguage(response.activeStudyLanguage!),
               style: Theme.of(context).textTheme.bodySmall),
         ],
         const SizedBox(height: 16),
@@ -133,8 +135,9 @@ class _AchievementGridItem extends StatelessWidget {
                   child: AchievementBadge(achievement: item, compact: true)),
               Text(
                 item.unlocked
-                    ? 'Completed'
-                    : '${item.currentProgress} of ${item.targetProgress}',
+                    ? context.l10n.completed
+                    : context.l10n.progressCount(
+                        item.currentProgress, item.targetProgress),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
