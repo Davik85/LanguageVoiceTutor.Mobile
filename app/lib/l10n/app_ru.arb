@@ -128,5 +128,11 @@
   "achievementTitleLessons10": "10 уроков — уверенно",
   "achievementTitleLessons25": "Стабильный ученик",
   "achievementTitleLessons50": "50 уроков — уверенно",
-  "achievementTitleLessons100": "Клуб 100"
+  "achievementTitleLessons100": "Клуб 100",
+  "achievementTitleDailyLifeIntroductions": "Первое приветствие",
+  "achievementTitleDailyLifeNeighborChat": "Разговор с соседом",
+  "achievementTitleDailyLifeHelpfulHand": "Рука помощи",
+  "achievementTitleDailyLifePlanMaker": "Планировщик",
+  "achievementTitleDailyLifeDayTeller": "Рассказ о дне",
+  "achievementTitleDailyLifeEverydayHero": "Герой будней"
 }

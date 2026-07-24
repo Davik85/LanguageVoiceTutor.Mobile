@@ -1341,4 +1341,22 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get achievementTitleLessons100 => 'Клуб 100';
+
+  @override
+  String get achievementTitleDailyLifeIntroductions => 'Первое приветствие';
+
+  @override
+  String get achievementTitleDailyLifeNeighborChat => 'Разговор с соседом';
+
+  @override
+  String get achievementTitleDailyLifeHelpfulHand => 'Рука помощи';
+
+  @override
+  String get achievementTitleDailyLifePlanMaker => 'Планировщик';
+
+  @override
+  String get achievementTitleDailyLifeDayTeller => 'Рассказ о дне';
+
+  @override
+  String get achievementTitleDailyLifeEverydayHero => 'Герой будней';
 }

@@ -165,5 +165,11 @@
   "achievementTitleLessons10": "10 Lessons Strong",
   "achievementTitleLessons25": "Steady Learner",
   "achievementTitleLessons50": "50 Lessons Strong",
-  "achievementTitleLessons100": "Century Club"
+  "achievementTitleLessons100": "Century Club",
+  "achievementTitleDailyLifeIntroductions": "First Hello",
+  "achievementTitleDailyLifeNeighborChat": "Neighbor Chat",
+  "achievementTitleDailyLifeHelpfulHand": "Helpful Hand",
+  "achievementTitleDailyLifePlanMaker": "Plan Maker",
+  "achievementTitleDailyLifeDayTeller": "Day Teller",
+  "achievementTitleDailyLifeEverydayHero": "Everyday Hero"
 }

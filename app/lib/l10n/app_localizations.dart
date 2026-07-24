@@ -2347,6 +2347,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Century Club'**
   String get achievementTitleLessons100;
+
+  /// No description provided for @achievementTitleDailyLifeIntroductions.
+  ///
+  /// In en, this message translates to:
+  /// **'First Hello'**
+  String get achievementTitleDailyLifeIntroductions;
+
+  /// No description provided for @achievementTitleDailyLifeNeighborChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Neighbor Chat'**
+  String get achievementTitleDailyLifeNeighborChat;
+
+  /// No description provided for @achievementTitleDailyLifeHelpfulHand.
+  ///
+  /// In en, this message translates to:
+  /// **'Helpful Hand'**
+  String get achievementTitleDailyLifeHelpfulHand;
+
+  /// No description provided for @achievementTitleDailyLifePlanMaker.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan Maker'**
+  String get achievementTitleDailyLifePlanMaker;
+
+  /// No description provided for @achievementTitleDailyLifeDayTeller.
+  ///
+  /// In en, this message translates to:
+  /// **'Day Teller'**
+  String get achievementTitleDailyLifeDayTeller;
+
+  /// No description provided for @achievementTitleDailyLifeEverydayHero.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyday Hero'**
+  String get achievementTitleDailyLifeEverydayHero;
 }
 
 class _AppLocalizationsDelegate

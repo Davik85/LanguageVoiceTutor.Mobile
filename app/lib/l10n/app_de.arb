@@ -121,5 +121,11 @@
   "achievementTitleLessons10": "10 Lektionen gemeistert",
   "achievementTitleLessons25": "Beständig Lernende",
   "achievementTitleLessons50": "50 Lektionen gemeistert",
-  "achievementTitleLessons100": "Hunderterclub"
+  "achievementTitleLessons100": "Hunderterclub",
+  "achievementTitleDailyLifeIntroductions": "Erstes Hallo",
+  "achievementTitleDailyLifeNeighborChat": "Nachbarschaftsplausch",
+  "achievementTitleDailyLifeHelpfulHand": "Helfende Hand",
+  "achievementTitleDailyLifePlanMaker": "Planmacher",
+  "achievementTitleDailyLifeDayTeller": "Tageserzähler",
+  "achievementTitleDailyLifeEverydayHero": "Alltagsheld"
 }

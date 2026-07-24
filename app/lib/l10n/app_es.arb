@@ -121,5 +121,11 @@
   "achievementTitleLessons10": "10 lecciones superadas",
   "achievementTitleLessons25": "Estudiante constante",
   "achievementTitleLessons50": "50 lecciones superadas",
-  "achievementTitleLessons100": "Club de los 100"
+  "achievementTitleLessons100": "Club de los 100",
+  "achievementTitleDailyLifeIntroductions": "Primer saludo",
+  "achievementTitleDailyLifeNeighborChat": "Charla con un vecino",
+  "achievementTitleDailyLifeHelpfulHand": "Mano amiga",
+  "achievementTitleDailyLifePlanMaker": "Creador de planes",
+  "achievementTitleDailyLifeDayTeller": "Cronista del día",
+  "achievementTitleDailyLifeEverydayHero": "Héroe cotidiano"
 }

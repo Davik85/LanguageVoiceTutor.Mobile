@@ -43,7 +43,7 @@ class _Service extends AuthService {
 }
 
 AchievementItem _item(String id, String category,
-        {bool unlocked = false, String? language}) =>
+        {bool unlocked = false, String? language, String? title}) =>
     AchievementItem(
         id: id,
         category: category,
@@ -51,7 +51,7 @@ AchievementItem _item(String id, String category,
         studyLanguage: language,
         topicId: null,
         lessonContentId: null,
-        title: id,
+        title: title ?? id,
         description: 'Short description',
         iconKey: id == 'unknown' ? 'unrecognized' : 'streak',
         unlocked: unlocked,
@@ -403,6 +403,125 @@ void main() {
         const Offset(0, -200),
       );
       expect(find.text('unknown-id'), findsOneWidget);
+    });
+  });
+
+  group('daily life achievement title localization', () {
+    const ids = [
+      'subtopic-daily-life-everyday_english_introductions-v1',
+      'subtopic-daily-life-everyday_english_small_talk_with_a_neighbor-v1',
+      'subtopic-daily-life-everyday_english_asking_for_help-v1',
+      'subtopic-daily-life-everyday_english_making_plans-v1',
+      'subtopic-daily-life-everyday_english_talking_about_your_day-v1',
+      'topic-daily-life-complete-v1',
+    ];
+    const titlesByLocale = {
+      'en': [
+        'First Hello',
+        'Neighbor Chat',
+        'Helpful Hand',
+        'Plan Maker',
+        'Day Teller',
+        'Everyday Hero',
+      ],
+      'ru': [
+        'Первое приветствие',
+        'Разговор с соседом',
+        'Рука помощи',
+        'Планировщик',
+        'Рассказ о дне',
+        'Герой будней',
+      ],
+      'es': [
+        'Primer saludo',
+        'Charla con un vecino',
+        'Mano amiga',
+        'Creador de planes',
+        'Cronista del día',
+        'Héroe cotidiano',
+      ],
+      'fr': [
+        'Premier bonjour',
+        'Discussion de voisinage',
+        'Coup de main',
+        'Créateur de plans',
+        'Récit du jour',
+        'Héros du quotidien',
+      ],
+      'de': [
+        'Erstes Hallo',
+        'Nachbarschaftsplausch',
+        'Helfende Hand',
+        'Planmacher',
+        'Tageserzähler',
+        'Alltagsheld',
+      ],
+    };
+
+    testWidgets('all Daily Life IDs resolve in every interface locale',
+        (tester) async {
+      for (final localeTitles in titlesByLocale.entries) {
+        late List<String> resolvedTitles;
+        late String accountTitle;
+        await tester.pumpWidget(MaterialApp(
+          locale: Locale(localeTitles.key),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              resolvedTitles = [
+                for (final id in ids)
+                  AchievementTitleResolver.resolve(context, _item(id, 'topic')),
+              ];
+              accountTitle = AchievementTitleResolver.resolve(
+                context,
+                _item('streak-7-v1', 'streak'),
+              );
+              return const SizedBox();
+            },
+          ),
+        ));
+        await tester.pumpAndSettle();
+        expect(resolvedTitles, localeTitles.value);
+        expect(accountTitle,
+            localeTitles.key == 'ru' ? 'Серия 7 дней' : isNotEmpty);
+      }
+    });
+
+    testWidgets('Russian cards and semantics use localized Daily Life titles',
+        (tester) async {
+      final response = AchievementsResponse(
+        generatedAtUtc: DateTime.utc(2026, 7, 19),
+        calendarTimezone: 'UTC',
+        activeStudyLanguage: 'English',
+        summary: const AchievementSummary(unlocked: 1, total: 3),
+        achievements: [
+          _item(ids.first, 'subtopic', unlocked: true),
+          _item(ids[1], 'subtopic'),
+          _item('unknown-daily-id', 'subtopic',
+              title: 'Backend fallback title'),
+        ],
+        homeItems: const [],
+      );
+      await tester.pumpWidget(_screen(
+        AchievementsResult.success(response),
+        locale: const Locale('ru'),
+      ));
+      await tester.pumpAndSettle();
+      expect(find.text('Первое приветствие'), findsOneWidget);
+      expect(find.text('Разговор с соседом'), findsOneWidget);
+      expect(find.text('Backend fallback title'), findsOneWidget);
+      expect(
+        _semanticsLabel('Разблокированное достижение: Первое приветствие'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(Key('all-achievement-${ids.first}')));
+      await tester.pumpAndSettle();
+      expect(
+        _semanticsLabel('Закрыть просмотр достижения Первое приветствие'),
+        findsOneWidget,
+      );
     });
   });
 }

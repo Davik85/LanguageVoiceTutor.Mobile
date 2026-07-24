@@ -1340,4 +1340,22 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get achievementTitleLessons100 => 'Club de los 100';
+
+  @override
+  String get achievementTitleDailyLifeIntroductions => 'Primer saludo';
+
+  @override
+  String get achievementTitleDailyLifeNeighborChat => 'Charla con un vecino';
+
+  @override
+  String get achievementTitleDailyLifeHelpfulHand => 'Mano amiga';
+
+  @override
+  String get achievementTitleDailyLifePlanMaker => 'Creador de planes';
+
+  @override
+  String get achievementTitleDailyLifeDayTeller => 'Cronista del día';
+
+  @override
+  String get achievementTitleDailyLifeEverydayHero => 'Héroe cotidiano';
 }

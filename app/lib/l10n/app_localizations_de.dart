@@ -1341,4 +1341,22 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get achievementTitleLessons100 => 'Hunderterclub';
+
+  @override
+  String get achievementTitleDailyLifeIntroductions => 'Erstes Hallo';
+
+  @override
+  String get achievementTitleDailyLifeNeighborChat => 'Nachbarschaftsplausch';
+
+  @override
+  String get achievementTitleDailyLifeHelpfulHand => 'Helfende Hand';
+
+  @override
+  String get achievementTitleDailyLifePlanMaker => 'Planmacher';
+
+  @override
+  String get achievementTitleDailyLifeDayTeller => 'Tageserzähler';
+
+  @override
+  String get achievementTitleDailyLifeEverydayHero => 'Alltagsheld';
 }

@@ -398,6 +398,31 @@ void main() {
     });
   });
 
+  group('daily life achievement title localization', () {
+    testWidgets('Home uses the shared localized Daily Life title',
+        (tester) async {
+      final dailyLife =
+          _achievement('topic-daily-life-complete-v1', unlocked: true);
+      final response = AchievementsResponse(
+        generatedAtUtc: DateTime.utc(2026, 7, 19),
+        calendarTimezone: 'UTC',
+        activeStudyLanguage: 'English',
+        summary: const AchievementSummary(unlocked: 1, total: 1),
+        achievements: [dailyLife],
+        homeItems: [dailyLife],
+      );
+      await tester.pumpWidget(_home(
+        authService: FakeAuthService(
+          achievementsResult: AchievementsResult.success(response),
+        ),
+        locale: const Locale('ru'),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Герой будней'), findsOneWidget);
+    });
+  });
+
   testWidgets('new unlocked achievements are shown once in backend order',
       (tester) async {
     final presentationStore = MemoryAchievementPresentationStore();
