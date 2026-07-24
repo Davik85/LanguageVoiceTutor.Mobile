@@ -1182,4 +1182,43 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get lessonStartFailed =>
       'No se pudo iniciar la lección. Inténtalo de nuevo.';
+
+  @override
+  String get lessonSummary => 'Resumen de la lección';
+
+  @override
+  String get lessonCompleted => 'Lección completada';
+
+  @override
+  String get summaryWhatWentWell => 'Lo que salió bien';
+
+  @override
+  String get summaryStrengths => 'Puntos fuertes';
+
+  @override
+  String get summaryImprovements => 'Aspectos a mejorar';
+
+  @override
+  String get summaryVocabulary => 'Vocabulario';
+
+  @override
+  String get summaryGrammar => 'Gramática';
+
+  @override
+  String get summaryNextSteps => 'Próximos pasos';
+
+  @override
+  String get retrySummary => 'Reintentar resumen';
+
+  @override
+  String get summaryUnavailableMessage =>
+      'Tu lección se guardó, pero no se pudo crear un resumen para esta lección.';
+
+  @override
+  String get summaryAuthRequiredMessage =>
+      'Vuelve a iniciar sesión para cargar el resumen de la lección.';
+
+  @override
+  String get summaryLoadErrorMessage =>
+      'Tu lección se guardó, pero no se pudo cargar el resumen ahora.';
 }

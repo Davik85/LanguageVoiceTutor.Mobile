@@ -2077,6 +2077,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not start the lesson. Please try again.'**
   String get lessonStartFailed;
+
+  /// No description provided for @lessonSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Lesson summary'**
+  String get lessonSummary;
+
+  /// No description provided for @lessonCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Lesson completed'**
+  String get lessonCompleted;
+
+  /// No description provided for @summaryWhatWentWell.
+  ///
+  /// In en, this message translates to:
+  /// **'What went well'**
+  String get summaryWhatWentWell;
+
+  /// No description provided for @summaryStrengths.
+  ///
+  /// In en, this message translates to:
+  /// **'Strengths'**
+  String get summaryStrengths;
+
+  /// No description provided for @summaryImprovements.
+  ///
+  /// In en, this message translates to:
+  /// **'Improvements'**
+  String get summaryImprovements;
+
+  /// No description provided for @summaryVocabulary.
+  ///
+  /// In en, this message translates to:
+  /// **'Vocabulary'**
+  String get summaryVocabulary;
+
+  /// No description provided for @summaryGrammar.
+  ///
+  /// In en, this message translates to:
+  /// **'Grammar'**
+  String get summaryGrammar;
+
+  /// No description provided for @summaryNextSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Next steps'**
+  String get summaryNextSteps;
+
+  /// No description provided for @retrySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry summary'**
+  String get retrySummary;
+
+  /// No description provided for @summaryUnavailableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your lesson was saved, but a summary could not be created for this lesson.'**
+  String get summaryUnavailableMessage;
+
+  /// No description provided for @summaryAuthRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in again to load your lesson summary.'**
+  String get summaryAuthRequiredMessage;
+
+  /// No description provided for @summaryLoadErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your lesson was saved, but we could not load the summary right now.'**
+  String get summaryLoadErrorMessage;
 }
 
 class _AppLocalizationsDelegate

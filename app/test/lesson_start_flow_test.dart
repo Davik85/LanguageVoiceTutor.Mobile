@@ -626,6 +626,8 @@ Widget _lessonScreen(
     );
 
 Widget _lessonScreenWithHome(FakeAuthService authService) => MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       initialRoute: '/lesson',
       routes: {
         '/': (_) => const Scaffold(body: Text('Home')),
@@ -672,7 +674,10 @@ Widget _lessonScreenWithResultCapture(
   ValueNotifier<LessonExitResult?> result,
 ) =>
     MaterialApp(
-        home: _LessonResultCapture(authService: authService, result: result));
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: _LessonResultCapture(authService: authService, result: result),
+    );
 
 Future<void> _expectVisibleAfterScroll(WidgetTester tester, String text) async {
   final finder = find.text(text);
@@ -2749,6 +2754,166 @@ void main() {
         ));
         await tester.pumpAndSettle();
         expect(find.text(localeCase.value), findsOneWidget);
+      });
+    }
+  });
+
+  group('lesson summary localization', () {
+    Future<void> finishLesson(
+      WidgetTester tester, {
+      required String finishLabel,
+    }) async {
+      await tester.tap(find.byKey(const Key('lesson-action-finish')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(finishLabel));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+        'Russian ready Summary localizes chrome and preserves backend content',
+        (tester) async {
+      final auth = FakeAuthService(
+        finishResult: LessonCompletionResult.summaryReady(
+          const LessonSummaryResponse(
+            status: 'ready',
+            level: 'A1',
+            topicTitle: 'Daily Life',
+            subtopicTitle: 'Introductions',
+            summary: 'Backend summary text',
+            strengths: ['Backend strength'],
+            improvements: ['Backend improvement'],
+            vocabulary: ['Backend vocabulary'],
+            grammar: ['Backend grammar'],
+            nextSteps: ['Backend next step'],
+          ),
+        ),
+      );
+      await tester.pumpWidget(_lessonScreen(auth, locale: const Locale('ru')));
+      await tester.pumpAndSettle();
+
+      await finishLesson(tester, finishLabel: 'Завершить урок');
+
+      for (final text in const [
+        'Итоги урока',
+        'Что получилось хорошо',
+        'Сильные стороны',
+        'Что можно улучшить',
+        'Словарный запас',
+        'Грамматика',
+        'Следующие шаги',
+        'Готово',
+      ]) {
+        expect(find.text(text), findsOneWidget);
+      }
+      for (final text in const [
+        'Backend summary text',
+        'Backend strength',
+        'Backend improvement',
+        'Backend vocabulary',
+        'Backend grammar',
+        'Backend next step',
+        'A1 · Daily Life · Introductions',
+      ]) {
+        expect(find.text(text), findsOneWidget);
+      }
+
+      final improvements = tester.widget<Container>(
+        find.byKey(const Key('lesson-summary-improvements')),
+      );
+      final decoration = improvements.decoration! as BoxDecoration;
+      expect(decoration.color, const Color(0xFFFFF1CB));
+      expect(decoration.border, isA<Border>());
+    });
+
+    testWidgets('Russian unavailable Summary has no retry action',
+        (tester) async {
+      await tester.pumpWidget(_lessonScreen(
+        FakeAuthService(
+            finishResult: LessonCompletionResult.summaryUnavailable()),
+        locale: const Locale('ru'),
+      ));
+      await tester.pumpAndSettle();
+
+      await finishLesson(tester, finishLabel: 'Завершить урок');
+
+      expect(find.text('Урок завершён'), findsOneWidget);
+      expect(
+        find.text('Ваш урок сохранён, но итоги для него не удалось создать.'),
+        findsOneWidget,
+      );
+      expect(find.text('Повторить загрузку итогов'), findsNothing);
+    });
+
+    testWidgets('Russian summary-load error retries the Summary request',
+        (tester) async {
+      final auth = FakeAuthService(
+        finishResult: LessonCompletionResult.summaryLoadError(),
+        summaryResult: LessonCompletionResult.summaryLoadError(),
+      );
+      await tester.pumpWidget(_lessonScreen(auth, locale: const Locale('ru')));
+      await tester.pumpAndSettle();
+
+      await finishLesson(tester, finishLabel: 'Завершить урок');
+
+      expect(
+        find.text('Ваш урок сохранён, но сейчас не удалось загрузить итоги.'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Повторить загрузку итогов'));
+      await tester.pumpAndSettle();
+      expect(auth.loadLessonSummaryCallCount, 1);
+    });
+
+    testWidgets('Russian Summary displays the authentication-required state',
+        (tester) async {
+      final auth = FakeAuthService(
+        finishResult: LessonCompletionResult.summaryLoadError(),
+        summaryResult: LessonCompletionResult.authRequired(),
+      );
+      await tester.pumpWidget(_lessonScreen(auth, locale: const Locale('ru')));
+      await tester.pumpAndSettle();
+
+      await finishLesson(tester, finishLabel: 'Завершить урок');
+      await tester.tap(find.text('Повторить загрузку итогов'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Войдите снова, чтобы загрузить итоги урока.'),
+        findsOneWidget,
+      );
+      expect(find.text('Повторить загрузку итогов'), findsNothing);
+    });
+
+    testWidgets('Done closes the completed lesson', (tester) async {
+      await tester.pumpWidget(_lessonScreenWithHome(FakeAuthService()));
+      await tester.pumpAndSettle();
+
+      await finishLesson(tester, finishLabel: 'Finish lesson');
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Home'), findsOneWidget);
+    });
+
+    for (final localeCase in const {
+      'en': ('Lesson summary', 'Finish lesson'),
+      'es': ('Resumen de la lección', 'Terminar lección'),
+      'fr': ('Résumé de la leçon', 'Terminer la leçon'),
+      'de': ('Lektionszusammenfassung', 'Lektion beenden'),
+    }.entries) {
+      testWidgets('${localeCase.key} renders a localized Summary',
+          (tester) async {
+        await tester.pumpWidget(_lessonScreen(
+          FakeAuthService(
+            finishResult: LessonCompletionResult.summaryUnavailable(),
+          ),
+          locale: Locale(localeCase.key),
+        ));
+        await tester.pumpAndSettle();
+
+        await finishLesson(tester, finishLabel: localeCase.value.$2);
+
+        expect(find.text(localeCase.value.$1), findsOneWidget);
       });
     }
   });

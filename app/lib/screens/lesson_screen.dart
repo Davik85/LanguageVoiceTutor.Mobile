@@ -1049,6 +1049,7 @@ class _LessonScreenState extends State<LessonScreen>
     required int turnNumber,
     String source = 'typed',
   }) async {
+    final feedbackNotReadyMessage = context.l10n.feedbackNotReady;
     try {
       final persistedUserMessageId =
           await _authService.persistLessonSessionMessage(
@@ -1079,7 +1080,7 @@ class _LessonScreenState extends State<LessonScreen>
       }
     } catch (_) {
       // Live chat remains primary if persistence is unavailable.
-      userMessage.persistenceError = context.l10n.feedbackNotReady;
+      userMessage.persistenceError = feedbackNotReadyMessage;
     }
   }
 
@@ -3407,7 +3408,7 @@ class _LessonSummaryView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Lesson summary',
+                context.l10n.lessonSummary,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       color: const Color(0xFF123D68),
@@ -3419,12 +3420,12 @@ class _LessonSummaryView extends StatelessWidget {
               const SizedBox(height: 20),
               if (!ready) ...[
                 _SummaryMessagePanel(
-                  title: 'Lesson completed',
+                  title: context.l10n.lessonCompleted,
                   message: unavailable
-                      ? 'Your lesson was saved, but a summary could not be created for this lesson.'
+                      ? context.l10n.summaryUnavailableMessage
                       : status == LessonCompletionStatus.authRequired
-                          ? 'Please sign in again to load your lesson summary.'
-                          : 'Your lesson was saved, but we could not load the summary right now.',
+                          ? context.l10n.summaryAuthRequiredMessage
+                          : context.l10n.summaryLoadErrorMessage,
                 ),
                 const SizedBox(height: 16),
                 if (canRetrySummary)
@@ -3432,26 +3433,44 @@ class _LessonSummaryView extends StatelessWidget {
                       child: OutlinedButton.icon(
                     onPressed: onRetrySummary,
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Retry summary'),
+                    label: Text(context.l10n.retrySummary),
                   )),
               ] else ...[
                 if (summary!.summary?.trim().isNotEmpty ?? false) ...[
                   _SummaryMessagePanel(
-                    title: 'What went well',
+                    title: context.l10n.summaryWhatWentWell,
                     message: summary!.summary!,
                   ),
                   const SizedBox(height: 14),
                 ],
-                _SummarySection('Strengths', summary!.strengths),
-                _SummarySection('Improvements', summary!.improvements),
-                _SummarySection('Vocabulary', summary!.vocabulary),
-                _SummarySection('Grammar', summary!.grammar),
-                _SummarySection('Next steps', summary!.nextSteps),
+                _SummarySection(
+                  title: context.l10n.summaryStrengths,
+                  items: summary!.strengths,
+                ),
+                _SummarySection(
+                  title: context.l10n.summaryImprovements,
+                  items: summary!.improvements,
+                  type: _SummarySectionType.improvements,
+                ),
+                _SummarySection(
+                  title: context.l10n.summaryVocabulary,
+                  items: summary!.vocabulary,
+                ),
+                _SummarySection(
+                  title: context.l10n.summaryGrammar,
+                  items: summary!.grammar,
+                ),
+                _SummarySection(
+                  title: context.l10n.summaryNextSteps,
+                  items: summary!.nextSteps,
+                ),
               ],
               const SizedBox(height: 28),
               Center(
-                child:
-                    FilledButton(onPressed: onDone, child: const Text('Done')),
+                child: FilledButton(
+                  onPressed: onDone,
+                  child: Text(context.l10n.done),
+                ),
               ),
             ],
           ),
@@ -3508,17 +3527,27 @@ class _SummaryMessagePanel extends StatelessWidget {
       );
 }
 
+enum _SummarySectionType { standard, improvements }
+
 class _SummarySection extends StatelessWidget {
-  const _SummarySection(this.title, this.items);
+  const _SummarySection({
+    required this.title,
+    required this.items,
+    this.type = _SummarySectionType.standard,
+  });
+
   final String title;
   final List<String> items;
+  final _SummarySectionType type;
+
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
-    final isImprovement = title == 'Improvements';
+    final isImprovement = type == _SummarySectionType.improvements;
     return Padding(
       padding: const EdgeInsets.only(top: 14),
       child: Container(
+        key: isImprovement ? const Key('lesson-summary-improvements') : null,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color:

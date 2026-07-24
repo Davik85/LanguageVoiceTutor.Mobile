@@ -1185,4 +1185,43 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get lessonStartFailed => 'Impossible de démarrer la leçon. Réessayez.';
+
+  @override
+  String get lessonSummary => 'Résumé de la leçon';
+
+  @override
+  String get lessonCompleted => 'Leçon terminée';
+
+  @override
+  String get summaryWhatWentWell => 'Ce qui s’est bien passé';
+
+  @override
+  String get summaryStrengths => 'Points forts';
+
+  @override
+  String get summaryImprovements => 'Points à améliorer';
+
+  @override
+  String get summaryVocabulary => 'Vocabulaire';
+
+  @override
+  String get summaryGrammar => 'Grammaire';
+
+  @override
+  String get summaryNextSteps => 'Prochaines étapes';
+
+  @override
+  String get retrySummary => 'Réessayer le résumé';
+
+  @override
+  String get summaryUnavailableMessage =>
+      'Votre leçon a été enregistrée, mais il n’a pas été possible de créer un résumé pour cette leçon.';
+
+  @override
+  String get summaryAuthRequiredMessage =>
+      'Reconnectez-vous pour charger le résumé de votre leçon.';
+
+  @override
+  String get summaryLoadErrorMessage =>
+      'Votre leçon a été enregistrée, mais le résumé ne peut pas être chargé pour le moment.';
 }

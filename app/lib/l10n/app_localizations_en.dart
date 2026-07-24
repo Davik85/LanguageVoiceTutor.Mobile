@@ -1172,4 +1172,43 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get lessonStartFailed =>
       'Could not start the lesson. Please try again.';
+
+  @override
+  String get lessonSummary => 'Lesson summary';
+
+  @override
+  String get lessonCompleted => 'Lesson completed';
+
+  @override
+  String get summaryWhatWentWell => 'What went well';
+
+  @override
+  String get summaryStrengths => 'Strengths';
+
+  @override
+  String get summaryImprovements => 'Improvements';
+
+  @override
+  String get summaryVocabulary => 'Vocabulary';
+
+  @override
+  String get summaryGrammar => 'Grammar';
+
+  @override
+  String get summaryNextSteps => 'Next steps';
+
+  @override
+  String get retrySummary => 'Retry summary';
+
+  @override
+  String get summaryUnavailableMessage =>
+      'Your lesson was saved, but a summary could not be created for this lesson.';
+
+  @override
+  String get summaryAuthRequiredMessage =>
+      'Please sign in again to load your lesson summary.';
+
+  @override
+  String get summaryLoadErrorMessage =>
+      'Your lesson was saved, but we could not load the summary right now.';
 }

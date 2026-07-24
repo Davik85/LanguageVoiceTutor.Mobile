@@ -1182,4 +1182,43 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get lessonStartFailed => 'Не удалось начать урок. Попробуйте ещё раз.';
+
+  @override
+  String get lessonSummary => 'Итоги урока';
+
+  @override
+  String get lessonCompleted => 'Урок завершён';
+
+  @override
+  String get summaryWhatWentWell => 'Что получилось хорошо';
+
+  @override
+  String get summaryStrengths => 'Сильные стороны';
+
+  @override
+  String get summaryImprovements => 'Что можно улучшить';
+
+  @override
+  String get summaryVocabulary => 'Словарный запас';
+
+  @override
+  String get summaryGrammar => 'Грамматика';
+
+  @override
+  String get summaryNextSteps => 'Следующие шаги';
+
+  @override
+  String get retrySummary => 'Повторить загрузку итогов';
+
+  @override
+  String get summaryUnavailableMessage =>
+      'Ваш урок сохранён, но итоги для него не удалось создать.';
+
+  @override
+  String get summaryAuthRequiredMessage =>
+      'Войдите снова, чтобы загрузить итоги урока.';
+
+  @override
+  String get summaryLoadErrorMessage =>
+      'Ваш урок сохранён, но сейчас не удалось загрузить итоги.';
 }
