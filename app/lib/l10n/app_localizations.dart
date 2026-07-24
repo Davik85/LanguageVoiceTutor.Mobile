@@ -2281,6 +2281,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close all achievement previews'**
   String get closeAllAchievementPreviews;
+
+  /// No description provided for @achievementTitleStreak7.
+  ///
+  /// In en, this message translates to:
+  /// **'7-Day Streak'**
+  String get achievementTitleStreak7;
+
+  /// No description provided for @achievementTitleStreak30.
+  ///
+  /// In en, this message translates to:
+  /// **'30-Day Streak'**
+  String get achievementTitleStreak30;
+
+  /// No description provided for @achievementTitleStreak60.
+  ///
+  /// In en, this message translates to:
+  /// **'60-Day Streak'**
+  String get achievementTitleStreak60;
+
+  /// No description provided for @achievementTitleStreak100.
+  ///
+  /// In en, this message translates to:
+  /// **'100-Day Streak'**
+  String get achievementTitleStreak100;
+
+  /// No description provided for @achievementTitleStreak365.
+  ///
+  /// In en, this message translates to:
+  /// **'365-Day Streak'**
+  String get achievementTitleStreak365;
+
+  /// No description provided for @achievementTitleLessons1.
+  ///
+  /// In en, this message translates to:
+  /// **'First Step'**
+  String get achievementTitleLessons1;
+
+  /// No description provided for @achievementTitleLessons5.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting Started'**
+  String get achievementTitleLessons5;
+
+  /// No description provided for @achievementTitleLessons10.
+  ///
+  /// In en, this message translates to:
+  /// **'10 Lessons Strong'**
+  String get achievementTitleLessons10;
+
+  /// No description provided for @achievementTitleLessons25.
+  ///
+  /// In en, this message translates to:
+  /// **'Steady Learner'**
+  String get achievementTitleLessons25;
+
+  /// No description provided for @achievementTitleLessons50.
+  ///
+  /// In en, this message translates to:
+  /// **'50 Lessons Strong'**
+  String get achievementTitleLessons50;
+
+  /// No description provided for @achievementTitleLessons100.
+  ///
+  /// In en, this message translates to:
+  /// **'Century Club'**
+  String get achievementTitleLessons100;
 }
 
 class _AppLocalizationsDelegate

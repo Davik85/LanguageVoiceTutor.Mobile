@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../achievements/achievement_title_resolver.dart';
 import '../achievements/achievement_visual_resolver.dart';
 import '../l10n/app_localizations_context.dart';
 import '../models/achievements.dart';
@@ -48,6 +49,7 @@ class _AchievementPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final visual = AchievementVisualResolver.resolve(achievement);
+    final title = AchievementTitleResolver.resolve(context, achievement);
     return Dialog(
       key: const Key('achievement-preview'),
       backgroundColor: Colors.transparent,
@@ -69,8 +71,7 @@ class _AchievementPreview extends StatelessWidget {
                 return Center(
                   child: Semantics(
                     button: true,
-                    label:
-                        context.l10n.closeAchievementPreview(achievement.title),
+                    label: context.l10n.closeAchievementPreview(title),
                     child: InteractiveViewer(
                       clipBehavior: Clip.none,
                       boundaryMargin: const EdgeInsets.all(1000),

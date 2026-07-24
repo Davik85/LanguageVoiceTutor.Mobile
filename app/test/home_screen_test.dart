@@ -381,6 +381,23 @@ void main() {
     expect(find.text('1 of 41 unlocked'), findsOneWidget);
   });
 
+  group('account achievement title localization', () {
+    testWidgets('Home uses the shared localized account achievement title',
+        (tester) async {
+      await tester.pumpWidget(_home(locale: const Locale('ru')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Первый шаг'), findsOneWidget);
+      expect(find.text('Серия 7 дней'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('home-achievement-streak-7-v1')));
+      await tester.pumpAndSettle();
+      expect(
+        find.bySemanticsLabel('Закрыть просмотр достижения Серия 7 дней'),
+        findsOneWidget,
+      );
+    });
+  });
+
   testWidgets('new unlocked achievements are shown once in backend order',
       (tester) async {
     final presentationStore = MemoryAchievementPresentationStore();
@@ -404,13 +421,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.bySemanticsLabel('Close lessons-1-v1 achievement preview'),
+      find.bySemanticsLabel('Close First Step achievement preview'),
       findsOneWidget,
     );
     await tester.tapAt(const Offset(4, 4));
     await tester.pumpAndSettle();
     expect(
-      find.bySemanticsLabel('Close streak-7-v1 achievement preview'),
+      find.bySemanticsLabel('Close 7-Day Streak achievement preview'),
       findsOneWidget,
     );
     await tester.tapAt(const Offset(4, 4));

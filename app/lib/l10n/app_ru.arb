@@ -117,5 +117,16 @@
   "@achievementLockedSemantics": {"placeholders":{"title":{"type":"String"},"current":{"type":"num"},"target":{"type":"num"}}},
   "closeAchievementPreview": "Закрыть просмотр достижения {title}",
   "@closeAchievementPreview": {"placeholders":{"title":{"type":"String"}}},
-  "closeAllAchievementPreviews": "Закрыть все просмотры достижений"
+  "closeAllAchievementPreviews": "Закрыть все просмотры достижений",
+  "achievementTitleStreak7": "Серия 7 дней",
+  "achievementTitleStreak30": "Серия 30 дней",
+  "achievementTitleStreak60": "Серия 60 дней",
+  "achievementTitleStreak100": "Серия 100 дней",
+  "achievementTitleStreak365": "Серия 365 дней",
+  "achievementTitleLessons1": "Первый шаг",
+  "achievementTitleLessons5": "Начало пути",
+  "achievementTitleLessons10": "10 уроков — уверенно",
+  "achievementTitleLessons25": "Стабильный ученик",
+  "achievementTitleLessons50": "50 уроков — уверенно",
+  "achievementTitleLessons100": "Клуб 100"
 }

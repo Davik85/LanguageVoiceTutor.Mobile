@@ -110,5 +110,16 @@
   "@achievementLockedSemantics": {"placeholders":{"title":{"type":"String"},"current":{"type":"num"},"target":{"type":"num"}}},
   "closeAchievementPreview": "Vorschau des Erfolgs {title} schließen",
   "@closeAchievementPreview": {"placeholders":{"title":{"type":"String"}}},
-  "closeAllAchievementPreviews": "Alle Erfolgsvorschauen schließen"
+  "closeAllAchievementPreviews": "Alle Erfolgsvorschauen schließen",
+  "achievementTitleStreak7": "7-Tage-Serie",
+  "achievementTitleStreak30": "30-Tage-Serie",
+  "achievementTitleStreak60": "60-Tage-Serie",
+  "achievementTitleStreak100": "100-Tage-Serie",
+  "achievementTitleStreak365": "365-Tage-Serie",
+  "achievementTitleLessons1": "Erster Schritt",
+  "achievementTitleLessons5": "Guter Start",
+  "achievementTitleLessons10": "10 Lektionen gemeistert",
+  "achievementTitleLessons25": "Beständig Lernende",
+  "achievementTitleLessons50": "50 Lektionen gemeistert",
+  "achievementTitleLessons100": "Hunderterclub"
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../achievements/achievement_title_resolver.dart';
 import '../achievements/achievement_visual_resolver.dart';
 import '../l10n/app_localizations_context.dart';
 import '../models/achievements.dart';
@@ -18,11 +19,12 @@ class AchievementBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _colorFor(achievement.iconKey);
     final visual = AchievementVisualResolver.resolve(achievement);
+    final title = AchievementTitleResolver.resolve(context, achievement);
     return Semantics(
       label: achievement.unlocked
-          ? context.l10n.achievementUnlockedSemantics(achievement.title)
+          ? context.l10n.achievementUnlockedSemantics(title)
           : context.l10n.achievementLockedSemantics(
-              achievement.title,
+              title,
               achievement.currentProgress,
               achievement.targetProgress,
             ),
@@ -33,7 +35,7 @@ class AchievementBadge extends StatelessWidget {
             height: compact ? 142 : 58,
             child: compact
                 ? _CompactBadge(
-                    title: achievement.title,
+                    title: title,
                     visual: visual,
                     color: color,
                     unlocked: achievement.unlocked,

@@ -110,5 +110,16 @@
   "@achievementLockedSemantics": {"placeholders":{"title":{"type":"String"},"current":{"type":"num"},"target":{"type":"num"}}},
   "closeAchievementPreview": "Fermer l’aperçu du succès {title}",
   "@closeAchievementPreview": {"placeholders":{"title":{"type":"String"}}},
-  "closeAllAchievementPreviews": "Fermer tous les aperçus de succès"
+  "closeAllAchievementPreviews": "Fermer tous les aperçus de succès",
+  "achievementTitleStreak7": "Série de 7 jours",
+  "achievementTitleStreak30": "Série de 30 jours",
+  "achievementTitleStreak60": "Série de 60 jours",
+  "achievementTitleStreak100": "Série de 100 jours",
+  "achievementTitleStreak365": "Série de 365 jours",
+  "achievementTitleLessons1": "Premier pas",
+  "achievementTitleLessons5": "Bien commencé",
+  "achievementTitleLessons10": "10 leçons réussies",
+  "achievementTitleLessons25": "Apprenant régulier",
+  "achievementTitleLessons50": "50 leçons réussies",
+  "achievementTitleLessons100": "Club des 100"
 }

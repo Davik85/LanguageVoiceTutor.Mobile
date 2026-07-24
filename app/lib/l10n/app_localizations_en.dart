@@ -1295,4 +1295,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get closeAllAchievementPreviews => 'Close all achievement previews';
+
+  @override
+  String get achievementTitleStreak7 => '7-Day Streak';
+
+  @override
+  String get achievementTitleStreak30 => '30-Day Streak';
+
+  @override
+  String get achievementTitleStreak60 => '60-Day Streak';
+
+  @override
+  String get achievementTitleStreak100 => '100-Day Streak';
+
+  @override
+  String get achievementTitleStreak365 => '365-Day Streak';
+
+  @override
+  String get achievementTitleLessons1 => 'First Step';
+
+  @override
+  String get achievementTitleLessons5 => 'Getting Started';
+
+  @override
+  String get achievementTitleLessons10 => '10 Lessons Strong';
+
+  @override
+  String get achievementTitleLessons25 => 'Steady Learner';
+
+  @override
+  String get achievementTitleLessons50 => '50 Lessons Strong';
+
+  @override
+  String get achievementTitleLessons100 => 'Century Club';
 }

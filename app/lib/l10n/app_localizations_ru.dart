@@ -1308,4 +1308,37 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get closeAllAchievementPreviews => 'Закрыть все просмотры достижений';
+
+  @override
+  String get achievementTitleStreak7 => 'Серия 7 дней';
+
+  @override
+  String get achievementTitleStreak30 => 'Серия 30 дней';
+
+  @override
+  String get achievementTitleStreak60 => 'Серия 60 дней';
+
+  @override
+  String get achievementTitleStreak100 => 'Серия 100 дней';
+
+  @override
+  String get achievementTitleStreak365 => 'Серия 365 дней';
+
+  @override
+  String get achievementTitleLessons1 => 'Первый шаг';
+
+  @override
+  String get achievementTitleLessons5 => 'Начало пути';
+
+  @override
+  String get achievementTitleLessons10 => '10 уроков — уверенно';
+
+  @override
+  String get achievementTitleLessons25 => 'Стабильный ученик';
+
+  @override
+  String get achievementTitleLessons50 => '50 уроков — уверенно';
+
+  @override
+  String get achievementTitleLessons100 => 'Клуб 100';
 }

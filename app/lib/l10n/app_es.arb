@@ -110,5 +110,16 @@
   "@achievementLockedSemantics": {"placeholders":{"title":{"type":"String"},"current":{"type":"num"},"target":{"type":"num"}}},
   "closeAchievementPreview": "Cerrar la vista previa del logro {title}",
   "@closeAchievementPreview": {"placeholders":{"title":{"type":"String"}}},
-  "closeAllAchievementPreviews": "Cerrar todas las vistas previas de logros"
+  "closeAllAchievementPreviews": "Cerrar todas las vistas previas de logros",
+  "achievementTitleStreak7": "Racha de 7 días",
+  "achievementTitleStreak30": "Racha de 30 días",
+  "achievementTitleStreak60": "Racha de 60 días",
+  "achievementTitleStreak100": "Racha de 100 días",
+  "achievementTitleStreak365": "Racha de 365 días",
+  "achievementTitleLessons1": "Primer paso",
+  "achievementTitleLessons5": "Empezando",
+  "achievementTitleLessons10": "10 lecciones superadas",
+  "achievementTitleLessons25": "Estudiante constante",
+  "achievementTitleLessons50": "50 lecciones superadas",
+  "achievementTitleLessons100": "Club de los 100"
 }

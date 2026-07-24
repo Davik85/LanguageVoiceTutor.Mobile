@@ -1307,4 +1307,37 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get closeAllAchievementPreviews =>
       'Cerrar todas las vistas previas de logros';
+
+  @override
+  String get achievementTitleStreak7 => 'Racha de 7 días';
+
+  @override
+  String get achievementTitleStreak30 => 'Racha de 30 días';
+
+  @override
+  String get achievementTitleStreak60 => 'Racha de 60 días';
+
+  @override
+  String get achievementTitleStreak100 => 'Racha de 100 días';
+
+  @override
+  String get achievementTitleStreak365 => 'Racha de 365 días';
+
+  @override
+  String get achievementTitleLessons1 => 'Primer paso';
+
+  @override
+  String get achievementTitleLessons5 => 'Empezando';
+
+  @override
+  String get achievementTitleLessons10 => '10 lecciones superadas';
+
+  @override
+  String get achievementTitleLessons25 => 'Estudiante constante';
+
+  @override
+  String get achievementTitleLessons50 => '50 lecciones superadas';
+
+  @override
+  String get achievementTitleLessons100 => 'Club de los 100';
 }

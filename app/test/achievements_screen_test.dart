@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
+import 'package:language_voice_tutor_mobile/achievements/achievement_title_resolver.dart';
 import 'package:language_voice_tutor_mobile/l10n/app_localizations.dart';
 import 'package:language_voice_tutor_mobile/models/achievements.dart';
 import 'package:language_voice_tutor_mobile/screens/achievements_screen.dart';
@@ -101,8 +102,8 @@ void main() {
     expect(find.text('Streaks'), findsOneWidget);
     expect(find.text('3 of 7'), findsNWidgets(2));
     expect(find.text('Completed'), findsOneWidget);
-    expect(tester.getTopLeft(find.text('streak-30-v1')).dx,
-        lessThan(tester.getTopLeft(find.text('streak-7-v1')).dx));
+    expect(tester.getTopLeft(find.text('30-Day Streak')).dx,
+        lessThan(tester.getTopLeft(find.text('7-Day Streak')).dx));
     expect(find.byType(GridView), findsNWidgets(2));
     expect(
         find.byWidgetPredicate((widget) =>
@@ -257,6 +258,151 @@ void main() {
       ));
       await tester.pumpAndSettle();
       expect(find.text('Login route'), findsOneWidget);
+    });
+  });
+
+  group('account achievement title localization', () {
+    const ids = [
+      'streak-7-v1',
+      'streak-30-v1',
+      'streak-60-v1',
+      'streak-100-v1',
+      'streak-365-v1',
+      'lessons-1-v1',
+      'lessons-5-v1',
+      'lessons-10-v1',
+      'lessons-25-v1',
+      'lessons-50-v1',
+      'lessons-100-v1',
+    ];
+    const titlesByLocale = {
+      'en': [
+        '7-Day Streak',
+        '30-Day Streak',
+        '60-Day Streak',
+        '100-Day Streak',
+        '365-Day Streak',
+        'First Step',
+        'Getting Started',
+        '10 Lessons Strong',
+        'Steady Learner',
+        '50 Lessons Strong',
+        'Century Club',
+      ],
+      'ru': [
+        'Серия 7 дней',
+        'Серия 30 дней',
+        'Серия 60 дней',
+        'Серия 100 дней',
+        'Серия 365 дней',
+        'Первый шаг',
+        'Начало пути',
+        '10 уроков — уверенно',
+        'Стабильный ученик',
+        '50 уроков — уверенно',
+        'Клуб 100',
+      ],
+      'es': [
+        'Racha de 7 días',
+        'Racha de 30 días',
+        'Racha de 60 días',
+        'Racha de 100 días',
+        'Racha de 365 días',
+        'Primer paso',
+        'Empezando',
+        '10 lecciones superadas',
+        'Estudiante constante',
+        '50 lecciones superadas',
+        'Club de los 100',
+      ],
+      'fr': [
+        'Série de 7 jours',
+        'Série de 30 jours',
+        'Série de 60 jours',
+        'Série de 100 jours',
+        'Série de 365 jours',
+        'Premier pas',
+        'Bien commencé',
+        '10 leçons réussies',
+        'Apprenant régulier',
+        '50 leçons réussies',
+        'Club des 100',
+      ],
+      'de': [
+        '7-Tage-Serie',
+        '30-Tage-Serie',
+        '60-Tage-Serie',
+        '100-Tage-Serie',
+        '365-Tage-Serie',
+        'Erster Schritt',
+        'Guter Start',
+        '10 Lektionen gemeistert',
+        'Beständig Lernende',
+        '50 Lektionen gemeistert',
+        'Hunderterclub',
+      ],
+    };
+
+    testWidgets('all approved IDs resolve in every interface locale',
+        (tester) async {
+      for (final localeTitles in titlesByLocale.entries) {
+        late List<String> resolvedTitles;
+        await tester.pumpWidget(MaterialApp(
+          locale: Locale(localeTitles.key),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              resolvedTitles = [
+                for (final id in ids)
+                  AchievementTitleResolver.resolve(
+                      context, _item(id, 'streak')),
+              ];
+              return const SizedBox();
+            },
+          ),
+        ));
+        await tester.pumpAndSettle();
+        expect(resolvedTitles, localeTitles.value);
+      }
+    });
+
+    testWidgets('Russian cards, preview, and unknown fallback use titles',
+        (tester) async {
+      final response = AchievementsResponse(
+        generatedAtUtc: DateTime.utc(2026, 7, 19),
+        calendarTimezone: 'UTC',
+        activeStudyLanguage: null,
+        summary: const AchievementSummary(unlocked: 1, total: 3),
+        achievements: [
+          _item('streak-7-v1', 'streak', unlocked: true),
+          _item('lessons-1-v1', 'lesson'),
+          _item('unknown-id', 'other'),
+        ],
+        homeItems: const [],
+      );
+      await tester.pumpWidget(_screen(
+        AchievementsResult.success(response),
+        locale: const Locale('ru'),
+      ));
+      await tester.pumpAndSettle();
+      expect(find.text('Серия 7 дней'), findsOneWidget);
+      expect(find.text('Первый шаг'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('all-achievement-streak-7-v1')));
+      await tester.pumpAndSettle();
+      expect(
+        _semanticsLabel('Закрыть просмотр достижения Серия 7 дней'),
+        findsOneWidget,
+      );
+      await tester.tapAt(const Offset(4, 4));
+      await tester.pumpAndSettle();
+      await tester.dragUntilVisible(
+        find.text('unknown-id'),
+        find.byType(ListView),
+        const Offset(0, -200),
+      );
+      expect(find.text('unknown-id'), findsOneWidget);
     });
   });
 }

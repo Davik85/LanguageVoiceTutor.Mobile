@@ -1308,4 +1308,37 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get closeAllAchievementPreviews => 'Alle Erfolgsvorschauen schließen';
+
+  @override
+  String get achievementTitleStreak7 => '7-Tage-Serie';
+
+  @override
+  String get achievementTitleStreak30 => '30-Tage-Serie';
+
+  @override
+  String get achievementTitleStreak60 => '60-Tage-Serie';
+
+  @override
+  String get achievementTitleStreak100 => '100-Tage-Serie';
+
+  @override
+  String get achievementTitleStreak365 => '365-Tage-Serie';
+
+  @override
+  String get achievementTitleLessons1 => 'Erster Schritt';
+
+  @override
+  String get achievementTitleLessons5 => 'Guter Start';
+
+  @override
+  String get achievementTitleLessons10 => '10 Lektionen gemeistert';
+
+  @override
+  String get achievementTitleLessons25 => 'Beständig Lernende';
+
+  @override
+  String get achievementTitleLessons50 => '50 Lektionen gemeistert';
+
+  @override
+  String get achievementTitleLessons100 => 'Hunderterclub';
 }

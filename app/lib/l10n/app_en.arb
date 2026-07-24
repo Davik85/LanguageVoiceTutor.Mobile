@@ -154,5 +154,16 @@
   "@achievementLockedSemantics": {"placeholders":{"title":{"type":"String"},"current":{"type":"num"},"target":{"type":"num"}}},
   "closeAchievementPreview": "Close {title} achievement preview",
   "@closeAchievementPreview": {"placeholders":{"title":{"type":"String"}}},
-  "closeAllAchievementPreviews": "Close all achievement previews"
+  "closeAllAchievementPreviews": "Close all achievement previews",
+  "achievementTitleStreak7": "7-Day Streak",
+  "achievementTitleStreak30": "30-Day Streak",
+  "achievementTitleStreak60": "60-Day Streak",
+  "achievementTitleStreak100": "100-Day Streak",
+  "achievementTitleStreak365": "365-Day Streak",
+  "achievementTitleLessons1": "First Step",
+  "achievementTitleLessons5": "Getting Started",
+  "achievementTitleLessons10": "10 Lessons Strong",
+  "achievementTitleLessons25": "Steady Learner",
+  "achievementTitleLessons50": "50 Lessons Strong",
+  "achievementTitleLessons100": "Century Club"
 }
