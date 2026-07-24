@@ -131,4 +131,20 @@
 ,
   "startRecording": "Start recording",
   "stopRecording": "Stop recording"
+,
+  "progressCompletedLessons": "Completed lessons",
+  "progressAllTime": "All time",
+  "progressLast7Days": "Last 7 days",
+  "progressLast30Days": "Last 30 days",
+  "progressCurrentStreak": "Current streak",
+  "progressLongestStreak": "Longest streak",
+  "progressRecentActivity": "Recent activity",
+  "progressLastCompletedLesson": "Last completed lesson",
+  "progressLessonsByLanguage": "Lessons by language",
+  "progressLessonsByLevel": "Lessons by level",
+  "progressEmptyTitle": "Your progress will appear here",
+  "progressEmptyDescription": "Completed lessons will appear here after you finish a lesson.",
+  "progressUnavailable": "Progress is temporarily unavailable. Please try again.",
+  "progressLoadFailed": "Could not load progress. Please try again.",
+  "progressStreakDays": "{count, plural, =0{0 days} =1{1 day} other{{count} days}}"
 }

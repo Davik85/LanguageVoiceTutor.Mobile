@@ -87,4 +87,20 @@
 ,
   "startRecording": "Commencer l’enregistrement",
   "stopRecording": "Arrêter l’enregistrement"
+,
+  "progressCompletedLessons": "Leçons terminées",
+  "progressAllTime": "Depuis le début",
+  "progressLast7Days": "7 derniers jours",
+  "progressLast30Days": "30 derniers jours",
+  "progressCurrentStreak": "Série actuelle",
+  "progressLongestStreak": "Plus longue série",
+  "progressRecentActivity": "Activité récente",
+  "progressLastCompletedLesson": "Dernière leçon terminée",
+  "progressLessonsByLanguage": "Leçons par langue",
+  "progressLessonsByLevel": "Leçons par niveau",
+  "progressEmptyTitle": "Votre progression apparaîtra ici",
+  "progressEmptyDescription": "Les leçons terminées apparaîtront ici après avoir terminé une leçon.",
+  "progressUnavailable": "La progression est temporairement indisponible. Réessayez.",
+  "progressLoadFailed": "Impossible de charger la progression. Réessayez.",
+  "progressStreakDays": "{count, plural, =0{0 jour} =1{1 jour} other{{count} jours}}"
 }

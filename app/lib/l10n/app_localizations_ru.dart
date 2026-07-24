@@ -1227,4 +1227,63 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get stopRecording => 'Остановить запись';
+
+  @override
+  String get progressCompletedLessons => 'Завершённые уроки';
+
+  @override
+  String get progressAllTime => 'За всё время';
+
+  @override
+  String get progressLast7Days => 'За последние 7 дней';
+
+  @override
+  String get progressLast30Days => 'За последние 30 дней';
+
+  @override
+  String get progressCurrentStreak => 'Текущая серия';
+
+  @override
+  String get progressLongestStreak => 'Самая длинная серия';
+
+  @override
+  String get progressRecentActivity => 'Недавняя активность';
+
+  @override
+  String get progressLastCompletedLesson => 'Последний завершённый урок';
+
+  @override
+  String get progressLessonsByLanguage => 'Уроки по языкам';
+
+  @override
+  String get progressLessonsByLevel => 'Уроки по уровням';
+
+  @override
+  String get progressEmptyTitle => 'Здесь появится ваш прогресс';
+
+  @override
+  String get progressEmptyDescription =>
+      'Завершённые уроки появятся здесь после окончания урока.';
+
+  @override
+  String get progressUnavailable =>
+      'Прогресс временно недоступен. Попробуйте ещё раз.';
+
+  @override
+  String get progressLoadFailed =>
+      'Не удалось загрузить прогресс. Попробуйте ещё раз.';
+
+  @override
+  String progressStreakDays(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count дня',
+      many: '$count дней',
+      few: '$count дня',
+      one: '1 день',
+      zero: '0 дней',
+    );
+    return '$_temp0';
+  }
 }

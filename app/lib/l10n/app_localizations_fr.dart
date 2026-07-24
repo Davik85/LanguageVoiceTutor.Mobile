@@ -1230,4 +1230,61 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get stopRecording => 'Arrêter l’enregistrement';
+
+  @override
+  String get progressCompletedLessons => 'Leçons terminées';
+
+  @override
+  String get progressAllTime => 'Depuis le début';
+
+  @override
+  String get progressLast7Days => '7 derniers jours';
+
+  @override
+  String get progressLast30Days => '30 derniers jours';
+
+  @override
+  String get progressCurrentStreak => 'Série actuelle';
+
+  @override
+  String get progressLongestStreak => 'Plus longue série';
+
+  @override
+  String get progressRecentActivity => 'Activité récente';
+
+  @override
+  String get progressLastCompletedLesson => 'Dernière leçon terminée';
+
+  @override
+  String get progressLessonsByLanguage => 'Leçons par langue';
+
+  @override
+  String get progressLessonsByLevel => 'Leçons par niveau';
+
+  @override
+  String get progressEmptyTitle => 'Votre progression apparaîtra ici';
+
+  @override
+  String get progressEmptyDescription =>
+      'Les leçons terminées apparaîtront ici après avoir terminé une leçon.';
+
+  @override
+  String get progressUnavailable =>
+      'La progression est temporairement indisponible. Réessayez.';
+
+  @override
+  String get progressLoadFailed =>
+      'Impossible de charger la progression. Réessayez.';
+
+  @override
+  String progressStreakDays(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count jours',
+      one: '1 jour',
+      zero: '0 jour',
+    );
+    return '$_temp0';
+  }
 }

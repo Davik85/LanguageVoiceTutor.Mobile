@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations_context.dart';
 import '../models/progress.dart';
 import '../services/auth_service.dart';
 import '../services/service_factory.dart';
@@ -19,7 +20,7 @@ class ProgressScreen extends StatefulWidget {
 class _ProgressScreenState extends State<ProgressScreen> {
   late final AuthService _authService;
   ProgressResponse? _progress;
-  String? _error;
+  ProgressStatus? _errorStatus;
   bool _isLoading = true;
   bool _isRequestInFlight = false;
 
@@ -36,7 +37,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     if (mounted) {
       setState(() {
         _isLoading = true;
-        _error = null;
+        _errorStatus = null;
       });
     }
 
@@ -55,7 +56,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     setState(() {
       _isLoading = false;
       _progress = result.progress;
-      _error = result.isSuccess ? null : result.message;
+      _errorStatus = result.isSuccess ? null : result.status;
     });
     _isRequestInFlight = false;
   }
@@ -64,12 +65,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: const Key('progress-screen'),
-      appBar: AppBar(title: const Text('Progress')),
+      appBar: AppBar(title: Text(context.l10n.progress)),
       body: AppVisuals.screenBackground(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _error != null
-                ? _ProgressError(message: _error!, onRetry: _loadProgress)
+            : _errorStatus != null
+                ? _ProgressError(status: _errorStatus!, onRetry: _loadProgress)
                 : _isEmpty(_progress)
                     ? _ProgressEmpty(onReturnHome: () => Navigator.pop(context))
                     : _ProgressContent(progress: _progress!),
@@ -87,8 +88,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
 }
 
 class _ProgressError extends StatelessWidget {
-  const _ProgressError({required this.message, required this.onRetry});
-  final String message;
+  const _ProgressError({required this.status, required this.onRetry});
+  final ProgressStatus status;
   final VoidCallback onRetry;
 
   @override
@@ -96,17 +97,23 @@ class _ProgressError extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(message, textAlign: TextAlign.center),
+            Text(_message(context), textAlign: TextAlign.center),
             const SizedBox(height: 16),
             OutlinedButton.icon(
               key: const Key('progress-retry'),
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.retry),
             ),
           ]),
         ),
       );
+
+  String _message(BuildContext context) => switch (status) {
+        ProgressStatus.unavailable => context.l10n.progressUnavailable,
+        ProgressStatus.failed => context.l10n.progressLoadFailed,
+        _ => context.l10n.progressLoadFailed,
+      };
 }
 
 class _ProgressEmpty extends StatelessWidget {
@@ -119,17 +126,17 @@ class _ProgressEmpty extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text('Your progress will appear here',
+            Text(context.l10n.progressEmptyTitle,
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
-            const Text(
-              'Completed lessons will appear here after you finish a lesson.',
+            Text(
+              context.l10n.progressEmptyDescription,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             OutlinedButton(
               onPressed: onReturnHome,
-              child: const Text('Back to Home'),
+              child: Text(context.l10n.backToHome),
             ),
           ]),
         ),
@@ -148,51 +155,54 @@ class _ProgressContent extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
           children: [
             _SectionCard(
-              title: 'Completed lessons',
+              title: context.l10n.progressCompletedLessons,
               child: Wrap(spacing: 20, runSpacing: 12, children: [
                 _Statistic(
-                  label: 'All time',
-                  value: progress.completedLessons.allTime,
+                  label: context.l10n.progressAllTime,
+                  value: context.l10n
+                      .lessonsCompleted(progress.completedLessons.allTime),
                   semanticLabel:
-                      '${progress.completedLessons.allTime} completed lessons all time',
+                      '${context.l10n.progressAllTime}: ${context.l10n.lessonsCompleted(progress.completedLessons.allTime)}',
                 ),
                 _Statistic(
-                  label: 'Last 7 days',
-                  value: progress.completedLessons.last7Days,
+                  label: context.l10n.progressLast7Days,
+                  value: context.l10n
+                      .lessonsCompleted(progress.completedLessons.last7Days),
                   semanticLabel:
-                      '${progress.completedLessons.last7Days} completed lessons in the last 7 days',
+                      '${context.l10n.progressLast7Days}: ${context.l10n.lessonsCompleted(progress.completedLessons.last7Days)}',
                 ),
                 _Statistic(
-                  label: 'Last 30 days',
-                  value: progress.completedLessons.last30Days,
+                  label: context.l10n.progressLast30Days,
+                  value: context.l10n
+                      .lessonsCompleted(progress.completedLessons.last30Days),
                   semanticLabel:
-                      '${progress.completedLessons.last30Days} completed lessons in the last 30 days',
+                      '${context.l10n.progressLast30Days}: ${context.l10n.lessonsCompleted(progress.completedLessons.last30Days)}',
                 ),
               ]),
             ),
             const SizedBox(height: 12),
             _SectionCard(
-              title: 'Streaks',
+              title: context.l10n.streaks,
               child: Wrap(spacing: 28, runSpacing: 12, children: [
                 _Statistic(
-                  label: 'Current streak',
-                  value: progress.streaks.currentDays,
-                  suffix: 'days',
+                  label: context.l10n.progressCurrentStreak,
+                  value: context.l10n
+                      .progressStreakDays(progress.streaks.currentDays),
                   semanticLabel:
-                      '${progress.streaks.currentDays} day current streak',
+                      '${context.l10n.progressCurrentStreak}: ${context.l10n.progressStreakDays(progress.streaks.currentDays)}',
                 ),
                 _Statistic(
-                  label: 'Longest streak',
-                  value: progress.streaks.longestDays,
-                  suffix: 'days',
+                  label: context.l10n.progressLongestStreak,
+                  value: context.l10n
+                      .progressStreakDays(progress.streaks.longestDays),
                   semanticLabel:
-                      '${progress.streaks.longestDays} day longest streak',
+                      '${context.l10n.progressLongestStreak}: ${context.l10n.progressStreakDays(progress.streaks.longestDays)}',
                 ),
               ]),
             ),
             const SizedBox(height: 12),
             _SectionCard(
-              title: 'Recent activity',
+              title: context.l10n.progressRecentActivity,
               child: _ActivityStrip(items: progress.dailyActivity),
             ),
             if (progress.lastCompletedLesson != null) ...[
@@ -202,7 +212,7 @@ class _ProgressContent extends StatelessWidget {
             if (progress.completedLessonsByStudyLanguage.isNotEmpty) ...[
               const SizedBox(height: 12),
               _DistributionCard(
-                title: 'Lessons by language',
+                title: context.l10n.progressLessonsByLanguage,
                 rows: progress.completedLessonsByStudyLanguage
                     .map((item) => (item.studyLanguage, item.completedLessons))
                     .toList(growable: false),
@@ -211,7 +221,7 @@ class _ProgressContent extends StatelessWidget {
             if (progress.completedLessonsByLevel.isNotEmpty) ...[
               const SizedBox(height: 12),
               _DistributionCard(
-                title: 'Lessons by level',
+                title: context.l10n.progressLessonsByLevel,
                 rows: progress.completedLessonsByLevel
                     .map((item) => (item.level, item.completedLessons))
                     .toList(growable: false),
@@ -246,12 +256,10 @@ class _Statistic extends StatelessWidget {
     required this.label,
     required this.value,
     required this.semanticLabel,
-    this.suffix,
   });
   final String label;
-  final int value;
+  final String value;
   final String semanticLabel;
-  final String? suffix;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -259,8 +267,7 @@ class _Statistic extends StatelessWidget {
         child: ExcludeSemantics(
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('$value${suffix == null ? '' : ' $suffix'}',
-                style: Theme.of(context).textTheme.headlineSmall),
+            Text(value, style: Theme.of(context).textTheme.headlineSmall),
             Text(label),
           ]),
         ),
@@ -278,8 +285,10 @@ class _ActivityStrip extends StatelessWidget {
         children: [
           for (final item in items)
             Semantics(
-              label:
-                  '${_formatDate(item.activityDate)}: ${item.completedLessons} completed lessons',
+              label: context.l10n.activityDaySemantics(
+                _formatDate(context, item.activityDate),
+                item.completedLessons,
+              ),
               child: Container(
                 key: Key(
                   'progress-activity-${item.activityDate.toIso8601String().substring(0, 10)}',
@@ -313,9 +322,9 @@ class _LastLessonCard extends StatelessWidget {
       lesson.subtopicTitle,
     ].whereType<String>().where((value) => value.trim().isNotEmpty).toList();
     return _SectionCard(
-      title: 'Last completed lesson',
+      title: context.l10n.progressLastCompletedLesson,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(_formatDate(lesson.completedAtUtc)),
+        Text(_formatDate(context, lesson.completedAtUtc)),
         for (final detail in details) ...[
           const SizedBox(height: 4),
           Text(detail),
@@ -337,12 +346,18 @@ class _DistributionCard extends StatelessWidget {
           children: [
             for (final row in rows)
               Semantics(
-                label: '${row.$1}: ${row.$2} completed lessons',
+                label: '${row.$1}: ${context.l10n.lessonsCompleted(row.$2)}',
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(children: [
                     Expanded(child: Text(row.$1)),
-                    Text('${row.$2}'),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        context.l10n.lessonsCompleted(row.$2),
+                        textAlign: TextAlign.end,
+                      ),
+                    ),
                   ]),
                 ),
               ),
@@ -351,20 +366,5 @@ class _DistributionCard extends StatelessWidget {
       );
 }
 
-String _formatDate(DateTime date) {
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec'
-  ];
-  return '${months[date.month - 1]} ${date.day}, ${date.year}';
-}
+String _formatDate(BuildContext context, DateTime date) =>
+    MaterialLocalizations.of(context).formatMediumDate(date);

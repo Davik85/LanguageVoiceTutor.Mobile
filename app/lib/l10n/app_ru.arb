@@ -94,4 +94,20 @@
 ,
   "startRecording": "Начать запись",
   "stopRecording": "Остановить запись"
+,
+  "progressCompletedLessons": "Завершённые уроки",
+  "progressAllTime": "За всё время",
+  "progressLast7Days": "За последние 7 дней",
+  "progressLast30Days": "За последние 30 дней",
+  "progressCurrentStreak": "Текущая серия",
+  "progressLongestStreak": "Самая длинная серия",
+  "progressRecentActivity": "Недавняя активность",
+  "progressLastCompletedLesson": "Последний завершённый урок",
+  "progressLessonsByLanguage": "Уроки по языкам",
+  "progressLessonsByLevel": "Уроки по уровням",
+  "progressEmptyTitle": "Здесь появится ваш прогресс",
+  "progressEmptyDescription": "Завершённые уроки появятся здесь после окончания урока.",
+  "progressUnavailable": "Прогресс временно недоступен. Попробуйте ещё раз.",
+  "progressLoadFailed": "Не удалось загрузить прогресс. Попробуйте ещё раз.",
+  "progressStreakDays": "{count, plural, =0{0 дней} =1{1 день} few{{count} дня} many{{count} дней} other{{count} дня}}"
 }

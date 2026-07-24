@@ -2161,6 +2161,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop recording'**
   String get stopRecording;
+
+  /// No description provided for @progressCompletedLessons.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed lessons'**
+  String get progressCompletedLessons;
+
+  /// No description provided for @progressAllTime.
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get progressAllTime;
+
+  /// No description provided for @progressLast7Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get progressLast7Days;
+
+  /// No description provided for @progressLast30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get progressLast30Days;
+
+  /// No description provided for @progressCurrentStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Current streak'**
+  String get progressCurrentStreak;
+
+  /// No description provided for @progressLongestStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest streak'**
+  String get progressLongestStreak;
+
+  /// No description provided for @progressRecentActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent activity'**
+  String get progressRecentActivity;
+
+  /// No description provided for @progressLastCompletedLesson.
+  ///
+  /// In en, this message translates to:
+  /// **'Last completed lesson'**
+  String get progressLastCompletedLesson;
+
+  /// No description provided for @progressLessonsByLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Lessons by language'**
+  String get progressLessonsByLanguage;
+
+  /// No description provided for @progressLessonsByLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Lessons by level'**
+  String get progressLessonsByLevel;
+
+  /// No description provided for @progressEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your progress will appear here'**
+  String get progressEmptyTitle;
+
+  /// No description provided for @progressEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed lessons will appear here after you finish a lesson.'**
+  String get progressEmptyDescription;
+
+  /// No description provided for @progressUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress is temporarily unavailable. Please try again.'**
+  String get progressUnavailable;
+
+  /// No description provided for @progressLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load progress. Please try again.'**
+  String get progressLoadFailed;
+
+  /// No description provided for @progressStreakDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{0 days} =1{1 day} other{{count} days}}'**
+  String progressStreakDays(num count);
 }
 
 class _AppLocalizationsDelegate
