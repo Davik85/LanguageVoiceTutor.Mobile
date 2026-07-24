@@ -1079,8 +1079,7 @@ class _LessonScreenState extends State<LessonScreen>
       }
     } catch (_) {
       // Live chat remains primary if persistence is unavailable.
-      userMessage.persistenceError =
-          'Feedback is not ready yet. Please try again.';
+      userMessage.persistenceError = context.l10n.feedbackNotReady;
     }
   }
 
@@ -1972,7 +1971,7 @@ class _LessonScreenState extends State<LessonScreen>
     if (persistedId == null || persistedId.isEmpty) {
       setState(() {
         message.isFeedbackLoading = false;
-        message.feedbackError = 'Feedback is not ready yet. Please try again.';
+        message.feedbackError = context.l10n.feedbackNotReady;
       });
       return;
     }
@@ -2010,7 +2009,7 @@ class _LessonScreenState extends State<LessonScreen>
         message.isFeedbackVisible = true;
         message.feedbackError = null;
       } else {
-        message.feedbackError = result.message;
+        message.feedbackError = _feedbackErrorMessage(result.status);
         if (result.status == LessonFeedbackStatus.authRequired) {
           _isAuthenticationRequired = true;
         }
@@ -2020,6 +2019,21 @@ class _LessonScreenState extends State<LessonScreen>
       }
     });
   }
+
+  String _feedbackErrorMessage(LessonFeedbackStatus status) => switch (status) {
+        LessonFeedbackStatus.authRequired =>
+          context.l10n.lessonFeedbackAuthRequired,
+        LessonFeedbackStatus.sessionEnded =>
+          context.l10n.lessonFeedbackSessionEnded,
+        LessonFeedbackStatus.validation =>
+          context.l10n.lessonFeedbackNotAvailableForMessage,
+        LessonFeedbackStatus.temporarilyUnavailable ||
+        LessonFeedbackStatus.unavailable =>
+          context.l10n.feedbackUnavailable,
+        LessonFeedbackStatus.failed ||
+        LessonFeedbackStatus.success =>
+          context.l10n.lessonFeedbackFailed,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -2553,12 +2567,13 @@ class _LessonBody extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Text(start.message, textAlign: TextAlign.center),
+            Text(_startFailureMessage(context, start.status),
+                textAlign: TextAlign.center),
             const SizedBox(height: 16),
             TextButton.icon(
               onPressed: onRetryStart,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.retry),
             ),
           ],
         ),
@@ -2600,6 +2615,21 @@ class _LessonBody extends StatelessWidget {
       bottomContent: bottomContent,
     );
   }
+
+  String _startFailureMessage(
+    BuildContext context,
+    LessonSessionStartStatus status,
+  ) =>
+      switch (status) {
+        LessonSessionStartStatus.blocked => context.l10n.lessonStartBlocked,
+        LessonSessionStartStatus.conflict => context.l10n.lessonStartConflict,
+        LessonSessionStartStatus.authRequired =>
+          context.l10n.lessonStartAuthRequired,
+        LessonSessionStartStatus.unavailable =>
+          context.l10n.lessonStartUnavailable,
+        LessonSessionStartStatus.failed => context.l10n.lessonStartFailed,
+        _ => context.l10n.lessonStartFailed,
+      };
 }
 
 class _LessonTranscript extends StatelessWidget {
@@ -2772,7 +2802,13 @@ class _LessonMessageBubble extends StatelessWidget {
                         IconButton(
                           key: const Key('lesson-message-action-user-feedback'),
                           visualDensity: VisualDensity.compact,
-                          tooltip: 'Feedback',
+                          tooltip: message.isFeedbackLoading
+                              ? context.l10n.loadingLessonFeedback
+                              : message.isFeedbackVisible
+                                  ? context.l10n.hideLessonFeedback
+                                  : message.feedbackError != null
+                                      ? context.l10n.retryLessonFeedback
+                                      : context.l10n.showLessonFeedback,
                           onPressed: actionAvailability.canUsePlaceholders
                               ? () => onFeedback(message)
                               : null,
@@ -2812,11 +2848,14 @@ class _LessonMessageBubble extends StatelessWidget {
               ],
               if (message.isFeedbackLoading) ...[
                 const SizedBox(height: 8),
-                const SizedBox(
-                  key: Key('lesson-message-feedback-loading'),
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                Semantics(
+                  label: context.l10n.loadingLessonFeedback,
+                  child: const SizedBox(
+                    key: Key('lesson-message-feedback-loading'),
+                    height: 16,
+                    width: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
                 ),
               ],
               if (message.feedbackError != null) ...[
@@ -3100,12 +3139,12 @@ class _FeedbackCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sections = <(String, String)>[
-      ('Quick summary', feedback.shortText),
-      ('Corrected version', feedback.correctedVersion),
-      ('Grammar tip', feedback.grammarTip),
-      ('Vocabulary tip', feedback.vocabularyTip),
-      ('Culture tip', feedback.cultureTip),
-      ('More natural version', feedback.naturalVersion),
+      (context.l10n.feedbackQuickSummary, feedback.shortText),
+      (context.l10n.feedbackCorrectedVersion, feedback.correctedVersion),
+      (context.l10n.feedbackGrammarTip, feedback.grammarTip),
+      (context.l10n.feedbackVocabularyTip, feedback.vocabularyTip),
+      (context.l10n.feedbackCultureTip, feedback.cultureTip),
+      (context.l10n.feedbackNaturalVersion, feedback.naturalVersion),
     ].where((section) => section.$2.trim().isNotEmpty).toList();
     return Container(
       key: const Key('lesson-message-feedback-card'),
@@ -3118,7 +3157,7 @@ class _FeedbackCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Feedback',
+          Text(context.l10n.lessonFeedback,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     color: const Color(0xFF174A7C),
                     fontWeight: FontWeight.w700,

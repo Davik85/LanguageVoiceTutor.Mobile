@@ -1951,6 +1951,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not finish the lesson. Please check your connection and try again.'**
   String get finishLessonFailed;
+
+  /// No description provided for @lessonFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback'**
+  String get lessonFeedback;
+
+  /// No description provided for @loadingLessonFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading feedback...'**
+  String get loadingLessonFeedback;
+
+  /// No description provided for @showLessonFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Show feedback'**
+  String get showLessonFeedback;
+
+  /// No description provided for @hideLessonFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide feedback'**
+  String get hideLessonFeedback;
+
+  /// No description provided for @retryLessonFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry feedback'**
+  String get retryLessonFeedback;
+
+  /// No description provided for @feedbackNotReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback is not ready yet. Please try again.'**
+  String get feedbackNotReady;
+
+  /// No description provided for @feedbackQuickSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick summary'**
+  String get feedbackQuickSummary;
+
+  /// No description provided for @feedbackCorrectedVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Corrected version'**
+  String get feedbackCorrectedVersion;
+
+  /// No description provided for @feedbackGrammarTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Grammar tip'**
+  String get feedbackGrammarTip;
+
+  /// No description provided for @feedbackVocabularyTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Vocabulary tip'**
+  String get feedbackVocabularyTip;
+
+  /// No description provided for @feedbackCultureTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Culture tip'**
+  String get feedbackCultureTip;
+
+  /// No description provided for @feedbackNaturalVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'More natural version'**
+  String get feedbackNaturalVersion;
+
+  /// No description provided for @lessonFeedbackAuthRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in again to continue the lesson.'**
+  String get lessonFeedbackAuthRequired;
+
+  /// No description provided for @lessonFeedbackSessionEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'This lesson has already ended.'**
+  String get lessonFeedbackSessionEnded;
+
+  /// No description provided for @lessonFeedbackNotAvailableForMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback is not available for this message.'**
+  String get lessonFeedbackNotAvailableForMessage;
+
+  /// No description provided for @lessonFeedbackFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not get feedback. Please try again.'**
+  String get lessonFeedbackFailed;
+
+  /// No description provided for @lessonStartBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'You have used today\'s free lesson. Please try again tomorrow or upgrade.'**
+  String get lessonStartBlocked;
+
+  /// No description provided for @lessonStartConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have an active lesson. Finish or leave it before starting a new one.'**
+  String get lessonStartConflict;
+
+  /// No description provided for @lessonStartAuthRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in again to start a lesson.'**
+  String get lessonStartAuthRequired;
+
+  /// No description provided for @lessonStartUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start the lesson. Please check your connection and try again.'**
+  String get lessonStartUnavailable;
+
+  /// No description provided for @lessonStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start the lesson. Please try again.'**
+  String get lessonStartFailed;
 }
 
 class _AppLocalizationsDelegate

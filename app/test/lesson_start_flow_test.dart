@@ -153,6 +153,8 @@ class FakeAuthService extends AuthService {
     LessonChatReplyResult? replyResult,
     this.hintCompleter,
     LessonChatHintResult? hintResult,
+    this.feedbackCompleter,
+    LessonFeedbackResult? feedbackResult,
     this.translationCompleter,
     TranslationResult? translationResult,
     LessonRuntimeScenario? scenario,
@@ -175,6 +177,7 @@ class FakeAuthService extends AuthService {
   })  : lessonStartResult = lessonStartResult ?? _readyLessonStartResult(),
         replyResult = replyResult ?? _defaultReplyResult(),
         hintResult = hintResult ?? _defaultHintResult(),
+        feedbackResult = feedbackResult ?? LessonFeedbackResult.failed(),
         translationResult = translationResult ?? _defaultTranslationResult(),
         finishResult =
             finishResult ?? LessonCompletionResult.summaryUnavailable(),
@@ -192,6 +195,8 @@ class FakeAuthService extends AuthService {
   final LessonChatReplyResult replyResult;
   final Completer<LessonChatHintResult>? hintCompleter;
   final LessonChatHintResult hintResult;
+  final Completer<LessonFeedbackResult>? feedbackCompleter;
+  final LessonFeedbackResult feedbackResult;
   final Completer<TranslationResult>? translationCompleter;
   final TranslationResult translationResult;
   final LessonRuntimeScenario scenario;
@@ -216,6 +221,7 @@ class FakeAuthService extends AuthService {
   int fetchScenarioCallCount = 0;
   int sendLessonChatReplyCallCount = 0;
   int requestLessonChatHintCallCount = 0;
+  int requestLessonFeedbackCallCount = 0;
   int requestTranslationCallCount = 0;
   int finishLessonSessionCallCount = 0;
   int abandonLessonSessionCallCount = 0;
@@ -336,6 +342,14 @@ class FakeAuthService extends AuthService {
     requestLessonChatHintCallCount += 1;
     lastHintRequest = request;
     return hintCompleter?.future ?? hintResult;
+  }
+
+  @override
+  Future<LessonFeedbackResult> requestLessonFeedback({
+    required LessonChatRequest request,
+  }) async {
+    requestLessonFeedbackCallCount += 1;
+    return feedbackCompleter?.future ?? feedbackResult;
   }
 
   @override
@@ -2592,6 +2606,149 @@ void main() {
         expect(find.text(localeCase.value.$1), findsOneWidget);
         expect(find.byTooltip(localeCase.value.$2), findsOneWidget);
         expect(find.byTooltip(localeCase.value.$3), findsOneWidget);
+      });
+    }
+  });
+
+  group('lesson feedback and start errors localization', () {
+    testWidgets(
+        'Russian feedback chrome is localized while response text stays unchanged',
+        (tester) async {
+      final auth = FakeAuthService(
+        feedbackResult: LessonFeedbackResult.success(
+          const LessonFeedbackResponse(
+            shortText: 'Backend summary',
+            correctedVersion: 'Backend correction',
+            grammarTip: 'Backend grammar',
+            vocabularyTip: 'Backend vocabulary',
+            cultureTip: 'Backend culture',
+            naturalVersion: 'Backend natural version',
+          ),
+        ),
+      );
+      await tester.pumpWidget(_lessonScreen(auth, locale: const Locale('ru')));
+      await tester.pumpAndSettle();
+      await _openTextComposer(tester);
+      await tester.enterText(find.byType(TextField), 'Hello');
+      await tester.pump();
+      await tester.tap(_sendButton());
+      await tester.pumpAndSettle();
+
+      final action =
+          find.byKey(const Key('lesson-message-action-user-feedback'));
+      await _showWidget(tester, action);
+      expect(find.byTooltip('Показать обратную связь'), findsOneWidget);
+      await tester.tap(action);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Обратная связь'), findsOneWidget);
+      expect(find.text('Краткий итог'), findsOneWidget);
+      expect(find.text('Исправленный вариант'), findsOneWidget);
+      expect(find.text('Совет по грамматике'), findsOneWidget);
+      expect(find.text('Совет по лексике'), findsOneWidget);
+      expect(find.text('Культурная заметка'), findsOneWidget);
+      expect(find.text('Более естественный вариант'), findsOneWidget);
+      expect(find.text('Backend correction'), findsOneWidget);
+      expect(find.byTooltip('Скрыть обратную связь'), findsOneWidget);
+      expect(auth.requestLessonFeedbackCallCount, 1);
+    });
+
+    testWidgets('Russian feedback loading and retry labels are localized',
+        (tester) async {
+      final feedbackCompleter = Completer<LessonFeedbackResult>();
+      final auth = FakeAuthService(feedbackCompleter: feedbackCompleter);
+      await tester.pumpWidget(_lessonScreen(auth, locale: const Locale('ru')));
+      await tester.pumpAndSettle();
+      await _openTextComposer(tester);
+      await tester.enterText(find.byType(TextField), 'Hello');
+      await tester.pump();
+      await tester.tap(_sendButton());
+      await tester.pumpAndSettle();
+
+      final action =
+          find.byKey(const Key('lesson-message-action-user-feedback'));
+      await _showWidget(tester, action);
+      await tester.tap(action);
+      await tester.pump();
+      expect(
+          find.bySemanticsLabel('Загрузка обратной связи...'), findsOneWidget);
+
+      feedbackCompleter.complete(LessonFeedbackResult.failed());
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Не удалось получить обратную связь. Попробуйте ещё раз.'),
+        findsOneWidget,
+      );
+      expect(find.byTooltip('Повторить запрос обратной связи'), findsOneWidget);
+    });
+
+    testWidgets('Russian maps every structured lesson-start failure',
+        (tester) async {
+      for (final testCase in [
+        (
+          LessonSessionStartResult.blocked(),
+          'Сегодняшний бесплатный урок уже использован. Попробуйте завтра или перейдите на Premium.',
+        ),
+        (
+          LessonSessionStartResult.conflict(),
+          'У вас уже есть активный урок. Завершите его или выйдите из него, прежде чем начинать новый.',
+        ),
+        (
+          LessonSessionStartResult.authRequired(),
+          'Войдите снова, чтобы начать урок.'
+        ),
+        (
+          LessonSessionStartResult.unavailable(),
+          'Не удалось начать урок. Проверьте подключение и попробуйте ещё раз.',
+        ),
+        (
+          LessonSessionStartResult.failed(),
+          'Не удалось начать урок. Попробуйте ещё раз.'
+        ),
+      ]) {
+        await tester.pumpWidget(_lessonScreen(
+          FakeAuthService(lessonStartResult: testCase.$1),
+          locale: const Locale('ru'),
+        ));
+        await tester.pumpAndSettle();
+        expect(find.text(testCase.$2), findsOneWidget);
+        expect(find.text('Повторить'), findsOneWidget);
+      }
+    });
+
+    testWidgets('English active-session fallback retains retry behavior',
+        (tester) async {
+      final auth = FakeAuthService(
+        lessonStartResult: LessonSessionStartResult.conflict(),
+      );
+      await tester.pumpWidget(_lessonScreen(auth));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'You already have an active lesson. Finish or leave it before starting a new one.',
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Retry'));
+      await tester.pumpAndSettle();
+      expect(auth.startLessonSessionCallCount, 2);
+    });
+
+    for (final localeCase in const {
+      'es': 'No se pudo iniciar la lección. Inténtalo de nuevo.',
+      'fr': 'Impossible de démarrer la leçon. Réessayez.',
+      'de':
+          'Die Lektion konnte nicht gestartet werden. Bitte versuchen Sie es erneut.',
+    }.entries) {
+      testWidgets('${localeCase.key} renders a localized start failure',
+          (tester) async {
+        await tester.pumpWidget(_lessonScreen(
+          FakeAuthService(lessonStartResult: LessonSessionStartResult.failed()),
+          locale: Locale(localeCase.key),
+        ));
+        await tester.pumpAndSettle();
+        expect(find.text(localeCase.value), findsOneWidget);
       });
     }
   });

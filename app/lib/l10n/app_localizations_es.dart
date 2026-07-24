@@ -1110,4 +1110,76 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get finishLessonFailed =>
       'No se pudo terminar la lección. Comprueba tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get lessonFeedback => 'Comentarios';
+
+  @override
+  String get loadingLessonFeedback => 'Cargando comentarios...';
+
+  @override
+  String get showLessonFeedback => 'Mostrar comentarios';
+
+  @override
+  String get hideLessonFeedback => 'Ocultar comentarios';
+
+  @override
+  String get retryLessonFeedback => 'Reintentar comentarios';
+
+  @override
+  String get feedbackNotReady =>
+      'Los comentarios aún no están listos. Inténtalo de nuevo.';
+
+  @override
+  String get feedbackQuickSummary => 'Resumen breve';
+
+  @override
+  String get feedbackCorrectedVersion => 'Versión corregida';
+
+  @override
+  String get feedbackGrammarTip => 'Consejo de gramática';
+
+  @override
+  String get feedbackVocabularyTip => 'Consejo de vocabulario';
+
+  @override
+  String get feedbackCultureTip => 'Consejo cultural';
+
+  @override
+  String get feedbackNaturalVersion => 'Versión más natural';
+
+  @override
+  String get lessonFeedbackAuthRequired =>
+      'Vuelve a iniciar sesión para continuar la lección.';
+
+  @override
+  String get lessonFeedbackSessionEnded => 'Esta lección ya ha terminado.';
+
+  @override
+  String get lessonFeedbackNotAvailableForMessage =>
+      'Los comentarios no están disponibles para este mensaje.';
+
+  @override
+  String get lessonFeedbackFailed =>
+      'No se pudieron obtener los comentarios. Inténtalo de nuevo.';
+
+  @override
+  String get lessonStartBlocked =>
+      'Ya has usado la lección gratuita de hoy. Inténtalo mañana o mejora tu plan.';
+
+  @override
+  String get lessonStartConflict =>
+      'Ya tienes una lección activa. Termínala o sal de ella antes de iniciar otra.';
+
+  @override
+  String get lessonStartAuthRequired =>
+      'Vuelve a iniciar sesión para empezar una lección.';
+
+  @override
+  String get lessonStartUnavailable =>
+      'No se pudo iniciar la lección. Comprueba tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get lessonStartFailed =>
+      'No se pudo iniciar la lección. Inténtalo de nuevo.';
 }

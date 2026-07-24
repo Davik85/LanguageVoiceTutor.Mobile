@@ -1101,4 +1101,75 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get finishLessonFailed =>
       'Could not finish the lesson. Please check your connection and try again.';
+
+  @override
+  String get lessonFeedback => 'Feedback';
+
+  @override
+  String get loadingLessonFeedback => 'Loading feedback...';
+
+  @override
+  String get showLessonFeedback => 'Show feedback';
+
+  @override
+  String get hideLessonFeedback => 'Hide feedback';
+
+  @override
+  String get retryLessonFeedback => 'Retry feedback';
+
+  @override
+  String get feedbackNotReady => 'Feedback is not ready yet. Please try again.';
+
+  @override
+  String get feedbackQuickSummary => 'Quick summary';
+
+  @override
+  String get feedbackCorrectedVersion => 'Corrected version';
+
+  @override
+  String get feedbackGrammarTip => 'Grammar tip';
+
+  @override
+  String get feedbackVocabularyTip => 'Vocabulary tip';
+
+  @override
+  String get feedbackCultureTip => 'Culture tip';
+
+  @override
+  String get feedbackNaturalVersion => 'More natural version';
+
+  @override
+  String get lessonFeedbackAuthRequired =>
+      'Please sign in again to continue the lesson.';
+
+  @override
+  String get lessonFeedbackSessionEnded => 'This lesson has already ended.';
+
+  @override
+  String get lessonFeedbackNotAvailableForMessage =>
+      'Feedback is not available for this message.';
+
+  @override
+  String get lessonFeedbackFailed =>
+      'Could not get feedback. Please try again.';
+
+  @override
+  String get lessonStartBlocked =>
+      'You have used today\'s free lesson. Please try again tomorrow or upgrade.';
+
+  @override
+  String get lessonStartConflict =>
+      'You already have an active lesson. Finish or leave it before starting a new one.';
+
+  @override
+  String get lessonStartAuthRequired =>
+      'Please sign in again to start a lesson.';
+
+  @override
+  String get lessonStartUnavailable =>
+      'Could not start the lesson. Please check your connection and try again.';
+
+  @override
+  String get lessonStartFailed =>
+      'Could not start the lesson. Please try again.';
 }

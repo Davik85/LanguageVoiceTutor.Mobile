@@ -1111,4 +1111,77 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get finishLessonFailed =>
       'Die Lektion konnte nicht beendet werden. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.';
+
+  @override
+  String get lessonFeedback => 'Rückmeldung';
+
+  @override
+  String get loadingLessonFeedback => 'Feedback wird geladen...';
+
+  @override
+  String get showLessonFeedback => 'Feedback anzeigen';
+
+  @override
+  String get hideLessonFeedback => 'Feedback ausblenden';
+
+  @override
+  String get retryLessonFeedback => 'Feedback erneut versuchen';
+
+  @override
+  String get feedbackNotReady =>
+      'Feedback ist noch nicht bereit. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get feedbackQuickSummary => 'Kurze Zusammenfassung';
+
+  @override
+  String get feedbackCorrectedVersion => 'Korrigierte Version';
+
+  @override
+  String get feedbackGrammarTip => 'Grammatiktipp';
+
+  @override
+  String get feedbackVocabularyTip => 'Wortschatztipp';
+
+  @override
+  String get feedbackCultureTip => 'Kulturtipp';
+
+  @override
+  String get feedbackNaturalVersion => 'Natürlichere Version';
+
+  @override
+  String get lessonFeedbackAuthRequired =>
+      'Melden Sie sich erneut an, um die Lektion fortzusetzen.';
+
+  @override
+  String get lessonFeedbackSessionEnded =>
+      'Diese Lektion wurde bereits beendet.';
+
+  @override
+  String get lessonFeedbackNotAvailableForMessage =>
+      'Feedback ist für diese Nachricht nicht verfügbar.';
+
+  @override
+  String get lessonFeedbackFailed =>
+      'Feedback konnte nicht abgerufen werden. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get lessonStartBlocked =>
+      'Sie haben die kostenlose Lektion für heute bereits genutzt. Versuchen Sie es morgen erneut oder wechseln Sie zu Premium.';
+
+  @override
+  String get lessonStartConflict =>
+      'Sie haben bereits eine aktive Lektion. Beenden oder verlassen Sie sie, bevor Sie eine neue starten.';
+
+  @override
+  String get lessonStartAuthRequired =>
+      'Melden Sie sich erneut an, um eine Lektion zu starten.';
+
+  @override
+  String get lessonStartUnavailable =>
+      'Die Lektion konnte nicht gestartet werden. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.';
+
+  @override
+  String get lessonStartFailed =>
+      'Die Lektion konnte nicht gestartet werden. Bitte versuchen Sie es erneut.';
 }

@@ -1112,4 +1112,74 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get finishLessonFailed =>
       'Не удалось завершить урок. Проверьте подключение и попробуйте ещё раз.';
+
+  @override
+  String get lessonFeedback => 'Обратная связь';
+
+  @override
+  String get loadingLessonFeedback => 'Загрузка обратной связи...';
+
+  @override
+  String get showLessonFeedback => 'Показать обратную связь';
+
+  @override
+  String get hideLessonFeedback => 'Скрыть обратную связь';
+
+  @override
+  String get retryLessonFeedback => 'Повторить запрос обратной связи';
+
+  @override
+  String get feedbackNotReady =>
+      'Обратная связь ещё не готова. Попробуйте ещё раз.';
+
+  @override
+  String get feedbackQuickSummary => 'Краткий итог';
+
+  @override
+  String get feedbackCorrectedVersion => 'Исправленный вариант';
+
+  @override
+  String get feedbackGrammarTip => 'Совет по грамматике';
+
+  @override
+  String get feedbackVocabularyTip => 'Совет по лексике';
+
+  @override
+  String get feedbackCultureTip => 'Культурная заметка';
+
+  @override
+  String get feedbackNaturalVersion => 'Более естественный вариант';
+
+  @override
+  String get lessonFeedbackAuthRequired =>
+      'Войдите снова, чтобы продолжить урок.';
+
+  @override
+  String get lessonFeedbackSessionEnded => 'Этот урок уже завершён.';
+
+  @override
+  String get lessonFeedbackNotAvailableForMessage =>
+      'Обратная связь недоступна для этого сообщения.';
+
+  @override
+  String get lessonFeedbackFailed =>
+      'Не удалось получить обратную связь. Попробуйте ещё раз.';
+
+  @override
+  String get lessonStartBlocked =>
+      'Сегодняшний бесплатный урок уже использован. Попробуйте завтра или перейдите на Premium.';
+
+  @override
+  String get lessonStartConflict =>
+      'У вас уже есть активный урок. Завершите его или выйдите из него, прежде чем начинать новый.';
+
+  @override
+  String get lessonStartAuthRequired => 'Войдите снова, чтобы начать урок.';
+
+  @override
+  String get lessonStartUnavailable =>
+      'Не удалось начать урок. Проверьте подключение и попробуйте ещё раз.';
+
+  @override
+  String get lessonStartFailed => 'Не удалось начать урок. Попробуйте ещё раз.';
 }
