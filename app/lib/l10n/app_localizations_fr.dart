@@ -1287,4 +1287,26 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get achievementsLoadFailed =>
+      'Impossible de charger les succès. Réessayez.';
+
+  @override
+  String achievementUnlockedSemantics(String title) {
+    return 'Succès déverrouillé : $title';
+  }
+
+  @override
+  String achievementLockedSemantics(String title, num current, num target) {
+    return 'Succès verrouillé : $title. Progression : $current sur $target.';
+  }
+
+  @override
+  String closeAchievementPreview(String title) {
+    return 'Fermer l’aperçu du succès $title';
+  }
+
+  @override
+  String get closeAllAchievementPreviews => 'Fermer tous les aperçus de succès';
 }

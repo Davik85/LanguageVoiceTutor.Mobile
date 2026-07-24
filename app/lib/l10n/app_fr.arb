@@ -102,5 +102,13 @@
   "progressEmptyDescription": "Les leçons terminées apparaîtront ici après avoir terminé une leçon.",
   "progressUnavailable": "La progression est temporairement indisponible. Réessayez.",
   "progressLoadFailed": "Impossible de charger la progression. Réessayez.",
-  "progressStreakDays": "{count, plural, =0{0 jour} =1{1 jour} other{{count} jours}}"
+  "progressStreakDays": "{count, plural, =0{0 jour} =1{1 jour} other{{count} jours}}",
+  "achievementsLoadFailed": "Impossible de charger les succès. Réessayez.",
+  "achievementUnlockedSemantics": "Succès déverrouillé : {title}",
+  "@achievementUnlockedSemantics": {"placeholders":{"title":{"type":"String"}}},
+  "achievementLockedSemantics": "Succès verrouillé : {title}. Progression : {current} sur {target}.",
+  "@achievementLockedSemantics": {"placeholders":{"title":{"type":"String"},"current":{"type":"num"},"target":{"type":"num"}}},
+  "closeAchievementPreview": "Fermer l’aperçu du succès {title}",
+  "@closeAchievementPreview": {"placeholders":{"title":{"type":"String"}}},
+  "closeAllAchievementPreviews": "Fermer tous les aperçus de succès"
 }

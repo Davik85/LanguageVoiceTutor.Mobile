@@ -1273,4 +1273,26 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get achievementsLoadFailed =>
+      'Could not load achievements. Please try again.';
+
+  @override
+  String achievementUnlockedSemantics(String title) {
+    return 'Unlocked achievement: $title';
+  }
+
+  @override
+  String achievementLockedSemantics(String title, num current, num target) {
+    return 'Locked achievement: $title. Progress: $current of $target.';
+  }
+
+  @override
+  String closeAchievementPreview(String title) {
+    return 'Close $title achievement preview';
+  }
+
+  @override
+  String get closeAllAchievementPreviews => 'Close all achievement previews';
 }

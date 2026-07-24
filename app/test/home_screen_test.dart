@@ -403,10 +403,16 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    expect(find.bySemanticsLabel('Close lessons-1-v1'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Close lessons-1-v1 achievement preview'),
+      findsOneWidget,
+    );
     await tester.tapAt(const Offset(4, 4));
     await tester.pumpAndSettle();
-    expect(find.bySemanticsLabel('Close streak-7-v1'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Close streak-7-v1 achievement preview'),
+      findsOneWidget,
+    );
     await tester.tapAt(const Offset(4, 4));
     await tester.pumpAndSettle();
 

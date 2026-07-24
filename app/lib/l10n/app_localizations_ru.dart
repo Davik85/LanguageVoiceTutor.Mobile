@@ -1286,4 +1286,26 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get achievementsLoadFailed =>
+      'Не удалось загрузить достижения. Попробуйте ещё раз.';
+
+  @override
+  String achievementUnlockedSemantics(String title) {
+    return 'Разблокированное достижение: $title';
+  }
+
+  @override
+  String achievementLockedSemantics(String title, num current, num target) {
+    return 'Заблокированное достижение: $title. Прогресс: $current из $target.';
+  }
+
+  @override
+  String closeAchievementPreview(String title) {
+    return 'Закрыть просмотр достижения $title';
+  }
+
+  @override
+  String get closeAllAchievementPreviews => 'Закрыть все просмотры достижений';
 }

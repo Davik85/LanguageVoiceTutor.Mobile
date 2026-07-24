@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../achievements/achievement_visual_resolver.dart';
+import '../l10n/app_localizations_context.dart';
 import '../models/achievements.dart';
 
 class AchievementBadge extends StatelessWidget {
@@ -17,12 +18,14 @@ class AchievementBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _colorFor(achievement.iconKey);
     final visual = AchievementVisualResolver.resolve(achievement);
-    final state = achievement.unlocked ? 'unlocked' : 'locked';
-    final progress = achievement.unlocked
-        ? ''
-        : ', ${achievement.currentProgress} of ${achievement.targetProgress} progress';
     return Semantics(
-      label: '${achievement.title}, $state$progress',
+      label: achievement.unlocked
+          ? context.l10n.achievementUnlockedSemantics(achievement.title)
+          : context.l10n.achievementLockedSemantics(
+              achievement.title,
+              achievement.currentProgress,
+              achievement.targetProgress,
+            ),
       child: ExcludeSemantics(
         child: Opacity(
           opacity: achievement.unlocked ? 1 : 0.58,

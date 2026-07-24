@@ -425,9 +425,9 @@ void main() {
 
     expect(find.text('Achievements'), findsOneWidget);
     expect(
-        find.text(
-            'Achievements are temporarily unavailable. Please try again.'),
-        findsOneWidget);
+      find.text('Achievements are temporarily unavailable'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('settings separates profile, lessons, and app controls',

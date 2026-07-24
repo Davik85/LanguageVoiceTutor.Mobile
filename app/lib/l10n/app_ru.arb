@@ -109,5 +109,13 @@
   "progressEmptyDescription": "Завершённые уроки появятся здесь после окончания урока.",
   "progressUnavailable": "Прогресс временно недоступен. Попробуйте ещё раз.",
   "progressLoadFailed": "Не удалось загрузить прогресс. Попробуйте ещё раз.",
-  "progressStreakDays": "{count, plural, =0{0 дней} =1{1 день} few{{count} дня} many{{count} дней} other{{count} дня}}"
+  "progressStreakDays": "{count, plural, =0{0 дней} =1{1 день} few{{count} дня} many{{count} дней} other{{count} дня}}",
+  "achievementsLoadFailed": "Не удалось загрузить достижения. Попробуйте ещё раз.",
+  "achievementUnlockedSemantics": "Разблокированное достижение: {title}",
+  "@achievementUnlockedSemantics": {"placeholders":{"title":{"type":"String"}}},
+  "achievementLockedSemantics": "Заблокированное достижение: {title}. Прогресс: {current} из {target}.",
+  "@achievementLockedSemantics": {"placeholders":{"title":{"type":"String"},"current":{"type":"num"},"target":{"type":"num"}}},
+  "closeAchievementPreview": "Закрыть просмотр достижения {title}",
+  "@closeAchievementPreview": {"placeholders":{"title":{"type":"String"}}},
+  "closeAllAchievementPreviews": "Закрыть все просмотры достижений"
 }

@@ -59,11 +59,12 @@ class _AchievementsContent extends StatelessWidget {
     if (!result.isSuccess || result.achievements == null) {
       return Center(
           child: Padding(
-              padding: const EdgeInsets.all(24), child: Text(result.message)));
+              padding: const EdgeInsets.all(24),
+              child: Text(_errorMessage(context, result.status))));
     }
     final response = result.achievements!;
     if (response.achievements.isEmpty) {
-      return Center(child: Text(context.l10n.achievementsUnavailable));
+      return Center(child: Text(context.l10n.achievementsEmpty));
     }
     final groups = <String, List<AchievementItem>>{};
     for (final item in response.achievements) {
@@ -115,6 +116,14 @@ class _AchievementsContent extends StatelessWidget {
       ],
     );
   }
+
+  String _errorMessage(BuildContext context, AchievementsStatus status) =>
+      switch (status) {
+        AchievementsStatus.unavailable =>
+          context.l10n.achievementsTemporarilyUnavailable,
+        AchievementsStatus.failed => context.l10n.achievementsLoadFailed,
+        _ => context.l10n.achievementsLoadFailed,
+      };
 }
 
 class _AchievementGridItem extends StatelessWidget {

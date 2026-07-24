@@ -102,5 +102,13 @@
   "progressEmptyDescription": "Abgeschlossene Lektionen erscheinen hier, nachdem Sie eine Lektion beendet haben.",
   "progressUnavailable": "Der Fortschritt ist vorübergehend nicht verfügbar. Bitte versuchen Sie es erneut.",
   "progressLoadFailed": "Der Fortschritt konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
-  "progressStreakDays": "{count, plural, =0{0 Tage} =1{1 Tag} other{{count} Tage}}"
+  "progressStreakDays": "{count, plural, =0{0 Tage} =1{1 Tag} other{{count} Tage}}",
+  "achievementsLoadFailed": "Erfolge konnten nicht geladen werden. Bitte versuchen Sie es erneut.",
+  "achievementUnlockedSemantics": "Freigeschalteter Erfolg: {title}",
+  "@achievementUnlockedSemantics": {"placeholders":{"title":{"type":"String"}}},
+  "achievementLockedSemantics": "Gesperrter Erfolg: {title}. Fortschritt: {current} von {target}.",
+  "@achievementLockedSemantics": {"placeholders":{"title":{"type":"String"},"current":{"type":"num"},"target":{"type":"num"}}},
+  "closeAchievementPreview": "Vorschau des Erfolgs {title} schließen",
+  "@closeAchievementPreview": {"placeholders":{"title":{"type":"String"}}},
+  "closeAllAchievementPreviews": "Alle Erfolgsvorschauen schließen"
 }

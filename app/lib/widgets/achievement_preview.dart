@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../achievements/achievement_visual_resolver.dart';
+import '../l10n/app_localizations_context.dart';
 import '../models/achievements.dart';
 
 enum AchievementPreviewDismissal { dismissed, closeAll }
@@ -68,7 +69,8 @@ class _AchievementPreview extends StatelessWidget {
                 return Center(
                   child: Semantics(
                     button: true,
-                    label: 'Close ${achievement.title}',
+                    label:
+                        context.l10n.closeAchievementPreview(achievement.title),
                     child: InteractiveViewer(
                       clipBehavior: Clip.none,
                       boundaryMargin: const EdgeInsets.all(1000),
@@ -90,7 +92,7 @@ class _AchievementPreview extends StatelessWidget {
                 right: 12,
                 child: Semantics(
                   button: true,
-                  label: 'Close all achievement previews',
+                  label: context.l10n.closeAllAchievementPreviews,
                   child: IconButton(
                     key: const Key('achievement-preview-close-all'),
                     style: IconButton.styleFrom(

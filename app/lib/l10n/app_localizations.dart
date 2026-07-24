@@ -2251,6 +2251,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{0 days} =1{1 day} other{{count} days}}'**
   String progressStreakDays(num count);
+
+  /// No description provided for @achievementsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load achievements. Please try again.'**
+  String get achievementsLoadFailed;
+
+  /// No description provided for @achievementUnlockedSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlocked achievement: {title}'**
+  String achievementUnlockedSemantics(String title);
+
+  /// No description provided for @achievementLockedSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked achievement: {title}. Progress: {current} of {target}.'**
+  String achievementLockedSemantics(String title, num current, num target);
+
+  /// No description provided for @closeAchievementPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Close {title} achievement preview'**
+  String closeAchievementPreview(String title);
+
+  /// No description provided for @closeAllAchievementPreviews.
+  ///
+  /// In en, this message translates to:
+  /// **'Close all achievement previews'**
+  String get closeAllAchievementPreviews;
 }
 
 class _AppLocalizationsDelegate

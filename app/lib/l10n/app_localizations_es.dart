@@ -1284,4 +1284,27 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get achievementsLoadFailed =>
+      'No se pudieron cargar los logros. Inténtalo de nuevo.';
+
+  @override
+  String achievementUnlockedSemantics(String title) {
+    return 'Logro desbloqueado: $title';
+  }
+
+  @override
+  String achievementLockedSemantics(String title, num current, num target) {
+    return 'Logro bloqueado: $title. Progreso: $current de $target.';
+  }
+
+  @override
+  String closeAchievementPreview(String title) {
+    return 'Cerrar la vista previa del logro $title';
+  }
+
+  @override
+  String get closeAllAchievementPreviews =>
+      'Cerrar todas las vistas previas de logros';
 }
