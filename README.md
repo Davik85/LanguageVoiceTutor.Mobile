@@ -4,7 +4,7 @@
 
 Mobile uses Flutter `gen-l10n` with ARB catalogs for its interface-localization foundation. Stage 1 supports `en`, `ru`, `es`, `fr`, and `de`; the five catalogs have the same 277-message key set. `explanationLanguage` is the only source for `MaterialApp.locale`. `studyLanguage` remains the lesson, tutor, speech-recognition, and study-language setting, while `nativeLanguage` remains the requested lesson/dialogue translation target. Unsupported interface-language values display English safely without changing the backend-owned saved value. A successful Settings save applies the backend-confirmed explanation/interface language immediately; a failed save leaves the previous interface locale active.
 
-The completed localized surface includes Splash and authentication, Home, Settings and its Profile/Lessons/App sections, account and deletion-request controls, Feedback & reports, reminders, connection status, fixed level labels in Settings and selection context, and topic/situation selection. Completed areas use localized headings, helper text, validation, semantics, and tooltips. The obsolete voice-transcription disclosure was removed. This is not complete application localization: Premium, Progress, Lesson History details, remaining Achievement catalogue text, Lesson Chat, Conversation mode, and other static learner-facing strings remain later Stage 1 work.
+The completed localized surface includes Splash and authentication, Home, Settings and its Profile/Lessons/App sections, account and deletion-request controls, Feedback & reports, reminders, fixed level labels in Settings and selection context, and topic/situation selection. Completed areas use localized headings, helper text, validation, semantics, and tooltips. The obsolete voice-transcription disclosure was removed. This is not complete application localization: Premium, Progress, Lesson History details, remaining Achievement catalogue text, Lesson Chat, Conversation mode, and other static learner-facing strings remain later Stage 1 work.
 
 Lesson-selection localization is presentation-only. Canonical IDs, English titles/descriptions, `lessonContentId`, and request values remain unchanged; topic-to-situation navigation uses stable topic IDs, unknown future catalog IDs fall back to canonical text, and translated labels are never backend identifiers. `LessonStartSelection` reconstructs backend-facing values from the authoritative canonical catalog using stable IDs, so caller-provided translated/copied display objects cannot change the request. `StartLessonSessionRequest` and the runtime `scenarioKey` are invariant across all five interface locales; the runtime key remains the canonical `lessonContentId`, including Free Conversation.
 
@@ -26,7 +26,7 @@ Settings is divided by a three-item bottom navigation bar:
 
 - **Profile**: account/subscription, learner level, language choices, tutor, audio, and Save settings.
 - **Lessons**: Lesson history, Progress, and **Rewards**, which opens the complete achievement catalogue.
-- **App**: password recovery, Feedback & reports, device-local Practice reminders, and Connection status. Practice reminders default to 09:00 and 20:00 device-local time, remain blocked until Android notification permission is granted after a learner-facing explanation, and can be edited or disabled entirely in Settings.
+- **App**: password recovery, Feedback & reports, and device-local Practice reminders. Practice reminders default to 09:00 and 20:00 device-local time, remain blocked until Android notification permission is granted after a learner-facing explanation, and can be edited or disabled entirely in Settings.
 
 Settings, Progress, Lesson History, Choose Topic, and Choose Situation use the same light-blue-to-golden background. Cards are softly rounded translucent surfaces; settings fields and expansion panels use rounded filled controls. Backend contracts, entitlement ownership, and lesson behavior remain unchanged.
 
@@ -341,8 +341,6 @@ The first backend-connected mobile slice is intentionally small:
 
 - API configuration points at `https://api.languagevoicetutor.com`.
 - The mobile HTTP foundation supports minimal GET requests only.
-- The Settings screen exposes a non-intrusive **Connection status** area with `Not checked`, `Checking...`, `Connected`, and `Unavailable` states.
-- The app calls only `GET /health` and parses the public response fields `status`, `environment`, and `checkedAtUtc`.
 - Timeout, network, non-success, or invalid responses are shown to users only as `Unavailable`; raw exception details and backend internals are not displayed.
 
 Auth, account loading, subscription/Premium decisions, billing, voice mode, TTS, lesson runtime, lesson history, progress, analytics, crash reporting, secrets, and backend runtime changes are intentionally out of scope for this PR. The mobile app still must not call OpenAI directly or store provider/backend secrets.

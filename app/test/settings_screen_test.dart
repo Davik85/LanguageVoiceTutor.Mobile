@@ -15,7 +15,6 @@ import 'package:language_voice_tutor_mobile/models/tutor_options.dart';
 import 'package:language_voice_tutor_mobile/models/user_settings.dart';
 import 'package:language_voice_tutor_mobile/screens/settings_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
-import 'package:language_voice_tutor_mobile/services/backend_health_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
 import 'package:language_voice_tutor_mobile/services/tutor_options_service.dart';
 
@@ -187,7 +186,6 @@ Widget _screen(FakeAuthService auth,
           '/login': (_) => const Scaffold(body: Text('Login')),
         },
         home: SettingsScreen(
-            healthService: BackendHealthService(apiClient: FakeApiClient()),
             authService: auth,
             tutorOptionsService: FakeTutorOptionsService(),
             onInterfaceLanguageSaved: onInterfaceLanguageSaved));
@@ -204,8 +202,6 @@ Future<void> _showSectionForText(WidgetTester tester, String text) async {
     'Request account deletion',
     'Feedback & reports',
     'Send',
-    'Connection status',
-    'Check connection',
   };
   const lessonsTexts = {'Lesson history', 'Progress', 'Rewards'};
   final key = appTexts.contains(text)
@@ -293,7 +289,7 @@ void main() {
     expect(appliedLanguage, isNull);
   });
 
-  testWidgets('Russian Settings localizes account, app and status controls',
+  testWidgets('Russian Settings localizes account and App controls',
       (tester) async {
     await tester
         .pumpWidget(_screen(FakeAuthService(), locale: const Locale('ru')));
@@ -316,7 +312,6 @@ void main() {
       'Удаление аккаунта',
       'Отзывы и отчёты',
       'Напоминания о занятиях',
-      'Статус подключения',
     ]) {
       await tester.scrollUntilVisible(
         find.text(text),
@@ -325,19 +320,9 @@ void main() {
       );
       expect(find.text(text), findsWidgets);
     }
-    expect(find.text('Не проверено'), findsOneWidget);
-    await tester.tap(find.text('Статус подключения'));
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.text('Проверить подключение'),
-      250,
-      scrollable: _settingsScrollable,
-    );
-    await tester.drag(_settingsScrollable, const Offset(0, -150));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Проверить подключение'));
-    await tester.pumpAndSettle();
-    expect(find.text('Подключено'), findsOneWidget);
+    expect(find.text('Статус подключения'), findsNothing);
+    expect(find.text('Проверить подключение'), findsNothing);
+    expect(find.text('Не проверено'), findsNothing);
   });
 
   for (final localeText in const {
@@ -404,9 +389,6 @@ void main() {
     await _scrollToText(tester, 'Audio');
     expect(find.text('Audio'), findsOneWidget);
     expect(find.text('Conversation mode enabled'), findsOneWidget);
-    await _scrollToText(tester, 'Connection status');
-    expect(find.text('Connection status'), findsOneWidget);
-    expect(find.text('Backend diagnostics'), findsNothing);
     await _scrollToText(tester, 'Save settings');
     expect(find.text('Save settings'), findsOneWidget);
   });
@@ -848,18 +830,16 @@ void main() {
     expect(auth.savedSettings?.speechVoice, 'nova');
   });
 
-  testWidgets('connection status is non-intrusive and reveals check connection',
+  testWidgets('connection-status controls are absent from App settings',
       (tester) async {
     await tester.pumpWidget(_screen(FakeAuthService()));
     await tester.pumpAndSettle();
 
-    await _scrollToText(tester, 'Connection status');
-    expect(find.text('Connection status'), findsOneWidget);
-    expect(find.text('Check connection'), findsNothing);
-
-    await tester.tap(find.text('Connection status'));
+    await tester.tap(find.byKey(const Key('settings-app-tab')));
     await tester.pumpAndSettle();
-    expect(find.text('Check connection'), findsOneWidget);
+
+    expect(find.text('Connection status'), findsNothing);
+    expect(find.text('Check connection'), findsNothing);
   });
 
   testWidgets('settings screen save success shows friendly message',

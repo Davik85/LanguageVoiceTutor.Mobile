@@ -125,12 +125,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get feedbackAndReports => 'Отзывы и отчёты';
 
   @override
-  String get connectionStatus => 'Статус подключения';
-
-  @override
-  String get checkConnection => 'Проверить подключение';
-
-  @override
   String get cancel => 'Отмена';
 
   @override
@@ -604,33 +598,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get aiResponseProblem => 'Что было не так с ответом ИИ?';
-
-  @override
-  String get connectionNotChecked => 'Не проверено';
-
-  @override
-  String get connectionChecking => 'Проверка...';
-
-  @override
-  String get connectionConnected => 'Подключено';
-
-  @override
-  String get connectionUnavailable => 'Недоступно';
-
-  @override
-  String get connectionNotCheckedDescription =>
-      'Нажмите кнопку, чтобы проверить подключение приложения к сервису Language Voice Tutor.';
-
-  @override
-  String get connectionCheckingDescription => 'Проверяем сервис.';
-
-  @override
-  String get connectionConnectedDescription =>
-      'Приложение подключено к сервису Language Voice Tutor.';
-
-  @override
-  String get connectionUnavailableDescription =>
-      'Сервис сейчас недоступен. Попробуйте позже.';
 
   @override
   String get practiceReminders => 'Напоминания о занятиях';

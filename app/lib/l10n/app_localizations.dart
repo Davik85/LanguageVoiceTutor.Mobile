@@ -332,18 +332,6 @@ abstract class AppLocalizations {
   /// **'Feedback & reports'**
   String get feedbackAndReports;
 
-  /// No description provided for @connectionStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'Connection status'**
-  String get connectionStatus;
-
-  /// No description provided for @checkConnection.
-  ///
-  /// In en, this message translates to:
-  /// **'Check connection'**
-  String get checkConnection;
-
   /// No description provided for @cancel.
   ///
   /// In en, this message translates to:
@@ -1123,54 +1111,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'What was wrong with the AI response?'**
   String get aiResponseProblem;
-
-  /// No description provided for @connectionNotChecked.
-  ///
-  /// In en, this message translates to:
-  /// **'Not checked'**
-  String get connectionNotChecked;
-
-  /// No description provided for @connectionChecking.
-  ///
-  /// In en, this message translates to:
-  /// **'Checking...'**
-  String get connectionChecking;
-
-  /// No description provided for @connectionConnected.
-  ///
-  /// In en, this message translates to:
-  /// **'Connected'**
-  String get connectionConnected;
-
-  /// No description provided for @connectionUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Unavailable'**
-  String get connectionUnavailable;
-
-  /// No description provided for @connectionNotCheckedDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap the button to confirm the app can reach the Language Voice Tutor service.'**
-  String get connectionNotCheckedDescription;
-
-  /// No description provided for @connectionCheckingDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Checking the service now.'**
-  String get connectionCheckingDescription;
-
-  /// No description provided for @connectionConnectedDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'The app can reach the Language Voice Tutor service.'**
-  String get connectionConnectedDescription;
-
-  /// No description provided for @connectionUnavailableDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'The service is unavailable right now. Please try again later.'**
-  String get connectionUnavailableDescription;
 
   /// No description provided for @practiceReminders.
   ///

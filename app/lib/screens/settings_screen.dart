@@ -13,7 +13,6 @@ import '../models/user_settings.dart';
 import '../l10n/app_localizations_context.dart';
 import '../l10n/lesson_selection_localization.dart';
 import '../services/auth_service.dart';
-import '../services/backend_health_service.dart';
 import '../services/service_factory.dart';
 import '../services/tutor_options_service.dart';
 import '../services/practice_reminder_service.dart';
@@ -26,27 +25,22 @@ import 'premium_screen.dart';
 import 'lesson_history_screen.dart';
 import 'progress_screen.dart';
 
-enum BackendConnectionState { notChecked, checking, connected, unavailable }
-
 enum _SettingsSection { profile, lessons, app }
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
-    BackendHealthService? healthService,
     AuthService? authService,
     TutorOptionsService? tutorOptionsService,
     PracticeReminderService? practiceReminderService,
     ValueChanged<String>? onInterfaceLanguageSaved,
-  })  : _healthService = healthService,
-        _authService = authService,
+  })  : _authService = authService,
         _tutorOptionsService = tutorOptionsService,
         _practiceReminderService = practiceReminderService,
         _onInterfaceLanguageSaved = onInterfaceLanguageSaved;
 
   static const String routeName = '/settings';
 
-  final BackendHealthService? _healthService;
   final AuthService? _authService;
   final TutorOptionsService? _tutorOptionsService;
   final PracticeReminderService? _practiceReminderService;
@@ -60,7 +54,6 @@ class _SettingsScreenState extends State<SettingsScreen>
     with WidgetsBindingObserver {
   static const _voices = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
 
-  late final BackendHealthService _healthService;
   late final AuthService _authService;
   late final TutorOptionsService _tutorOptionsService;
   late final PracticeReminderService _practiceReminderService;
@@ -68,7 +61,6 @@ class _SettingsScreenState extends State<SettingsScreen>
   ReminderPermissionState _reminderPermission =
       ReminderPermissionState.unavailable;
   String? _reminderError;
-  BackendConnectionState _connectionState = BackendConnectionState.notChecked;
   AuthUser? _user;
   SubscriptionStatus? _subscription;
   UserSettings? _settings;
@@ -102,8 +94,6 @@ class _SettingsScreenState extends State<SettingsScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _healthService = widget._healthService ??
-        BackendHealthService(apiClient: HttpApiClient());
     _authService = widget._authService ?? createAuthService();
     _tutorOptionsService = widget._tutorOptionsService ??
         TutorOptionsService(apiClient: HttpApiClient());
@@ -413,18 +403,6 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
   }
 
-  Future<void> _checkBackendConnection() async {
-    setState(() => _connectionState = BackendConnectionState.checking);
-    try {
-      await _healthService.checkHealth();
-      if (!mounted) return;
-      setState(() => _connectionState = BackendConnectionState.connected);
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _connectionState = BackendConnectionState.unavailable);
-    }
-  }
-
   Future<void> _logout() async {
     await _authService.logout();
     if (!mounted) return;
@@ -671,32 +649,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                 .openAndroidSettings()
                 .then((_) => _loadReminders()),
           ),
-          const SizedBox(height: 12),
-          _DiagnosticsCard(
-            connectionLabel: _connectionLabel(context),
-            connectionMessage: _connectionMessage(context),
-            checking: _connectionState == BackendConnectionState.checking,
-            onCheck: _checkBackendConnection,
-          ),
         ],
       );
-
-  String _connectionLabel(BuildContext context) => switch (_connectionState) {
-        BackendConnectionState.notChecked => context.l10n.connectionNotChecked,
-        BackendConnectionState.checking => context.l10n.connectionChecking,
-        BackendConnectionState.connected => context.l10n.connectionConnected,
-        BackendConnectionState.unavailable => context.l10n.connectionUnavailable
-      };
-  String _connectionMessage(BuildContext context) => switch (_connectionState) {
-        BackendConnectionState.notChecked =>
-          context.l10n.connectionNotCheckedDescription,
-        BackendConnectionState.checking =>
-          context.l10n.connectionCheckingDescription,
-        BackendConnectionState.connected =>
-          context.l10n.connectionConnectedDescription,
-        BackendConnectionState.unavailable =>
-          context.l10n.connectionUnavailableDescription
-      };
 }
 
 class _SettingsActionButton extends StatelessWidget {
@@ -1335,45 +1289,6 @@ class _FeedbackReportCard extends StatelessWidget {
           ],
         ),
       );
-}
-
-class _DiagnosticsCard extends StatelessWidget {
-  const _DiagnosticsCard(
-      {required this.connectionLabel,
-      required this.connectionMessage,
-      required this.checking,
-      required this.onCheck});
-  final String connectionLabel;
-  final String connectionMessage;
-  final bool checking;
-  final VoidCallback onCheck;
-  @override
-  Widget build(BuildContext context) => Card(
-      child: Padding(
-          padding: const EdgeInsets.all(16),
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            ExpansionTile(
-              tilePadding: EdgeInsets.zero,
-              childrenPadding: const EdgeInsets.only(top: 8),
-              title: Text(context.l10n.connectionStatus,
-                  style: Theme.of(context).textTheme.titleMedium),
-              subtitle: Text(connectionLabel),
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(connectionMessage),
-                ),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: FilledButton(
-                      onPressed: checking ? null : onCheck,
-                      child: Text(context.l10n.checkConnection)),
-                ),
-              ],
-            ),
-          ])));
 }
 
 class _LanguageDropdown extends StatelessWidget {

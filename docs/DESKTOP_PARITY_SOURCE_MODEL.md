@@ -67,7 +67,7 @@ Current visible mobile Settings navigation is:
 
 - **Profile**: Account, Learning, Audio, and Save settings.
 - **Lessons**: Lesson history, Progress, and Rewards.
-- **App**: Password & recovery, Feedback & reports, Practice reminders, and Connection status.
+- **App**: Password & recovery, Feedback & reports, and Practice reminders.
 
 `selectedTutorId` is part of the current settings contract. `GET /api/tutor-options` provides available tutors, and `PUT /api/me/settings` persists a valid selected tutor ID. Tutor voice remains a separate `speechVoice` setting and must not be overwritten automatically when the selected tutor changes.
 

@@ -374,7 +374,6 @@ Expected verification:
 - Invalid sessions are cleared and return to Login.
 - Access and refresh tokens are stored only in secure mobile storage.
 - Tokens are not logged, printed, or shown in UI.
-- Settings keeps connection checking working from the non-intrusive Connection status area.
 - Settings shows account email/display name from backend account data.
 - Settings shows Free, Trial, or Premium only from `GET /api/me/subscription-status`.
 - Extra subscription-status backend fields are tolerated by parsing.
@@ -516,7 +515,6 @@ Settings checks for this baseline:
 - **Account** section is visible.
 - **Learning** section is visible.
 - **Audio** section is visible.
-- **Connection status** is available in a non-intrusive advanced area and can reveal **Check connection**.
 - **Save settings** is visible.
 - **Current level** is shown before **Study language**, displays labels from `lessonLevels`, and saves canonical uppercase `A1`, `A2`, `B1`, or `B2` through `PUT /api/me/settings` only when **Save settings** is used.
 - A failed settings save restores the last backend-confirmed level; the backend remains the account-level source of truth.
@@ -587,7 +585,7 @@ Expected behavior:
 - Home uses a learner-safe fallback when account data is unavailable; it never exposes backend or user-ID diagnostics.
 - **Start lesson** loads the saved backend level and opens **Choose Topic** directly; Choose Level is not shown in the normal flow.
 - **Open Settings** opens Settings.
-- Settings uses bottom navigation for **Profile**, **Lessons**, and **App**. Lesson History and Progress open from **Lessons**, while Feedback & reports and Connection status live in **App**.
+- Settings uses bottom navigation for **Profile**, **Lessons**, and **App**. Lesson History and Progress open from **Lessons**, while Feedback & reports live in **App**.
 - Lesson still ends at the placeholder screen; real lesson runtime remains out of scope.
 - No backend, desktop, website, billing, voice, TTS, AI runtime, analytics, store metadata, signing, or package id changes are included in this branding slice.
 

@@ -128,12 +128,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get feedbackAndReports => 'Feedback und Meldungen';
 
   @override
-  String get connectionStatus => 'Verbindungsstatus';
-
-  @override
-  String get checkConnection => 'Verbindung prüfen';
-
-  @override
   String get cancel => 'Abbrechen';
 
   @override
@@ -599,33 +593,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiResponseProblem => 'Was war an der KI-Antwort falsch?';
-
-  @override
-  String get connectionNotChecked => 'Nicht geprüft';
-
-  @override
-  String get connectionChecking => 'Wird geprüft...';
-
-  @override
-  String get connectionConnected => 'Verbunden';
-
-  @override
-  String get connectionUnavailable => 'Nicht verfügbar';
-
-  @override
-  String get connectionNotCheckedDescription =>
-      'Tippen Sie auf die Schaltfläche, um die Verbindung zum Language Voice Tutor-Dienst zu prüfen.';
-
-  @override
-  String get connectionCheckingDescription => 'Der Dienst wird geprüft.';
-
-  @override
-  String get connectionConnectedDescription =>
-      'Die App kann den Language Voice Tutor-Dienst erreichen.';
-
-  @override
-  String get connectionUnavailableDescription =>
-      'Der Dienst ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.';
 
   @override
   String get practiceReminders => 'Übungserinnerungen';
