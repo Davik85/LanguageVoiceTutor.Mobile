@@ -146,6 +146,7 @@ class _LessonScreenState extends State<LessonScreen>
   String? _sendError;
   String? _hintText;
   String? _hintError;
+  int _hintRequestGeneration = 0;
   String? _selectedContextId;
   String? _selectedContextTitle;
   String? _customLearnerContext;
@@ -435,6 +436,7 @@ class _LessonScreenState extends State<LessonScreen>
     await preload.timeout(const Duration(milliseconds: 300),
         onTimeout: () => false);
     if (!mounted) return;
+    _clearLessonHintState();
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => ConversationModeScreen(
@@ -463,11 +465,37 @@ class _LessonScreenState extends State<LessonScreen>
         ),
       ),
     );
+    if (!mounted) return;
+    _clearLessonHintState();
   }
 
   Future<String?> _requestConversationHint() async {
     await _requestHint();
-    return _hintText;
+    if (!mounted) return null;
+    final hint = _hintText;
+    _clearLessonHintState();
+    return hint;
+  }
+
+  void _clearLessonHintState() {
+    _hintRequestGeneration++;
+    setState(() {
+      _hintText = null;
+      _hintError = null;
+      _isHintLoading = false;
+    });
+    _scrollTranscriptToBottom();
+  }
+
+  void _dismissLessonHintFromTranscriptTap() {
+    if (_hintText == null) return;
+    setState(() => _hintText = null);
+    _scrollTranscriptToBottom();
+  }
+
+  void _dismissLessonHint() {
+    setState(() => _hintText = null);
+    _scrollTranscriptToBottom();
   }
 
   Future<void> _sendMessage([String? overrideText]) async {
@@ -913,6 +941,10 @@ class _LessonScreenState extends State<LessonScreen>
   }
 
   Future<void> _requestHint() async {
+    if (_hintText != null) {
+      _dismissLessonHint();
+      return;
+    }
     final selection = widget.selection;
     final session = _startResult?.session;
     final scenario = _scenario;
@@ -934,6 +966,7 @@ class _LessonScreenState extends State<LessonScreen>
               StudyLanguageDefinitions.resolve(settings.studyLanguage),
         );
       });
+      _scrollTranscriptToBottom();
       return;
     }
 
@@ -949,6 +982,7 @@ class _LessonScreenState extends State<LessonScreen>
           StudyLanguageDefinitions.resolve(settings.studyLanguage),
         );
       });
+      _scrollTranscriptToBottom();
       return;
     }
 
@@ -978,13 +1012,15 @@ class _LessonScreenState extends State<LessonScreen>
       ),
     );
 
+    final hintRequestGeneration = ++_hintRequestGeneration;
     setState(() {
       _isHintLoading = true;
       _hintText = null;
       _hintError = null;
     });
+    _scrollTranscriptToBottom();
     final result = await _authService.requestLessonChatHint(request: request);
-    if (!mounted) return;
+    if (!mounted || hintRequestGeneration != _hintRequestGeneration) return;
     setState(() {
       _isHintLoading = false;
       if (result.isSuccess && result.hint != null) {
@@ -1001,6 +1037,7 @@ class _LessonScreenState extends State<LessonScreen>
         }
       }
     });
+    _scrollTranscriptToBottom();
   }
 
   bool _isFirstActiveRoleplayStep(LessonRuntimeScenario scenario) =>
@@ -1313,6 +1350,13 @@ class _LessonScreenState extends State<LessonScreen>
         ],
       ),
     );
+    if (kDebugMode) {
+      debugPrint(
+        confirmed == true
+            ? 'lesson_finish confirmation_accepted'
+            : 'lesson_finish confirmation_cancelled',
+      );
+    }
     if (confirmed == true) await _finishLesson();
   }
 
@@ -1328,14 +1372,27 @@ class _LessonScreenState extends State<LessonScreen>
       _hintText = null;
       _hintError = null;
     });
+    final pendingPersistenceCount = _pendingMessagePersistence.length;
     await _waitForPendingMessagePersistence();
     if (!mounted) return;
     final turns = _messages.where((message) => message.isUser).length;
+    if (kDebugMode) {
+      debugPrint(
+        'lesson_finish request_started validTurnCount=$turns '
+        'pendingPersistenceCount=$pendingPersistenceCount',
+      );
+    }
     final result = await _authService.finishLessonSession(
       sessionId: session.lessonSessionId,
       validTurnCount: turns,
     );
     if (!mounted) return;
+    if (kDebugMode) {
+      debugPrint(
+        'lesson_finish request_result status=${result.status.name} '
+        'completed=${result.isCompleted}',
+      );
+    }
     if (result.isCompleted) {
       await _sessionLifecycle.stop();
       setState(() {
@@ -2121,8 +2178,9 @@ class _LessonScreenState extends State<LessonScreen>
                                     _isTextComposerVisible =
                                         !_isTextComposerVisible;
                                   }),
-                                  onDismissHint: () =>
-                                      setState(() => _hintText = null),
+                                  onDismissHint: () => _dismissLessonHint(),
+                                  onTranscriptTap:
+                                      _dismissLessonHintFromTranscriptTap,
                                   onSend: _sendMessage,
                                   autoSendVoice: _autoSendVoice,
                                   autoPlayBotVoice: _autoPlayBotVoice,
@@ -2209,6 +2267,7 @@ class _LessonWorkspace extends StatelessWidget {
     required this.isTextComposerVisible,
     required this.onToggleTextComposer,
     required this.onDismissHint,
+    required this.onTranscriptTap,
     required this.onSend,
     required this.autoSendVoice,
     required this.autoPlayBotVoice,
@@ -2256,6 +2315,7 @@ class _LessonWorkspace extends StatelessWidget {
   final bool isTextComposerVisible;
   final VoidCallback onToggleTextComposer;
   final VoidCallback onDismissHint;
+  final VoidCallback onTranscriptTap;
   final Future<void> Function([String? overrideText]) onSend;
   final bool autoSendVoice;
   final bool autoPlayBotVoice;
@@ -2369,6 +2429,9 @@ class _LessonWorkspace extends StatelessWidget {
                       onPlayVoice: onPlayVoice,
                       onTranslateMessage: onTranslateMessage,
                       onFeedback: onFeedback,
+                      hintText: hintText,
+                      onDismissHint: onDismissHint,
+                      onTranscriptTap: onTranscriptTap,
                       bottomContent: Column(
                         key: const Key('lesson-transcript-status-area'),
                         mainAxisSize: MainAxisSize.min,
@@ -2412,11 +2475,6 @@ class _LessonWorkspace extends StatelessWidget {
                                 textAlign: TextAlign.center,
                                 style: TextStyle(color: colorScheme.error),
                               ),
-                            ),
-                          if (hintText != null)
-                            _LessonHintCard(
-                              text: hintText!,
-                              onDismiss: onDismissHint,
                             ),
                           if (isHintLoading)
                             Padding(
@@ -2514,6 +2572,9 @@ class _LessonBody extends StatelessWidget {
     required this.onPlayVoice,
     required this.onTranslateMessage,
     required this.onFeedback,
+    required this.hintText,
+    required this.onDismissHint,
+    required this.onTranscriptTap,
     required this.bottomContent,
   });
 
@@ -2529,6 +2590,9 @@ class _LessonBody extends StatelessWidget {
   final Future<void> Function(_LessonChatMessage message) onPlayVoice;
   final Future<void> Function(_LessonChatMessage message) onTranslateMessage;
   final Future<void> Function(_LessonChatMessage message) onFeedback;
+  final String? hintText;
+  final VoidCallback onDismissHint;
+  final VoidCallback onTranscriptTap;
   final Widget bottomContent;
 
   @override
@@ -2590,6 +2654,9 @@ class _LessonBody extends StatelessWidget {
       onPlayVoice: onPlayVoice,
       onTranslateMessage: onTranslateMessage,
       onFeedback: onFeedback,
+      hintText: hintText,
+      onDismissHint: onDismissHint,
+      onTap: onTranscriptTap,
       bottomContent: bottomContent,
     );
   }
@@ -2618,6 +2685,9 @@ class _LessonTranscript extends StatelessWidget {
     required this.onPlayVoice,
     required this.onTranslateMessage,
     required this.onFeedback,
+    required this.hintText,
+    required this.onDismissHint,
+    required this.onTap,
     required this.bottomContent,
   });
 
@@ -2627,6 +2697,9 @@ class _LessonTranscript extends StatelessWidget {
   final Future<void> Function(_LessonChatMessage message) onPlayVoice;
   final Future<void> Function(_LessonChatMessage message) onTranslateMessage;
   final Future<void> Function(_LessonChatMessage message) onFeedback;
+  final String? hintText;
+  final VoidCallback onDismissHint;
+  final VoidCallback onTap;
   final Widget bottomContent;
 
   @override
@@ -2643,24 +2716,32 @@ class _LessonTranscript extends StatelessWidget {
       );
     }
 
-    return SingleChildScrollView(
-      key: const Key('lesson-chat-transcript'),
-      controller: controller,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-      child: Column(
-        children: [
-          for (var index = 0; index < messages.length; index++) ...[
-            if (index > 0) const SizedBox(height: 12),
-            _LessonMessageBubble(
-              message: messages[index],
-              actionAvailability: actionAvailability,
-              onPlayVoice: onPlayVoice,
-              onTranslateMessage: onTranslateMessage,
-              onFeedback: onFeedback,
-            ),
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: onTap,
+      child: SingleChildScrollView(
+        key: const Key('lesson-chat-transcript'),
+        controller: controller,
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+        child: Column(
+          children: [
+            for (var index = 0; index < messages.length; index++) ...[
+              if (index > 0) const SizedBox(height: 12),
+              _LessonMessageBubble(
+                message: messages[index],
+                actionAvailability: actionAvailability,
+                onPlayVoice: onPlayVoice,
+                onTranslateMessage: onTranslateMessage,
+                onFeedback: onFeedback,
+              ),
+            ],
+            if (hintText != null) ...[
+              const SizedBox(height: 12),
+              _LessonHintCard(text: hintText!, onDismiss: onDismissHint),
+            ],
+            bottomContent,
           ],
-          bottomContent,
-        ],
+        ),
       ),
     );
   }

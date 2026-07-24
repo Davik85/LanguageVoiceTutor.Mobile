@@ -1211,4 +1211,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get summaryLoadErrorMessage =>
       'Your lesson was saved, but we could not load the summary right now.';
+
+  @override
+  String get startRecording => 'Start recording';
+
+  @override
+  String get stopRecording => 'Stop recording';
 }

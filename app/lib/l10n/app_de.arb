@@ -84,4 +84,7 @@
   "summaryUnavailableMessage": "Ihre Lektion wurde gespeichert, aber für diese Lektion konnte keine Zusammenfassung erstellt werden.",
   "summaryAuthRequiredMessage": "Melden Sie sich erneut an, um Ihre Lektionszusammenfassung zu laden.",
   "summaryLoadErrorMessage": "Ihre Lektion wurde gespeichert, aber die Zusammenfassung konnte jetzt nicht geladen werden."
+,
+  "startRecording": "Aufnahme starten",
+  "stopRecording": "Aufnahme stoppen"
 }

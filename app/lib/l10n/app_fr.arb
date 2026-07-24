@@ -84,4 +84,7 @@
   "summaryUnavailableMessage": "Votre leçon a été enregistrée, mais il n’a pas été possible de créer un résumé pour cette leçon.",
   "summaryAuthRequiredMessage": "Reconnectez-vous pour charger le résumé de votre leçon.",
   "summaryLoadErrorMessage": "Votre leçon a été enregistrée, mais le résumé ne peut pas être chargé pour le moment."
+,
+  "startRecording": "Commencer l’enregistrement",
+  "stopRecording": "Arrêter l’enregistrement"
 }

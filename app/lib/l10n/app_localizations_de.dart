@@ -1223,4 +1223,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get summaryLoadErrorMessage =>
       'Ihre Lektion wurde gespeichert, aber die Zusammenfassung konnte jetzt nicht geladen werden.';
+
+  @override
+  String get startRecording => 'Aufnahme starten';
+
+  @override
+  String get stopRecording => 'Aufnahme stoppen';
 }

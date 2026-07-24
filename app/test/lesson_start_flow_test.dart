@@ -457,6 +457,7 @@ LessonSessionStartResult _readyLessonStartResult() =>
 LessonRuntimeScenario _runtimeScenario({
   String exampleHint = 'Try: My name is Ana.',
   String lessonPhase = 'active_roleplay',
+  String? tutorDisplayName,
 }) =>
     LessonRuntimeScenario.fromJson({
       'id': 'everyday_english_introductions',
@@ -522,6 +523,14 @@ LessonRuntimeScenario _runtimeScenario({
       'expectedScenarioProgression': ['Greet learner', 'Exchange names'],
       'aiTutorPromptInstructions': ['Keep tutor messages short.'],
       'promptTemplates': {'opening': 'Keep the greeting simple.'},
+      'tutorProfiles': tutorDisplayName == null
+          ? []
+          : [
+              {
+                'tutorId': UserSettings.defaultTutorId,
+                'displayName': tutorDisplayName,
+              },
+            ],
       'hintRules': {'exampleHint': exampleHint},
       'controlledVariation': {
         'contextVariants': [
@@ -2915,5 +2924,198 @@ void main() {
         expect(find.text(localeCase.value.$1), findsOneWidget);
       });
     }
+  });
+
+  group('hint lifecycle across lesson and conversation', () {
+    Future<void> openConversationMode(WidgetTester tester) async {
+      final button = find.byKey(const Key('lesson-conversation-mode-button'));
+      await _showWidget(tester, button);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> showLessonHint(WidgetTester tester) async {
+      final button = find.byKey(const Key('lesson-action-hint'));
+      await _showWidget(tester, button);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('lesson-hint-card')), findsOneWidget);
+    }
+
+    testWidgets('Conversation Mode Hint does not leak back to Lesson Chat',
+        (tester) async {
+      await tester.pumpWidget(_lessonScreen(FakeAuthService()));
+      await tester.pumpAndSettle();
+
+      await openConversationMode(tester);
+      await tester.tap(find.byKey(const Key('conversation-mode-hint-button')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('conversation-hint-card')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('conversation-mode-back-button')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('lesson-hint-card')), findsNothing);
+    });
+
+    testWidgets(
+        'dismissed Conversation Mode Hint does not leak back to Lesson Chat',
+        (tester) async {
+      await tester.pumpWidget(_lessonScreen(FakeAuthService()));
+      await tester.pumpAndSettle();
+
+      await openConversationMode(tester);
+      final hintButton = find.byKey(const Key('conversation-mode-hint-button'));
+      await tester.tap(hintButton);
+      await tester.pumpAndSettle();
+      await tester.tap(hintButton);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('conversation-hint-card')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('conversation-mode-back-button')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('lesson-hint-card')), findsNothing);
+    });
+
+    testWidgets('Lesson Chat Hint dismisses on pointer taps', (tester) async {
+      await tester.pumpWidget(_lessonScreen(FakeAuthService()));
+      await tester.pumpAndSettle();
+
+      await showLessonHint(tester);
+      await tester.tapAt(
+        tester.getCenter(find.byKey(const Key('lesson-chat-transcript'))),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('lesson-hint-card')), findsNothing);
+    });
+
+    testWidgets('Lesson Chat Hint button and close button still dismiss',
+        (tester) async {
+      await tester.pumpWidget(_lessonScreen(FakeAuthService()));
+      await tester.pumpAndSettle();
+
+      await showLessonHint(tester);
+      await tester.tap(find.byKey(const Key('lesson-action-hint')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('lesson-hint-card')), findsNothing);
+
+      await showLessonHint(tester);
+      await _showWidget(tester, find.byKey(const Key('lesson-hint-dismiss')));
+      await tester.tap(find.byKey(const Key('lesson-hint-dismiss')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('lesson-hint-card')), findsNothing);
+    });
+
+    testWidgets('Russian Conversation Mode keeps the dynamic tutor name',
+        (tester) async {
+      await tester.pumpWidget(
+        _lessonScreen(
+          FakeAuthService(scenario: _runtimeScenario(tutorDisplayName: 'Lana')),
+          locale: const Locale('ru'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await openConversationMode(tester);
+
+      expect(find.text('Lana · Диалог'), findsOneWidget);
+      expect(find.byKey(const Key('conversation-open-microphone-settings')),
+          findsNothing);
+      expect(find.byKey(const Key('conversation-mode-hint-button')),
+          findsOneWidget);
+      expect(find.byKey(const Key('conversation-mode-record-button')),
+          findsOneWidget);
+      expect(find.byKey(const Key('conversation-mode-back-button')),
+          findsOneWidget);
+      expect(find.byKey(const Key('conversation-mode-finish-button')),
+          findsOneWidget);
+    });
+  });
+
+  group('lesson hint transcript layout', () {
+    Future<void> buildScrollableLesson(WidgetTester tester) async {
+      await tester.pumpWidget(
+        _lessonScreen(
+          FakeAuthService(),
+          selection: _introLessonSelectionWithContext,
+        ),
+      );
+      await tester.pumpAndSettle();
+      for (final text in ['First answer', 'Second answer', 'Third answer']) {
+        if (!tester.any(find.byType(TextField))) {
+          await _openTextComposer(tester);
+        }
+        await tester.enterText(find.byType(TextField), text);
+        await tester.tap(_sendButton());
+        await tester.pumpAndSettle();
+      }
+    }
+
+    Future<void> showHint(WidgetTester tester) async {
+      final hintButton = find.byKey(const Key('lesson-action-hint'));
+      await _showWidget(tester, hintButton);
+      await tester.tap(hintButton);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('lesson-hint-card')), findsOneWidget);
+    }
+
+    testWidgets('Hint is fully visible and moves transcript content upward',
+        (tester) async {
+      tester.view.physicalSize = const Size(400, 560);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await buildScrollableLesson(tester);
+
+      final opening =
+          find.textContaining('Today we\'ll practice introductions.');
+      final openingTopBeforeHint = tester.getTopLeft(opening).dy;
+      await showHint(tester);
+
+      final hintRect =
+          tester.getRect(find.byKey(const Key('lesson-hint-card')));
+      final dockRect =
+          tester.getRect(find.byKey(const Key('lesson-bottom-dock')));
+      expect(hintRect.bottom, lessThanOrEqualTo(dockRect.top));
+      expect(
+        tester.getTopLeft(opening).dy,
+        lessThan(openingTopBeforeHint),
+      );
+    });
+
+    testWidgets('dragging does not dismiss Hint, but tapping transcript does',
+        (tester) async {
+      await buildScrollableLesson(tester);
+      await showHint(tester);
+
+      final transcript = find.byKey(const Key('lesson-chat-transcript'));
+      await tester.drag(transcript, const Offset(0, -120));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('lesson-hint-card')), findsOneWidget);
+
+      await tester.tapAt(tester.getCenter(transcript));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('lesson-hint-card')), findsNothing);
+      final scrollView = tester.widget<SingleChildScrollView>(transcript);
+      expect(
+        scrollView.controller!.position.pixels,
+        closeTo(scrollView.controller!.position.maxScrollExtent, 0.1),
+      );
+    });
+
+    testWidgets('Hint button and close button still dismiss the Hint',
+        (tester) async {
+      await buildScrollableLesson(tester);
+      await showHint(tester);
+
+      await tester.tap(find.byKey(const Key('lesson-action-hint')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('lesson-hint-card')), findsNothing);
+
+      await showHint(tester);
+      await _showWidget(tester, find.byKey(const Key('lesson-hint-dismiss')));
+      await tester.tap(find.byKey(const Key('lesson-hint-dismiss')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('lesson-hint-card')), findsNothing);
+    });
   });
 }

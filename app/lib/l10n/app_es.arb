@@ -84,4 +84,7 @@
   "summaryUnavailableMessage": "Tu lección se guardó, pero no se pudo crear un resumen para esta lección.",
   "summaryAuthRequiredMessage": "Vuelve a iniciar sesión para cargar el resumen de la lección.",
   "summaryLoadErrorMessage": "Tu lección se guardó, pero no se pudo cargar el resumen ahora."
+,
+  "startRecording": "Iniciar grabación",
+  "stopRecording": "Detener grabación"
 }

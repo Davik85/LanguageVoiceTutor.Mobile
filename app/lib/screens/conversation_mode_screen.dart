@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations_context.dart';
 import '../models/audio_speech.dart';
 import '../models/audio_transcription.dart';
 import '../models/language_options.dart';
@@ -571,13 +572,13 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
                     IconButton.filledTonal(
                       key: const Key('conversation-mode-back-button'),
                       onPressed: _leave,
-                      tooltip: 'Back',
+                      tooltip: context.l10n.back,
                       icon: const Icon(Icons.arrow_back),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        '${widget.tutorDisplayName} · Conversation',
+                        '${widget.tutorDisplayName} · ${context.l10n.conversation}',
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
                                   color: Colors.white,
@@ -588,13 +589,18 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
                     IconButton.filledTonal(
                       key: const Key('conversation-mode-finish-button'),
                       onPressed: () async {
+                        if (kDebugMode) {
+                          debugPrint(
+                            'lesson_finish conversation_mode_finish_pressed',
+                          );
+                        }
                         _finishConversationOperation(_operationGeneration);
                         _invalidateOperation();
                         await widget.onFinish();
                         if (!context.mounted) return;
                         Navigator.of(context).pop();
                       },
-                      tooltip: 'Finish lesson',
+                      tooltip: context.l10n.finishLesson,
                       icon: const Icon(Icons.flag_outlined),
                     ),
                   ],
@@ -659,7 +665,7 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
                           key: const Key('conversation-mode-hint-button'),
                           onPressed: canRecord ? _showHint : null,
                           icon: const Icon(Icons.lightbulb_outline),
-                          label: const Text('Hint'),
+                          label: Text(context.l10n.hint),
                         ),
                         KeyedSubtree(
                           key: const Key('conversation-record-button'),
@@ -671,9 +677,11 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
                                     ? _startRecording
                                     : null,
                             icon: Icon(isListening ? Icons.stop : Icons.mic),
-                            label: Text(isListening
-                                ? 'Stop recording'
-                                : 'Start recording'),
+                            label: Text(
+                              isListening
+                                  ? context.l10n.stopRecording
+                                  : context.l10n.startRecording,
+                            ),
                           ),
                         ),
                       ],

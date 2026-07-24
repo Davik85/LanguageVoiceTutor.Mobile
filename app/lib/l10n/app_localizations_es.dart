@@ -1221,4 +1221,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get summaryLoadErrorMessage =>
       'Tu lección se guardó, pero no se pudo cargar el resumen ahora.';
+
+  @override
+  String get startRecording => 'Iniciar grabación';
+
+  @override
+  String get stopRecording => 'Detener grabación';
 }

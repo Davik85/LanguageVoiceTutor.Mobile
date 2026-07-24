@@ -2149,6 +2149,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your lesson was saved, but we could not load the summary right now.'**
   String get summaryLoadErrorMessage;
+
+  /// No description provided for @startRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Start recording'**
+  String get startRecording;
+
+  /// No description provided for @stopRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop recording'**
+  String get stopRecording;
 }
 
 class _AppLocalizationsDelegate

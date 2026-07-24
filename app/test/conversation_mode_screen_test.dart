@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
+import 'package:language_voice_tutor_mobile/l10n/app_localizations.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_runtime.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_session.dart';
 import 'package:language_voice_tutor_mobile/models/user_settings.dart';
@@ -153,7 +154,11 @@ final _scenario = LessonRuntimeScenario.fromJson({
   'runtimeContent': {},
 });
 
-Widget _screen({_Recording? recording, _Permission? permission}) =>
+Widget _screen({
+  _Recording? recording,
+  _Permission? permission,
+  String tutorDisplayName = 'Tutor',
+}) =>
     ConversationModeScreen(
       authService: AuthService(apiClient: _Api(), storage: _Storage()),
       audioPlaybackService: _Playback(),
@@ -174,7 +179,7 @@ Widget _screen({_Recording? recording, _Permission? permission}) =>
           selectedTutorId: 'lana',
           currentLevel: 'A1'),
       selectedContextTitle: '',
-      tutorDisplayName: 'Tutor',
+      tutorDisplayName: tutorDisplayName,
       initialTranscript: const ['Hello'],
       onSubmitTranscript: (text) async => 'Reply',
       onHint: () async => 'Try saying hello.',
@@ -182,8 +187,22 @@ Widget _screen({_Recording? recording, _Permission? permission}) =>
       ownsAudioPlaybackService: false,
     );
 
-Widget _conversation({_Recording? recording, _Permission? permission}) =>
-    MaterialApp(home: _screen(recording: recording, permission: permission));
+Widget _conversation({
+  _Recording? recording,
+  _Permission? permission,
+  Locale locale = const Locale('en'),
+  String tutorDisplayName = 'Tutor',
+}) =>
+    MaterialApp(
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: _screen(
+        recording: recording,
+        permission: permission,
+        tutorDisplayName: tutorDisplayName,
+      ),
+    );
 
 void main() {
   test('Conversation turn prerequisites are resolved before submission', () {
@@ -392,5 +411,77 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Open'), findsOneWidget);
     expect(find.byKey(const Key('conversation-hint-card')), findsNothing);
+  });
+
+  group('conversation static controls localization', () {
+    testWidgets('Russian localizes controls and keeps the tutor name dynamic',
+        (tester) async {
+      final recording = _Recording();
+      await tester.pumpWidget(_conversation(
+        recording: recording,
+        locale: const Locale('ru'),
+        tutorDisplayName: 'Lana',
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Lana · Диалог'), findsOneWidget);
+      expect(find.text('Подсказка'), findsOneWidget);
+      expect(find.text('Начать запись'), findsOneWidget);
+      expect(find.byTooltip('Назад'), findsOneWidget);
+      expect(find.byTooltip('Завершить урок'), findsOneWidget);
+      expect(find.byKey(const Key('conversation-mode-hint-button')),
+          findsOneWidget);
+      expect(find.byKey(const Key('conversation-mode-record-button')),
+          findsOneWidget);
+      expect(find.byKey(const Key('conversation-mode-back-button')),
+          findsOneWidget);
+      expect(find.byKey(const Key('conversation-mode-finish-button')),
+          findsOneWidget);
+      expect(find.byKey(const Key('conversation-open-microphone-settings')),
+          findsNothing);
+      for (final status in const [
+        'Listening',
+        'Transcribing',
+        'Thinking',
+        'Speaking',
+        'Ready',
+        'Error',
+      ]) {
+        expect(find.text(status), findsNothing);
+      }
+
+      await tester.tap(find.byKey(const Key('conversation-mode-hint-button')));
+      await tester.pumpAndSettle();
+      expect(find.text('Try saying hello.'), findsOneWidget);
+
+      await tester
+          .tap(find.byKey(const Key('conversation-mode-record-button')));
+      await tester.pumpAndSettle();
+      expect(recording.recording, isTrue);
+      expect(find.text('Остановить запись'), findsOneWidget);
+    });
+
+    for (final localeCase in const {
+      'en': ('Tutor · Conversation', 'Hint', 'Start recording'),
+      'es': ('Tutor · Conversación', 'Pista', 'Iniciar grabación'),
+      'fr': (
+        'Tutor · Conversation',
+        'Indice',
+        'Commencer l’enregistrement',
+      ),
+      'de': ('Tutor · Gespräch', 'Hinweis', 'Aufnahme starten'),
+    }.entries) {
+      testWidgets('${localeCase.key} renders localized static controls',
+          (tester) async {
+        await tester.pumpWidget(
+          _conversation(locale: Locale(localeCase.key)),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(localeCase.value.$1), findsOneWidget);
+        expect(find.text(localeCase.value.$2), findsOneWidget);
+        expect(find.text(localeCase.value.$3), findsOneWidget);
+      });
+    }
   });
 }

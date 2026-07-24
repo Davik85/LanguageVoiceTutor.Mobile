@@ -1224,4 +1224,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get summaryLoadErrorMessage =>
       'Votre leçon a été enregistrée, mais le résumé ne peut pas être chargé pour le moment.';
+
+  @override
+  String get startRecording => 'Commencer l’enregistrement';
+
+  @override
+  String get stopRecording => 'Arrêter l’enregistrement';
 }

@@ -275,7 +275,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get lessonChat => 'Чат урока';
 
   @override
-  String get conversation => 'Разговор';
+  String get conversation => 'Диалог';
 
   @override
   String turnCount(num count) {
@@ -1221,4 +1221,10 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get summaryLoadErrorMessage =>
       'Ваш урок сохранён, но сейчас не удалось загрузить итоги.';
+
+  @override
+  String get startRecording => 'Начать запись';
+
+  @override
+  String get stopRecording => 'Остановить запись';
 }

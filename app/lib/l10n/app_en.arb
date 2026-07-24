@@ -128,4 +128,7 @@
   "summaryUnavailableMessage": "Your lesson was saved, but a summary could not be created for this lesson.",
   "summaryAuthRequiredMessage": "Please sign in again to load your lesson summary.",
   "summaryLoadErrorMessage": "Your lesson was saved, but we could not load the summary right now."
+,
+  "startRecording": "Start recording",
+  "stopRecording": "Stop recording"
 }
