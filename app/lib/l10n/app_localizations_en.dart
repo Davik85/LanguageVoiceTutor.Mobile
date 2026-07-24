@@ -1057,4 +1057,48 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get premiumOk => 'OK';
+
+  @override
+  String get leaveLessonTitle => 'Leave lesson?';
+
+  @override
+  String get leaveLessonDescription =>
+      'Leaving ends this unfinished lesson without creating a summary.';
+
+  @override
+  String get stay => 'Stay';
+
+  @override
+  String get leaveLesson => 'Leave lesson';
+
+  @override
+  String get finishLessonTitle => 'Finish lesson?';
+
+  @override
+  String get finishLessonDescription =>
+      'Finish this lesson and view your summary?';
+
+  @override
+  String get continueLesson => 'Continue lesson';
+
+  @override
+  String get gettingHint => 'Getting hint...';
+
+  @override
+  String get dismissHint => 'Dismiss hint';
+
+  @override
+  String get finishingLesson => 'Finishing lesson...';
+
+  @override
+  String get finishLessonAuthRequired =>
+      'Please sign in again to finish the lesson.';
+
+  @override
+  String get finishLessonSessionUnavailable =>
+      'This lesson session is no longer available.';
+
+  @override
+  String get finishLessonFailed =>
+      'Could not finish the lesson. Please check your connection and try again.';
 }

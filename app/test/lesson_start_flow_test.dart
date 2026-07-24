@@ -2494,4 +2494,105 @@ void main() {
     expect(find.byKey(const Key('lesson-input')), findsNothing);
     expect(find.byKey(const Key('lesson-send-button')), findsNothing);
   });
+
+  group('lesson controls localization', () {
+    testWidgets('Russian leave dialog keeps the unfinished lesson active',
+        (tester) async {
+      final auth = FakeAuthService();
+      await tester.pumpWidget(_lessonScreen(auth, locale: const Locale('ru')));
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Назад'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('lesson-back-button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Выйти из урока?'), findsOneWidget);
+      expect(
+        find.text('Выход завершит незаконченный урок без создания итогов.'),
+        findsOneWidget,
+      );
+      expect(find.text('Остаться'), findsOneWidget);
+      await tester.tap(find.text('Остаться'));
+      await tester.pumpAndSettle();
+
+      expect(auth.abandonLessonSessionCallCount, 0);
+      expect(auth.finishLessonSessionCallCount, 0);
+    });
+
+    testWidgets('Russian finish dialog continues without finishing',
+        (tester) async {
+      final auth = FakeAuthService();
+      await tester.pumpWidget(_lessonScreen(auth, locale: const Locale('ru')));
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Завершить урок'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('lesson-action-finish')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Завершить урок?'), findsOneWidget);
+      expect(
+          find.text('Завершить этот урок и посмотреть итоги?'), findsOneWidget);
+      expect(find.text('Продолжить урок'), findsOneWidget);
+      await tester.tap(find.text('Продолжить урок'));
+      await tester.pumpAndSettle();
+
+      expect(auth.finishLessonSessionCallCount, 0);
+      expect(auth.abandonLessonSessionCallCount, 0);
+    });
+
+    testWidgets('Russian hint loading state is localized', (tester) async {
+      final hintCompleter = Completer<LessonChatHintResult>();
+      final auth = FakeAuthService(
+        scenario: _runtimeScenario(exampleHint: ''),
+        hintCompleter: hintCompleter,
+      );
+      await tester.pumpWidget(_lessonScreen(
+        auth,
+        locale: const Locale('ru'),
+        selection: _introLessonSelectionWithContext,
+      ));
+      await tester.pumpAndSettle();
+
+      final hint = find.byKey(const Key('lesson-action-hint'));
+      await _showWidget(tester, hint);
+      expect(find.text('Подсказка'), findsOneWidget);
+      await tester.tap(hint);
+      await tester.pump();
+
+      expect(find.text('Получение подсказки...'), findsOneWidget);
+      expect(auth.requestLessonChatHintCallCount, 1);
+      hintCompleter.complete(_defaultHintResult());
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('English fallback renders English controls', (tester) async {
+      final auth = FakeAuthService();
+      await tester.pumpWidget(_lessonScreen(auth, locale: const Locale('en')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('lesson-action-finish')));
+      await tester.pumpAndSettle();
+      expect(find.text('Finish lesson?'), findsOneWidget);
+      expect(find.text('Continue lesson'), findsOneWidget);
+    });
+
+    for (final localeCase in const {
+      'es': ('Pista', 'Atrás', 'Terminar lección'),
+      'fr': ('Indice', 'Retour', 'Terminer la leçon'),
+      'de': ('Hinweis', 'Zurück', 'Lektion beenden'),
+    }.entries) {
+      testWidgets('${localeCase.key} renders localized lesson controls',
+          (tester) async {
+        await tester.pumpWidget(
+            _lessonScreen(FakeAuthService(), locale: Locale(localeCase.key)));
+        await tester.pumpAndSettle();
+
+        final hint = find.byKey(const Key('lesson-action-hint'));
+        await _showWidget(tester, hint);
+        expect(find.text(localeCase.value.$1), findsOneWidget);
+        expect(find.byTooltip(localeCase.value.$2), findsOneWidget);
+        expect(find.byTooltip(localeCase.value.$3), findsOneWidget);
+      });
+    }
+  });
 }

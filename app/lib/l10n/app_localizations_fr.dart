@@ -1070,4 +1070,48 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get premiumOk => 'Fermer';
+
+  @override
+  String get leaveLessonTitle => 'Quitter la leçon ?';
+
+  @override
+  String get leaveLessonDescription =>
+      'Quitter met fin à cette leçon inachevée sans créer de résumé.';
+
+  @override
+  String get stay => 'Rester';
+
+  @override
+  String get leaveLesson => 'Quitter la leçon';
+
+  @override
+  String get finishLessonTitle => 'Terminer la leçon ?';
+
+  @override
+  String get finishLessonDescription =>
+      'Terminer cette leçon et voir votre résumé ?';
+
+  @override
+  String get continueLesson => 'Continuer la leçon';
+
+  @override
+  String get gettingHint => 'Recherche d’un indice...';
+
+  @override
+  String get dismissHint => 'Fermer l’indice';
+
+  @override
+  String get finishingLesson => 'Fin de la leçon...';
+
+  @override
+  String get finishLessonAuthRequired =>
+      'Reconnectez-vous pour terminer la leçon.';
+
+  @override
+  String get finishLessonSessionUnavailable =>
+      'Cette session de leçon n’est plus disponible.';
+
+  @override
+  String get finishLessonFailed =>
+      'Impossible de terminer la leçon. Vérifiez votre connexion et réessayez.';
 }

@@ -1069,4 +1069,47 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get premiumOk => 'ОК';
+
+  @override
+  String get leaveLessonTitle => 'Выйти из урока?';
+
+  @override
+  String get leaveLessonDescription =>
+      'Выход завершит незаконченный урок без создания итогов.';
+
+  @override
+  String get stay => 'Остаться';
+
+  @override
+  String get leaveLesson => 'Выйти из урока';
+
+  @override
+  String get finishLessonTitle => 'Завершить урок?';
+
+  @override
+  String get finishLessonDescription =>
+      'Завершить этот урок и посмотреть итоги?';
+
+  @override
+  String get continueLesson => 'Продолжить урок';
+
+  @override
+  String get gettingHint => 'Получение подсказки...';
+
+  @override
+  String get dismissHint => 'Закрыть подсказку';
+
+  @override
+  String get finishingLesson => 'Завершение урока...';
+
+  @override
+  String get finishLessonAuthRequired => 'Войдите снова, чтобы завершить урок.';
+
+  @override
+  String get finishLessonSessionUnavailable =>
+      'Этот сеанс урока больше недоступен.';
+
+  @override
+  String get finishLessonFailed =>
+      'Не удалось завершить урок. Проверьте подключение и попробуйте ещё раз.';
 }

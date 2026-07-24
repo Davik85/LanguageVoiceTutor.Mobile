@@ -1067,4 +1067,48 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get premiumOk => 'Schließen';
+
+  @override
+  String get leaveLessonTitle => 'Lektion verlassen?';
+
+  @override
+  String get leaveLessonDescription =>
+      'Beim Verlassen wird diese unvollendete Lektion ohne Zusammenfassung beendet.';
+
+  @override
+  String get stay => 'Bleiben';
+
+  @override
+  String get leaveLesson => 'Lektion verlassen';
+
+  @override
+  String get finishLessonTitle => 'Lektion beenden?';
+
+  @override
+  String get finishLessonDescription =>
+      'Diese Lektion beenden und Ihre Zusammenfassung ansehen?';
+
+  @override
+  String get continueLesson => 'Lektion fortsetzen';
+
+  @override
+  String get gettingHint => 'Hinweis wird geladen...';
+
+  @override
+  String get dismissHint => 'Hinweis schließen';
+
+  @override
+  String get finishingLesson => 'Lektion wird beendet...';
+
+  @override
+  String get finishLessonAuthRequired =>
+      'Melden Sie sich erneut an, um die Lektion zu beenden.';
+
+  @override
+  String get finishLessonSessionUnavailable =>
+      'Diese Lektionssitzung ist nicht mehr verfügbar.';
+
+  @override
+  String get finishLessonFailed =>
+      'Die Lektion konnte nicht beendet werden. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.';
 }

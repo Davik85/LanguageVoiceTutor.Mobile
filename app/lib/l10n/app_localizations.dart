@@ -1873,6 +1873,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OK'**
   String get premiumOk;
+
+  /// No description provided for @leaveLessonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave lesson?'**
+  String get leaveLessonTitle;
+
+  /// No description provided for @leaveLessonDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaving ends this unfinished lesson without creating a summary.'**
+  String get leaveLessonDescription;
+
+  /// No description provided for @stay.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay'**
+  String get stay;
+
+  /// No description provided for @leaveLesson.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave lesson'**
+  String get leaveLesson;
+
+  /// No description provided for @finishLessonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish lesson?'**
+  String get finishLessonTitle;
+
+  /// No description provided for @finishLessonDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish this lesson and view your summary?'**
+  String get finishLessonDescription;
+
+  /// No description provided for @continueLesson.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue lesson'**
+  String get continueLesson;
+
+  /// No description provided for @gettingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting hint...'**
+  String get gettingHint;
+
+  /// No description provided for @dismissHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss hint'**
+  String get dismissHint;
+
+  /// No description provided for @finishingLesson.
+  ///
+  /// In en, this message translates to:
+  /// **'Finishing lesson...'**
+  String get finishingLesson;
+
+  /// No description provided for @finishLessonAuthRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in again to finish the lesson.'**
+  String get finishLessonAuthRequired;
+
+  /// No description provided for @finishLessonSessionUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This lesson session is no longer available.'**
+  String get finishLessonSessionUnavailable;
+
+  /// No description provided for @finishLessonFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not finish the lesson. Please check your connection and try again.'**
+  String get finishLessonFailed;
 }
 
 class _AppLocalizationsDelegate

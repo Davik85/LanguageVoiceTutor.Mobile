@@ -1066,4 +1066,48 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get premiumOk => 'Aceptar';
+
+  @override
+  String get leaveLessonTitle => '¿Salir de la lección?';
+
+  @override
+  String get leaveLessonDescription =>
+      'Al salir se termina esta lección sin finalizar y no se crea un resumen.';
+
+  @override
+  String get stay => 'Quedarse';
+
+  @override
+  String get leaveLesson => 'Salir de la lección';
+
+  @override
+  String get finishLessonTitle => '¿Terminar la lección?';
+
+  @override
+  String get finishLessonDescription =>
+      '¿Terminar esta lección y ver tu resumen?';
+
+  @override
+  String get continueLesson => 'Continuar la lección';
+
+  @override
+  String get gettingHint => 'Obteniendo una pista...';
+
+  @override
+  String get dismissHint => 'Cerrar pista';
+
+  @override
+  String get finishingLesson => 'Terminando la lección...';
+
+  @override
+  String get finishLessonAuthRequired =>
+      'Vuelve a iniciar sesión para terminar la lección.';
+
+  @override
+  String get finishLessonSessionUnavailable =>
+      'Esta sesión de lección ya no está disponible.';
+
+  @override
+  String get finishLessonFailed =>
+      'No se pudo terminar la lección. Comprueba tu conexión e inténtalo de nuevo.';
 }

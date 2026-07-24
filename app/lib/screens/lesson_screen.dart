@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations_context.dart';
 import '../models/language_options.dart';
 import '../models/audio_speech.dart';
 import '../models/audio_transcription.dart';
@@ -1241,18 +1242,16 @@ class _LessonScreenState extends State<LessonScreen>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Leave lesson?'),
-        content: const Text(
-          'Leaving ends this unfinished lesson without creating a summary.',
-        ),
+        title: Text(context.l10n.leaveLessonTitle),
+        content: Text(context.l10n.leaveLessonDescription),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Stay'),
+            child: Text(context.l10n.stay),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Leave lesson'),
+            child: Text(context.l10n.leaveLesson),
           ),
         ],
       ),
@@ -1300,16 +1299,16 @@ class _LessonScreenState extends State<LessonScreen>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Finish lesson?'),
-        content: const Text('Finish this lesson and view your summary?'),
+        title: Text(context.l10n.finishLessonTitle),
+        content: Text(context.l10n.finishLessonDescription),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Continue lesson'),
+            child: Text(context.l10n.continueLesson),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Finish lesson'),
+            child: Text(context.l10n.finishLesson),
           ),
         ],
       ),
@@ -1350,10 +1349,10 @@ class _LessonScreenState extends State<LessonScreen>
     setState(() {
       _isFinishing = false;
       _finishError = result.status == LessonCompletionStatus.authRequired
-          ? 'Please sign in again to finish the lesson.'
+          ? context.l10n.finishLessonAuthRequired
           : result.status == LessonCompletionStatus.notFound
-              ? 'This lesson session is no longer available.'
-              : 'Could not finish the lesson. Please check your connection and try again.';
+              ? context.l10n.finishLessonSessionUnavailable
+              : context.l10n.finishLessonFailed;
     });
   }
 
@@ -2428,10 +2427,10 @@ class _LessonWorkspace extends StatelessWidget {
                               onDismiss: onDismissHint,
                             ),
                           if (isHintLoading)
-                            const Padding(
-                              padding: EdgeInsets.only(bottom: 8),
-                              child: Text('Getting hint...',
-                                  key: Key('lesson-hint-loading')),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(context.l10n.gettingHint,
+                                  key: const Key('lesson-hint-loading')),
                             ),
                           if (finishError != null)
                             Padding(
@@ -2441,10 +2440,10 @@ class _LessonWorkspace extends StatelessWidget {
                                   style: TextStyle(color: colorScheme.error)),
                             ),
                           if (isFinishing)
-                            const Padding(
-                              padding: EdgeInsets.only(bottom: 8),
-                              child: Text('Finishing lesson...',
-                                  key: Key('lesson-finishing-label')),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(context.l10n.finishingLesson,
+                                  key: const Key('lesson-finishing-label')),
                             ),
                           if (isTranscribing)
                             const Padding(
@@ -2870,7 +2869,7 @@ class _LessonHintCard extends StatelessWidget {
           Expanded(child: Text(text)),
           IconButton(
             key: const Key('lesson-hint-dismiss'),
-            tooltip: 'Dismiss hint',
+            tooltip: context.l10n.dismissHint,
             onPressed: onDismiss,
             icon: const Icon(Icons.close, size: 18),
           ),
@@ -3035,12 +3034,15 @@ class _LessonComposer extends StatelessWidget {
                   ),
                   Align(
                     alignment: Alignment.centerRight,
-                    child: OutlinedButton.icon(
-                      key: const Key('lesson-action-hint'),
-                      style: compactButtonStyle,
-                      onPressed: canHint ? onHint : null,
-                      icon: const Icon(Icons.lightbulb_outline, size: 19),
-                      label: const Text('Hint'),
+                    child: Tooltip(
+                      message: context.l10n.hint,
+                      child: OutlinedButton.icon(
+                        key: const Key('lesson-action-hint'),
+                        style: compactButtonStyle,
+                        onPressed: canHint ? onHint : null,
+                        icon: const Icon(Icons.lightbulb_outline, size: 19),
+                        label: Text(context.l10n.hint),
+                      ),
                     ),
                   ),
                 ],
@@ -3253,7 +3255,7 @@ class _TutorHeader extends StatelessWidget {
               ),
               child: IconButton(
                 key: const Key('lesson-action-finish'),
-                tooltip: 'Finish lesson',
+                tooltip: context.l10n.finishLesson,
                 onPressed: canFinish ? onFinish : null,
                 icon: const Icon(Icons.flag_outlined),
               ),
@@ -3274,6 +3276,7 @@ class _TutorHeader extends StatelessWidget {
                       ),
                       child: IconButton(
                         key: const Key('lesson-back-button'),
+                        tooltip: context.l10n.back,
                         onPressed: onBack,
                         icon: const Icon(Icons.arrow_back),
                       ),
