@@ -952,4 +952,119 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get situationOpenConversationDescription =>
       'Übe jedes Thema mit flexiblen Rückfragen.';
+
+  @override
+  String get premium => 'Premium';
+
+  @override
+  String get premiumStatusLoadingSemantics => 'Premium-Status wird geladen';
+
+  @override
+  String get premiumStatusTemporarilyUnavailable =>
+      'Der Premium-Status ist vorübergehend nicht verfügbar. Bitte versuchen Sie es erneut.';
+
+  @override
+  String premiumStatusSemantics(String status) {
+    return 'Premium-Status: $status';
+  }
+
+  @override
+  String get premiumActive => 'Premium aktiv';
+
+  @override
+  String get premiumActiveDescription =>
+      'Üben Sie ohne tägliches Limit für kostenlose Lektionen.';
+
+  @override
+  String premiumEndsOn(String date) {
+    return 'Premium endet am $date.';
+  }
+
+  @override
+  String get premiumTrialActiveDescription =>
+      'Ihr Premium-Testzeitraum ist aktiv.';
+
+  @override
+  String premiumTrialEndsOn(String date) {
+    return 'Der Premium-Testzeitraum endet am $date.';
+  }
+
+  @override
+  String freeLessonsRemainingToday(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Heute sind noch $count kostenlose Lektionen verfügbar.',
+      one: 'Heute ist noch 1 kostenlose Lektion verfügbar.',
+      zero: 'Heute sind keine kostenlosen Lektionen mehr verfügbar.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get premiumRemovesDailyLimit =>
+      'Premium hebt das tägliche Lektionslimit auf.';
+
+  @override
+  String get premiumAccountLinked =>
+      'Der Premium-Zugang ist mit Ihrem Language Voice Tutor-Konto verknüpft.';
+
+  @override
+  String get premiumSharedAcrossClients =>
+      'Ihr bestätigter Premium-Status wird von unterstützten Language Voice Tutor-Clients geteilt.';
+
+  @override
+  String get premiumBenefits => 'Premium-Vorteile';
+
+  @override
+  String get premiumBenefitDailyLimit =>
+      '• Üben Sie ohne tägliches Limit für kostenlose Lektionen';
+
+  @override
+  String get premiumBenefitAcrossDevices =>
+      '• Nutzen Sie denselben Premium-Zugang auf unterstützten Geräten';
+
+  @override
+  String get premiumBenefitAccountData =>
+      '• Behalten Sie Konto, Fortschritt, Verlauf und Lerneinstellungen zusammen';
+
+  @override
+  String get getPremium => 'Premium erhalten';
+
+  @override
+  String get restorePurchases => 'Käufe wiederherstellen';
+
+  @override
+  String get refreshPremiumStatus => 'Status aktualisieren';
+
+  @override
+  String get billingProviderExplanation =>
+      'Änderungen der Abrechnung müssen beim Anbieter vorgenommen werden, bei dem Premium gekauft wurde.';
+
+  @override
+  String get googlePlayPurchasesUnavailableTitle =>
+      'Google Play-Käufe sind noch nicht verfügbar';
+
+  @override
+  String get restorePurchasesUnavailableTitle =>
+      'Die Wiederherstellung von Käufen ist noch nicht verfügbar';
+
+  @override
+  String get googlePlayPurchasesUnavailableDescription =>
+      'Käufe werden im nächsten Schritt verbunden. Dieser Build kann Ihnen nichts berechnen oder Premium aktivieren.';
+
+  @override
+  String get restorePurchasesUnavailableDescription =>
+      'Die Google Play-Wiederherstellung wird mit dem Abrechnungsablauf verbunden. Ihr aktueller Kontostatus wird weiterhin von Language Voice Tutor geladen.';
+
+  @override
+  String get purchasePendingConfirmation =>
+      'Die Kaufabwicklung ist noch nicht bestätigt. Aktualisieren Sie Ihren Status in Kürze erneut.';
+
+  @override
+  String get purchaseActionFailed =>
+      'Diese Anfrage kann derzeit nicht abgeschlossen werden. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get premiumOk => 'Schließen';
 }

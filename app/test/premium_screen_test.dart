@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
+import 'package:language_voice_tutor_mobile/l10n/app_localizations.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
 import 'package:language_voice_tutor_mobile/screens/premium_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
@@ -72,8 +73,13 @@ SubscriptionStatus status(
     );
 
 Widget screen(FakeAuth auth,
-        {PurchaseEntryAction? buy, PurchaseEntryAction? restore}) =>
+        {Locale locale = const Locale('en'),
+        PurchaseEntryAction? buy,
+        PurchaseEntryAction? restore}) =>
     MaterialApp(
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       routes: {'/login': (_) => const Scaffold(body: Text('Login'))},
       home: PremiumScreen(
           authService: auth, purchaseAction: buy, restoreAction: restore),
@@ -109,11 +115,65 @@ void main() {
         [status(left: 0), status(left: 2), status(enforcement: false)]);
     await tester.pumpWidget(screen(auth));
     await tester.pumpAndSettle();
-    expect(find.text('0 free lessons remaining today.'), findsOneWidget);
+    expect(find.text('No free lessons remaining today.'), findsOneWidget);
     await tapVisible(tester, find.text('Refresh status'));
     expect(find.text('2 free lessons remaining today.'), findsOneWidget);
     await tapVisible(tester, find.text('Refresh status'));
     expect(find.textContaining('remaining today'), findsNothing);
+  });
+
+  testWidgets('Russian localizes the free plan and Premium trial states',
+      (tester) async {
+    final auth = FakeAuth([
+      status(left: 0),
+      status(trial: true, trialEnd: DateTime.utc(2026, 8, 1)),
+    ]);
+    await tester.pumpWidget(screen(auth, locale: const Locale('ru')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Бесплатный план'), findsOneWidget);
+    expect(find.text('Сегодня бесплатных уроков не осталось.'), findsOneWidget);
+    expect(find.text('Получить Premium'), findsOneWidget);
+
+    await tapVisible(tester, find.text('Обновить статус'));
+    expect(find.text('Пробный Premium'), findsOneWidget);
+    expect(find.textContaining('Пробный Premium действует до'), findsOneWidget);
+  });
+
+  for (final localeText in const {
+    'en': ('Free plan', 'Get Premium', 'Refresh status'),
+    'es': ('Plan gratuito', 'Obtener Premium', 'Actualizar estado'),
+    'fr': ('Formule gratuite', 'Obtenir Premium', 'Actualiser le statut'),
+    'de': ('Kostenloser Tarif', 'Premium erhalten', 'Status aktualisieren'),
+  }.entries) {
+    testWidgets(
+        '${localeText.key} keeps free-plan actions and refresh behavior',
+        (tester) async {
+      final auth = FakeAuth([status(), status()]);
+      await tester.pumpWidget(screen(auth, locale: Locale(localeText.key)));
+      await tester.pumpAndSettle();
+
+      expect(find.text(localeText.value.$1), findsOneWidget);
+      expect(find.text(localeText.value.$2), findsOneWidget);
+      await tapVisible(tester, find.text(localeText.value.$3));
+      expect(find.text(localeText.value.$1), findsOneWidget);
+      expect(auth.calls, 2);
+    });
+  }
+
+  testWidgets('Russian localizes the unavailable Google Play dialog',
+      (tester) async {
+    await tester
+        .pumpWidget(screen(FakeAuth([status()]), locale: const Locale('ru')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Получить Premium'));
+    await tester.pumpAndSettle();
+    expect(find.text('Покупки Google Play пока недоступны'), findsOneWidget);
+    expect(find.textContaining('Эта сборка не может'), findsOneWidget);
+    await tester.tap(find.text('ОК'));
+    await tester.pumpAndSettle();
+    expect(find.text('Бесплатный план'), findsOneWidget);
   });
 
   testWidgets('trial and premium hide free counter and show dates',

@@ -9,6 +9,8 @@ void main() {
     'appTitle',
     'audio',
     'app',
+    // Premium is a product name in every supported interface locale.
+    'premium',
     'languageNameEnglish',
     'languageNameRussian',
     'languageNameSpanish',

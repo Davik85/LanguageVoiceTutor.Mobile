@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
 import '../models/subscription_status.dart';
+import '../l10n/app_localizations_context.dart';
 import '../services/auth_service.dart';
 import '../services/premium_purchase_adapter.dart';
 import '../services/service_factory.dart';
@@ -74,12 +75,11 @@ class _PremiumScreenState extends State<PremiumScreen> {
             context, LoginScreen.routeName, (_) => false);
         return;
       }
-      setState(() => _error =
-          'Premium status is temporarily unavailable. Please try again.');
+      setState(() => _error = context.l10n.premiumStatusTemporarilyUnavailable);
     } catch (_) {
       if (mounted) {
-        setState(() => _error =
-            'Premium status is temporarily unavailable. Please try again.');
+        setState(
+            () => _error = context.l10n.premiumStatusTemporarilyUnavailable);
       }
     } finally {
       if (mounted) {
@@ -104,12 +104,10 @@ class _PremiumScreenState extends State<PremiumScreen> {
               _status != null &&
               !_status!.premiumActive &&
               !_status!.trialActive) {
-            setState(() => _error =
-                'Purchase processing is not confirmed yet. Refresh your status again shortly.');
+            setState(() => _error = context.l10n.purchasePendingConfirmation);
           }
         } else if (result == PurchaseEntryResult.failed && mounted) {
-          setState(() => _error =
-              'Unable to complete that request right now. Please try again.');
+          setState(() => _error = context.l10n.purchaseActionFailed);
         } else if (result == PurchaseEntryResult.unavailable) {
           await _showUnavailable(restore: restore);
         }
@@ -146,21 +144,18 @@ class _PremiumScreenState extends State<PremiumScreen> {
               _status != null &&
               !_status!.premiumActive &&
               !_status!.trialActive) {
-            setState(() => _error =
-                'Purchase processing is not confirmed yet. Refresh your status again shortly.');
+            setState(() => _error = context.l10n.purchasePendingConfirmation);
           }
         case PurchaseEntryResult.cancelled:
           break;
         case PurchaseEntryResult.failed:
-          setState(() => _error =
-              'Unable to complete that request right now. Please try again.');
+          setState(() => _error = context.l10n.purchaseActionFailed);
         case PurchaseEntryResult.unavailable:
           await _showUnavailable(restore: restore);
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _error =
-            'Unable to complete that request right now. Please try again.');
+        setState(() => _error = context.l10n.purchaseActionFailed);
       }
     } finally {
       if (mounted) setState(() => _runningAction = false);
@@ -171,15 +166,15 @@ class _PremiumScreenState extends State<PremiumScreen> {
         context: context,
         builder: (context) => AlertDialog(
           title: Text(restore
-              ? 'Restore purchases is not available yet'
-              : 'Google Play purchases are not available yet'),
+              ? context.l10n.restorePurchasesUnavailableTitle
+              : context.l10n.googlePlayPurchasesUnavailableTitle),
           content: Text(restore
-              ? 'Google Play restoration will be connected with the billing flow. Your current account status is still loaded from Language Voice Tutor.'
-              : 'Purchases will be connected in the next step. This build cannot charge you or activate Premium.'),
+              ? context.l10n.restorePurchasesUnavailableDescription
+              : context.l10n.googlePlayPurchasesUnavailableDescription),
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('OK'))
+                child: Text(context.l10n.premiumOk))
           ],
         ),
       );
@@ -196,12 +191,12 @@ class _PremiumScreenState extends State<PremiumScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Premium')),
+        appBar: AppBar(title: Text(context.l10n.premium)),
         body: AppVisuals.screenBackground(
           child: _loading && _status == null
               ? Center(
                   child: Semantics(
-                      label: 'Loading Premium status',
+                      label: context.l10n.premiumStatusLoadingSemantics,
                       child: const CircularProgressIndicator()))
               : ListView(
                   padding: const EdgeInsets.all(24),
@@ -222,12 +217,12 @@ class _PremiumScreenState extends State<PremiumScreen> {
                         child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                  'Premium status is temporarily unavailable.'),
+                              Text(context
+                                  .l10n.premiumStatusTemporarilyUnavailable),
                               const SizedBox(height: 12),
                               FilledButton.tonal(
                                   onPressed: () => _load(),
-                                  child: const Text('Retry')),
+                                  child: Text(context.l10n.retry)),
                             ]),
                       ))
                     else ...[
@@ -247,12 +242,12 @@ class _PremiumScreenState extends State<PremiumScreen> {
     final premium = status.premiumActive;
     final trial = !premium && status.trialActive;
     final title = premium
-        ? 'Premium active'
+        ? context.l10n.premiumActive
         : trial
-            ? 'Premium trial'
-            : 'Free plan';
+            ? context.l10n.premiumTrial
+            : context.l10n.freePlan;
     return Semantics(
-      label: 'Premium status: $title',
+      label: context.l10n.premiumStatusSemantics(title),
       child: Card(
           child: Padding(
         padding: const EdgeInsets.all(20),
@@ -260,26 +255,26 @@ class _PremiumScreenState extends State<PremiumScreen> {
           Text(title, style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           if (premium) ...[
-            const Text('Practice without the daily free-lesson limit.'),
+            Text(context.l10n.premiumActiveDescription),
             if (status.premiumEndsAtUtc != null)
-              Text('Premium ends ${_date(context, status.premiumEndsAtUtc!)}.'),
+              Text(context.l10n
+                  .premiumEndsOn(_date(context, status.premiumEndsAtUtc!))),
             if (_tariff != null) Text(_tariff!),
           ] else if (trial) ...[
-            const Text('Your Premium trial is active.'),
+            Text(context.l10n.premiumTrialActiveDescription),
             if (status.trialEndsAtUtc != null)
-              Text('Trial ends ${_date(context, status.trialEndsAtUtc!)}.'),
+              Text(context.l10n
+                  .premiumTrialEndsOn(_date(context, status.trialEndsAtUtc!))),
           ] else ...[
             if (status.enforcementEnabled)
-              Text(
-                  '${status.freeLessonRemainingToday} free ${status.freeLessonRemainingToday == 1 ? 'lesson' : 'lessons'} remaining today.'),
-            const Text('Premium removes the daily lesson limit.'),
+              Text(context.l10n
+                  .freeLessonsRemainingToday(status.freeLessonRemainingToday)),
+            Text(context.l10n.premiumRemovesDailyLimit),
           ],
           const SizedBox(height: 12),
-          const Text(
-              'Premium access is linked to your Language Voice Tutor account.'),
+          Text(context.l10n.premiumAccountLinked),
           const SizedBox(height: 4),
-          const Text(
-              'Your confirmed Premium status is shared across supported Language Voice Tutor clients.'),
+          Text(context.l10n.premiumSharedAcrossClients),
         ]),
       )),
     );
@@ -289,13 +284,12 @@ class _PremiumScreenState extends State<PremiumScreen> {
           child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Premium benefits',
+          Text(context.l10n.premiumBenefits,
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
-          const Text('• Practice without the daily free-lesson cap'),
-          const Text('• Use the same Premium access across supported devices'),
-          const Text(
-              '• Keep your account, progress, history, and learning settings together'),
+          Text(context.l10n.premiumBenefitDailyLimit),
+          Text(context.l10n.premiumBenefitAcrossDevices),
+          Text(context.l10n.premiumBenefitAccountData),
         ]),
       ));
 
@@ -305,22 +299,23 @@ class _PremiumScreenState extends State<PremiumScreen> {
       if (!active) ...[
         FilledButton(
           onPressed: _runningAction ? null : () => _runAction(restore: false),
-          child: Text(_runningAction ? 'Please wait...' : 'Get Premium'),
+          child: Text(_runningAction
+              ? context.l10n.pleaseWait
+              : context.l10n.getPremium),
         ),
         TextButton(
           onPressed: _runningAction ? null : () => _runAction(restore: true),
-          child: const Text('Restore purchases'),
+          child: Text(context.l10n.restorePurchases),
         ),
       ] else
-        const Padding(
-          padding: EdgeInsets.only(bottom: 8),
-          child: Text(
-              'Billing changes must be handled through the provider where Premium was purchased.'),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(context.l10n.billingProviderExplanation),
         ),
       OutlinedButton(
         onPressed:
             _refreshing || _runningAction ? null : () => _load(refresh: true),
-        child: const Text('Refresh status'),
+        child: Text(context.l10n.refreshPremiumStatus),
       ),
     ]);
   }

@@ -1705,6 +1705,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Practice any topic with flexible follow-up.'**
   String get situationOpenConversationDescription;
+
+  /// No description provided for @premium.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium'**
+  String get premium;
+
+  /// No description provided for @premiumStatusLoadingSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading Premium status'**
+  String get premiumStatusLoadingSemantics;
+
+  /// No description provided for @premiumStatusTemporarilyUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium status is temporarily unavailable. Please try again.'**
+  String get premiumStatusTemporarilyUnavailable;
+
+  /// No description provided for @premiumStatusSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium status: {status}'**
+  String premiumStatusSemantics(String status);
+
+  /// No description provided for @premiumActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium active'**
+  String get premiumActive;
+
+  /// No description provided for @premiumActiveDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Practice without the daily free-lesson limit.'**
+  String get premiumActiveDescription;
+
+  /// No description provided for @premiumEndsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium ends {date}.'**
+  String premiumEndsOn(String date);
+
+  /// No description provided for @premiumTrialActiveDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Premium trial is active.'**
+  String get premiumTrialActiveDescription;
+
+  /// No description provided for @premiumTrialEndsOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Trial ends {date}.'**
+  String premiumTrialEndsOn(String date);
+
+  /// No description provided for @freeLessonsRemainingToday.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No free lessons remaining today.} =1{1 free lesson remaining today.} other{{count} free lessons remaining today.}}'**
+  String freeLessonsRemainingToday(num count);
+
+  /// No description provided for @premiumRemovesDailyLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium removes the daily lesson limit.'**
+  String get premiumRemovesDailyLimit;
+
+  /// No description provided for @premiumAccountLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium access is linked to your Language Voice Tutor account.'**
+  String get premiumAccountLinked;
+
+  /// No description provided for @premiumSharedAcrossClients.
+  ///
+  /// In en, this message translates to:
+  /// **'Your confirmed Premium status is shared across supported Language Voice Tutor clients.'**
+  String get premiumSharedAcrossClients;
+
+  /// No description provided for @premiumBenefits.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium benefits'**
+  String get premiumBenefits;
+
+  /// No description provided for @premiumBenefitDailyLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'• Practice without the daily free-lesson cap'**
+  String get premiumBenefitDailyLimit;
+
+  /// No description provided for @premiumBenefitAcrossDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'• Use the same Premium access across supported devices'**
+  String get premiumBenefitAcrossDevices;
+
+  /// No description provided for @premiumBenefitAccountData.
+  ///
+  /// In en, this message translates to:
+  /// **'• Keep your account, progress, history, and learning settings together'**
+  String get premiumBenefitAccountData;
+
+  /// No description provided for @getPremium.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Premium'**
+  String get getPremium;
+
+  /// No description provided for @restorePurchases.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchases'**
+  String get restorePurchases;
+
+  /// No description provided for @refreshPremiumStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh status'**
+  String get refreshPremiumStatus;
+
+  /// No description provided for @billingProviderExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing changes must be handled through the provider where Premium was purchased.'**
+  String get billingProviderExplanation;
+
+  /// No description provided for @googlePlayPurchasesUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Play purchases are not available yet'**
+  String get googlePlayPurchasesUnavailableTitle;
+
+  /// No description provided for @restorePurchasesUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchases is not available yet'**
+  String get restorePurchasesUnavailableTitle;
+
+  /// No description provided for @googlePlayPurchasesUnavailableDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchases will be connected in the next step. This build cannot charge you or activate Premium.'**
+  String get googlePlayPurchasesUnavailableDescription;
+
+  /// No description provided for @restorePurchasesUnavailableDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Play restoration will be connected with the billing flow. Your current account status is still loaded from Language Voice Tutor.'**
+  String get restorePurchasesUnavailableDescription;
+
+  /// No description provided for @purchasePendingConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase processing is not confirmed yet. Refresh your status again shortly.'**
+  String get purchasePendingConfirmation;
+
+  /// No description provided for @purchaseActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to complete that request right now. Please try again.'**
+  String get purchaseActionFailed;
+
+  /// No description provided for @premiumOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get premiumOk;
 }
 
 class _AppLocalizationsDelegate

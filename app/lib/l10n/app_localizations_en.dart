@@ -943,4 +943,118 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get situationOpenConversationDescription =>
       'Practice any topic with flexible follow-up.';
+
+  @override
+  String get premium => 'Premium';
+
+  @override
+  String get premiumStatusLoadingSemantics => 'Loading Premium status';
+
+  @override
+  String get premiumStatusTemporarilyUnavailable =>
+      'Premium status is temporarily unavailable. Please try again.';
+
+  @override
+  String premiumStatusSemantics(String status) {
+    return 'Premium status: $status';
+  }
+
+  @override
+  String get premiumActive => 'Premium active';
+
+  @override
+  String get premiumActiveDescription =>
+      'Practice without the daily free-lesson limit.';
+
+  @override
+  String premiumEndsOn(String date) {
+    return 'Premium ends $date.';
+  }
+
+  @override
+  String get premiumTrialActiveDescription => 'Your Premium trial is active.';
+
+  @override
+  String premiumTrialEndsOn(String date) {
+    return 'Trial ends $date.';
+  }
+
+  @override
+  String freeLessonsRemainingToday(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count free lessons remaining today.',
+      one: '1 free lesson remaining today.',
+      zero: 'No free lessons remaining today.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get premiumRemovesDailyLimit =>
+      'Premium removes the daily lesson limit.';
+
+  @override
+  String get premiumAccountLinked =>
+      'Premium access is linked to your Language Voice Tutor account.';
+
+  @override
+  String get premiumSharedAcrossClients =>
+      'Your confirmed Premium status is shared across supported Language Voice Tutor clients.';
+
+  @override
+  String get premiumBenefits => 'Premium benefits';
+
+  @override
+  String get premiumBenefitDailyLimit =>
+      '• Practice without the daily free-lesson cap';
+
+  @override
+  String get premiumBenefitAcrossDevices =>
+      '• Use the same Premium access across supported devices';
+
+  @override
+  String get premiumBenefitAccountData =>
+      '• Keep your account, progress, history, and learning settings together';
+
+  @override
+  String get getPremium => 'Get Premium';
+
+  @override
+  String get restorePurchases => 'Restore purchases';
+
+  @override
+  String get refreshPremiumStatus => 'Refresh status';
+
+  @override
+  String get billingProviderExplanation =>
+      'Billing changes must be handled through the provider where Premium was purchased.';
+
+  @override
+  String get googlePlayPurchasesUnavailableTitle =>
+      'Google Play purchases are not available yet';
+
+  @override
+  String get restorePurchasesUnavailableTitle =>
+      'Restore purchases is not available yet';
+
+  @override
+  String get googlePlayPurchasesUnavailableDescription =>
+      'Purchases will be connected in the next step. This build cannot charge you or activate Premium.';
+
+  @override
+  String get restorePurchasesUnavailableDescription =>
+      'Google Play restoration will be connected with the billing flow. Your current account status is still loaded from Language Voice Tutor.';
+
+  @override
+  String get purchasePendingConfirmation =>
+      'Purchase processing is not confirmed yet. Refresh your status again shortly.';
+
+  @override
+  String get purchaseActionFailed =>
+      'Unable to complete that request right now. Please try again.';
+
+  @override
+  String get premiumOk => 'OK';
 }
