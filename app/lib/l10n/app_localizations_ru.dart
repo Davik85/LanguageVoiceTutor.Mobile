@@ -1434,4 +1434,131 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get achievementTitleRestaurantDiningPro => 'Ресторанный профи';
+
+  @override
+  String get autoSendMessage => 'Auto-send message';
+
+  @override
+  String get autoPlayTutorVoice => 'Auto-play tutor voice';
+
+  @override
+  String get voiceRecognitionUnclear =>
+      'Не удалось точно распознать речь. Попробуйте ещё раз.';
+
+  @override
+  String get microphoneBlockedOpenSettings =>
+      'Доступ к микрофону заблокирован. Откройте настройки Android, чтобы включить его.';
+
+  @override
+  String get microphonePermissionDeniedRetry =>
+      'Доступ к микрофону не предоставлен. Нажмите микрофон, чтобы попробовать ещё раз.';
+
+  @override
+  String get recordingStartFailedCheckMicrophone =>
+      'Не удалось начать запись. Проверьте микрофон.';
+
+  @override
+  String get recordingStartFailed =>
+      'Не удалось начать запись. Попробуйте ещё раз.';
+
+  @override
+  String get recordingTooShort => 'Запишите немного более длинный ответ.';
+
+  @override
+  String get recordingStopFailed =>
+      'Не удалось остановить запись. Попробуйте ещё раз.';
+
+  @override
+  String get recordingProcessingFailed =>
+      'Не удалось обработать запись. Попробуйте ещё раз.';
+
+  @override
+  String get recordingAuthRequired =>
+      'Войдите снова, чтобы использовать запись.';
+
+  @override
+  String get transcriptionTemporarilyUnavailable =>
+      'Расшифровка временно недоступна. Попробуйте ещё раз позже.';
+
+  @override
+  String get transcriptionTimedOut =>
+      'Расшифровка заняла слишком много времени. Попробуйте ещё раз.';
+
+  @override
+  String get transcriptionConnectionFailed =>
+      'Ошибка соединения при расшифровке. Попробуйте ещё раз.';
+
+  @override
+  String get transcriptionFailed =>
+      'Не удалось расшифровать запись. Попробуйте ещё раз.';
+
+  @override
+  String get voiceTemporarilyUnavailable =>
+      'Голос временно недоступен. Попробуйте ещё раз позже.';
+
+  @override
+  String get voicePlaybackFailed =>
+      'Не удалось воспроизвести голос. Попробуйте ещё раз.';
+
+  @override
+  String get voicePlaybackTimedOut =>
+      'Воспроизведение голоса заняло слишком много времени. Попробуйте ещё раз.';
+
+  @override
+  String get voicePlaybackStopped =>
+      'Воспроизведение голоса остановлено. Можно снова записывать.';
+
+  @override
+  String get replaceTypedTextTitle => 'Заменить набранный текст?';
+
+  @override
+  String get replaceTypedTextDescription =>
+      'Использовать расшифрованную запись вместо набранного черновика?';
+
+  @override
+  String get keepTypedText => 'Оставить набранный текст';
+
+  @override
+  String get replaceTypedText => 'Заменить набранный текст';
+
+  @override
+  String get transcribingRecording => 'Расшифровка записи...';
+
+  @override
+  String get retryLessonContent => 'Повторить загрузку урока';
+
+  @override
+  String get translation => 'Перевод';
+
+  @override
+  String get playVoice => 'Воспроизвести голос';
+
+  @override
+  String get openConversationMode => 'Открыть режим разговора';
+
+  @override
+  String get conversationPaused =>
+      'Разговор приостановлен. Можно снова записывать.';
+
+  @override
+  String get tutorReplyTimedOut =>
+      'Ответ преподавателя занял слишком много времени. Попробуйте ещё раз.';
+
+  @override
+  String get conversationSendFailed =>
+      'Не удалось отправить ответ. Попробуйте записать ещё раз.';
+
+  @override
+  String get openAndroidSettingsFailed =>
+      'Не удалось открыть настройки Android. Попробуйте ещё раз.';
+
+  @override
+  String get conversationReady => 'Разговор готов.';
+
+  @override
+  String get tutorAvatarSemantics => 'Аватар преподавателя';
+
+  @override
+  String get lessonContentLoadFailed =>
+      'Не удалось загрузить содержание урока. Попробуйте ещё раз.';
 }

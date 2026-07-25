@@ -413,7 +413,7 @@ void main() {
     expect(find.byKey(const Key('conversation-hint-card')), findsNothing);
   });
 
-  group('conversation static controls localization', () {
+  group('voice lesson localization cleanup', () {
     testWidgets('Russian localizes controls and keeps the tutor name dynamic',
         (tester) async {
       final recording = _Recording();

@@ -318,7 +318,7 @@ class _LessonScreenState extends State<LessonScreen>
         _isLoadingScenario = false;
         _lessonLoadError = _safeErrorMessage(
           error,
-          fallback: 'Could not load lesson content. Please try again.',
+          fallback: context.l10n.lessonContentLoadFailed,
         );
       });
     }
@@ -558,7 +558,7 @@ class _LessonScreenState extends State<LessonScreen>
       );
       if (voiceIntent.decision ==
           VoiceScenarioDeterministicDecision.unsafeTranscript) {
-        const message = 'I could not recognize that clearly. Please try again.';
+        final message = context.l10n.voiceRecognitionUnclear;
         _debugVoiceScenarioResolution(
           stage: 'deterministic',
           decision: 'unsafe',
@@ -1149,6 +1149,37 @@ class _LessonScreenState extends State<LessonScreen>
     return fallback;
   }
 
+  String _transcriptionFailureMessage(AudioTranscriptionStatus status) =>
+      switch (status) {
+        AudioTranscriptionStatus.authenticationRequired =>
+          context.l10n.recordingAuthRequired,
+        AudioTranscriptionStatus.sessionEnded =>
+          context.l10n.lessonFeedbackSessionEnded,
+        AudioTranscriptionStatus.rateLimited ||
+        AudioTranscriptionStatus.serviceUnavailable =>
+          context.l10n.transcriptionTemporarilyUnavailable,
+        AudioTranscriptionStatus.timeout => context.l10n.transcriptionTimedOut,
+        AudioTranscriptionStatus.networkFailure =>
+          context.l10n.transcriptionConnectionFailed,
+        AudioTranscriptionStatus.malformedResponse ||
+        AudioTranscriptionStatus.invalidRecording ||
+        AudioTranscriptionStatus.ordinaryFailure ||
+        AudioTranscriptionStatus.success =>
+          context.l10n.transcriptionFailed,
+      };
+
+  String _speechFailureMessage(AudioSpeechStatus status) => switch (status) {
+        AudioSpeechStatus.authenticationRequired =>
+          context.l10n.recordingAuthRequired,
+        AudioSpeechStatus.sessionEnded =>
+          context.l10n.lessonFeedbackSessionEnded,
+        AudioSpeechStatus.temporarilyUnavailable =>
+          context.l10n.voiceTemporarilyUnavailable,
+        AudioSpeechStatus.ordinaryFailure ||
+        AudioSpeechStatus.success =>
+          context.l10n.voicePlaybackFailed,
+      };
+
   LessonTutorStatus get _tutorStatus {
     if (_activePlayingMessageId != null) {
       return LessonTutorStatus.speaking;
@@ -1483,8 +1514,8 @@ class _LessonScreenState extends State<LessonScreen>
           _recordingMessage = permission ==
                       LearnerMicrophonePermissionStatus.permanentlyDenied ||
                   permission == LearnerMicrophonePermissionStatus.restricted
-              ? 'Microphone access is blocked. Open Android settings to enable it.'
-              : 'Microphone access was not granted. Tap the microphone to try again.';
+              ? context.l10n.microphoneBlockedOpenSettings
+              : context.l10n.microphonePermissionDeniedRetry;
           _showOpenMicrophoneSettings = permission ==
                   LearnerMicrophonePermissionStatus.permanentlyDenied ||
               permission == LearnerMicrophonePermissionStatus.restricted;
@@ -1512,8 +1543,7 @@ class _LessonScreenState extends State<LessonScreen>
       if (mounted) {
         setState(() {
           _recordingState = LearnerRecordingUiState.error;
-          _recordingMessage =
-              'Could not start recording. Please check your microphone.';
+          _recordingMessage = context.l10n.recordingStartFailedCheckMicrophone;
         });
       }
     } finally {
@@ -1544,7 +1574,7 @@ class _LessonScreenState extends State<LessonScreen>
         if (mounted) {
           setState(() {
             _recordingState = LearnerRecordingUiState.error;
-            _recordingMessage = 'Please record a slightly longer answer.';
+            _recordingMessage = context.l10n.recordingTooShort;
           });
         }
         return;
@@ -1577,7 +1607,7 @@ class _LessonScreenState extends State<LessonScreen>
       if (mounted) {
         setState(() {
           _recordingState = LearnerRecordingUiState.error;
-          _recordingMessage = 'Could not stop recording. Please try again.';
+          _recordingMessage = context.l10n.recordingStopFailed;
         });
       }
     } finally {
@@ -1611,7 +1641,7 @@ class _LessonScreenState extends State<LessonScreen>
       if (!result.isSuccess || result.text == null) {
         setState(() {
           _recordingState = LearnerRecordingUiState.error;
-          _recordingMessage = result.message;
+          _recordingMessage = _transcriptionFailureMessage(result.status);
           _isAuthenticationRequired =
               result.status == AudioTranscriptionStatus.authenticationRequired;
           _lessonSessionEnded =
@@ -1651,8 +1681,7 @@ class _LessonScreenState extends State<LessonScreen>
         if (mounted) {
           setState(() {
             _recordingState = LearnerRecordingUiState.idle;
-            _recordingMessage =
-                'I could not recognize that clearly. Please try again.';
+            _recordingMessage = context.l10n.voiceRecognitionUnclear;
           });
         }
         return;
@@ -1693,8 +1722,7 @@ class _LessonScreenState extends State<LessonScreen>
       if (mounted && _transcriptionEligible) {
         setState(() {
           _recordingState = LearnerRecordingUiState.error;
-          _recordingMessage =
-              'Connection failed while transcribing. Please try again.';
+          _recordingMessage = context.l10n.transcriptionConnectionFailed;
         });
       }
     } finally {
@@ -1706,17 +1734,16 @@ class _LessonScreenState extends State<LessonScreen>
   Future<bool?> _confirmTranscriptReplacement() => showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Replace typed text?'),
-          content: const Text(
-              'Use the transcribed recording instead of your typed draft?'),
+          title: Text(context.l10n.replaceTypedTextTitle),
+          content: Text(context.l10n.replaceTypedTextDescription),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Keep typed text'),
+              child: Text(context.l10n.keepTypedText),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Replace typed text'),
+              child: Text(context.l10n.replaceTypedText),
             ),
           ],
         ),
@@ -1808,7 +1835,7 @@ class _LessonScreenState extends State<LessonScreen>
       if (!result.isSuccess || result.audioBytes == null) {
         setState(() {
           message.isTtsLoading = false;
-          message.ttsError = result.message;
+          message.ttsError = _speechFailureMessage(result.status);
           if (result.status == AudioSpeechStatus.authenticationRequired) {
             _isAuthenticationRequired = true;
           }
@@ -1836,7 +1863,7 @@ class _LessonScreenState extends State<LessonScreen>
         if (mounted) {
           setState(() {
             message.isTtsLoading = false;
-            message.ttsError = 'Could not play voice. Please try again.';
+            message.ttsError = context.l10n.voicePlaybackFailed;
           });
         }
         return;
@@ -1869,7 +1896,7 @@ class _LessonScreenState extends State<LessonScreen>
           message.isTtsLoading = false;
           message.ttsError = result.status == TutorPlaybackStatus.stopped
               ? null
-              : 'Could not play voice. Please try again.';
+              : context.l10n.voicePlaybackFailed;
         });
       }
     } catch (_) {
@@ -1877,7 +1904,7 @@ class _LessonScreenState extends State<LessonScreen>
         setState(() {
           message.isTtsLoading = false;
           message.isTtsPlaying = false;
-          message.ttsError = 'Could not play voice. Please try again.';
+          message.ttsError = context.l10n.voicePlaybackFailed;
         });
       }
     }
@@ -2393,7 +2420,7 @@ class _LessonWorkspace extends StatelessWidget {
                                     onChanged: onAutoSendVoiceChanged,
                                   ),
                                 ),
-                                const Text('Auto-send voice'),
+                                Text(context.l10n.autoSendMessage),
                               ],
                             ),
                             Row(
@@ -2408,7 +2435,7 @@ class _LessonWorkspace extends StatelessWidget {
                                     onChanged: onAutoPlayBotVoiceChanged,
                                   ),
                                 ),
-                                const Text('Auto-play bot voice'),
+                                Text(context.l10n.autoPlayTutorVoice),
                               ],
                             ),
                           ],
@@ -2496,19 +2523,19 @@ class _LessonWorkspace extends StatelessWidget {
                                   key: const Key('lesson-finishing-label')),
                             ),
                           if (isTranscribing)
-                            const Padding(
-                              padding: EdgeInsets.only(bottom: 8),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  SizedBox(
+                                  const SizedBox(
                                     width: 16,
                                     height: 16,
                                     child: CircularProgressIndicator(
                                         strokeWidth: 2),
                                   ),
-                                  SizedBox(width: 8),
-                                  Text('Transcribing recording...'),
+                                  const SizedBox(width: 8),
+                                  Text(context.l10n.transcribingRecording),
                                 ],
                               ),
                             ),
@@ -2528,7 +2555,7 @@ class _LessonWorkspace extends StatelessWidget {
                                     'lesson-open-microphone-settings'),
                                 onPressed: () =>
                                     unawaited(onOpenMicrophoneSettings()),
-                                child: const Text('Open settings'),
+                                child: Text(context.l10n.openSettings),
                               ),
                             ),
                         ],
@@ -2640,7 +2667,7 @@ class _LessonBody extends StatelessWidget {
                 onRetryLoad();
               },
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry lesson content'),
+              label: Text(context.l10n.retryLessonContent),
             ),
           ],
         ),
@@ -2819,7 +2846,7 @@ class _LessonMessageBubble extends StatelessWidget {
                           key: const Key(
                               'lesson-message-action-tutor-translate'),
                           visualDensity: VisualDensity.compact,
-                          tooltip: 'Translation',
+                          tooltip: context.l10n.translation,
                           onPressed: actionAvailability.canUseTranslation
                               ? () => onTranslateMessage(message)
                               : null,
@@ -2828,7 +2855,7 @@ class _LessonMessageBubble extends StatelessWidget {
                         IconButton(
                           key: const Key('lesson-message-action-tutor-voice'),
                           visualDensity: VisualDensity.compact,
-                          tooltip: 'Play voice',
+                          tooltip: context.l10n.playVoice,
                           onPressed: actionAvailability.canUseTts
                               ? () => onPlayVoice(message)
                               : null,
@@ -2852,7 +2879,7 @@ class _LessonMessageBubble extends StatelessWidget {
                           key:
                               const Key('lesson-message-action-user-translate'),
                           visualDensity: VisualDensity.compact,
-                          tooltip: 'Translation',
+                          tooltip: context.l10n.translation,
                           onPressed: actionAvailability.canUseTranslation
                               ? () => onTranslateMessage(message)
                               : null,
@@ -3068,7 +3095,7 @@ class _LessonComposer extends StatelessWidget {
                               colorScheme.outlineVariant.withValues(alpha: 0.4),
                         ),
                       ),
-                      hintText: 'Type your message',
+                      hintText: context.l10n.typeYourMessage,
                     ),
                   ),
                 ),
@@ -3378,7 +3405,7 @@ class _TutorHeader extends StatelessWidget {
                       ),
                       child: IconButton(
                         key: const Key('lesson-conversation-mode-button'),
-                        tooltip: 'Open Conversation mode',
+                        tooltip: context.l10n.openConversationMode,
                         onPressed: canOpenConversationMode
                             ? onOpenConversationMode
                             : null,

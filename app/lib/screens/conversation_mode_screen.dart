@@ -115,7 +115,7 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
       _finishConversationOperation(_operationGeneration,
-          message: 'Conversation paused. You can record again.');
+          message: context.l10n.conversationPaused);
       _invalidateOperation();
       unawaited(_stopAndDeleteRecording());
       unawaited(widget.audioPlaybackService.stop());
@@ -167,8 +167,8 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
                   LearnerMicrophonePermissionStatus.permanentlyDenied ||
               permission == LearnerMicrophonePermissionStatus.restricted;
           _error = requiresSettings
-              ? 'Microphone access is blocked. Open Android settings to enable it.'
-              : 'Microphone access was not granted. Tap the microphone to try again.';
+              ? context.l10n.microphoneBlockedOpenSettings
+              : context.l10n.microphonePermissionDeniedRetry;
           _showOpenMicrophoneSettings = requiresSettings;
         });
         return;
@@ -191,7 +191,7 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
       if (_isCurrent(generation)) {
         setState(() {
           _state = _ConversationState.idle;
-          _error = 'Could not start recording. Please try again.';
+          _error = context.l10n.recordingStartFailed;
         });
       }
     }
@@ -214,7 +214,7 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
         if (_isCurrent(generation)) {
           setState(() {
             _state = _ConversationState.idle;
-            _error = 'Please record a slightly longer answer.';
+            _error = context.l10n.recordingTooShort;
           });
         }
         return;
@@ -235,7 +235,7 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
       if (_isCurrent(generation)) {
         setState(() {
           _state = _ConversationState.idle;
-          _error = 'Could not process that recording. Please try again.';
+          _error = context.l10n.recordingProcessingFailed;
         });
       }
     } finally {
@@ -247,6 +247,7 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
 
   Future<void> _transcribe(String path, int generation) async {
     if (!_isCurrent(generation)) return;
+    final l10n = context.l10n;
     final studyLanguageId =
         LanguageOptions.studyLanguageIdFor(widget.settings.studyLanguage);
     AudioTranscriptionResult result;
@@ -264,11 +265,11 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
           .timeout(const Duration(seconds: 45));
     } on TimeoutException {
       _finishConversationOperation(generation,
-          message: 'Transcription took too long. Please try again.');
+          message: l10n.transcriptionTimedOut);
       return;
     } catch (_) {
       _finishConversationOperation(generation,
-          message: 'Could not transcribe that recording. Please try again.');
+          message: l10n.transcriptionFailed);
       return;
     }
     if (!_isCurrent(generation)) return;
@@ -276,7 +277,7 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
     if (!result.isSuccess || text.isEmpty) {
       setState(() {
         _state = _ConversationState.idle;
-        _error = result.message;
+        _error = _transcriptionFailureMessage(result.status);
       });
       return;
     }
@@ -296,7 +297,7 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
     }
     if (normalized.unsafeMixedScript) {
       _finishConversationOperation(generation,
-          message: 'I could not recognize that clearly. Please try again.');
+          message: l10n.voiceRecognitionUnclear);
       return;
     }
     final normalizedText = normalized.normalizedText;
@@ -308,18 +309,18 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
           .timeout(const Duration(seconds: 45));
     } on TimeoutException {
       _finishConversationOperation(generation,
-          message: 'The tutor took too long to reply. Please try again.');
+          message: l10n.tutorReplyTimedOut);
       return;
     } catch (_) {
       _finishConversationOperation(generation,
-          message: 'Could not send that answer. Please try recording again.');
+          message: l10n.conversationSendFailed);
       return;
     }
     if (!_isCurrent(generation)) return;
     if (botText == null || botText.trim().isEmpty) {
       setState(() {
         _state = _ConversationState.idle;
-        _error = 'Could not send that answer. Please try recording again.';
+        _error = l10n.conversationSendFailed;
       });
       return;
     }
@@ -332,6 +333,7 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
 
   Future<void> _speak(String text, int generation) async {
     if (!_isCurrent(generation)) return;
+    final l10n = context.l10n;
     AudioSpeechResult result;
     try {
       result = await widget.authService
@@ -346,18 +348,18 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
           .timeout(const Duration(seconds: 45));
     } on TimeoutException {
       _finishConversationOperation(generation,
-          message: 'Voice playback took too long. Please try again.');
+          message: l10n.voicePlaybackTimedOut);
       return;
     } catch (_) {
       _finishConversationOperation(generation,
-          message: 'Could not play voice. Please try again.');
+          message: l10n.voicePlaybackFailed);
       return;
     }
     if (!_isCurrent(generation)) return;
     if (!result.isSuccess || result.audioBytes == null) {
       setState(() {
         _state = _ConversationState.idle;
-        _error = result.message;
+        _error = _speechFailureMessage(result.status);
       });
       return;
     }
@@ -380,24 +382,53 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
       if (!_isCurrent(generation)) return;
       final message = switch (playbackResult.status) {
         TutorPlaybackStatus.completed => null,
-        TutorPlaybackStatus.stopped =>
-          'Voice playback stopped. You can record again.',
-        TutorPlaybackStatus.timedOut =>
-          'Voice playback took too long. Please try again.',
+        TutorPlaybackStatus.stopped => l10n.voicePlaybackStopped,
+        TutorPlaybackStatus.timedOut => l10n.voicePlaybackTimedOut,
         TutorPlaybackStatus.failed ||
         TutorPlaybackStatus.disposed =>
-          'Could not play voice. Please try again.',
+          l10n.voicePlaybackFailed,
       };
       _finishConversationOperation(generation, message: message);
     } catch (_) {
       if (_isCurrent(generation)) {
         setState(() {
           _state = _ConversationState.idle;
-          _error = 'Could not play voice. Please try again.';
+          _error = l10n.voicePlaybackFailed;
         });
       }
     }
   }
+
+  String _transcriptionFailureMessage(AudioTranscriptionStatus status) =>
+      switch (status) {
+        AudioTranscriptionStatus.authenticationRequired =>
+          context.l10n.recordingAuthRequired,
+        AudioTranscriptionStatus.sessionEnded =>
+          context.l10n.lessonFeedbackSessionEnded,
+        AudioTranscriptionStatus.rateLimited ||
+        AudioTranscriptionStatus.serviceUnavailable =>
+          context.l10n.transcriptionTemporarilyUnavailable,
+        AudioTranscriptionStatus.timeout => context.l10n.transcriptionTimedOut,
+        AudioTranscriptionStatus.networkFailure =>
+          context.l10n.transcriptionConnectionFailed,
+        AudioTranscriptionStatus.malformedResponse ||
+        AudioTranscriptionStatus.invalidRecording ||
+        AudioTranscriptionStatus.ordinaryFailure ||
+        AudioTranscriptionStatus.success =>
+          context.l10n.transcriptionFailed,
+      };
+
+  String _speechFailureMessage(AudioSpeechStatus status) => switch (status) {
+        AudioSpeechStatus.authenticationRequired =>
+          context.l10n.recordingAuthRequired,
+        AudioSpeechStatus.sessionEnded =>
+          context.l10n.lessonFeedbackSessionEnded,
+        AudioSpeechStatus.temporarilyUnavailable =>
+          context.l10n.voiceTemporarilyUnavailable,
+        AudioSpeechStatus.ordinaryFailure ||
+        AudioSpeechStatus.success =>
+          context.l10n.voicePlaybackFailed,
+      };
 
   bool _isCurrent(int generation) =>
       mounted &&
@@ -419,13 +450,13 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
       final opened = await widget.microphonePermissionService.openSettings();
       if (mounted && !opened) {
         setState(() {
-          _error = 'Could not open Android settings. Please try again.';
+          _error = context.l10n.openAndroidSettingsFailed;
         });
       }
     } catch (_) {
       if (mounted) {
         setState(() {
-          _error = 'Could not open Android settings. Please try again.';
+          _error = context.l10n.openAndroidSettingsFailed;
         });
       }
     } finally {
@@ -447,11 +478,9 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
           _state = _ConversationState.idle;
           _error = null;
         } else if (requiresSettings) {
-          _error =
-              'Microphone access is blocked. Open Android settings to enable it.';
+          _error = context.l10n.microphoneBlockedOpenSettings;
         } else if (permission == LearnerMicrophonePermissionStatus.denied) {
-          _error =
-              'Microphone access was not granted. Tap the microphone to try again.';
+          _error = context.l10n.microphonePermissionDeniedRetry;
         }
       });
     } catch (_) {
@@ -512,7 +541,7 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
       };
 
   String get _dialogueText {
-    if (_transcript.isEmpty) return 'Your conversation is ready.';
+    if (_transcript.isEmpty) return context.l10n.conversationReady;
     if (_transcript.length == 1) return _transcript.single;
     return _transcript.sublist(_transcript.length - 2).join('\n\n');
   }
@@ -532,7 +561,7 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
             children: [
               Positioned.fill(
                 child: Semantics(
-                  label: 'Tutor avatar',
+                  label: context.l10n.tutorAvatarSemantics,
                   child: TutorAvatar(
                     key: const Key('conversation-mode-avatar'),
                     surface: TutorAvatarSurface.conversationMode,
@@ -654,7 +683,7 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
                             ? null
                             : _openMicrophoneSettings,
                         icon: const Icon(Icons.settings),
-                        label: const Text('Open Android settings'),
+                        label: Text(context.l10n.openAndroidSettings),
                       ),
                     ],
                     Row(

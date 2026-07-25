@@ -2522,7 +2522,7 @@ void main() {
     expect(find.byKey(const Key('lesson-send-button')), findsNothing);
   });
 
-  group('lesson controls localization', () {
+  group('voice lesson localization cleanup', () {
     testWidgets('Russian leave dialog keeps the unfinished lesson active',
         (tester) async {
       final auth = FakeAuthService();
@@ -2602,6 +2602,21 @@ void main() {
       expect(find.text('Finish lesson?'), findsOneWidget);
       expect(find.text('Continue lesson'), findsOneWidget);
     });
+
+    for (final locale in const ['en', 'ru', 'es', 'fr', 'de']) {
+      testWidgets('$locale keeps compact voice controls in English',
+          (tester) async {
+        await tester.pumpWidget(
+            _lessonScreen(FakeAuthService(), locale: Locale(locale)));
+        await tester.pumpAndSettle();
+
+        await _showWidget(tester, find.text('Auto-send message'));
+        expect(find.text('Auto-send message'), findsOneWidget);
+        expect(find.text('Auto-play tutor voice'), findsOneWidget);
+        expect(find.text('Auto-send voice'), findsNothing);
+        expect(find.text('Auto-play bot voice'), findsNothing);
+      });
+    }
 
     for (final localeCase in const {
       'es': ('Pista', 'Atrás', 'Terminar lección'),

@@ -26,6 +26,9 @@ void main() {
     // These placeholder-only accessibility templates are language-neutral.
     'topicCardSemantics',
     'situationCardSemantics',
+    // Intentional compact English-only mobile voice-control labels.
+    'autoSendMessage',
+    'autoPlayTutorVoice',
   };
 
   Map<String, dynamic> arb(String language) =>

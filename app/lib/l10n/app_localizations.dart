@@ -2527,6 +2527,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dining Pro'**
   String get achievementTitleRestaurantDiningPro;
+
+  /// No description provided for @autoSendMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-send message'**
+  String get autoSendMessage;
+
+  /// No description provided for @autoPlayTutorVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-play tutor voice'**
+  String get autoPlayTutorVoice;
+
+  /// No description provided for @voiceRecognitionUnclear.
+  ///
+  /// In en, this message translates to:
+  /// **'I could not recognize that clearly. Please try again.'**
+  String get voiceRecognitionUnclear;
+
+  /// No description provided for @microphoneBlockedOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone access is blocked. Open Android settings to enable it.'**
+  String get microphoneBlockedOpenSettings;
+
+  /// No description provided for @microphonePermissionDeniedRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone access was not granted. Tap the microphone to try again.'**
+  String get microphonePermissionDeniedRetry;
+
+  /// No description provided for @recordingStartFailedCheckMicrophone.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start recording. Please check your microphone.'**
+  String get recordingStartFailedCheckMicrophone;
+
+  /// No description provided for @recordingStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start recording. Please try again.'**
+  String get recordingStartFailed;
+
+  /// No description provided for @recordingTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Please record a slightly longer answer.'**
+  String get recordingTooShort;
+
+  /// No description provided for @recordingStopFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not stop recording. Please try again.'**
+  String get recordingStopFailed;
+
+  /// No description provided for @recordingProcessingFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not process that recording. Please try again.'**
+  String get recordingProcessingFailed;
+
+  /// No description provided for @recordingAuthRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in again to use recording.'**
+  String get recordingAuthRequired;
+
+  /// No description provided for @transcriptionTemporarilyUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription is temporarily unavailable. Please try again shortly.'**
+  String get transcriptionTemporarilyUnavailable;
+
+  /// No description provided for @transcriptionTimedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription took too long. Please try again.'**
+  String get transcriptionTimedOut;
+
+  /// No description provided for @transcriptionConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed while transcribing. Please try again.'**
+  String get transcriptionConnectionFailed;
+
+  /// No description provided for @transcriptionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not transcribe that recording. Please try again.'**
+  String get transcriptionFailed;
+
+  /// No description provided for @voiceTemporarilyUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice is temporarily unavailable. Please try again shortly.'**
+  String get voiceTemporarilyUnavailable;
+
+  /// No description provided for @voicePlaybackFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not play voice. Please try again.'**
+  String get voicePlaybackFailed;
+
+  /// No description provided for @voicePlaybackTimedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice playback took too long. Please try again.'**
+  String get voicePlaybackTimedOut;
+
+  /// No description provided for @voicePlaybackStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice playback stopped. You can record again.'**
+  String get voicePlaybackStopped;
+
+  /// No description provided for @replaceTypedTextTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace typed text?'**
+  String get replaceTypedTextTitle;
+
+  /// No description provided for @replaceTypedTextDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the transcribed recording instead of your typed draft?'**
+  String get replaceTypedTextDescription;
+
+  /// No description provided for @keepTypedText.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep typed text'**
+  String get keepTypedText;
+
+  /// No description provided for @replaceTypedText.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace typed text'**
+  String get replaceTypedText;
+
+  /// No description provided for @transcribingRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing recording...'**
+  String get transcribingRecording;
+
+  /// No description provided for @retryLessonContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry lesson content'**
+  String get retryLessonContent;
+
+  /// No description provided for @translation.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation'**
+  String get translation;
+
+  /// No description provided for @playVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Play voice'**
+  String get playVoice;
+
+  /// No description provided for @openConversationMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Conversation mode'**
+  String get openConversationMode;
+
+  /// No description provided for @conversationPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation paused. You can record again.'**
+  String get conversationPaused;
+
+  /// No description provided for @tutorReplyTimedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'The tutor took too long to reply. Please try again.'**
+  String get tutorReplyTimedOut;
+
+  /// No description provided for @conversationSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send that answer. Please try recording again.'**
+  String get conversationSendFailed;
+
+  /// No description provided for @openAndroidSettingsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open Android settings. Please try again.'**
+  String get openAndroidSettingsFailed;
+
+  /// No description provided for @conversationReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Your conversation is ready.'**
+  String get conversationReady;
+
+  /// No description provided for @tutorAvatarSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Tutor avatar'**
+  String get tutorAvatarSemantics;
+
+  /// No description provided for @lessonContentLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load lesson content. Please try again.'**
+  String get lessonContentLoadFailed;
 }
 
 class _AppLocalizationsDelegate

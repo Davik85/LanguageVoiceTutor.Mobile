@@ -1434,4 +1434,131 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get achievementTitleRestaurantDiningPro => 'Pro de la restauration';
+
+  @override
+  String get autoSendMessage => 'Auto-send message';
+
+  @override
+  String get autoPlayTutorVoice => 'Auto-play tutor voice';
+
+  @override
+  String get voiceRecognitionUnclear =>
+      'Je n’ai pas pu reconnaître cela clairement. Réessayez.';
+
+  @override
+  String get microphoneBlockedOpenSettings =>
+      'L’accès au microphone est bloqué. Ouvrez les paramètres Android pour l’activer.';
+
+  @override
+  String get microphonePermissionDeniedRetry =>
+      'L’accès au microphone n’a pas été accordé. Touchez le microphone pour réessayer.';
+
+  @override
+  String get recordingStartFailedCheckMicrophone =>
+      'Impossible de démarrer l’enregistrement. Vérifiez votre microphone.';
+
+  @override
+  String get recordingStartFailed =>
+      'Impossible de démarrer l’enregistrement. Réessayez.';
+
+  @override
+  String get recordingTooShort => 'Enregistrez une réponse un peu plus longue.';
+
+  @override
+  String get recordingStopFailed =>
+      'Impossible d’arrêter l’enregistrement. Réessayez.';
+
+  @override
+  String get recordingProcessingFailed =>
+      'Impossible de traiter cet enregistrement. Réessayez.';
+
+  @override
+  String get recordingAuthRequired =>
+      'Reconnectez-vous pour utiliser l’enregistrement.';
+
+  @override
+  String get transcriptionTemporarilyUnavailable =>
+      'La transcription est temporairement indisponible. Réessayez bientôt.';
+
+  @override
+  String get transcriptionTimedOut =>
+      'La transcription a pris trop de temps. Réessayez.';
+
+  @override
+  String get transcriptionConnectionFailed =>
+      'La connexion a échoué pendant la transcription. Réessayez.';
+
+  @override
+  String get transcriptionFailed =>
+      'Impossible de transcrire cet enregistrement. Réessayez.';
+
+  @override
+  String get voiceTemporarilyUnavailable =>
+      'La voix est temporairement indisponible. Réessayez bientôt.';
+
+  @override
+  String get voicePlaybackFailed => 'Impossible de lire la voix. Réessayez.';
+
+  @override
+  String get voicePlaybackTimedOut =>
+      'La lecture de la voix a pris trop de temps. Réessayez.';
+
+  @override
+  String get voicePlaybackStopped =>
+      'La lecture de la voix s’est arrêtée. Vous pouvez enregistrer à nouveau.';
+
+  @override
+  String get replaceTypedTextTitle => 'Remplacer le texte saisi ?';
+
+  @override
+  String get replaceTypedTextDescription =>
+      'Utiliser l’enregistrement transcrit à la place de votre brouillon saisi ?';
+
+  @override
+  String get keepTypedText => 'Conserver le texte saisi';
+
+  @override
+  String get replaceTypedText => 'Remplacer le texte saisi';
+
+  @override
+  String get transcribingRecording => 'Transcription de l’enregistrement...';
+
+  @override
+  String get retryLessonContent =>
+      'Réessayer de charger le contenu de la leçon';
+
+  @override
+  String get translation => 'Traduction';
+
+  @override
+  String get playVoice => 'Lire la voix';
+
+  @override
+  String get openConversationMode => 'Ouvrir le mode conversation';
+
+  @override
+  String get conversationPaused =>
+      'Conversation en pause. Vous pouvez enregistrer à nouveau.';
+
+  @override
+  String get tutorReplyTimedOut =>
+      'Le tuteur a mis trop de temps à répondre. Réessayez.';
+
+  @override
+  String get conversationSendFailed =>
+      'Impossible d’envoyer cette réponse. Essayez d’enregistrer à nouveau.';
+
+  @override
+  String get openAndroidSettingsFailed =>
+      'Impossible d’ouvrir les paramètres Android. Réessayez.';
+
+  @override
+  String get conversationReady => 'Votre conversation est prête.';
+
+  @override
+  String get tutorAvatarSemantics => 'Avatar du tuteur';
+
+  @override
+  String get lessonContentLoadFailed =>
+      'Impossible de charger le contenu de la leçon. Réessayez.';
 }

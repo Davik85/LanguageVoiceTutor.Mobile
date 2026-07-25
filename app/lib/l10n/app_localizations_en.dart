@@ -1420,4 +1420,128 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get achievementTitleRestaurantDiningPro => 'Dining Pro';
+
+  @override
+  String get autoSendMessage => 'Auto-send message';
+
+  @override
+  String get autoPlayTutorVoice => 'Auto-play tutor voice';
+
+  @override
+  String get voiceRecognitionUnclear =>
+      'I could not recognize that clearly. Please try again.';
+
+  @override
+  String get microphoneBlockedOpenSettings =>
+      'Microphone access is blocked. Open Android settings to enable it.';
+
+  @override
+  String get microphonePermissionDeniedRetry =>
+      'Microphone access was not granted. Tap the microphone to try again.';
+
+  @override
+  String get recordingStartFailedCheckMicrophone =>
+      'Could not start recording. Please check your microphone.';
+
+  @override
+  String get recordingStartFailed =>
+      'Could not start recording. Please try again.';
+
+  @override
+  String get recordingTooShort => 'Please record a slightly longer answer.';
+
+  @override
+  String get recordingStopFailed =>
+      'Could not stop recording. Please try again.';
+
+  @override
+  String get recordingProcessingFailed =>
+      'Could not process that recording. Please try again.';
+
+  @override
+  String get recordingAuthRequired => 'Please sign in again to use recording.';
+
+  @override
+  String get transcriptionTemporarilyUnavailable =>
+      'Transcription is temporarily unavailable. Please try again shortly.';
+
+  @override
+  String get transcriptionTimedOut =>
+      'Transcription took too long. Please try again.';
+
+  @override
+  String get transcriptionConnectionFailed =>
+      'Connection failed while transcribing. Please try again.';
+
+  @override
+  String get transcriptionFailed =>
+      'Could not transcribe that recording. Please try again.';
+
+  @override
+  String get voiceTemporarilyUnavailable =>
+      'Voice is temporarily unavailable. Please try again shortly.';
+
+  @override
+  String get voicePlaybackFailed => 'Could not play voice. Please try again.';
+
+  @override
+  String get voicePlaybackTimedOut =>
+      'Voice playback took too long. Please try again.';
+
+  @override
+  String get voicePlaybackStopped =>
+      'Voice playback stopped. You can record again.';
+
+  @override
+  String get replaceTypedTextTitle => 'Replace typed text?';
+
+  @override
+  String get replaceTypedTextDescription =>
+      'Use the transcribed recording instead of your typed draft?';
+
+  @override
+  String get keepTypedText => 'Keep typed text';
+
+  @override
+  String get replaceTypedText => 'Replace typed text';
+
+  @override
+  String get transcribingRecording => 'Transcribing recording...';
+
+  @override
+  String get retryLessonContent => 'Retry lesson content';
+
+  @override
+  String get translation => 'Translation';
+
+  @override
+  String get playVoice => 'Play voice';
+
+  @override
+  String get openConversationMode => 'Open Conversation mode';
+
+  @override
+  String get conversationPaused => 'Conversation paused. You can record again.';
+
+  @override
+  String get tutorReplyTimedOut =>
+      'The tutor took too long to reply. Please try again.';
+
+  @override
+  String get conversationSendFailed =>
+      'Could not send that answer. Please try recording again.';
+
+  @override
+  String get openAndroidSettingsFailed =>
+      'Could not open Android settings. Please try again.';
+
+  @override
+  String get conversationReady => 'Your conversation is ready.';
+
+  @override
+  String get tutorAvatarSemantics => 'Tutor avatar';
+
+  @override
+  String get lessonContentLoadFailed =>
+      'Could not load lesson content. Please try again.';
 }
