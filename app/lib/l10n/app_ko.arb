@@ -1,0 +1,662 @@
+{
+  "@@locale": "ko",
+  "appTitle": "Language Voice Tutor",
+  "settings": "설정",
+  "profile": "프로필",
+  "app": "앱",
+  "saveSettings": "설정 저장",
+  "saving": "저장 중...",
+  "settingsSaved": "설정이 저장되었습니다.",
+  "unableToSaveSettings": "현재 설정을 저장할 수 없습니다.",
+  "learning": "학습",
+  "studyLanguage": "학습 언어",
+  "nativeLanguage": "모국어",
+  "interfaceLanguage": "인터페이스 언어",
+  "interfaceExplanationLanguage": "인터페이스 / 설명 언어",
+  "interfaceLanguageDescription": "앱 인터페이스의 언어만 변경합니다.",
+  "currentLevel": "현재 레벨",
+  "selectedTutor": "선택한 튜터",
+  "loadingSettings": "설정 불러오는 중...",
+  "unableToLoadSettings": "현재 설정을 불러올 수 없습니다.",
+  "retry": "다시 시도",
+  "back": "뒤로",
+  "login": "로그인",
+  "register": "가입",
+  "email": "이메일",
+  "password": "비밀번호",
+  "displayNameOptional": "표시 이름(선택 사항)",
+  "signIn": "로그인",
+  "createAccount": "계정 만들기",
+  "unableToCheckSession": "세션을 확인할 수 없습니다. 다시 시도해 주세요.",
+  "lessons": "레슨",
+  "lessonHistory": "레슨 기록",
+  "progress": "진행 상황",
+  "rewards": "보상",
+  "viewAll": "모두 보기",
+  "achievements": "업적",
+  "account": "계정",
+  "logout": "로그아웃",
+  "audio": "오디오",
+  "feedbackAndReports": "피드백 및 신고",
+  "cancel": "취소",
+  "submit": "제출",
+  "send": "보내기",
+  "done": "완료",
+  "openAndroidSettings": "Android 설정 열기",
+  "hint": "힌트",
+  "finishLesson": "레슨 종료",
+  "typeYourMessage": "메시지를 입력하세요",
+  "sending": "보내는 중...",
+  "languageNameEnglish": "영어",
+  "languageNameRussian": "러시아어",
+  "languageNameSpanish": "스페인어",
+  "languageNameFrench": "프랑스어",
+  "languageNameGerman": "독일어",
+  "signInToApp": "Language Voice Tutor에 로그인",
+  "pleaseWait": "잠시만 기다려 주세요...",
+  "alreadyHaveAccount": "이미 계정이 있습니다",
+  "invalidEmail": "올바른 이메일 주소를 입력하세요.",
+  "enterPassword": "비밀번호를 입력하세요.",
+  "chooseTopic": "주제 선택",
+  "chooseTopicTitle": "주제 선택",
+  "chooseTopicSubtitle": "연습하고 싶은 대화 유형을 선택하세요.",
+  "chooseSituation": "상황 선택",
+  "chooseSituationTitle": "상황 선택",
+  "chooseSituationSubtitle": "이 주제의 구체적인 상황 하나를 연습하세요.",
+  "viewAllRewards": "모든 배지와 학습 보상 보기",
+  "accountDeletion": "계정 삭제",
+  "requestAccountDeletion": "계정 삭제 요청",
+  "loadingAccount": "계정 불러오는 중...",
+  "premiumAndSubscription": "Premium 및 구독",
+  "currentPassword": "현재 비밀번호",
+  "reasonOptional": "이유(선택 사항)",
+  "submitting": "제출 중...",
+  "loadingTutors": "튜터 불러오는 중...",
+  "noTutorsAvailable": "현재 이용 가능한 튜터가 없습니다.",
+  "loadingAudioSettings": "오디오 설정 불러오는 중...",
+  "conversationModeEnabled": "대화 모드 활성화됨",
+  "sendSuggestionOrReport": "제안을 보내거나 문제 신고",
+  "reportType": "신고 유형",
+  "pasteAiResponseOptional": "AI 응답 붙여넣기(선택 사항)",
+  "lessonHistoryHeading": "최근 완료한 레슨",
+  "noCompletedLessons": "아직 완료한 레슨이 없습니다",
+  "completedLessonsAppearHere": "완료한 레슨이 여기에 표시됩니다.",
+  "backToHome": "홈으로 돌아가기",
+  "lesson": "레슨",
+  "level": "레벨",
+  "completed": "완료됨",
+  "finished": "종료됨",
+  "lessonChat": "레슨 채팅",
+  "conversation": "대화",
+  "turnCount": "{count, plural, =1{1턴} other{{count}턴}}",
+  "@turnCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "achievementsUnavailable": "아직 이용 가능한 업적이 없습니다.",
+  "unlockedCount": "{total}개 중 {unlocked}개 달성",
+  "@unlockedCount": {
+    "placeholders": {
+      "unlocked": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "learningLanguage": "{language} 학습",
+  "@learningLanguage": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "streaks": "연속 학습",
+  "lessonMilestones": "레슨 마일스톤",
+  "topics": "주제",
+  "situations": "상황",
+  "otherAchievements": "기타 업적",
+  "progressCount": "{current} / {total}",
+  "@progressCount": {
+    "placeholders": {
+      "current": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "startLesson": "레슨 시작",
+  "openSettings": "설정 열기",
+  "keepLearningRhythm": "학습 리듬 유지",
+  "reminderPermissionExplanation": "Language Voice Tutor는 바쁜 하루에도 연습을 놓치지 않도록 매일 기분 좋은 알림 두 개를 보낼 수 있습니다. 설정에서 시간을 변경하거나 알림을 끌 수 있습니다.",
+  "notNow": "나중에",
+  "allowReminders": "리마인더 허용",
+  "achievementsTemporarilyUnavailable": "업적을 일시적으로 사용할 수 없습니다",
+  "achievementsEmpty": "업적이 여기에 표시됩니다.",
+  "learningStreak": "{count, plural, =1{1일 연속 학습} other{{count}일 연속 학습}}",
+  "@learningStreak": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "learningStreakLoading": "연속 학습 불러오는 중",
+  "learningStreakUnavailable": "연속 학습 정보를 사용할 수 없음",
+  "learnerFallbackName": "학습자",
+  "premiumPlan": "Premium 요금제",
+  "premiumTrial": "Premium 체험판",
+  "freePlan": "무료 요금제",
+  "signedInAs": "로그인 계정: {name}",
+  "@signedInAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumDetails": "Premium 세부 정보",
+  "explorePremium": "Premium 살펴보기",
+  "freeLessonsAvailableToday": "{count, plural, =1{오늘 이용 가능한 무료 레슨 1개} other{오늘 이용 가능한 무료 레슨 {count}개}}",
+  "@freeLessonsAvailableToday": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "yourWeek": "이번 주",
+  "lessonsLastSevenDays": "{count, plural, =1{최근 7일 동안 레슨 1개} other{최근 7일 동안 레슨 {count}개}}",
+  "@lessonsLastSevenDays": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "startStreakToday": "오늘 연속 학습을 시작하세요",
+  "activityUnavailable": "현재 활동 정보를 사용할 수 없습니다.",
+  "lessonsCompleted": "{count, plural, =1{레슨 1개 완료} other{레슨 {count}개 완료}}",
+  "@lessonsCompleted": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "activityDaySemantics": "{date}: {count, plural, =1{완료한 레슨 1개} other{완료한 레슨 {count}개}}",
+  "@activityDaySemantics": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "weekdayMon": "월",
+  "weekdayTue": "화",
+  "weekdayWed": "수",
+  "weekdayThu": "목",
+  "weekdayFri": "금",
+  "weekdaySat": "토",
+  "weekdaySun": "일",
+  "remindersTemporarilyUnavailable": "연습 리마인더를 일시적으로 사용할 수 없습니다.",
+  "unableToUpdateReminders": "현재 리마인더를 업데이트할 수 없습니다. 다시 시도해 주세요.",
+  "unableToLoadAccount": "현재 계정 정보를 불러올 수 없습니다.",
+  "tutorChoicesUnavailable": "현재 튜터를 선택할 수 없습니다. 다른 설정은 계속 검토하고 저장할 수 있습니다.",
+  "pleaseEnterDescription": "설명을 입력하세요.",
+  "emailRequired": "이메일은 필수입니다.",
+  "resetCodePasswordRequired": "재설정 코드와 새 비밀번호는 필수입니다.",
+  "passwordsMustMatch": "새 비밀번호와 확인 비밀번호가 일치해야 합니다.",
+  "signInToChangePassword": "비밀번호를 변경하려면 로그인하세요.",
+  "currentPasswordRequired": "현재 비밀번호는 필수입니다.",
+  "accountDeletionDescription": "Language Voice Tutor 계정과 개인 데이터를 영구적으로 삭제해 달라는 요청을 보냅니다.",
+  "accountDeletionNotice": "이 요청을 제출해도 계정이 즉시 삭제되지는 않습니다. 지원팀에서 검토하고 처리하며 추가 정보를 요청할 수 있습니다. 답변은 계정에 연결된 이메일 주소로 전송됩니다. 이 요청을 제출했다고 해서 계정이 삭제된 것으로 간주되지는 않습니다.",
+  "noDisplayName": "표시 이름 없음",
+  "subscriptionUnavailable": "구독을 사용할 수 없음",
+  "noPaidPlan": "유료 요금제 없음",
+  "requestId": "요청 ID: {id}",
+  "@requestId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "statusValue": "상태: {status}",
+  "@statusValue": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "passwordRecovery": "비밀번호 및 복구",
+  "accountEmail": "계정 이메일",
+  "sendingResetInstructions": "재설정 안내 보내는 중...",
+  "forgotPassword": "비밀번호를 잊으셨나요?",
+  "resetCode": "재설정 코드",
+  "newPassword": "새 비밀번호",
+  "confirmNewPassword": "새 비밀번호 확인",
+  "updatingPassword": "비밀번호 업데이트 중...",
+  "resetPassword": "비밀번호 재설정",
+  "newAccountPassword": "새 계정 비밀번호",
+  "confirmNewAccountPassword": "새 계정 비밀번호 확인",
+  "changingPassword": "비밀번호 변경 중...",
+  "changePassword": "비밀번호 변경",
+  "tutorVoice": "튜터 음성",
+  "speechSpeed": "말하기 속도: {speed}x",
+  "@speechSpeed": {
+    "placeholders": {
+      "speed": {
+        "type": "String"
+      }
+    }
+  },
+  "feedbackSuggestion": "제안",
+  "feedbackAppProblem": "앱 문제",
+  "feedbackAiResponse": "AI 응답",
+  "yourSuggestion": "내 제안",
+  "describeProblem": "문제를 설명하세요",
+  "aiResponseProblem": "AI 응답에서 무엇이 문제였나요?",
+  "practiceReminders": "연습 리마인더",
+  "localRemindersDescription": "이 리마인더는 이 기기에만 저장됩니다.",
+  "dailyPracticeReminders": "매일 연습 리마인더",
+  "morningReminder": "아침 리마인더",
+  "eveningReminder": "저녁 리마인더",
+  "notificationsAllowed": "알림 허용됨",
+  "notificationStatusUnavailable": "알림 상태를 사용할 수 없음",
+  "notificationsBlocked": "Android에서 알림을 차단했습니다.",
+  "allowNotifications": "알림 허용",
+  "feedbackReceived": "감사합니다. 메시지를 받았습니다.",
+  "feedbackValidationFailure": "메시지를 확인하고 다시 시도해 주세요.",
+  "feedbackUnavailable": "피드백을 일시적으로 사용할 수 없습니다. 다시 시도해 주세요.",
+  "deletionRequestAlreadyExists": "활성 계정 삭제 요청이 이미 있습니다.",
+  "deletionRequestSubmitted": "계정 삭제 요청이 지원팀 처리 대상으로 제출되었습니다.",
+  "incorrectCurrentPassword": "현재 비밀번호가 올바르지 않습니다.",
+  "unableToReachService": "서비스에 연결할 수 없습니다. 다시 시도해 주세요.",
+  "unexpectedServiceResponse": "서비스에서 예기치 않은 응답을 반환했습니다. 다시 시도해 주세요.",
+  "unableToSubmitRequest": "현재 요청을 제출할 수 없습니다. 다시 시도해 주세요.",
+  "unableToLoadLearningSettings": "현재 학습 설정을 불러올 수 없습니다. 다시 시도해 주세요.",
+  "settingsTemporarilyUnavailable": "설정을 일시적으로 사용할 수 없습니다. 다시 시도해 주세요.",
+  "selectedLevelContext": "레벨: {level}",
+  "@selectedLevelContext": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "selectedLevelTopicContext": "레벨: {level} / 주제: {topic}",
+  "@selectedLevelTopicContext": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      },
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "topicCardSemantics": "{label}. {description}",
+  "@topicCardSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "situationCardSemantics": "{label}. {description}",
+  "@situationCardSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "openTopicTooltip": "{topic} 열기",
+  "@openTopicTooltip": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "openSituationTooltip": "{situation} 열기",
+  "@openSituationTooltip": {
+    "placeholders": {
+      "situation": {
+        "type": "String"
+      }
+    }
+  },
+  "noSituationsAvailable": "이 주제에 사용할 수 있는 상황이 없습니다.",
+  "levelA1Label": "A1 입문",
+  "levelA1Description": "간단한 인사, 필요 표현, 일상적인 짧은 답변을 익혀 보세요.",
+  "levelA2Label": "A2 초급",
+  "levelA2Description": "익숙한 단어와 표현으로 일상적인 대화를 나눠 보세요.",
+  "levelB1Label": "B1 중급",
+  "levelB1Description": "더 긴 대화, 의견 표현, 일상적인 문제 해결을 연습해 보세요.",
+  "levelB2Label": "B2 중상급",
+  "levelB2Description": "더 자연스러운 세부 표현으로 섬세한 대화를 다듬어 보세요.",
+  "topicDailyLifeLabel": "일상생활",
+  "topicDailyLifeDescription": "잡담, 자기소개, 일상적인 상황.",
+  "topicTravelLabel": "여행",
+  "topicTravelDescription": "공항, 호텔, 길 안내, 교통수단.",
+  "topicWorkBusinessLabel": "직장과 비즈니스",
+  "topicWorkBusinessDescription": "회의, 이메일, 전화, 직장 대화.",
+  "topicJobInterviewLabel": "취업 면접",
+  "topicJobInterviewDescription": "자주 나오는 면접 질문과 답변을 연습해 보세요.",
+  "topicRestaurantCafeLabel": "레스토랑과 카페",
+  "topicRestaurantCafeDescription": "음식 주문, 테이블 예약, 정중한 요청.",
+  "topicFreeConversationLabel": "자유 대화",
+  "topicFreeConversationDescription": "말하고 싶은 내용을 중심으로 하는 자유로운 연습.",
+  "situationIntroductionsLabel": "자기소개",
+  "situationIntroductionsDescription": "자신을 소개하고 기본적인 개인 질문을 해 보세요.",
+  "situationSmallTalkNeighborLabel": "이웃과 대화하기",
+  "situationSmallTalkNeighborDescription": "집 근처에서 짧고 친근한 대화를 나눠 보세요.",
+  "situationAskingForHelpLabel": "도움 요청하기",
+  "situationAskingForHelpDescription": "간단한 일상 상황에서 도움을 요청해 보세요.",
+  "situationMakingPlansLabel": "계획 세우기",
+  "situationMakingPlansDescription": "활동을 계획하고 시간과 장소를 정해 보세요.",
+  "situationTalkingAboutDayLabel": "하루에 관해 말하기",
+  "situationTalkingAboutDayDescription": "하루와 일상을 설명해 보세요.",
+  "situationAirportCheckInLabel": "공항 체크인",
+  "situationAirportCheckInDescription": "항공편에 체크인하고 여행 세부 정보를 확인해 보세요.",
+  "situationHotelCheckInLabel": "호텔 체크인",
+  "situationHotelCheckInDescription": "호텔에 체크인하고 자주 묻는 질문을 해 보세요.",
+  "situationAskingForDirectionsLabel": "길 묻기",
+  "situationAskingForDirectionsDescription": "새로운 도시에서 길을 묻고 안내를 이해해 보세요.",
+  "situationOrderingTransportLabel": "교통편 예약",
+  "situationOrderingTransportDescription": "목적지까지 가는 택시나 차량 호출 서비스를 예약해 보세요.",
+  "situationLostLuggageLabel": "분실 수하물",
+  "situationLostLuggageDescription": "분실한 수하물을 신고하고 상황을 설명해 보세요.",
+  "situationFirstMeetingLabel": "첫 회의",
+  "situationFirstMeetingDescription": "새로운 업무 회의에서 자신을 소개해 보세요.",
+  "situationDailyStandupLabel": "일일 스탠드업",
+  "situationDailyStandupDescription": "맡은 작업에 대해 짧게 업데이트해 보세요.",
+  "situationClientPhoneCallLabel": "고객과의 전화 통화",
+  "situationClientPhoneCallDescription": "정중하고 명확한 업무 전화를 처리해 보세요.",
+  "situationAskingForClarificationLabel": "설명 요청하기",
+  "situationAskingForClarificationDescription": "요구 사항을 확인하기 위해 추가 질문을 해 보세요.",
+  "situationDiscussingDeadlinesLabel": "마감일 논의",
+  "situationDiscussingDeadlinesDescription": "일정과 납품 기대 사항에 관해 이야기해 보세요.",
+  "situationTellMeAboutYourselfLabel": "자기소개를 해 보세요",
+  "situationTellMeAboutYourselfDescription": "면접처럼 짧고 관련성 있게 자신을 소개해 보세요.",
+  "situationWorkExperienceLabel": "업무 경험",
+  "situationWorkExperienceDescription": "이전 업무, 책임, 한 가지 성과를 설명해 보세요.",
+  "situationStrengthsWeaknessesLabel": "강점과 약점",
+  "situationStrengthsWeaknessesDescription": "강점 한 가지와 개선할 부분 한 가지를 전문적으로 말해 보세요.",
+  "situationWhyThisJobLabel": "왜 이 직무를 원하나요?",
+  "situationWhyThisJobDescription": "동기를 설명하고 직무와 자신의 기술을 연결해 보세요.",
+  "situationQuestionsAtEndLabel": "마지막에 질문하기",
+  "situationQuestionsAtEndDescription": "면접이 끝나기 전에 정중하고 유용한 질문을 해 보세요.",
+  "situationBookingTableLabel": "테이블 예약",
+  "situationBookingTableDescription": "전화하거나 직접 말해 테이블을 예약해 보세요.",
+  "situationOrderingFoodLabel": "음식 주문",
+  "situationOrderingFoodDescription": "식사를 주문하고 메뉴에 관해 간단한 질문을 해 보세요.",
+  "situationAskingIngredientsLabel": "재료에 관해 묻기",
+  "situationAskingIngredientsDescription": "알레르기와 요리 재료에 관해 묻기",
+  "situationWrongOrderLabel": "잘못된 주문 처리하기",
+  "situationWrongOrderDescription": "주문 문제를 정중하게 설명해 보세요.",
+  "situationPayingBillLabel": "계산하기",
+  "situationPayingBillDescription": "계산서를 요청하고 결제를 완료하세요.",
+  "situationOpenConversationLabel": "자유 대화",
+  "situationOpenConversationDescription": "유연한 추가 질문과 함께 어떤 주제든 연습해 보세요.",
+  "premium": "Premium",
+  "premiumStatusLoadingSemantics": "Premium 상태 불러오는 중",
+  "premiumStatusTemporarilyUnavailable": "Premium 상태를 일시적으로 사용할 수 없습니다. 다시 시도해 주세요.",
+  "premiumStatusSemantics": "Premium 상태: {status}",
+  "@premiumStatusSemantics": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumActive": "Premium 활성화됨",
+  "premiumActiveDescription": "매일 무료 레슨 제한 없이 연습하세요.",
+  "premiumEndsOn": "Premium이 {date}에 종료됩니다.",
+  "@premiumEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumTrialActiveDescription": "Premium 체험판이 활성화되어 있습니다.",
+  "premiumTrialEndsOn": "체험판은 {date}에 종료됩니다.",
+  "@premiumTrialEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "freeLessonsRemainingToday": "{count, plural, =0{오늘 남은 무료 레슨이 없습니다.} =1{오늘 무료 레슨 1개가 남았습니다.} other{오늘 무료 레슨 {count}개가 남았습니다.}}",
+  "@freeLessonsRemainingToday": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "premiumRemovesDailyLimit": "Premium은 매일 레슨 제한을 없앱니다.",
+  "premiumAccountLinked": "Premium 이용 권한은 Language Voice Tutor 계정에 연결됩니다.",
+  "premiumSharedAcrossClients": "확인된 Premium 상태는 지원되는 Language Voice Tutor 클라이언트 간에 공유됩니다.",
+  "premiumBenefits": "Premium 혜택",
+  "premiumBenefitDailyLimit": "• 매일 무료 레슨 제한 없이 연습",
+  "premiumBenefitAcrossDevices": "• 지원되는 기기에서 동일한 Premium 이용 권한 사용",
+  "premiumBenefitAccountData": "• 계정, 진행 상황, 기록, 학습 설정을 한곳에서 관리",
+  "getPremium": "Premium 이용하기",
+  "restorePurchases": "구매 복원",
+  "refreshPremiumStatus": "상태 새로고침",
+  "billingProviderExplanation": "결제 변경은 Premium을 구매한 제공업체를 통해 처리해야 합니다.",
+  "googlePlayPurchasesUnavailableTitle": "Google Play 구매는 아직 사용할 수 없습니다",
+  "restorePurchasesUnavailableTitle": "구매 복원은 아직 사용할 수 없습니다",
+  "googlePlayPurchasesUnavailableDescription": "구매는 다음 단계에서 연결됩니다. 이 빌드에서는 요금을 청구하거나 Premium을 활성화할 수 없습니다.",
+  "restorePurchasesUnavailableDescription": "Google Play 구매 복원은 결제 흐름과 연결됩니다. 현재 계정 상태는 계속 Language Voice Tutor에서 불러옵니다.",
+  "purchasePendingConfirmation": "구매 처리가 아직 확인되지 않았습니다. 잠시 후 상태를 다시 새로고침하세요.",
+  "purchaseActionFailed": "현재 해당 요청을 완료할 수 없습니다. 다시 시도해 주세요.",
+  "premiumOk": "확인",
+  "leaveLessonTitle": "레슨에서 나갈까요?",
+  "leaveLessonDescription": "나가면 이 미완료 레슨은 요약을 만들지 않고 종료됩니다.",
+  "stay": "계속",
+  "leaveLesson": "레슨 나가기",
+  "finishLessonTitle": "레슨을 끝낼까요?",
+  "finishLessonDescription": "이 레슨을 끝내고 요약을 볼까요?",
+  "continueLesson": "레슨 계속하기",
+  "gettingHint": "힌트 불러오는 중...",
+  "dismissHint": "힌트 닫기",
+  "finishingLesson": "레슨 종료 중...",
+  "finishLessonAuthRequired": "레슨을 끝내려면 다시 로그인하세요.",
+  "finishLessonSessionUnavailable": "이 레슨 세션은 더 이상 사용할 수 없습니다.",
+  "finishLessonFailed": "레슨을 끝낼 수 없습니다. 연결을 확인하고 다시 시도해 주세요.",
+  "lessonFeedback": "피드백",
+  "loadingLessonFeedback": "피드백 불러오는 중...",
+  "showLessonFeedback": "피드백 표시",
+  "hideLessonFeedback": "피드백 숨기기",
+  "retryLessonFeedback": "피드백 다시 시도",
+  "feedbackNotReady": "피드백이 아직 준비되지 않았습니다. 다시 시도해 주세요.",
+  "feedbackQuickSummary": "간단한 요약",
+  "feedbackCorrectedVersion": "수정된 버전",
+  "feedbackGrammarTip": "문법 팁",
+  "feedbackVocabularyTip": "어휘 팁",
+  "feedbackCultureTip": "문화 팁",
+  "feedbackNaturalVersion": "더 자연스러운 버전",
+  "lessonFeedbackAuthRequired": "레슨을 계속하려면 다시 로그인하세요.",
+  "lessonFeedbackSessionEnded": "이 레슨은 이미 종료되었습니다.",
+  "lessonFeedbackNotAvailableForMessage": "이 메시지에 대한 피드백을 사용할 수 없습니다.",
+  "lessonFeedbackFailed": "피드백을 가져올 수 없습니다. 다시 시도해 주세요.",
+  "lessonStartBlocked": "오늘의 무료 레슨을 모두 사용했습니다. 내일 다시 시도하거나 업그레이드하세요.",
+  "lessonStartConflict": "이미 진행 중인 레슨이 있습니다. 새 레슨을 시작하기 전에 끝내거나 나가세요.",
+  "lessonStartAuthRequired": "레슨을 시작하려면 다시 로그인하세요.",
+  "lessonStartUnavailable": "레슨을 시작할 수 없습니다. 연결을 확인하고 다시 시도해 주세요.",
+  "lessonStartFailed": "레슨을 시작할 수 없습니다. 다시 시도해 주세요.",
+  "lessonSummary": "레슨 요약",
+  "lessonCompleted": "레슨 완료",
+  "summaryWhatWentWell": "잘한 점",
+  "summaryStrengths": "강점",
+  "summaryImprovements": "개선할 점",
+  "summaryVocabulary": "어휘",
+  "summaryGrammar": "문법",
+  "summaryNextSteps": "다음 단계",
+  "retrySummary": "요약 다시 시도",
+  "summaryUnavailableMessage": "레슨은 저장되었지만 이 레슨의 요약을 만들 수 없습니다.",
+  "summaryAuthRequiredMessage": "레슨 요약을 불러오려면 다시 로그인하세요.",
+  "summaryLoadErrorMessage": "레슨은 저장되었지만 지금 요약을 불러올 수 없습니다.",
+  "startRecording": "녹음 시작",
+  "stopRecording": "녹음 중지",
+  "progressCompletedLessons": "완료한 레슨",
+  "progressAllTime": "전체 기간",
+  "progressLast7Days": "최근 7일",
+  "progressLast30Days": "최근 30일",
+  "progressCurrentStreak": "현재 연속 기록",
+  "progressLongestStreak": "최장 연속 기록",
+  "progressRecentActivity": "최근 활동",
+  "progressLastCompletedLesson": "마지막으로 완료한 레슨",
+  "progressLessonsByLanguage": "언어별 레슨",
+  "progressLessonsByLevel": "레벨별 레슨",
+  "progressEmptyTitle": "여기에 진행 상황이 표시됩니다",
+  "progressEmptyDescription": "레슨을 완료하면 여기에 표시됩니다.",
+  "progressUnavailable": "진행 상황을 일시적으로 사용할 수 없습니다. 다시 시도해 주세요.",
+  "progressLoadFailed": "진행 상황을 불러올 수 없습니다. 다시 시도해 주세요.",
+  "progressStreakDays": "{count, plural, =0{0일} =1{1일} other{{count}일}}",
+  "achievementsLoadFailed": "업적을 불러올 수 없습니다. 다시 시도해 주세요.",
+  "achievementUnlockedSemantics": "달성한 업적: {title}",
+  "@achievementUnlockedSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "achievementLockedSemantics": "잠긴 업적: {title}. 진행 상황: {current} / {target}.",
+  "@achievementLockedSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "current": {
+        "type": "num"
+      },
+      "target": {
+        "type": "num"
+      }
+    }
+  },
+  "closeAchievementPreview": "{title} 업적 미리 보기 닫기",
+  "@closeAchievementPreview": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "closeAllAchievementPreviews": "모든 업적 미리 보기 닫기",
+  "achievementTitleStreak7": "7일 연속",
+  "achievementTitleStreak30": "30일 연속",
+  "achievementTitleStreak60": "60일 연속",
+  "achievementTitleStreak100": "100일 연속",
+  "achievementTitleStreak365": "365일 연속",
+  "achievementTitleLessons1": "첫걸음",
+  "achievementTitleLessons5": "시작",
+  "achievementTitleLessons10": "레슨 10개 달성",
+  "achievementTitleLessons25": "꾸준한 학습자",
+  "achievementTitleLessons50": "레슨 50개 달성",
+  "achievementTitleLessons100": "100 레슨 클럽",
+  "achievementTitleDailyLifeIntroductions": "첫 인사",
+  "achievementTitleDailyLifeNeighborChat": "이웃과의 대화",
+  "achievementTitleDailyLifeHelpfulHand": "도움의 손길",
+  "achievementTitleDailyLifePlanMaker": "계획의 달인",
+  "achievementTitleDailyLifeDayTeller": "하루 이야기꾼",
+  "achievementTitleDailyLifeEverydayHero": "일상의 영웅",
+  "achievementTitleTravelAirportExpert": "공항 전문가",
+  "achievementTitleTravelHonoredGuest": "귀빈",
+  "achievementTitleTravelCityNavigator": "도시 길잡이",
+  "achievementTitleTravelRideReady": "탑승 준비 완료",
+  "achievementTitleTravelBaggageFinder": "수하물 찾기",
+  "achievementTitleTravelTraveler": "여행자",
+  "achievementTitleWorkMeetingReady": "회의 준비 완료",
+  "achievementTitleWorkStandupStar": "스탠드업 스타",
+  "achievementTitleWorkClientCaller": "고객 통화",
+  "achievementTitleWorkClearCommunicator": "명확한 소통가",
+  "achievementTitleWorkDeadlineDriver": "마감일의 달인",
+  "achievementTitleWorkBusinessReady": "비즈니스 준비 완료",
+  "achievementTitleInterviewStrongIntroduction": "강렬한 자기소개",
+  "achievementTitleInterviewCareerStory": "경력 이야기",
+  "achievementTitleInterviewSelfAwareCandidate": "자기 인식이 있는 지원자",
+  "achievementTitleInterviewRightFit": "딱 맞는 지원자",
+  "achievementTitleInterviewCuriousCandidate": "호기심 많은 지원자",
+  "achievementTitleInterviewReady": "면접 준비 완료",
+  "achievementTitleRestaurantTableBooker": "테이블 예약의 달인",
+  "achievementTitleRestaurantMenuExpert": "메뉴 전문가",
+  "achievementTitleRestaurantIngredientGuide": "재료 안내자",
+  "achievementTitleRestaurantOrderFixer": "주문 해결사",
+  "achievementTitleRestaurantBillSettled": "계산 완료",
+  "achievementTitleRestaurantDiningPro": "식사의 달인",
+  "autoSendMessage": "Auto-send message",
+  "autoPlayTutorVoice": "Auto-play tutor voice",
+  "voiceRecognitionUnclear": "음성을 명확하게 인식하지 못했습니다. 다시 시도해 주세요.",
+  "microphoneBlockedOpenSettings": "마이크 접근이 차단되었습니다. 사용하려면 Android 설정을 여세요.",
+  "microphonePermissionDeniedRetry": "마이크 접근 권한이 부여되지 않았습니다. 다시 시도하려면 마이크를 탭하세요.",
+  "recordingStartFailedCheckMicrophone": "녹음을 시작할 수 없습니다. 마이크를 확인하세요.",
+  "recordingStartFailed": "녹음을 시작할 수 없습니다. 다시 시도해 주세요.",
+  "recordingTooShort": "조금 더 긴 답변을 녹음하세요.",
+  "recordingStopFailed": "녹음을 중지할 수 없습니다. 다시 시도해 주세요.",
+  "recordingProcessingFailed": "해당 녹음을 처리할 수 없습니다. 다시 시도해 주세요.",
+  "recordingAuthRequired": "녹음을 사용하려면 다시 로그인하세요.",
+  "transcriptionTemporarilyUnavailable": "음성 인식을 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+  "transcriptionTimedOut": "음성 인식에 시간이 너무 오래 걸렸습니다. 다시 시도해 주세요.",
+  "transcriptionConnectionFailed": "음성 인식 중 연결에 실패했습니다. 다시 시도해 주세요.",
+  "transcriptionFailed": "해당 녹음을 텍스트로 변환할 수 없습니다. 다시 시도해 주세요.",
+  "voiceTemporarilyUnavailable": "음성을 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+  "voicePlaybackFailed": "음성을 재생할 수 없습니다. 다시 시도해 주세요.",
+  "voicePlaybackTimedOut": "음성 재생에 시간이 너무 오래 걸렸습니다. 다시 시도해 주세요.",
+  "voicePlaybackStopped": "음성 재생이 중지되었습니다. 다시 녹음할 수 있습니다.",
+  "replaceTypedTextTitle": "입력한 텍스트를 바꿀까요?",
+  "replaceTypedTextDescription": "입력한 초안 대신 녹음 내용을 텍스트로 변환한 결과를 사용할까요?",
+  "keepTypedText": "입력한 텍스트 유지",
+  "replaceTypedText": "입력한 텍스트 바꾸기",
+  "transcribingRecording": "녹음 내용을 텍스트로 변환하는 중...",
+  "retryLessonContent": "레슨 내용 다시 시도",
+  "translation": "번역",
+  "playVoice": "음성 재생",
+  "openConversationMode": "자유 대화 모드",
+  "conversationPaused": "대화가 일시 중지되었습니다. 다시 녹음할 수 있습니다.",
+  "tutorReplyTimedOut": "튜터의 응답이 너무 오래 걸렸습니다. 다시 시도해 주세요.",
+  "conversationSendFailed": "해당 답변을 보낼 수 없습니다. 다시 녹음해 보세요.",
+  "openAndroidSettingsFailed": "Android 설정을 열 수 없습니다. 다시 시도해 주세요.",
+  "conversationReady": "대화가 준비되었습니다.",
+  "tutorAvatarSemantics": "튜터 아바타",
+  "lessonContentLoadFailed": "레슨 내용을 불러올 수 없습니다. 다시 시도해 주세요.",
+  "lessonHistoryDetails": "레슨 세부 정보",
+  "historySummary": "요약",
+  "noHistoryConversation": "이 레슨에 사용할 수 있는 대화가 없습니다.",
+  "noHistorySummary": "사용 가능한 레슨 요약이 없습니다.",
+  "overallSummary": "전체 요약",
+  "historyTutor": "튜터",
+  "historyYou": "나",
+  "feedbackCorrectedText": "수정된 텍스트",
+  "feedbackExplanation": "설명",
+  "feedbackPraise": "칭찬",
+  "lessonUnavailable": "해당 레슨을 사용할 수 없습니다.",
+  "lessonNoLongerAvailable": "이 레슨은 더 이상 사용할 수 없습니다.",
+  "lessonHistoryUnavailable": "레슨 기록을 일시적으로 사용할 수 없습니다. 다시 시도해 주세요.",
+  "lessonDetailLoadFailed": "레슨 세부 정보를 불러올 수 없습니다. 다시 시도해 주세요."
+}

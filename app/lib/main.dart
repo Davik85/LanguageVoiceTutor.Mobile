@@ -103,6 +103,10 @@ class _LanguageVoiceTutorAppState extends State<LanguageVoiceTutorApp> {
               locale: _localeController.locale,
               supportedLocales: AppLocaleController.supportedLocales,
               localizationsDelegates: AppLocalizations.localizationsDelegates,
+              builder: (context, child) => Directionality(
+                textDirection: TextDirection.ltr,
+                child: child ?? const SizedBox.shrink(),
+              ),
               theme: baseTheme.copyWith(
                 textTheme: softBlueTextTheme,
                 appBarTheme: const AppBarTheme(

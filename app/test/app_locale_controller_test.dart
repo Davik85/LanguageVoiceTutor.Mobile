@@ -58,9 +58,19 @@ void main() {
 
     controller.setLanguageId('pl');
     expect(controller.locale, const Locale('pl'));
+
+    controller.setLanguageId('ja');
+    expect(controller.locale, const Locale('ja'));
+
+    controller.setLanguageId('ko');
+    expect(controller.locale, const Locale('ko'));
+
+    controller.setLanguageId('ar');
+    expect(controller.locale, const Locale('ar'));
   });
 
-  test('application supported locales contain only the approved eleven locales',
+  test(
+      'application supported locales contain only the approved fourteen locales',
       () {
     const portuguesePortugal = Locale.fromSubtags(
       languageCode: 'pt',
@@ -84,16 +94,22 @@ void main() {
       const Locale('hr'),
       serbianLatin,
       const Locale('pl'),
+      const Locale('ja'),
+      const Locale('ko'),
+      const Locale('ar'),
     };
 
     expect(AppLocaleController.supportedLocales.toSet(), expected);
-    expect(AppLocaleController.supportedLocales, hasLength(11));
+    expect(AppLocaleController.supportedLocales, hasLength(14));
     expect(AppLocaleController.supportedLocales, contains(portuguesePortugal));
     expect(AppLocaleController.supportedLocales,
         isNot(contains(genericPortuguese)));
     expect(AppLocaleController.supportedLocales, contains(serbianLatin));
     expect(
         AppLocaleController.supportedLocales, isNot(contains(genericSerbian)));
+    expect(AppLocaleController.supportedLocales, contains(const Locale('ja')));
+    expect(AppLocaleController.supportedLocales, contains(const Locale('ko')));
+    expect(AppLocaleController.supportedLocales, contains(const Locale('ar')));
   });
 
   test('generated fallback locales are not selectable application locales', () {
@@ -112,7 +128,10 @@ void main() {
     expect(AppLocalizations.supportedLocales, contains(portuguesePortugal));
     expect(AppLocalizations.supportedLocales, contains(genericSerbian));
     expect(AppLocalizations.supportedLocales, contains(serbianLatin));
-    expect(AppLocalizations.supportedLocales, hasLength(13));
+    expect(AppLocalizations.supportedLocales, contains(const Locale('ja')));
+    expect(AppLocalizations.supportedLocales, contains(const Locale('ko')));
+    expect(AppLocalizations.supportedLocales, contains(const Locale('ar')));
+    expect(AppLocalizations.supportedLocales, hasLength(16));
     expect(AppLocaleController.supportedLocales,
         isNot(contains(genericPortuguese)));
     expect(

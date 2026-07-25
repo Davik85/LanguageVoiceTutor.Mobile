@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
+import 'app_localizations_ar.dart';
 import 'app_localizations_bg.dart';
 import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
@@ -12,6 +13,8 @@ import 'app_localizations_es.dart';
 import 'app_localizations_fr.dart';
 import 'app_localizations_hr.dart';
 import 'app_localizations_it.dart';
+import 'app_localizations_ja.dart';
+import 'app_localizations_ko.dart';
 import 'app_localizations_pl.dart';
 import 'app_localizations_pt.dart';
 import 'app_localizations_ru.dart';
@@ -103,6 +106,7 @@ abstract class AppLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
+    Locale('ar'),
     Locale('bg'),
     Locale('de'),
     Locale('en'),
@@ -110,6 +114,8 @@ abstract class AppLocalizations {
     Locale('fr'),
     Locale('hr'),
     Locale('it'),
+    Locale('ja'),
+    Locale('ko'),
     Locale('pl'),
     Locale('pt'),
     Locale('pt', 'PT'),
@@ -2848,6 +2854,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) => <String>[
+        'ar',
         'bg',
         'de',
         'en',
@@ -2855,6 +2862,8 @@ class _AppLocalizationsDelegate
         'fr',
         'hr',
         'it',
+        'ja',
+        'ko',
         'pl',
         'pt',
         'ru',
@@ -2892,6 +2901,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
 
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
+    case 'ar':
+      return AppLocalizationsAr();
     case 'bg':
       return AppLocalizationsBg();
     case 'de':
@@ -2906,6 +2917,10 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsHr();
     case 'it':
       return AppLocalizationsIt();
+    case 'ja':
+      return AppLocalizationsJa();
+    case 'ko':
+      return AppLocalizationsKo();
     case 'pl':
       return AppLocalizationsPl();
     case 'pt':

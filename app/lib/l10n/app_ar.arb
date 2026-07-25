@@ -1,0 +1,662 @@
+{
+  "@@locale": "ar",
+  "appTitle": "Language Voice Tutor",
+  "settings": "الإعدادات",
+  "profile": "الملف الشخصي",
+  "app": "التطبيق",
+  "saveSettings": "حفظ الإعدادات",
+  "saving": "جارٍ حفظ الإعدادات...",
+  "settingsSaved": "تم حفظ الإعدادات.",
+  "unableToSaveSettings": "يتعذر حفظ الإعدادات الآن.",
+  "learning": "التعلّم",
+  "studyLanguage": "لغة التعلّم",
+  "nativeLanguage": "اللغة الأم",
+  "interfaceLanguage": "لغة الواجهة",
+  "interfaceExplanationLanguage": "لغة الواجهة/الشرح",
+  "interfaceLanguageDescription": "يغيّر لغة واجهة التطبيق فقط.",
+  "currentLevel": "المستوى الحالي",
+  "selectedTutor": "المعلّم المحدد",
+  "loadingSettings": "جارٍ تحميل الإعدادات...",
+  "unableToLoadSettings": "يتعذر تحميل الإعدادات الآن.",
+  "retry": "إعادة المحاولة",
+  "back": "رجوع",
+  "login": "تسجيل الدخول",
+  "register": "التسجيل",
+  "email": "البريد الإلكتروني",
+  "password": "كلمة المرور",
+  "displayNameOptional": "اسم العرض (اختياري)",
+  "signIn": "تسجيل الدخول",
+  "createAccount": "إنشاء حساب",
+  "unableToCheckSession": "يتعذر التحقق من جلستك. يرجى المحاولة مرة أخرى.",
+  "lessons": "الدروس",
+  "lessonHistory": "سجل الدروس",
+  "progress": "التقدم",
+  "rewards": "المكافآت",
+  "viewAll": "عرض الكل",
+  "achievements": "الإنجازات",
+  "account": "الحساب",
+  "logout": "تسجيل الخروج",
+  "audio": "الصوت",
+  "feedbackAndReports": "الملاحظات والتقارير",
+  "cancel": "إلغاء",
+  "submit": "إرسال",
+  "send": "إرسال",
+  "done": "تم",
+  "openAndroidSettings": "فتح إعدادات Android",
+  "hint": "تلميح",
+  "finishLesson": "إنهاء الدرس",
+  "typeYourMessage": "اكتب رسالتك",
+  "sending": "جارٍ الإرسال...",
+  "languageNameEnglish": "الإنجليزية",
+  "languageNameRussian": "الروسية",
+  "languageNameSpanish": "الإسبانية",
+  "languageNameFrench": "الفرنسية",
+  "languageNameGerman": "الألمانية",
+  "signInToApp": "تسجيل الدخول إلى Language Voice Tutor",
+  "pleaseWait": "يرجى الانتظار...",
+  "alreadyHaveAccount": "لدي حساب بالفعل",
+  "invalidEmail": "أدخل عنوان بريد إلكتروني صالحًا.",
+  "enterPassword": "أدخل كلمة المرور.",
+  "chooseTopic": "اختر موضوعًا",
+  "chooseTopicTitle": "اختر موضوعًا",
+  "chooseTopicSubtitle": "اختر نوع المحادثة الذي تريد التدرب عليه.",
+  "chooseSituation": "اختر موقفًا",
+  "chooseSituationTitle": "اختر موقفًا",
+  "chooseSituationSubtitle": "تدرّب على موقف محدد واحد من هذا الموضوع.",
+  "viewAllRewards": "اعرض جميع الشارات ومكافآت التعلّم.",
+  "accountDeletion": "حذف الحساب",
+  "requestAccountDeletion": "طلب حذف الحساب",
+  "loadingAccount": "جارٍ تحميل الحساب...",
+  "premiumAndSubscription": "Premium والاشتراك",
+  "currentPassword": "كلمة المرور الحالية",
+  "reasonOptional": "السبب (اختياري)",
+  "submitting": "جارٍ الإرسال...",
+  "loadingTutors": "جارٍ تحميل المعلّمين...",
+  "noTutorsAvailable": "لا يوجد معلّمون متاحون الآن.",
+  "loadingAudioSettings": "جارٍ تحميل إعدادات الصوت...",
+  "conversationModeEnabled": "تم تفعيل وضع المحادثة",
+  "sendSuggestionOrReport": "أرسل اقتراحًا أو أبلغ عن مشكلة",
+  "reportType": "نوع البلاغ",
+  "pasteAiResponseOptional": "الصق رد الذكاء الاصطناعي (اختياري)",
+  "lessonHistoryHeading": "دروسك المكتملة مؤخرًا",
+  "noCompletedLessons": "لا توجد دروس مكتملة بعد",
+  "completedLessonsAppearHere": "ستظهر الدروس المكتملة هنا.",
+  "backToHome": "العودة إلى الصفحة الرئيسية",
+  "lesson": "درس",
+  "level": "المستوى",
+  "completed": "مكتمل",
+  "finished": "منتهٍ",
+  "lessonChat": "دردشة الدرس",
+  "conversation": "محادثة",
+  "turnCount": "{count, plural, =1{دور واحد} other{{count} أدوار}}",
+  "@turnCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "achievementsUnavailable": "لا توجد إنجازات متاحة بعد.",
+  "unlockedCount": "تم فتح {unlocked} من {total}",
+  "@unlockedCount": {
+    "placeholders": {
+      "unlocked": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "learningLanguage": "تعلّم {language}",
+  "@learningLanguage": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "streaks": "سلاسل التعلّم",
+  "lessonMilestones": "محطات الدروس",
+  "topics": "المواضيع",
+  "situations": "المواقف",
+  "otherAchievements": "إنجازات أخرى",
+  "progressCount": "{current} من {total}",
+  "@progressCount": {
+    "placeholders": {
+      "current": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "startLesson": "بدء الدرس",
+  "openSettings": "فتح الإعدادات",
+  "keepLearningRhythm": "حافظ على وتيرة تعلّمك",
+  "reminderPermissionExplanation": "يمكن لـ Language Voice Tutor إرسال تذكيرين يوميين لطيفين حتى لا يضيع التدريب في يوم حافل. يمكنك تغيير الأوقات أو إيقاف التذكيرات من الإعدادات.",
+  "notNow": "ليس الآن",
+  "allowReminders": "السماح بالتذكيرات",
+  "achievementsTemporarilyUnavailable": "الإنجازات غير متاحة مؤقتًا",
+  "achievementsEmpty": "ستظهر إنجازاتك هنا.",
+  "learningStreak": "{count, plural, =1{يوم واحد متتالي من التعلّم} other{{count} أيام متتالية من التعلّم}}",
+  "@learningStreak": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "learningStreakLoading": "جارٍ تحميل سلسلة التعلّم",
+  "learningStreakUnavailable": "سلسلة التعلّم غير متاحة",
+  "learnerFallbackName": "المتعلّم",
+  "premiumPlan": "خطة Premium",
+  "premiumTrial": "تجربة Premium",
+  "freePlan": "الخطة المجانية",
+  "signedInAs": "تم تسجيل الدخول باسم {name}",
+  "@signedInAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumDetails": "تفاصيل Premium",
+  "explorePremium": "استكشف Premium",
+  "freeLessonsAvailableToday": "{count, plural, =1{درس مجاني واحد متاح اليوم} other{{count} دروس مجانية متاحة اليوم}}",
+  "@freeLessonsAvailableToday": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "yourWeek": "أسبوعك",
+  "lessonsLastSevenDays": "{count, plural, =1{درس واحد في آخر 7 أيام} other{{count} دروس في آخر 7 أيام}}",
+  "@lessonsLastSevenDays": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "startStreakToday": "ابدأ سلسلة التعلّم اليوم",
+  "activityUnavailable": "النشاط غير متاح الآن.",
+  "lessonsCompleted": "{count, plural, =1{تم إكمال درس واحد} other{تم إكمال {count} دروس}}",
+  "@lessonsCompleted": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "activityDaySemantics": "{date}: {count, plural, =1{درس مكتمل واحد} other{{count} دروس مكتملة}}",
+  "@activityDaySemantics": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "weekdayMon": "الاثنين",
+  "weekdayTue": "الثلاثاء",
+  "weekdayWed": "الأربعاء",
+  "weekdayThu": "الخميس",
+  "weekdayFri": "الجمعة",
+  "weekdaySat": "السبت",
+  "weekdaySun": "الأحد",
+  "remindersTemporarilyUnavailable": "تذكيرات التمرين غير متاحة مؤقتًا.",
+  "unableToUpdateReminders": "يتعذر تحديث التذكيرات الآن. يُرجى المحاولة مرة أخرى.",
+  "unableToLoadAccount": "يتعذر تحميل تفاصيل الحساب الآن.",
+  "tutorChoicesUnavailable": "خيارات المعلّم غير متاحة الآن. لا يزال بإمكانك مراجعة إعداداتك الأخرى وحفظها.",
+  "pleaseEnterDescription": "أدخل وصفًا.",
+  "emailRequired": "البريد الإلكتروني مطلوب.",
+  "resetCodePasswordRequired": "رمز إعادة التعيين وكلمة المرور الجديدة مطلوبان.",
+  "passwordsMustMatch": "يجب أن تتطابق كلمة المرور الجديدة والتأكيد.",
+  "signInToChangePassword": "سجّل الدخول لتغيير كلمة المرور.",
+  "currentPasswordRequired": "كلمة المرور الحالية مطلوبة.",
+  "accountDeletionDescription": "أرسل طلبًا لحذف حسابك وبياناتك الشخصية في Language Voice Tutor نهائيًا.",
+  "accountDeletionNotice": "لا يؤدي إرسال هذا الطلب إلى حذف حسابك فورًا. سيراجعه فريق الدعم ويعالجه، وقد يطلب مزيدًا من المعلومات. سيُرسل الرد إلى عنوان البريد الإلكتروني المرتبط بحسابك. لا يُعد حسابك محذوفًا لمجرد إرسال هذا الطلب.",
+  "noDisplayName": "لا يوجد اسم عرض",
+  "subscriptionUnavailable": "الاشتراك غير متاح",
+  "noPaidPlan": "لا توجد خطة مدفوعة",
+  "requestId": "معرّف الطلب: {id}",
+  "@requestId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "statusValue": "الحالة: {status}",
+  "@statusValue": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "passwordRecovery": "كلمة المرور والاسترداد",
+  "accountEmail": "البريد الإلكتروني للحساب",
+  "sendingResetInstructions": "جارٍ إرسال تعليمات إعادة التعيين...",
+  "forgotPassword": "هل نسيت كلمة المرور؟",
+  "resetCode": "رمز إعادة التعيين",
+  "newPassword": "كلمة مرور جديدة",
+  "confirmNewPassword": "تأكيد كلمة المرور الجديدة",
+  "updatingPassword": "جارٍ تحديث كلمة المرور...",
+  "resetPassword": "إعادة تعيين كلمة المرور",
+  "newAccountPassword": "كلمة مرور الحساب الجديدة",
+  "confirmNewAccountPassword": "تأكيد كلمة مرور الحساب الجديدة",
+  "changingPassword": "جارٍ تغيير كلمة المرور...",
+  "changePassword": "تغيير كلمة المرور",
+  "tutorVoice": "صوت المعلّم",
+  "speechSpeed": "سرعة الكلام: {speed}x",
+  "@speechSpeed": {
+    "placeholders": {
+      "speed": {
+        "type": "String"
+      }
+    }
+  },
+  "feedbackSuggestion": "اقتراح",
+  "feedbackAppProblem": "مشكلة في التطبيق",
+  "feedbackAiResponse": "رد الذكاء الاصطناعي",
+  "yourSuggestion": "اقتراحك",
+  "describeProblem": "صِف المشكلة",
+  "aiResponseProblem": "ما المشكلة في رد الذكاء الاصطناعي؟",
+  "practiceReminders": "تذكيرات التمرين",
+  "localRemindersDescription": "هذه التذكيرات محلية على هذا الجهاز.",
+  "dailyPracticeReminders": "تذكيرات التمرين اليومية",
+  "morningReminder": "تذكير الصباح",
+  "eveningReminder": "تذكير المساء",
+  "notificationsAllowed": "تم السماح بالإشعارات",
+  "notificationStatusUnavailable": "حالة الإشعارات غير متاحة",
+  "notificationsBlocked": "تم حظر الإشعارات بواسطة Android.",
+  "allowNotifications": "السماح بالإشعارات",
+  "feedbackReceived": "شكرًا لك. تم استلام رسالتك.",
+  "feedbackValidationFailure": "تحقق من رسالتك وحاول مرة أخرى.",
+  "feedbackUnavailable": "الملاحظات غير متاحة مؤقتًا. يُرجى المحاولة مرة أخرى.",
+  "deletionRequestAlreadyExists": "يوجد بالفعل طلب نشط لحذف الحساب.",
+  "deletionRequestSubmitted": "تم إرسال طلب حذف الحساب إلى فريق الدعم للمعالجة.",
+  "incorrectCurrentPassword": "كلمة المرور الحالية غير صحيحة.",
+  "unableToReachService": "يتعذر الوصول إلى الخدمة. يُرجى المحاولة مرة أخرى.",
+  "unexpectedServiceResponse": "أعادت الخدمة استجابة غير متوقعة. يُرجى المحاولة مرة أخرى.",
+  "unableToSubmitRequest": "يتعذر إرسال الطلب الآن. يُرجى المحاولة مرة أخرى.",
+  "unableToLoadLearningSettings": "يتعذر تحميل إعدادات التعلّم الآن. يُرجى المحاولة مرة أخرى.",
+  "settingsTemporarilyUnavailable": "الإعدادات غير متاحة مؤقتًا. يُرجى المحاولة مرة أخرى.",
+  "selectedLevelContext": "المستوى: {level}",
+  "@selectedLevelContext": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "selectedLevelTopicContext": "المستوى: {level} / الموضوع: {topic}",
+  "@selectedLevelTopicContext": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      },
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "topicCardSemantics": "{label}. {description}",
+  "@topicCardSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "situationCardSemantics": "{label}. {description}",
+  "@situationCardSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "openTopicTooltip": "فتح {topic}",
+  "@openTopicTooltip": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "openSituationTooltip": "فتح {situation}",
+  "@openSituationTooltip": {
+    "placeholders": {
+      "situation": {
+        "type": "String"
+      }
+    }
+  },
+  "noSituationsAvailable": "لا توجد مواقف متاحة لهذا الموضوع.",
+  "levelA1Label": "A1 مبتدئ",
+  "levelA1Description": "تعلّم التحيات البسيطة، والتعبير عن الاحتياجات، والردود اليومية القصيرة.",
+  "levelA2Label": "A2 ابتدائي",
+  "levelA2Description": "أجرِ محادثات روتينية باستخدام كلمات وعبارات مألوفة.",
+  "levelB1Label": "B1 متوسط",
+  "levelB1Description": "تدرّب على محادثات أطول، والتعبير عن الآراء، وحل المشكلات اليومية.",
+  "levelB2Label": "B2 فوق المتوسط",
+  "levelB2Description": "صقّل محادثات دقيقة بتفاصيل أكثر طبيعية.",
+  "topicDailyLifeLabel": "الحياة اليومية",
+  "topicDailyLifeDescription": "أحاديث قصيرة، وتعارف، ومواقف يومية.",
+  "topicTravelLabel": "السفر",
+  "topicTravelDescription": "المطارات والفنادق والاتجاهات ووسائل النقل.",
+  "topicWorkBusinessLabel": "العمل والأعمال",
+  "topicWorkBusinessDescription": "الاجتماعات والبريد الإلكتروني والمكالمات ومحادثات مكان العمل.",
+  "topicJobInterviewLabel": "مقابلة عمل",
+  "topicJobInterviewDescription": "تدرّب على أسئلة وأجوبة المقابلات الشائعة.",
+  "topicRestaurantCafeLabel": "المطاعم والمقاهي",
+  "topicRestaurantCafeDescription": "طلب الطعام وحجز الطاولات والطلبات المهذبة.",
+  "topicFreeConversationLabel": "محادثة حرة",
+  "topicFreeConversationDescription": "تدريب مفتوح يتشكل وفقًا لما تريد قوله.",
+  "situationIntroductionsLabel": "التعارف",
+  "situationIntroductionsDescription": "عرّف بنفسك واطرح أسئلة شخصية أساسية.",
+  "situationSmallTalkNeighborLabel": "التحدث مع جار",
+  "situationSmallTalkNeighborDescription": "أجرِ محادثة ودية قصيرة بالقرب من المنزل.",
+  "situationAskingForHelpLabel": "طلب المساعدة",
+  "situationAskingForHelpDescription": "اطلب المساعدة في موقف يومي بسيط.",
+  "situationMakingPlansLabel": "وضع الخطط",
+  "situationMakingPlansDescription": "خطط لنشاط واتفق على الوقت والمكان.",
+  "situationTalkingAboutDayLabel": "التحدث عن يومك",
+  "situationTalkingAboutDayDescription": "صِف يومك وروتينك اليومي.",
+  "situationAirportCheckInLabel": "تسجيل الوصول في المطار",
+  "situationAirportCheckInDescription": "سجّل الوصول لرحلتك وأكّد تفاصيل السفر.",
+  "situationHotelCheckInLabel": "تسجيل الوصول في الفندق",
+  "situationHotelCheckInDescription": "سجّل الوصول في الفندق واطرح أسئلة شائعة.",
+  "situationAskingForDirectionsLabel": "طلب الاتجاهات",
+  "situationAskingForDirectionsDescription": "اطلب الاتجاهات وافهمها في مدينة جديدة.",
+  "situationOrderingTransportLabel": "طلب وسيلة نقل",
+  "situationOrderingTransportDescription": "رتّب سيارة أجرة أو خدمة نقل تشاركي إلى وجهتك.",
+  "situationLostLuggageLabel": "أمتعة مفقودة",
+  "situationLostLuggageDescription": "أبلغ عن الأمتعة المفقودة واشرح موقفك.",
+  "situationFirstMeetingLabel": "الاجتماع الأول",
+  "situationFirstMeetingDescription": "عرّف بنفسك في اجتماع عمل جديد.",
+  "situationDailyStandupLabel": "الاجتماع اليومي",
+  "situationDailyStandupDescription": "قدّم تحديثًا قصيرًا عن مهامك.",
+  "situationClientPhoneCallLabel": "مكالمة هاتفية مع عميل",
+  "situationClientPhoneCallDescription": "أجرِ مكالمة عمل مهذبة وواضحة.",
+  "situationAskingForClarificationLabel": "طلب توضيح",
+  "situationAskingForClarificationDescription": "اطرح أسئلة متابعة لتأكيد المتطلبات.",
+  "situationDiscussingDeadlinesLabel": "مناقشة المواعيد النهائية",
+  "situationDiscussingDeadlinesDescription": "تحدث عن الجداول الزمنية وتوقعات التسليم.",
+  "situationTellMeAboutYourselfLabel": "حدّثني عن نفسك",
+  "situationTellMeAboutYourselfDescription": "قدّم تعريفًا قصيرًا وذا صلة بنفسك بأسلوب مقابلة العمل.",
+  "situationWorkExperienceLabel": "الخبرة العملية",
+  "situationWorkExperienceDescription": "صِف عملك السابق ومسؤولياتك وإنجازًا واحدًا.",
+  "situationStrengthsWeaknessesLabel": "نقاط القوة والضعف",
+  "situationStrengthsWeaknessesDescription": "تحدث باحترافية عن نقطة قوة واحدة ومجال واحد للتحسين.",
+  "situationWhyThisJobLabel": "لماذا تريد هذه الوظيفة؟",
+  "situationWhyThisJobDescription": "اشرح دافعك واربط الدور بمهاراتك.",
+  "situationQuestionsAtEndLabel": "اطرح أسئلة في النهاية",
+  "situationQuestionsAtEndDescription": "اطرح أسئلة مهذبة ومفيدة قبل انتهاء المقابلة.",
+  "situationBookingTableLabel": "حجز طاولة",
+  "situationBookingTableDescription": "اتصل أو تحدث لحجز طاولة.",
+  "situationOrderingFoodLabel": "طلب الطعام",
+  "situationOrderingFoodDescription": "اطلب وجبة واسأل أسئلة بسيطة عن القائمة.",
+  "situationAskingIngredientsLabel": "اسأل عن المكونات",
+  "situationAskingIngredientsDescription": "اسأل عن الحساسية ومكونات الطبق.",
+  "situationWrongOrderLabel": "معالجة طلب خاطئ",
+  "situationWrongOrderDescription": "اشرح بأدب مشكلة في طلبك.",
+  "situationPayingBillLabel": "دفع الفاتورة",
+  "situationPayingBillDescription": "اطلب الفاتورة وأكمل الدفع.",
+  "situationOpenConversationLabel": "محادثة حرة",
+  "situationOpenConversationDescription": "تدرّب على أي موضوع مع أسئلة متابعة مرنة.",
+  "premium": "Premium",
+  "premiumStatusLoadingSemantics": "جارٍ تحميل حالة Premium",
+  "premiumStatusTemporarilyUnavailable": "حالة Premium غير متاحة مؤقتًا. يُرجى المحاولة مرة أخرى.",
+  "premiumStatusSemantics": "حالة Premium: {status}",
+  "@premiumStatusSemantics": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumActive": "Premium مفعّل",
+  "premiumActiveDescription": "تدرّب دون حد الدروس المجانية اليومي.",
+  "premiumEndsOn": "ينتهي Premium في {date}.",
+  "@premiumEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumTrialActiveDescription": "تجربة Premium مفعّلة.",
+  "premiumTrialEndsOn": "تنتهي التجربة في {date}.",
+  "@premiumTrialEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "freeLessonsRemainingToday": "{count, plural, =0{لا توجد دروس مجانية متبقية اليوم.} =1{يتبقى درس مجاني واحد اليوم.} other{يتبقى {count} دروس مجانية اليوم.}}",
+  "@freeLessonsRemainingToday": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "premiumRemovesDailyLimit": "يزيل Premium الحد اليومي للدروس.",
+  "premiumAccountLinked": "إتاحة Premium مرتبطة بحسابك في Language Voice Tutor.",
+  "premiumSharedAcrossClients": "تتم مشاركة حالة Premium المؤكدة عبر عملاء Language Voice Tutor المدعومين.",
+  "premiumBenefits": "مزايا Premium",
+  "premiumBenefitDailyLimit": "• تدرّب دون حد الدروس المجانية اليومي",
+  "premiumBenefitAcrossDevices": "• استخدم إتاحة Premium نفسها عبر الأجهزة المدعومة",
+  "premiumBenefitAccountData": "• احتفظ بحسابك وتقدمك وسجلك وإعدادات التعلّم معًا",
+  "getPremium": "احصل على Premium",
+  "restorePurchases": "استعادة المشتريات",
+  "refreshPremiumStatus": "تحديث الحالة",
+  "billingProviderExplanation": "يجب معالجة تغييرات الفوترة عبر المزوّد الذي اشتريت منه Premium.",
+  "googlePlayPurchasesUnavailableTitle": "مشتريات Google Play غير متاحة بعد",
+  "restorePurchasesUnavailableTitle": "استعادة المشتريات غير متاحة بعد",
+  "googlePlayPurchasesUnavailableDescription": "ستُربط المشتريات في الخطوة التالية. لا يمكن لهذا الإصدار تحصيل رسوم منك أو تفعيل Premium.",
+  "restorePurchasesUnavailableDescription": "ستُربط استعادة Google Play بتدفق الفوترة. لا تزال حالة حسابك الحالية تُحمّل من Language Voice Tutor.",
+  "purchasePendingConfirmation": "لم تتم تأكيد معالجة الشراء بعد. حدّث حالتك مرة أخرى قريبًا.",
+  "purchaseActionFailed": "يتعذر إكمال هذا الطلب الآن. يُرجى المحاولة مرة أخرى.",
+  "premiumOk": "حسنًا",
+  "leaveLessonTitle": "مغادرة الدرس؟",
+  "leaveLessonDescription": "تؤدي المغادرة إلى إنهاء هذا الدرس غير المكتمل دون إنشاء ملخص.",
+  "stay": "البقاء",
+  "leaveLesson": "مغادرة الدرس",
+  "finishLessonTitle": "إنهاء الدرس؟",
+  "finishLessonDescription": "إنهاء هذا الدرس وعرض الملخص؟",
+  "continueLesson": "متابعة الدرس",
+  "gettingHint": "جارٍ الحصول على تلميح...",
+  "dismissHint": "إغلاق التلميح",
+  "finishingLesson": "جارٍ إنهاء الدرس...",
+  "finishLessonAuthRequired": "سجّل الدخول مرة أخرى لإنهاء الدرس.",
+  "finishLessonSessionUnavailable": "جلسة هذا الدرس لم تعد متاحة.",
+  "finishLessonFailed": "يتعذر إنهاء الدرس. تحقق من اتصالك وحاول مرة أخرى.",
+  "lessonFeedback": "ملاحظات",
+  "loadingLessonFeedback": "جارٍ تحميل الملاحظات...",
+  "showLessonFeedback": "إظهار الملاحظات",
+  "hideLessonFeedback": "إخفاء الملاحظات",
+  "retryLessonFeedback": "إعادة محاولة الملاحظات",
+  "feedbackNotReady": "الملاحظات ليست جاهزة بعد. يُرجى المحاولة مرة أخرى.",
+  "feedbackQuickSummary": "ملخص سريع",
+  "feedbackCorrectedVersion": "نسخة مصححة",
+  "feedbackGrammarTip": "نصيحة نحوية",
+  "feedbackVocabularyTip": "نصيحة للمفردات",
+  "feedbackCultureTip": "نصيحة ثقافية",
+  "feedbackNaturalVersion": "نسخة أكثر طبيعية",
+  "lessonFeedbackAuthRequired": "سجّل الدخول مرة أخرى لمتابعة الدرس.",
+  "lessonFeedbackSessionEnded": "انتهى هذا الدرس بالفعل.",
+  "lessonFeedbackNotAvailableForMessage": "الملاحظات غير متاحة لهذه الرسالة.",
+  "lessonFeedbackFailed": "يتعذر الحصول على الملاحظات. يُرجى المحاولة مرة أخرى.",
+  "lessonStartBlocked": "لقد استخدمت درس اليوم المجاني. يُرجى المحاولة غدًا أو الترقية.",
+  "lessonStartConflict": "لديك بالفعل درس نشط. أنهه أو غادره قبل بدء درس جديد.",
+  "lessonStartAuthRequired": "سجّل الدخول مرة أخرى لبدء الدرس.",
+  "lessonStartUnavailable": "يتعذر بدء الدرس. تحقق من اتصالك وحاول مرة أخرى.",
+  "lessonStartFailed": "يتعذر بدء الدرس. يُرجى المحاولة مرة أخرى.",
+  "lessonSummary": "ملخص الدرس",
+  "lessonCompleted": "اكتمل الدرس",
+  "summaryWhatWentWell": "ما الذي سار جيدًا",
+  "summaryStrengths": "نقاط القوة",
+  "summaryImprovements": "مجالات التحسين",
+  "summaryVocabulary": "المفردات",
+  "summaryGrammar": "القواعد",
+  "summaryNextSteps": "الخطوات التالية",
+  "retrySummary": "إعادة محاولة الملخص",
+  "summaryUnavailableMessage": "تم حفظ الدرس، لكن تعذر إنشاء ملخص لهذا الدرس.",
+  "summaryAuthRequiredMessage": "سجّل الدخول مرة أخرى لتحميل ملخص الدرس.",
+  "summaryLoadErrorMessage": "تم حفظ الدرس، لكن يتعذر تحميل الملخص الآن.",
+  "startRecording": "بدء التسجيل",
+  "stopRecording": "إيقاف التسجيل",
+  "progressCompletedLessons": "الدروس المكتملة",
+  "progressAllTime": "كل الوقت",
+  "progressLast7Days": "آخر 7 أيام",
+  "progressLast30Days": "آخر 30 يومًا",
+  "progressCurrentStreak": "السلسلة الحالية",
+  "progressLongestStreak": "أطول سلسلة",
+  "progressRecentActivity": "النشاط الأخير",
+  "progressLastCompletedLesson": "آخر درس مكتمل",
+  "progressLessonsByLanguage": "الدروس حسب اللغة",
+  "progressLessonsByLevel": "الدروس حسب المستوى",
+  "progressEmptyTitle": "سيظهر تقدمك هنا",
+  "progressEmptyDescription": "ستظهر الدروس المكتملة هنا بعد إنهاء الدرس.",
+  "progressUnavailable": "التقدم غير متاح مؤقتًا. يُرجى المحاولة مرة أخرى.",
+  "progressLoadFailed": "يتعذر تحميل التقدم. يُرجى المحاولة مرة أخرى.",
+  "progressStreakDays": "{count, plural, =0{0 يوم} =1{يوم واحد} other{{count} أيام}}",
+  "achievementsLoadFailed": "يتعذر تحميل الإنجازات. يُرجى المحاولة مرة أخرى.",
+  "achievementUnlockedSemantics": "إنجاز مفتوح: {title}",
+  "@achievementUnlockedSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "achievementLockedSemantics": "إنجاز مقفل: {title}. التقدم: {current} من {target}.",
+  "@achievementLockedSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "current": {
+        "type": "num"
+      },
+      "target": {
+        "type": "num"
+      }
+    }
+  },
+  "closeAchievementPreview": "إغلاق معاينة إنجاز {title}",
+  "@closeAchievementPreview": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "closeAllAchievementPreviews": "إغلاق جميع معاينات الإنجازات",
+  "achievementTitleStreak7": "سلسلة 7 أيام",
+  "achievementTitleStreak30": "سلسلة 30 يومًا",
+  "achievementTitleStreak60": "سلسلة 60 يومًا",
+  "achievementTitleStreak100": "سلسلة 100 يوم",
+  "achievementTitleStreak365": "سلسلة 365 يومًا",
+  "achievementTitleLessons1": "الخطوة الأولى",
+  "achievementTitleLessons5": "بداية الطريق",
+  "achievementTitleLessons10": "إنجاز 10 دروس",
+  "achievementTitleLessons25": "متعلّم مثابر",
+  "achievementTitleLessons50": "إنجاز 50 درسًا",
+  "achievementTitleLessons100": "نادي المئة",
+  "achievementTitleDailyLifeIntroductions": "التحية الأولى",
+  "achievementTitleDailyLifeNeighborChat": "حديث الجار",
+  "achievementTitleDailyLifeHelpfulHand": "يد المساعدة",
+  "achievementTitleDailyLifePlanMaker": "صانع الخطط",
+  "achievementTitleDailyLifeDayTeller": "راوي اليوم",
+  "achievementTitleDailyLifeEverydayHero": "بطل الحياة اليومية",
+  "achievementTitleTravelAirportExpert": "خبير المطار",
+  "achievementTitleTravelHonoredGuest": "ضيف مميز",
+  "achievementTitleTravelCityNavigator": "دليل المدينة",
+  "achievementTitleTravelRideReady": "جاهز للرحلة",
+  "achievementTitleTravelBaggageFinder": "باحث الأمتعة",
+  "achievementTitleTravelTraveler": "مسافر",
+  "achievementTitleWorkMeetingReady": "جاهز للاجتماع",
+  "achievementTitleWorkStandupStar": "نجم الاجتماع اليومي",
+  "achievementTitleWorkClientCaller": "خبير مكالمات العملاء",
+  "achievementTitleWorkClearCommunicator": "متواصل واضح",
+  "achievementTitleWorkDeadlineDriver": "خبير المواعيد النهائية",
+  "achievementTitleWorkBusinessReady": "جاهز للأعمال",
+  "achievementTitleInterviewStrongIntroduction": "تقديم قوي",
+  "achievementTitleInterviewCareerStory": "قصة المسيرة المهنية",
+  "achievementTitleInterviewSelfAwareCandidate": "مرشح واعٍ بذاته",
+  "achievementTitleInterviewRightFit": "المرشح المناسب",
+  "achievementTitleInterviewCuriousCandidate": "مرشح فضولي",
+  "achievementTitleInterviewReady": "جاهز للمقابلة",
+  "achievementTitleRestaurantTableBooker": "خبير حجز الطاولات",
+  "achievementTitleRestaurantMenuExpert": "خبير القائمة",
+  "achievementTitleRestaurantIngredientGuide": "دليل المكونات",
+  "achievementTitleRestaurantOrderFixer": "مصحح الطلبات",
+  "achievementTitleRestaurantBillSettled": "تم سداد الفاتورة",
+  "achievementTitleRestaurantDiningPro": "محترف الطعام",
+  "autoSendMessage": "Auto-send message",
+  "autoPlayTutorVoice": "Auto-play tutor voice",
+  "voiceRecognitionUnclear": "تعذر التعرّف على ذلك بوضوح. يُرجى المحاولة مرة أخرى.",
+  "microphoneBlockedOpenSettings": "تم حظر الوصول إلى الميكروفون. افتح إعدادات Android لتفعيله.",
+  "microphonePermissionDeniedRetry": "لم يُمنح الوصول إلى الميكروفون. اضغط على الميكروفون للمحاولة مرة أخرى.",
+  "recordingStartFailedCheckMicrophone": "يتعذر بدء التسجيل. تحقق من الميكروفون.",
+  "recordingStartFailed": "يتعذر بدء التسجيل. يُرجى المحاولة مرة أخرى.",
+  "recordingTooShort": "يرجى تسجيل إجابة أطول قليلًا.",
+  "recordingStopFailed": "يتعذر إيقاف التسجيل. يُرجى المحاولة مرة أخرى.",
+  "recordingProcessingFailed": "يتعذر معالجة هذا التسجيل. يُرجى المحاولة مرة أخرى.",
+  "recordingAuthRequired": "سجّل الدخول مرة أخرى لاستخدام التسجيل.",
+  "transcriptionTemporarilyUnavailable": "النسخ النصي غير متاح مؤقتًا. يُرجى المحاولة مرة أخرى قريبًا.",
+  "transcriptionTimedOut": "استغرق النسخ النصي وقتًا طويلًا جدًا. يُرجى المحاولة مرة أخرى.",
+  "transcriptionConnectionFailed": "فشل الاتصال أثناء النسخ النصي. يُرجى المحاولة مرة أخرى.",
+  "transcriptionFailed": "يتعذر نسخ هذا التسجيل نصيًا. يُرجى المحاولة مرة أخرى.",
+  "voiceTemporarilyUnavailable": "الصوت غير متاح مؤقتًا. يُرجى المحاولة مرة أخرى قريبًا.",
+  "voicePlaybackFailed": "يتعذر تشغيل الصوت. يُرجى المحاولة مرة أخرى.",
+  "voicePlaybackTimedOut": "استغرق تشغيل الصوت وقتًا طويلًا جدًا. يُرجى المحاولة مرة أخرى.",
+  "voicePlaybackStopped": "تم إيقاف تشغيل الصوت. يمكنك التسجيل مرة أخرى.",
+  "replaceTypedTextTitle": "استبدال النص المكتوب؟",
+  "replaceTypedTextDescription": "هل تريد استخدام التسجيل المنسوخ نصيًا بدلًا من مسودتك المكتوبة؟",
+  "keepTypedText": "الاحتفاظ بالنص المكتوب",
+  "replaceTypedText": "استبدال النص المكتوب",
+  "transcribingRecording": "جارٍ نسخ التسجيل نصيًا...",
+  "retryLessonContent": "إعادة محاولة محتوى الدرس",
+  "translation": "ترجمة",
+  "playVoice": "تشغيل الصوت",
+  "openConversationMode": "وضع المحادثة الحرة",
+  "conversationPaused": "تم إيقاف المحادثة مؤقتًا. يمكنك التسجيل مرة أخرى.",
+  "tutorReplyTimedOut": "استغرق المعلّم وقتًا طويلًا جدًا للرد. يُرجى المحاولة مرة أخرى.",
+  "conversationSendFailed": "يتعذر إرسال هذه الإجابة. يُرجى محاولة التسجيل مرة أخرى.",
+  "openAndroidSettingsFailed": "يتعذر فتح إعدادات Android. يُرجى المحاولة مرة أخرى.",
+  "conversationReady": "محادثتك جاهزة.",
+  "tutorAvatarSemantics": "صورة المعلّم الرمزية",
+  "lessonContentLoadFailed": "يتعذر تحميل محتوى الدرس. يُرجى المحاولة مرة أخرى.",
+  "lessonHistoryDetails": "تفاصيل الدرس",
+  "historySummary": "ملخص",
+  "noHistoryConversation": "لا توجد محادثة متاحة لهذا الدرس.",
+  "noHistorySummary": "لا يوجد ملخص متاح للدرس.",
+  "overallSummary": "الملخص العام",
+  "historyTutor": "المعلّم",
+  "historyYou": "أنت",
+  "feedbackCorrectedText": "النص المصحح",
+  "feedbackExplanation": "توضيح",
+  "feedbackPraise": "إشادة",
+  "lessonUnavailable": "هذا الدرس غير متاح.",
+  "lessonNoLongerAvailable": "هذا الدرس لم يعد متاحًا.",
+  "lessonHistoryUnavailable": "سجل الدروس غير متاح مؤقتًا. يُرجى المحاولة مرة أخرى.",
+  "lessonDetailLoadFailed": "يتعذر تحميل تفاصيل الدرس. يُرجى المحاولة مرة أخرى."
+}

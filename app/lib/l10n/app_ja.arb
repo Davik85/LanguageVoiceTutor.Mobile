@@ -1,0 +1,662 @@
+{
+  "@@locale": "ja",
+  "appTitle": "Language Voice Tutor",
+  "settings": "設定",
+  "profile": "プロフィール",
+  "app": "アプリ",
+  "saveSettings": "設定を保存",
+  "saving": "保存中...",
+  "settingsSaved": "設定を保存しました。",
+  "unableToSaveSettings": "現在、設定を保存できません。",
+  "learning": "学習",
+  "studyLanguage": "学習言語",
+  "nativeLanguage": "母語",
+  "interfaceLanguage": "インターフェース言語",
+  "interfaceExplanationLanguage": "インターフェース／説明言語",
+  "interfaceLanguageDescription": "アプリのインターフェースの言語のみを変更します。",
+  "currentLevel": "現在のレベル",
+  "selectedTutor": "選択中のチューター",
+  "loadingSettings": "設定を読み込み中...",
+  "unableToLoadSettings": "現在、設定を読み込めません。",
+  "retry": "再試行",
+  "back": "戻る",
+  "login": "ログイン",
+  "register": "登録",
+  "email": "メールアドレス",
+  "password": "パスワード",
+  "displayNameOptional": "表示名（任意）",
+  "signIn": "ログイン",
+  "createAccount": "アカウントを作成",
+  "unableToCheckSession": "セッションを確認できません。もう一度お試しください。",
+  "lessons": "レッスン",
+  "lessonHistory": "レッスン履歴",
+  "progress": "進捗",
+  "rewards": "報酬",
+  "viewAll": "すべて表示",
+  "achievements": "実績",
+  "account": "アカウント",
+  "logout": "ログアウト",
+  "audio": "音声",
+  "feedbackAndReports": "フィードバックと報告",
+  "cancel": "キャンセル",
+  "submit": "送信",
+  "send": "送信",
+  "done": "完了",
+  "openAndroidSettings": "Android の設定を開く",
+  "hint": "ヒント",
+  "finishLesson": "レッスンを終了",
+  "typeYourMessage": "メッセージを入力",
+  "sending": "送信中...",
+  "languageNameEnglish": "英語",
+  "languageNameRussian": "ロシア語",
+  "languageNameSpanish": "スペイン語",
+  "languageNameFrench": "フランス語",
+  "languageNameGerman": "ドイツ語",
+  "signInToApp": "Language Voice Tutor にログイン",
+  "pleaseWait": "お待ちください...",
+  "alreadyHaveAccount": "すでにアカウントをお持ちです",
+  "invalidEmail": "有効なメールアドレスを入力してください。",
+  "enterPassword": "パスワードを入力してください。",
+  "chooseTopic": "トピックを選択",
+  "chooseTopicTitle": "トピックを選択",
+  "chooseTopicSubtitle": "練習したい会話の種類を選んでください。",
+  "chooseSituation": "場面を選択",
+  "chooseSituationTitle": "場面を選択",
+  "chooseSituationSubtitle": "このトピックの具体的な場面を一つ練習しましょう。",
+  "viewAllRewards": "すべてのバッジと学習報酬を表示します。",
+  "accountDeletion": "アカウントの削除",
+  "requestAccountDeletion": "アカウント削除をリクエスト",
+  "loadingAccount": "アカウントを読み込み中...",
+  "premiumAndSubscription": "Premium とサブスクリプション",
+  "currentPassword": "現在のパスワード",
+  "reasonOptional": "理由（任意）",
+  "submitting": "送信中...",
+  "loadingTutors": "チューターを読み込み中...",
+  "noTutorsAvailable": "現在利用可能なチューターはいません。",
+  "loadingAudioSettings": "音声設定を読み込み中...",
+  "conversationModeEnabled": "会話モードが有効",
+  "sendSuggestionOrReport": "提案を送信または問題を報告",
+  "reportType": "報告の種類",
+  "pasteAiResponseOptional": "AI の応答を貼り付け（任意）",
+  "lessonHistoryHeading": "最近完了したレッスン",
+  "noCompletedLessons": "まだ完了したレッスンはありません",
+  "completedLessonsAppearHere": "完了したレッスンがここに表示されます。",
+  "backToHome": "ホームに戻る",
+  "lesson": "レッスン",
+  "level": "レベル",
+  "completed": "完了",
+  "finished": "終了",
+  "lessonChat": "レッスンチャット",
+  "conversation": "会話",
+  "turnCount": "{count, plural, =1{1ターン} other{{count}ターン}}",
+  "@turnCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "achievementsUnavailable": "まだ利用可能な実績はありません。",
+  "unlockedCount": "{unlocked} / {total} 件解除済み",
+  "@unlockedCount": {
+    "placeholders": {
+      "unlocked": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "learningLanguage": "{language}を学習中",
+  "@learningLanguage": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "streaks": "連続学習",
+  "lessonMilestones": "レッスンのマイルストーン",
+  "topics": "トピック",
+  "situations": "場面",
+  "otherAchievements": "その他の実績",
+  "progressCount": "{current} / {total}",
+  "@progressCount": {
+    "placeholders": {
+      "current": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "startLesson": "レッスンを開始",
+  "openSettings": "設定を開く",
+  "keepLearningRhythm": "学習のリズムを保つ",
+  "reminderPermissionExplanation": "Language Voice Tutor は、忙しい一日でも練習を忘れないよう、毎日2件の楽しいリマインダーを送信できます。設定で時刻を変更したり、リマインダーをオフにしたりできます。",
+  "notNow": "今はしない",
+  "allowReminders": "リマインダーを許可",
+  "achievementsTemporarilyUnavailable": "実績は一時的に利用できません",
+  "achievementsEmpty": "実績がここに表示されます。",
+  "learningStreak": "{count, plural, =1{1日連続学習} other{{count}日連続学習}}",
+  "@learningStreak": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "learningStreakLoading": "連続学習を読み込み中",
+  "learningStreakUnavailable": "連続学習の記録は利用できません",
+  "learnerFallbackName": "学習者",
+  "premiumPlan": "Premium プラン",
+  "premiumTrial": "Premium 無料トライアル",
+  "freePlan": "無料プラン",
+  "signedInAs": "{name}としてログイン中",
+  "@signedInAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumDetails": "Premium の詳細",
+  "explorePremium": "Premium を確認",
+  "freeLessonsAvailableToday": "{count, plural, =1{今日利用できる無料レッスンは1件} other{今日利用できる無料レッスンは{count}件}}",
+  "@freeLessonsAvailableToday": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "yourWeek": "今週",
+  "lessonsLastSevenDays": "{count, plural, =1{過去7日間のレッスンは1件} other{過去7日間のレッスンは{count}件}}",
+  "@lessonsLastSevenDays": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "startStreakToday": "今日から連続学習を始めましょう",
+  "activityUnavailable": "現在、アクティビティを利用できません。",
+  "lessonsCompleted": "{count, plural, =1{1件のレッスンを完了} other{{count}件のレッスンを完了}}",
+  "@lessonsCompleted": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "activityDaySemantics": "{date}：{count, plural, =1{完了したレッスン1件} other{完了したレッスン{count}件}}",
+  "@activityDaySemantics": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "weekdayMon": "月",
+  "weekdayTue": "火",
+  "weekdayWed": "水",
+  "weekdayThu": "木",
+  "weekdayFri": "金",
+  "weekdaySat": "土",
+  "weekdaySun": "日",
+  "remindersTemporarilyUnavailable": "練習リマインダーは一時的に利用できません。",
+  "unableToUpdateReminders": "現在リマインダーを更新できません。もう一度お試しください。",
+  "unableToLoadAccount": "現在アカウント情報を読み込めません。",
+  "tutorChoicesUnavailable": "現在チューターを選択できません。ほかの設定は確認して保存できます。",
+  "pleaseEnterDescription": "説明を入力してください。",
+  "emailRequired": "メールアドレスは必須です。",
+  "resetCodePasswordRequired": "リセットコードと新しいパスワードは必須です。",
+  "passwordsMustMatch": "新しいパスワードと確認用パスワードが一致しません。",
+  "signInToChangePassword": "パスワードを変更するにはログインしてください。",
+  "currentPasswordRequired": "現在のパスワードは必須です。",
+  "accountDeletionDescription": "Language Voice Tutor のアカウントと個人データを完全に削除するリクエストを送信します。",
+  "accountDeletionNotice": "このリクエストを送信しても、アカウントはすぐには削除されません。サポートが確認して処理し、追加情報を求める場合があります。回答はアカウントに登録されたメールアドレスに送信されます。このリクエストを送信しただけでは、アカウントは削除されたものとは見なされません。",
+  "noDisplayName": "表示名なし",
+  "subscriptionUnavailable": "サブスクリプションを利用できません",
+  "noPaidPlan": "有料プランなし",
+  "requestId": "リクエスト ID：{id}",
+  "@requestId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "statusValue": "ステータス：{status}",
+  "@statusValue": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "passwordRecovery": "パスワードと復旧",
+  "accountEmail": "アカウントのメールアドレス",
+  "sendingResetInstructions": "リセット手順を送信中...",
+  "forgotPassword": "パスワードを忘れた場合",
+  "resetCode": "リセットコード",
+  "newPassword": "新しいパスワード",
+  "confirmNewPassword": "新しいパスワードを確認",
+  "updatingPassword": "パスワードを更新中...",
+  "resetPassword": "パスワードをリセット",
+  "newAccountPassword": "新しいアカウントのパスワード",
+  "confirmNewAccountPassword": "新しいアカウントのパスワードを確認",
+  "changingPassword": "パスワードを変更中...",
+  "changePassword": "パスワードを変更",
+  "tutorVoice": "チューターの音声",
+  "speechSpeed": "話す速さ：{speed}x",
+  "@speechSpeed": {
+    "placeholders": {
+      "speed": {
+        "type": "String"
+      }
+    }
+  },
+  "feedbackSuggestion": "提案",
+  "feedbackAppProblem": "アプリの問題",
+  "feedbackAiResponse": "AI の応答",
+  "yourSuggestion": "あなたの提案",
+  "describeProblem": "問題を説明してください",
+  "aiResponseProblem": "AI の応答のどこに問題がありましたか？",
+  "practiceReminders": "練習リマインダー",
+  "localRemindersDescription": "これらのリマインダーはこの端末内でのみ有効です。",
+  "dailyPracticeReminders": "毎日の練習リマインダー",
+  "morningReminder": "朝のリマインダー",
+  "eveningReminder": "夜のリマインダー",
+  "notificationsAllowed": "通知を許可済み",
+  "notificationStatusUnavailable": "通知の状態を取得できません",
+  "notificationsBlocked": "Android により通知がブロックされています。",
+  "allowNotifications": "通知を許可",
+  "feedbackReceived": "ありがとうございます。メッセージを受け取りました。",
+  "feedbackValidationFailure": "メッセージを確認して、もう一度お試しください。",
+  "feedbackUnavailable": "フィードバックは一時的に利用できません。もう一度お試しください。",
+  "deletionRequestAlreadyExists": "有効なアカウント削除リクエストがすでにあります。",
+  "deletionRequestSubmitted": "アカウント削除リクエストがサポートでの処理に送信されました。",
+  "incorrectCurrentPassword": "現在のパスワードが正しくありません。",
+  "unableToReachService": "サービスに接続できません。もう一度お試しください。",
+  "unexpectedServiceResponse": "サービスから予期しない応答が返されました。もう一度お試しください。",
+  "unableToSubmitRequest": "現在リクエストを送信できません。もう一度お試しください。",
+  "unableToLoadLearningSettings": "現在、学習設定を読み込めません。もう一度お試しください。",
+  "settingsTemporarilyUnavailable": "設定は一時的に利用できません。もう一度お試しください。",
+  "selectedLevelContext": "レベル：{level}",
+  "@selectedLevelContext": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "selectedLevelTopicContext": "レベル：{level}／トピック：{topic}",
+  "@selectedLevelTopicContext": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      },
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "topicCardSemantics": "{label}. {description}",
+  "@topicCardSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "situationCardSemantics": "{label}. {description}",
+  "@situationCardSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "openTopicTooltip": "{topic}を開く",
+  "@openTopicTooltip": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "openSituationTooltip": "{situation}を開く",
+  "@openSituationTooltip": {
+    "placeholders": {
+      "situation": {
+        "type": "String"
+      }
+    }
+  },
+  "noSituationsAvailable": "このトピックで利用できる場面はありません。",
+  "levelA1Label": "A1 入門",
+  "levelA1Description": "簡単な挨拶や希望の伝え方、日常的な短い返答を身につけます。",
+  "levelA2Label": "A2 初級",
+  "levelA2Description": "よく知っている単語や表現を使って、日常的な会話をします。",
+  "levelB1Label": "B1 中級",
+  "levelB1Description": "より長い会話、意見の表現、日常的な問題解決を練習します。",
+  "levelB2Label": "B2 中上級",
+  "levelB2Description": "より自然な細部を交えた、ニュアンスのある会話を磨きます。",
+  "topicDailyLifeLabel": "日常生活",
+  "topicDailyLifeDescription": "雑談、自己紹介、日常の場面。",
+  "topicTravelLabel": "旅行",
+  "topicTravelDescription": "空港、ホテル、道案内、交通機関。",
+  "topicWorkBusinessLabel": "仕事とビジネス",
+  "topicWorkBusinessDescription": "会議、メール、電話、職場での会話。",
+  "topicJobInterviewLabel": "就職面接",
+  "topicJobInterviewDescription": "よくある面接の質問と回答を練習します。",
+  "topicRestaurantCafeLabel": "レストランとカフェ",
+  "topicRestaurantCafeDescription": "料理の注文、席の予約、丁寧な依頼。",
+  "topicFreeConversationLabel": "自由会話",
+  "topicFreeConversationDescription": "話したいことに合わせた自由な練習。",
+  "situationIntroductionsLabel": "自己紹介",
+  "situationIntroductionsDescription": "自己紹介をして、基本的な個人的な質問をします。",
+  "situationSmallTalkNeighborLabel": "近所の人と話す",
+  "situationSmallTalkNeighborDescription": "家の近くで短く親しみのある会話をします。",
+  "situationAskingForHelpLabel": "助けを求める",
+  "situationAskingForHelpDescription": "簡単な日常の場面で助けを求めます。",
+  "situationMakingPlansLabel": "予定を立てる",
+  "situationMakingPlansDescription": "活動を計画し、時間と場所を決めます。",
+  "situationTalkingAboutDayLabel": "一日について話す",
+  "situationTalkingAboutDayDescription": "一日と日課について説明します。",
+  "situationAirportCheckInLabel": "空港でのチェックイン",
+  "situationAirportCheckInDescription": "フライトのチェックインをし、旅行の詳細を確認します。",
+  "situationHotelCheckInLabel": "ホテルでのチェックイン",
+  "situationHotelCheckInDescription": "ホテルでチェックインし、よくある質問をします。",
+  "situationAskingForDirectionsLabel": "道を尋ねる",
+  "situationAskingForDirectionsDescription": "新しい街で道を尋ね、案内を理解します。",
+  "situationOrderingTransportLabel": "交通手段を手配する",
+  "situationOrderingTransportDescription": "目的地までのタクシーや配車サービスを手配します。",
+  "situationLostLuggageLabel": "荷物の紛失",
+  "situationLostLuggageDescription": "紛失した手荷物を届け出て、状況を説明します。",
+  "situationFirstMeetingLabel": "初めての会議",
+  "situationFirstMeetingDescription": "新しい職場の会議で自己紹介をします。",
+  "situationDailyStandupLabel": "デイリースタンドアップ",
+  "situationDailyStandupDescription": "担当作業について短く報告します。",
+  "situationClientPhoneCallLabel": "顧客との電話",
+  "situationClientPhoneCallDescription": "丁寧で明確なビジネス電話に対応します。",
+  "situationAskingForClarificationLabel": "説明を求める",
+  "situationAskingForClarificationDescription": "要件を確認するために追加の質問をします。",
+  "situationDiscussingDeadlinesLabel": "締め切りについて話す",
+  "situationDiscussingDeadlinesDescription": "予定と納品に対する期待について話します。",
+  "situationTellMeAboutYourselfLabel": "自己紹介をしてください",
+  "situationTellMeAboutYourselfDescription": "面接のように、短く関連性のある自己紹介をします。",
+  "situationWorkExperienceLabel": "職務経験",
+  "situationWorkExperienceDescription": "これまでの仕事、責任、成果を一つ説明します。",
+  "situationStrengthsWeaknessesLabel": "長所と短所",
+  "situationStrengthsWeaknessesDescription": "一つの長所と改善点について、専門的に話します。",
+  "situationWhyThisJobLabel": "この仕事を希望する理由",
+  "situationWhyThisJobDescription": "動機を説明し、役割とスキルを結び付けます。",
+  "situationQuestionsAtEndLabel": "最後に質問する",
+  "situationQuestionsAtEndDescription": "面接が終わる前に、丁寧で役立つ質問をします。",
+  "situationBookingTableLabel": "テーブルを予約する",
+  "situationBookingTableDescription": "電話または直接話して、テーブルを予約します。",
+  "situationOrderingFoodLabel": "料理を注文する",
+  "situationOrderingFoodDescription": "食事を注文し、メニューについて簡単な質問をします。",
+  "situationAskingIngredientsLabel": "食材について尋ねる",
+  "situationAskingIngredientsDescription": "アレルギーと料理の材料について尋ねる",
+  "situationWrongOrderLabel": "注文間違いに対応する",
+  "situationWrongOrderDescription": "注文の問題を丁寧に説明します。",
+  "situationPayingBillLabel": "支払いをする",
+  "situationPayingBillDescription": "お会計を頼み、支払いを完了します。",
+  "situationOpenConversationLabel": "自由会話",
+  "situationOpenConversationDescription": "柔軟な追加質問を交えながら、どのトピックでも練習します。",
+  "premium": "Premium",
+  "premiumStatusLoadingSemantics": "Premium の状態を読み込み中",
+  "premiumStatusTemporarilyUnavailable": "Premium の状態は一時的に利用できません。もう一度お試しください。",
+  "premiumStatusSemantics": "Premium の状態：{status}",
+  "@premiumStatusSemantics": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumActive": "Premium が有効です",
+  "premiumActiveDescription": "毎日の無料レッスン制限なしで練習できます。",
+  "premiumEndsOn": "Premium は {date} に終了します。",
+  "@premiumEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumTrialActiveDescription": "Premium の無料トライアルが有効です。",
+  "premiumTrialEndsOn": "トライアルは {date} に終了します。",
+  "@premiumTrialEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "freeLessonsRemainingToday": "{count, plural, =0{今日利用できる無料レッスンはありません。} =1{今日利用できる無料レッスンは1件です。} other{今日利用できる無料レッスンは{count}件です。}}",
+  "@freeLessonsRemainingToday": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "premiumRemovesDailyLimit": "Premium では毎日のレッスン制限がなくなります。",
+  "premiumAccountLinked": "Premium の利用権は Language Voice Tutor のアカウントに紐付けられています。",
+  "premiumSharedAcrossClients": "確認済みの Premium 状態は、対応する Language Voice Tutor クライアント間で共有されます。",
+  "premiumBenefits": "Premium の特典",
+  "premiumBenefitDailyLimit": "• 毎日の無料レッスン制限なしで練習",
+  "premiumBenefitAcrossDevices": "• 対応する端末で同じ Premium 利用権を使用",
+  "premiumBenefitAccountData": "• アカウント、進捗、履歴、学習設定をまとめて管理",
+  "getPremium": "Premium を入手",
+  "restorePurchases": "購入を復元",
+  "refreshPremiumStatus": "状態を更新",
+  "billingProviderExplanation": "請求の変更は、Premium を購入した提供元で処理する必要があります。",
+  "googlePlayPurchasesUnavailableTitle": "Google Play の購入はまだ利用できません",
+  "restorePurchasesUnavailableTitle": "購入の復元はまだ利用できません",
+  "googlePlayPurchasesUnavailableDescription": "購入は次の手順で接続されます。このビルドでは請求や Premium の有効化はできません。",
+  "restorePurchasesUnavailableDescription": "Google Play での購入復元は請求フローに接続されます。現在のアカウント状態は引き続き Language Voice Tutor から読み込まれます。",
+  "purchasePendingConfirmation": "購入処理はまだ確認されていません。しばらくしてから状態を更新してください。",
+  "purchaseActionFailed": "現在、そのリクエストを完了できません。もう一度お試しください。",
+  "premiumOk": "確認",
+  "leaveLessonTitle": "レッスンを退出しますか？",
+  "leaveLessonDescription": "退出すると、この未完了のレッスンは要約を作成せずに終了します。",
+  "stay": "続ける",
+  "leaveLesson": "レッスンを退出",
+  "finishLessonTitle": "レッスンを終了しますか？",
+  "finishLessonDescription": "このレッスンを終了して要約を表示しますか？",
+  "continueLesson": "レッスンを続ける",
+  "gettingHint": "ヒントを取得中...",
+  "dismissHint": "ヒントを閉じる",
+  "finishingLesson": "レッスンを終了中...",
+  "finishLessonAuthRequired": "レッスンを終了するには、もう一度ログインしてください。",
+  "finishLessonSessionUnavailable": "このレッスンのセッションは利用できなくなりました。",
+  "finishLessonFailed": "レッスンを終了できません。接続を確認して、もう一度お試しください。",
+  "lessonFeedback": "フィードバック",
+  "loadingLessonFeedback": "フィードバックを読み込み中...",
+  "showLessonFeedback": "フィードバックを表示",
+  "hideLessonFeedback": "フィードバックを隠す",
+  "retryLessonFeedback": "フィードバックを再試行",
+  "feedbackNotReady": "フィードバックはまだ準備できていません。もう一度お試しください。",
+  "feedbackQuickSummary": "簡易要約",
+  "feedbackCorrectedVersion": "修正済みバージョン",
+  "feedbackGrammarTip": "文法のヒント",
+  "feedbackVocabularyTip": "語彙のヒント",
+  "feedbackCultureTip": "文化に関するヒント",
+  "feedbackNaturalVersion": "より自然なバージョン",
+  "lessonFeedbackAuthRequired": "レッスンを続けるには、もう一度ログインしてください。",
+  "lessonFeedbackSessionEnded": "このレッスンはすでに終了しています。",
+  "lessonFeedbackNotAvailableForMessage": "このメッセージのフィードバックは利用できません。",
+  "lessonFeedbackFailed": "フィードバックを取得できません。もう一度お試しください。",
+  "lessonStartBlocked": "今日の無料レッスンを使い切りました。明日もう一度お試しいただくか、アップグレードしてください。",
+  "lessonStartConflict": "すでに進行中のレッスンがあります。新しいレッスンを始める前に終了するか退出してください。",
+  "lessonStartAuthRequired": "レッスンを始めるには、もう一度ログインしてください。",
+  "lessonStartUnavailable": "レッスンを開始できません。接続を確認して、もう一度お試しください。",
+  "lessonStartFailed": "レッスンを開始できません。もう一度お試しください。",
+  "lessonSummary": "レッスンの要約",
+  "lessonCompleted": "レッスンを完了しました",
+  "summaryWhatWentWell": "うまくできたこと",
+  "summaryStrengths": "強み",
+  "summaryImprovements": "改善点",
+  "summaryVocabulary": "語彙",
+  "summaryGrammar": "文法",
+  "summaryNextSteps": "次のステップ",
+  "retrySummary": "要約を再試行",
+  "summaryUnavailableMessage": "レッスンは保存されましたが、このレッスンの要約を作成できませんでした。",
+  "summaryAuthRequiredMessage": "レッスンの要約を読み込むには、もう一度ログインしてください。",
+  "summaryLoadErrorMessage": "レッスンは保存されましたが、現在要約を読み込めません。",
+  "startRecording": "録音を開始",
+  "stopRecording": "録音を停止",
+  "progressCompletedLessons": "完了したレッスン",
+  "progressAllTime": "全期間",
+  "progressLast7Days": "過去7日間",
+  "progressLast30Days": "過去30日間",
+  "progressCurrentStreak": "現在の連続記録",
+  "progressLongestStreak": "最長連続記録",
+  "progressRecentActivity": "最近のアクティビティ",
+  "progressLastCompletedLesson": "最後に完了したレッスン",
+  "progressLessonsByLanguage": "言語別のレッスン",
+  "progressLessonsByLevel": "レベル別のレッスン",
+  "progressEmptyTitle": "ここに進捗が表示されます",
+  "progressEmptyDescription": "レッスンを完了すると、ここに表示されます。",
+  "progressUnavailable": "進捗は一時的に利用できません。もう一度お試しください。",
+  "progressLoadFailed": "進捗を読み込めません。もう一度お試しください。",
+  "progressStreakDays": "{count, plural, =0{0日} =1{1日} other{{count}日}}",
+  "achievementsLoadFailed": "実績を読み込めません。もう一度お試しください。",
+  "achievementUnlockedSemantics": "解除済みの実績：{title}",
+  "@achievementUnlockedSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "achievementLockedSemantics": "未解除の実績：{title}。進捗：{current} / {target}。",
+  "@achievementLockedSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "current": {
+        "type": "num"
+      },
+      "target": {
+        "type": "num"
+      }
+    }
+  },
+  "closeAchievementPreview": "{title} の実績プレビューを閉じる",
+  "@closeAchievementPreview": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "closeAllAchievementPreviews": "すべての実績プレビューを閉じる",
+  "achievementTitleStreak7": "7日連続",
+  "achievementTitleStreak30": "30日連続",
+  "achievementTitleStreak60": "60日連続",
+  "achievementTitleStreak100": "100日連続",
+  "achievementTitleStreak365": "365日連続",
+  "achievementTitleLessons1": "最初の一歩",
+  "achievementTitleLessons5": "スタート",
+  "achievementTitleLessons10": "10レッスン達成",
+  "achievementTitleLessons25": "着実な学習者",
+  "achievementTitleLessons50": "50レッスン達成",
+  "achievementTitleLessons100": "100レッスンクラブ",
+  "achievementTitleDailyLifeIntroductions": "初めてのあいさつ",
+  "achievementTitleDailyLifeNeighborChat": "ご近所トーク",
+  "achievementTitleDailyLifeHelpfulHand": "助けの手",
+  "achievementTitleDailyLifePlanMaker": "計画名人",
+  "achievementTitleDailyLifeDayTeller": "一日語り",
+  "achievementTitleDailyLifeEverydayHero": "日常のヒーロー",
+  "achievementTitleTravelAirportExpert": "空港の達人",
+  "achievementTitleTravelHonoredGuest": "大切なお客様",
+  "achievementTitleTravelCityNavigator": "街のナビゲーター",
+  "achievementTitleTravelRideReady": "乗車準備完了",
+  "achievementTitleTravelBaggageFinder": "荷物探しの達人",
+  "achievementTitleTravelTraveler": "旅人",
+  "achievementTitleWorkMeetingReady": "会議の準備完了",
+  "achievementTitleWorkStandupStar": "スタンドアップスター",
+  "achievementTitleWorkClientCaller": "顧客コール",
+  "achievementTitleWorkClearCommunicator": "明快な伝え手",
+  "achievementTitleWorkDeadlineDriver": "締め切りの達人",
+  "achievementTitleWorkBusinessReady": "ビジネスの準備完了",
+  "achievementTitleInterviewStrongIntroduction": "印象的な自己紹介",
+  "achievementTitleInterviewCareerStory": "キャリアストーリー",
+  "achievementTitleInterviewSelfAwareCandidate": "自己理解のある候補者",
+  "achievementTitleInterviewRightFit": "ぴったりの候補者",
+  "achievementTitleInterviewCuriousCandidate": "好奇心旺盛な候補者",
+  "achievementTitleInterviewReady": "面接の準備完了",
+  "achievementTitleRestaurantTableBooker": "予約名人",
+  "achievementTitleRestaurantMenuExpert": "メニューの達人",
+  "achievementTitleRestaurantIngredientGuide": "食材案内人",
+  "achievementTitleRestaurantOrderFixer": "注文トラブル解決",
+  "achievementTitleRestaurantBillSettled": "お会計完了",
+  "achievementTitleRestaurantDiningPro": "食事の達人",
+  "autoSendMessage": "Auto-send message",
+  "autoPlayTutorVoice": "Auto-play tutor voice",
+  "voiceRecognitionUnclear": "音声をはっきり認識できませんでした。もう一度お試しください。",
+  "microphoneBlockedOpenSettings": "マイクへのアクセスがブロックされています。有効にするには Android の設定を開いてください。",
+  "microphonePermissionDeniedRetry": "マイクへのアクセスが許可されませんでした。もう一度試すにはマイクをタップしてください。",
+  "recordingStartFailedCheckMicrophone": "録音を開始できません。マイクを確認してください。",
+  "recordingStartFailed": "録音を開始できません。もう一度お試しください。",
+  "recordingTooShort": "もう少し長い回答を録音してください。",
+  "recordingStopFailed": "録音を停止できません。もう一度お試しください。",
+  "recordingProcessingFailed": "その録音を処理できません。もう一度お試しください。",
+  "recordingAuthRequired": "録音を使用するには、もう一度ログインしてください。",
+  "transcriptionTemporarilyUnavailable": "文字起こしは一時的に利用できません。しばらくしてからもう一度お試しください。",
+  "transcriptionTimedOut": "文字起こしに時間がかかりすぎました。もう一度お試しください。",
+  "transcriptionConnectionFailed": "文字起こし中に接続に失敗しました。もう一度お試しください。",
+  "transcriptionFailed": "その録音を文字起こしできません。もう一度お試しください。",
+  "voiceTemporarilyUnavailable": "音声は一時的に利用できません。しばらくしてからもう一度お試しください。",
+  "voicePlaybackFailed": "音声を再生できません。もう一度お試しください。",
+  "voicePlaybackTimedOut": "音声の再生に時間がかかりすぎました。もう一度お試しください。",
+  "voicePlaybackStopped": "音声の再生を停止しました。もう一度録音できます。",
+  "replaceTypedTextTitle": "入力したテキストを置き換えますか？",
+  "replaceTypedTextDescription": "入力した下書きの代わりに、文字起こしした録音を使用しますか？",
+  "keepTypedText": "入力したテキストを保持",
+  "replaceTypedText": "入力したテキストを置き換える",
+  "transcribingRecording": "録音を文字起こし中...",
+  "retryLessonContent": "レッスン内容を再試行",
+  "translation": "翻訳",
+  "playVoice": "音声を再生",
+  "openConversationMode": "自由会話モード",
+  "conversationPaused": "会話を一時停止しました。もう一度録音できます。",
+  "tutorReplyTimedOut": "チューターの応答に時間がかかりすぎました。もう一度お試しください。",
+  "conversationSendFailed": "その回答を送信できません。もう一度録音してください。",
+  "openAndroidSettingsFailed": "Android の設定を開けません。もう一度お試しください。",
+  "conversationReady": "会話の準備ができました。",
+  "tutorAvatarSemantics": "チューターのアバター",
+  "lessonContentLoadFailed": "レッスン内容を読み込めません。もう一度お試しください。",
+  "lessonHistoryDetails": "レッスンの詳細",
+  "historySummary": "要約",
+  "noHistoryConversation": "このレッスンで利用できる会話はありません。",
+  "noHistorySummary": "利用できるレッスンの要約はありません。",
+  "overallSummary": "全体の要約",
+  "historyTutor": "チューター",
+  "historyYou": "あなた",
+  "feedbackCorrectedText": "修正済みテキスト",
+  "feedbackExplanation": "説明",
+  "feedbackPraise": "称賛",
+  "lessonUnavailable": "そのレッスンは利用できません。",
+  "lessonNoLongerAvailable": "このレッスンは利用できなくなりました。",
+  "lessonHistoryUnavailable": "レッスン履歴は一時的に利用できません。もう一度お試しください。",
+  "lessonDetailLoadFailed": "レッスンの詳細を読み込めません。もう一度お試しください。"
+}

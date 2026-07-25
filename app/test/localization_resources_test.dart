@@ -18,6 +18,9 @@ void main() {
     'sr',
     'sr_Latn',
     'pl',
+    'ja',
+    'ko',
+    'ar',
   ];
   const sharedEnglishExceptions = {
     'appTitle',
@@ -45,7 +48,7 @@ void main() {
     'bg': {'premiumOk'},
   };
   final temporaryMarker = RegExp(
-    r'^\s*(?:\[(?:it|pt|bg|hr|sr|sr_Latn|pl)\]\s*|(?:FIXME|TRANSLATE)\b)',
+    r'^\s*(?:\[(?:it|pt|bg|hr|sr|sr_Latn|pl|ja|ko|ar)\]\s*|(?:FIXME|TRANSLATE)\b)',
     caseSensitive: false,
   );
   // Keep TODO uppercase-only so Spanish “Todo” (All time) remains valid.
@@ -137,6 +140,41 @@ void main() {
         expect(cyrillic.hasMatch(resource[key] as String), isFalse,
             reason: '$language.$key must not contain Cyrillic text');
       }
+    }
+  });
+
+  test(
+      'Japanese and Korean resources do not contain unexpected Latin-only values',
+      () {
+    final latin = RegExp(r'[A-Za-z]');
+    final scripts = {
+      'ja': RegExp(r'[\u3040-\u30FF\u3400-\u9FFF]'),
+      'ko': RegExp(r'[\uAC00-\uD7AF]'),
+    };
+    final allowedLatinOnly = {
+      ...sharedEnglishExceptions,
+      'progressCount', // Placeholder-only numeric progress template.
+    };
+
+    for (final language in scripts.keys) {
+      final resource = arb(language);
+      for (final key in messageKeys(resource)) {
+        final value = resource[key] as String;
+        if (latin.hasMatch(value) && !scripts[language]!.hasMatch(value)) {
+          expect(allowedLatinOnly, contains(key),
+              reason: '$language.$key is unexpectedly Latin-only');
+        }
+      }
+    }
+  });
+
+  test('Arabic translations contain no directional-control characters', () {
+    final controls = RegExp(r'[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]');
+    final arabic = arb('ar');
+
+    for (final key in messageKeys(arabic)) {
+      expect(controls.hasMatch(arabic[key] as String), isFalse,
+          reason: 'ar.$key contains a directional-control character');
     }
   });
 }

@@ -15,6 +15,9 @@ class AppLocaleController extends ChangeNotifier {
     'hr': Locale('hr'),
     'sr': Locale.fromSubtags(languageCode: 'sr', scriptCode: 'Latn'),
     'pl': Locale('pl'),
+    'ja': Locale('ja'),
+    'ko': Locale('ko'),
+    'ar': Locale('ar'),
   };
 
   static const supportedLocales = <Locale>[
@@ -29,6 +32,9 @@ class AppLocaleController extends ChangeNotifier {
     Locale('hr'),
     Locale.fromSubtags(languageCode: 'sr', scriptCode: 'Latn'),
     Locale('pl'),
+    Locale('ja'),
+    Locale('ko'),
+    Locale('ar'),
   ];
 
   Locale _locale = const Locale('en');
