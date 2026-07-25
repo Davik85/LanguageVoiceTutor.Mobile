@@ -306,7 +306,7 @@ Before any Mobile account-deletion UX change, verify that submission remains a b
 
 Local Android practice reminders are implemented with `flutter_local_notifications`, `flutter_timezone`, and `timezone`. Automated verification runs `flutter test test/services/practice_reminder_service_test.dart test/services/practice_reminder_preferences_test.dart`, `flutter test test/home_screen_test.dart test/settings_screen_test.dart`, `flutter test`, and `flutter build apk --debug`. Physical Android checks remain: Android 13+ permission timing and denial/settings recovery, notification delivery at device-local times across timezone changes, and receiver-based restoration after reboot.
 
-The current localization checkpoint uses Flutter `gen-l10n` and five equal ARB catalogs (`en`, `ru`, `es`, `fr`, and `de`) with 277 messages each. The long-term 14-language scope remains future work.
+The current localization implementation uses Flutter `gen-l10n` with fourteen selectable locales: `en`, `ru`, `es`, `fr`, `de`, `it`, `pt-PT`, `bg`, `hr`, `sr-Latn`, `pl`, `ja`, `ko`, and `ar`. Each selectable catalog has 453 messages. Generated generic `pt` and `sr` are internal fallbacks, producing 16 generated variants rather than additional application selections. Physical geometry remains fixed LTR, including Arabic localized text.
 
 - Verify Notifications V1 is local-only: no Firebase, remote/server push, push token, backend endpoint/state, remote provider, or background microphone behavior.
 - Verify product settings default reminders to enabled, schedule cheerful learner-facing morning and evening reminders at device-local 09:00 and 20:00, allow both times to be changed, and allow all reminders to be disabled.
@@ -315,15 +315,15 @@ The current localization checkpoint uses Flutter `gen-l10n` and five equal ARB c
 - Verify reminder wording does not imply continuous cross-device synchronization or guaranteed suppression after a Desktop or other-device lesson.
 - Verify `explanationLanguage` alone controls `MaterialApp.locale`; `studyLanguage` and `nativeLanguage` remain independent.
 - Verify unsupported saved interface values display English without overwriting the backend-owned value, successful Settings saves apply the confirmed locale immediately, and failed saves preserve the prior locale.
-- Verify completed localized areas: Splash/authentication, Home, Settings Profile/Lessons/App, account/deletion/feedback/reminder/connection controls, fixed level display, and topic/situation selection, including headings, helper text, validation, semantics, and tooltips.
-- Verify Premium, Progress, Lesson History details, remaining Achievement catalogue text, Lesson Chat, Conversation mode, and other static strings remain explicitly incomplete.
+- Verify `studyLanguage` controls lessons, transcription, and tutor audio; `nativeLanguage` is the translation target; and `explanationLanguage` controls the interface locale.
+- Verify Arabic loads Arabic catalog text while physical back navigation, bottom-navigation order, arrows, controls, learner/tutor placement, and general geometry remain LTR.
 - Verify stable topic-ID navigation, canonical fallback for unknown display IDs, and canonical `LessonStartSelection` reconstruction from stable IDs.
 - Verify all 26 situations match the pre-localization canonical catalog, all four level request values remain unchanged, and translated/copied presentation objects cannot change backend fields.
-- Verify `StartLessonSessionRequest` and runtime `scenarioKey` are identical for `en`, `ru`, `es`, `fr`, and `de`; `scenarioKey` equals canonical `lessonContentId`, including Free Conversation.
+- Verify `StartLessonSessionRequest` and runtime `scenarioKey` stay canonical and locale-independent; `scenarioKey` equals canonical `lessonContentId`, including Free Conversation.
 - Verify the obsolete voice-transcription disclosure is absent.
 - Verify localization never translates AI replies, learner messages, backend-generated content, CMS identifiers, canonical scenario keys, internal IDs, or backend data.
 
-Checkpoint verification: format checked 129 files; `flutter gen-l10n` passed; `flutter analyze` reported no issues; the focused Home/selection/runtime suite passed 113 tests; the full Flutter suite passed 382 tests; and the debug APK build passed. The only build notice was the non-blocking `flutter_timezone` future Kotlin Gradle migration warning. Stale Choose Level and voice-disclosure scans found no active implementation, and Desktop remained clean. No backend, Desktop, CMS, database, website, production, or Google Play deployment is part of this checkpoint; deployment is limited to the debug APK on the connected Android test device/emulator.
+Current automated verification: `flutter gen-l10n` passed; `flutter analyze` reported no issues; the complete Flutter suite passed 479 tests; and `flutter build apk --debug` succeeded. The only build notice was the non-blocking `flutter_timezone` future Kotlin Gradle migration warning. Focused resolver, locale-controller, Splash, Login/registration, localization-resource, and fixed-LTR directionality tests are present. Historical counts elsewhere in this checklist remain historical feature evidence, not the current full-suite baseline.
 
 ## Future billing checks
 
@@ -674,6 +674,7 @@ The start-flow fixture must provide the Home requests it triggers: a permitted l
 
 ## Android first-run language defaults
 
+- Implemented in `312ca245` (`feat: derive first-run languages from Android`).
 - On an unauthenticated first launch, verify Splash and Login use the first
   Android-preferred supported interface locale; unsupported values use English.
 - Verify interface and native language resolve independently (for example,
@@ -685,4 +686,16 @@ The start-flow fixture must provide the Home requests it triggers: a permitted l
   speech, and conversation values remain unchanged.
 - Verify a settings fetch or update failure after successful registration still
   enters Home with the device-derived interface language.
+- Verify regional normalization: `ru-RU`, `pl-PL`, `pt-BR`, `ar-EG`, `ja-JP`,
+  and `ko-KR` resolve to supported IDs; Ukrainian can produce native `uk` while
+  interface independently falls back; explicit Hans and script-less CN/SG map
+  to native `zh-Hans`, while Hant/TW/HK/MO do not; `iw`/`in` and `nb`/`nn`
+  compatibility is retained.
+- Pending physical Android clean-install checks: Polish -> Polish interface and
+  native; Ukrainian -> English interface and Ukrainian native; Georgian ->
+  English/English; Arabic -> Arabic text with fixed-LTR geometry; an existing
+  account whose saved interface differs from Android -> backend value wins;
+  changing Android language after account creation -> no saved settings
+  overwrite; and new registration -> preserves study language, tutor, level,
+  voice, speed, and conversation setting.
 - No backend deployment is required for this client-only behavior.

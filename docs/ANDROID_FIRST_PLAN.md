@@ -2,13 +2,15 @@
 
 ## Approach
 
-## Stage 1 interface localization checkpoint
+## Interface localization and Android first-run defaults — implemented
 
-The Android-first client now has a Flutter `gen-l10n`/ARB localization foundation for `en`, `ru`, `es`, `fr`, and `de`, with 277 matching messages in each catalog. `explanationLanguage` alone controls the Flutter interface locale; `studyLanguage` continues to control lesson/tutor/speech-recognition behavior and `nativeLanguage` continues to control requested lesson/dialogue translation. Unsupported interface values display English without replacing the saved backend value. Successful Settings saves apply the confirmed interface language immediately, while failed saves preserve the previous locale.
+The Android-first client selects fourteen Flutter interface locales: `en`, `ru`, `es`, `fr`, `de`, `it`, `pt-PT`, `bg`, `hr`, `sr-Latn`, `pl`, `ja`, `ko`, and `ar`. Each selectable catalog has 453 messages. Generic `pt` and `sr` are generated fallback variants, so `gen-l10n` contains 16 variants without expanding the selectable set. `e6b3b8c` added Croatian, Serbian, and Polish; `cd799c3` added Japanese, Korean, and Arabic.
 
-Localized scope currently includes Splash/authentication, Home, Settings and its three navigation sections, account/deletion/feedback/reminder/connection controls, fixed level display, and topic/situation selection with localized headings, helper text, validation, semantics, and tooltips. Premium, Progress, Lesson History details, remaining Achievement catalogue text, Lesson Chat, Conversation mode, and other static strings remain later Stage 1 work.
+`studyLanguage` controls lesson, transcription, and tutor-audio behavior; `nativeLanguage` controls translation; `explanationLanguage` controls the Flutter interface. The fixed-LTR shell is deliberate for all locales, including Arabic localized text. It keeps physical navigation and screen geometry consistent rather than globally mirroring the UI.
 
-Lesson-selection display localization is isolated from the backend contract. Navigation uses stable topic IDs, unknown catalog IDs fall back to canonical text, and `LessonStartSelection` reconstructs canonical data from the authoritative catalog using stable IDs. Session payloads and runtime scenario keys remain identical across the five interface locales; `scenarioKey` remains `lessonContentId`, including Free Conversation. The accepted flow remains **Home -> Choose Topic -> Choose Situation -> Lesson**, with level selection only in **Settings -> Learning**.
+At startup, the ordered Android preferred-locale list supplies independent interface and native defaults, each falling back to English. Splash/Login use the device-derived interface before authentication. Backend `UserSettings` override it after authentication: existing sessions and existing-account login load saved `explanationLanguage` without a PUT. New registration fetches created settings once and updates only native and explanation language, preserving study language, speech voice/speed, conversation mode, tutor, and level. Follow-up settings failures do not fail login/registration or retry registration. No first-install marker, backend contract, migration, dependency, Gradle/Kotlin, or backend deployment was required. Physical clean-install validation remains pending.
+
+Lesson-selection display localization is isolated from the backend contract. Navigation uses stable topic IDs, unknown catalog IDs fall back to canonical text, and `LessonStartSelection` reconstructs canonical data from the authoritative catalog using stable IDs. Session payloads and runtime scenario keys remain identical across all selectable interface locales; `scenarioKey` remains `lessonContentId`, including Free Conversation. The accepted flow remains **Home -> Choose Topic -> Choose Situation -> Lesson**, with level selection only in **Settings -> Learning**.
 
 ## Progress data foundation
 
@@ -20,7 +22,7 @@ The mobile app will be built with Flutter using an Android-first delivery path. 
 
 ## Study-language parity status
 
-The lesson flow carries English, French, German, Portuguese, Spanish, and Italian through deterministic tutor setup text, canonical scenario selection, known-context openings, local Hints, backend lesson requests, transcription, and Lesson Chat/Conversation TTS. One Mobile study-language definition supplies the exact ID, English name, native name, BCP-47/transcription code, tutor instruction name, and language-lock name. Native/translation and interface languages stay separate. CMS canonical IDs and English semantic metadata are preserved, and CMS/backend still own tutor methodology and generated replies. The five-locale interface foundation described above does not change this six-language study-language behavior. This Mobile-only work required no backend deployment.
+The lesson flow carries English, French, German, Portuguese, Spanish, and Italian through deterministic tutor setup text, canonical scenario selection, known-context openings, local Hints, backend lesson requests, transcription, and Lesson Chat/Conversation TTS. One Mobile study-language definition supplies the exact ID, English name, native name, BCP-47/transcription code, tutor instruction name, and language-lock name. Native/translation and interface languages stay separate. CMS canonical IDs and English semantic metadata are preserved, and CMS/backend still own tutor methodology and generated replies. The fourteen-locale interface implementation described above does not change this six-language study-language behavior. This Mobile-only work required no backend deployment.
 
 ## Why Android first
 
@@ -161,7 +163,7 @@ Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow
 2. Implement local Android practice reminders.
 3. Add complete learner-facing Premium UI and purchase entry points.
 4. Implement the Google Play Billing bridge with backend verification and restore/reconciliation.
-5. Continue the Stage 1 interface work from its verified five-locale foundation to the remaining screens and approved languages.
+5. Maintain the implemented fourteen-locale interface behavior and complete pending physical Android first-run validation.
 
 Notifications V1 is local-only: no Firebase, remote/server push, backend endpoint, push-token registration, remote provider, backend notification state, or background microphone behavior. Product settings enable reminders by default at device-local 09:00 and 20:00; learners can edit both times or disable all reminders. Android notification permission is still required. Explain the benefit and ask only after the learner sees the product experience, do not reprompt on every launch after denial, and offer Android settings recovery where practical. Do not request exact-alarm permission unless later investigation proves it necessary. Preserve device-local schedule semantics across timezone changes and restore reminders after reboot when Android requires it; local reminders are not synchronized backend account state and cannot always be suppressed after a lesson on another device.
 

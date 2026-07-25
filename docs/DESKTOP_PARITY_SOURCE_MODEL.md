@@ -8,9 +8,9 @@ The reviewed Windows desktop client walkthrough presentation is now a product re
 
 Desktop confirms three independent concepts: study language selects the language practiced in lessons; native language selects translation output; interface/explanation language selects application chrome. Mobile preserves that separation. A single Mobile study-language definition supplies request, transcription, and TTS metadata, while Desktop-equivalent deterministic local lesson text builds target-language setup, scenario labels, known-context openings, and local Hints from English CMS semantics. Localized learner-facing scenario text always maps back to the canonical CMS ID, canonical English title, runtime variant, and scenario key. Backend `LessonPromptBuilder` and CMS runtime remain the owners of tutor replies, roleplay, Hint, Feedback, corrections, examples, wrap-up, and final replies.
 
-The current Mobile Stage 1 interface foundation uses Flutter `gen-l10n`/ARB for `en`, `ru`, `es`, `fr`, and `de`, with 277 matching messages per catalog. `explanationLanguage` alone controls the interface locale; unsupported values display English without replacing the saved backend value. Completed scope covers Splash/authentication, Home, Settings and its three sections, account/deletion/feedback/reminder/connection UI, fixed levels, and topic/situation selection. Premium, Progress, Lesson History details, remaining Achievement catalogue text, Lesson Chat, Conversation mode, and other static strings remain later work.
+Mobile interface localization is implemented independently of the six-language lesson catalog. It selects fourteen locales (`en`, `ru`, `es`, `fr`, `de`, `it`, `pt-PT`, `bg`, `hr`, `sr-Latn`, `pl`, `ja`, `ko`, `ar`), with 453 messages per selectable catalog. Generic `pt` and `sr` are generated fallback variants only. `explanationLanguage` controls the interface locale; `studyLanguage` controls lessons, transcription, and tutor audio; `nativeLanguage` controls translation. Mobile deliberately uses fixed-LTR physical phone geometry for every locale, including Arabic localized text. This is a Mobile product decision and does not require Desktop to adopt the same layout policy.
 
-Desktop parity at the lesson-selection boundary means canonical data is never translated. Stable topic IDs drive navigation; localized labels/descriptions are presentation-only; unknown IDs fall back to canonical text; and `LessonStartSelection` reconstructs canonical catalog values from stable IDs. Session requests and runtime scenario keys are invariant across the five interface locales, and Free Conversation retains its canonical `lessonContentId` runtime path.
+Desktop parity at the lesson-selection boundary means canonical data is never translated. Stable topic IDs drive navigation; localized labels/descriptions are presentation-only; unknown IDs fall back to canonical text; and `LessonStartSelection` reconstructs canonical catalog values from stable IDs. Session requests and runtime scenario keys are invariant across all selectable interface locales, and Free Conversation retains its canonical `lessonContentId` runtime path.
 
 Latest known mobile baseline after commit `fcecef5` (`Fix mobile settings parity foundation`):
 
@@ -101,7 +101,7 @@ The long-term approved interface-language list remains:
 
 The native/explanation language catalog is broader than the study-language catalog and broader than the release-ready interface-language catalog. Mobile Settings must display friendly names for these choices while sending IDs such as `en`, `es`, or `pl` to the backend.
 
-Stage 1 currently implements `en`, `ru`, `es`, `fr`, and `de`; the remaining approved languages and Arabic right-to-left verification are future work.
+Mobile now implements all fourteen approved interface locales. Arabic uses localized catalog text within the fixed-LTR Mobile shell; remaining physical-device quality review is not a requirement for Desktop layout parity.
 
 ## Tutor model
 
