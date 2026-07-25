@@ -32,6 +32,30 @@ class AchievementTitleResolver {
           context.l10n.achievementTitleDailyLifeDayTeller,
         'topic-daily-life-complete-v1' =>
           context.l10n.achievementTitleDailyLifeEverydayHero,
+        'subtopic-travel-travel_airport_check_in-v1' =>
+          context.l10n.achievementTitleTravelAirportExpert,
+        'subtopic-travel-travel_hotel_check_in-v1' =>
+          context.l10n.achievementTitleTravelHonoredGuest,
+        'subtopic-travel-travel_asking_for_directions-v1' =>
+          context.l10n.achievementTitleTravelCityNavigator,
+        'subtopic-travel-travel_ordering_transport-v1' =>
+          context.l10n.achievementTitleTravelRideReady,
+        'subtopic-travel-travel_lost_luggage-v1' =>
+          context.l10n.achievementTitleTravelBaggageFinder,
+        'topic-travel-complete-v1' =>
+          context.l10n.achievementTitleTravelTraveler,
+        'subtopic-work-business-work_business_first_meeting-v1' =>
+          context.l10n.achievementTitleWorkMeetingReady,
+        'subtopic-work-business-work_business_daily_standup-v1' =>
+          context.l10n.achievementTitleWorkStandupStar,
+        'subtopic-work-business-work_business_phone_call_with_a_client-v1' =>
+          context.l10n.achievementTitleWorkClientCaller,
+        'subtopic-work-business-work_business_asking_for_clarification-v1' =>
+          context.l10n.achievementTitleWorkClearCommunicator,
+        'subtopic-work-business-work_business_discussing_deadlines-v1' =>
+          context.l10n.achievementTitleWorkDeadlineDriver,
+        'topic-work-business-complete-v1' =>
+          context.l10n.achievementTitleWorkBusinessReady,
         _ => achievement.title,
       };
 }

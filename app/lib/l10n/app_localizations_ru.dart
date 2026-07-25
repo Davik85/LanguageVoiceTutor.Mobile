@@ -1359,4 +1359,40 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get achievementTitleDailyLifeEverydayHero => 'Герой будней';
+
+  @override
+  String get achievementTitleTravelAirportExpert => 'Знаток аэропорта';
+
+  @override
+  String get achievementTitleTravelHonoredGuest => 'Почётный гость';
+
+  @override
+  String get achievementTitleTravelCityNavigator => 'Городской навигатор';
+
+  @override
+  String get achievementTitleTravelRideReady => 'Готов к поездке';
+
+  @override
+  String get achievementTitleTravelBaggageFinder => 'Искатель багажа';
+
+  @override
+  String get achievementTitleTravelTraveler => 'Путешественник';
+
+  @override
+  String get achievementTitleWorkMeetingReady => 'Готов к встрече';
+
+  @override
+  String get achievementTitleWorkStandupStar => 'Звезда планёрки';
+
+  @override
+  String get achievementTitleWorkClientCaller => 'Звонок клиенту';
+
+  @override
+  String get achievementTitleWorkClearCommunicator => 'Говорю ясно';
+
+  @override
+  String get achievementTitleWorkDeadlineDriver => 'Держу сроки';
+
+  @override
+  String get achievementTitleWorkBusinessReady => 'Готов к делу';
 }

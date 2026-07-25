@@ -524,4 +524,174 @@ void main() {
       );
     });
   });
+
+  group('travel and work achievement title localization', () {
+    const ids = [
+      'subtopic-travel-travel_airport_check_in-v1',
+      'subtopic-travel-travel_hotel_check_in-v1',
+      'subtopic-travel-travel_asking_for_directions-v1',
+      'subtopic-travel-travel_ordering_transport-v1',
+      'subtopic-travel-travel_lost_luggage-v1',
+      'topic-travel-complete-v1',
+      'subtopic-work-business-work_business_first_meeting-v1',
+      'subtopic-work-business-work_business_daily_standup-v1',
+      'subtopic-work-business-work_business_phone_call_with_a_client-v1',
+      'subtopic-work-business-work_business_asking_for_clarification-v1',
+      'subtopic-work-business-work_business_discussing_deadlines-v1',
+      'topic-work-business-complete-v1',
+    ];
+    const titlesByLocale = {
+      'en': [
+        'Airport Expert',
+        'Honored Guest',
+        'City Navigator',
+        'Ride Ready',
+        'Baggage Finder',
+        'Traveler',
+        'Meeting Ready',
+        'Standup Star',
+        'Client Caller',
+        'Clear Communicator',
+        'Deadline Driver',
+        'Business Ready',
+      ],
+      'ru': [
+        'Знаток аэропорта',
+        'Почётный гость',
+        'Городской навигатор',
+        'Готов к поездке',
+        'Искатель багажа',
+        'Путешественник',
+        'Готов к встрече',
+        'Звезда планёрки',
+        'Звонок клиенту',
+        'Говорю ясно',
+        'Держу сроки',
+        'Готов к делу',
+      ],
+      'es': [
+        'Experto en aeropuertos',
+        'Huésped de honor',
+        'Navegante urbano',
+        'Listo para viajar',
+        'Buscador de equipaje',
+        'Viajero',
+        'Listo para reuniones',
+        'Estrella del standup',
+        'Llamada al cliente',
+        'Comunicación clara',
+        'Dueño de los plazos',
+        'Listo para los negocios',
+      ],
+      'fr': [
+        'Expert d’aéroport',
+        'Invité d’honneur',
+        'Navigateur urbain',
+        'Prêt à partir',
+        'Chercheur de bagages',
+        'Voyageur',
+        'Prêt pour la réunion',
+        'Star du point quotidien',
+        'Appel client',
+        'Communication claire',
+        'Maître des délais',
+        'Prêt pour les affaires',
+      ],
+      'de': [
+        'Flughafenprofi',
+        'Ehrengast',
+        'Stadtnavigator',
+        'Fahrbereit',
+        'Gepäckfinder',
+        'Reisender',
+        'Bereit fürs Meeting',
+        'Stand-up-Star',
+        'Kundenanrufer',
+        'Klarer Kommunikator',
+        'Terminprofi',
+        'Businessbereit',
+      ],
+    };
+    const previousTitlesByLocale = {
+      'en': ['7-Day Streak', 'Everyday Hero'],
+      'ru': ['Серия 7 дней', 'Герой будней'],
+      'es': ['Racha de 7 días', 'Héroe cotidiano'],
+      'fr': ['Série de 7 jours', 'Héros du quotidien'],
+      'de': ['7-Tage-Serie', 'Alltagsheld'],
+    };
+
+    testWidgets('all Travel and Work IDs resolve in every interface locale',
+        (tester) async {
+      for (final localeTitles in titlesByLocale.entries) {
+        late List<String> resolvedTitles;
+        late List<String> previousTitles;
+        await tester.pumpWidget(MaterialApp(
+          locale: Locale(localeTitles.key),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              resolvedTitles = [
+                for (final id in ids)
+                  AchievementTitleResolver.resolve(context, _item(id, 'topic')),
+              ];
+              previousTitles = [
+                AchievementTitleResolver.resolve(
+                    context, _item('streak-7-v1', 'streak')),
+                AchievementTitleResolver.resolve(
+                    context, _item('topic-daily-life-complete-v1', 'topic')),
+              ];
+              return const SizedBox();
+            },
+          ),
+        ));
+        await tester.pumpAndSettle();
+        expect(resolvedTitles, localeTitles.value);
+        expect(previousTitles, previousTitlesByLocale[localeTitles.key]);
+      }
+    });
+
+    testWidgets(
+        'Russian cards and semantics use localized Travel and Work titles',
+        (tester) async {
+      final response = AchievementsResponse(
+        generatedAtUtc: DateTime.utc(2026, 7, 19),
+        calendarTimezone: 'UTC',
+        activeStudyLanguage: 'English',
+        summary: const AchievementSummary(unlocked: 1, total: 3),
+        achievements: [
+          _item(ids.first, 'subtopic', unlocked: true),
+          _item(ids[6], 'subtopic'),
+          _item('unknown-travel-work-id', 'subtopic',
+              title: 'Backend fallback title'),
+        ],
+        homeItems: const [],
+      );
+      await tester.pumpWidget(_screen(
+        AchievementsResult.success(response),
+        locale: const Locale('ru'),
+      ));
+      await tester.pumpAndSettle();
+      expect(find.text('Знаток аэропорта'), findsOneWidget);
+      expect(find.text('Готов к встрече'), findsOneWidget);
+      expect(find.text('Backend fallback title'), findsOneWidget);
+      expect(
+        _semanticsLabel('Разблокированное достижение: Знаток аэропорта'),
+        findsOneWidget,
+      );
+      expect(
+        _semanticsLabel(
+          'Заблокированное достижение: Готов к встрече. Прогресс: 3 из 7.',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(Key('all-achievement-${ids.first}')));
+      await tester.pumpAndSettle();
+      expect(
+        _semanticsLabel('Закрыть просмотр достижения Знаток аэропорта'),
+        findsOneWidget,
+      );
+    });
+  });
 }

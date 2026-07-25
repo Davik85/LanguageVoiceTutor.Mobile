@@ -171,5 +171,17 @@
   "achievementTitleDailyLifeHelpfulHand": "Helpful Hand",
   "achievementTitleDailyLifePlanMaker": "Plan Maker",
   "achievementTitleDailyLifeDayTeller": "Day Teller",
-  "achievementTitleDailyLifeEverydayHero": "Everyday Hero"
+  "achievementTitleDailyLifeEverydayHero": "Everyday Hero",
+  "achievementTitleTravelAirportExpert": "Airport Expert",
+  "achievementTitleTravelHonoredGuest": "Honored Guest",
+  "achievementTitleTravelCityNavigator": "City Navigator",
+  "achievementTitleTravelRideReady": "Ride Ready",
+  "achievementTitleTravelBaggageFinder": "Baggage Finder",
+  "achievementTitleTravelTraveler": "Traveler",
+  "achievementTitleWorkMeetingReady": "Meeting Ready",
+  "achievementTitleWorkStandupStar": "Standup Star",
+  "achievementTitleWorkClientCaller": "Client Caller",
+  "achievementTitleWorkClearCommunicator": "Clear Communicator",
+  "achievementTitleWorkDeadlineDriver": "Deadline Driver",
+  "achievementTitleWorkBusinessReady": "Business Ready"
 }

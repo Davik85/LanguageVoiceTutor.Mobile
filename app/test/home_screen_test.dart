@@ -423,6 +423,33 @@ void main() {
     });
   });
 
+  group('travel and work achievement title localization', () {
+    testWidgets('Home uses shared Travel and Work title resolution',
+        (tester) async {
+      final travel = _achievement('topic-travel-complete-v1', unlocked: true);
+      final work =
+          _achievement('topic-work-business-complete-v1', unlocked: true);
+      final response = AchievementsResponse(
+        generatedAtUtc: DateTime.utc(2026, 7, 19),
+        calendarTimezone: 'UTC',
+        activeStudyLanguage: 'English',
+        summary: const AchievementSummary(unlocked: 2, total: 2),
+        achievements: [travel, work],
+        homeItems: [travel, work],
+      );
+      await tester.pumpWidget(_home(
+        authService: FakeAuthService(
+          achievementsResult: AchievementsResult.success(response),
+        ),
+        locale: const Locale('ru'),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Путешественник'), findsOneWidget);
+      expect(find.text('Готов к делу'), findsOneWidget);
+    });
+  });
+
   testWidgets('new unlocked achievements are shown once in backend order',
       (tester) async {
     final presentationStore = MemoryAchievementPresentationStore();

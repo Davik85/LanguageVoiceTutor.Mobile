@@ -2383,6 +2383,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Everyday Hero'**
   String get achievementTitleDailyLifeEverydayHero;
+
+  /// No description provided for @achievementTitleTravelAirportExpert.
+  ///
+  /// In en, this message translates to:
+  /// **'Airport Expert'**
+  String get achievementTitleTravelAirportExpert;
+
+  /// No description provided for @achievementTitleTravelHonoredGuest.
+  ///
+  /// In en, this message translates to:
+  /// **'Honored Guest'**
+  String get achievementTitleTravelHonoredGuest;
+
+  /// No description provided for @achievementTitleTravelCityNavigator.
+  ///
+  /// In en, this message translates to:
+  /// **'City Navigator'**
+  String get achievementTitleTravelCityNavigator;
+
+  /// No description provided for @achievementTitleTravelRideReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride Ready'**
+  String get achievementTitleTravelRideReady;
+
+  /// No description provided for @achievementTitleTravelBaggageFinder.
+  ///
+  /// In en, this message translates to:
+  /// **'Baggage Finder'**
+  String get achievementTitleTravelBaggageFinder;
+
+  /// No description provided for @achievementTitleTravelTraveler.
+  ///
+  /// In en, this message translates to:
+  /// **'Traveler'**
+  String get achievementTitleTravelTraveler;
+
+  /// No description provided for @achievementTitleWorkMeetingReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Meeting Ready'**
+  String get achievementTitleWorkMeetingReady;
+
+  /// No description provided for @achievementTitleWorkStandupStar.
+  ///
+  /// In en, this message translates to:
+  /// **'Standup Star'**
+  String get achievementTitleWorkStandupStar;
+
+  /// No description provided for @achievementTitleWorkClientCaller.
+  ///
+  /// In en, this message translates to:
+  /// **'Client Caller'**
+  String get achievementTitleWorkClientCaller;
+
+  /// No description provided for @achievementTitleWorkClearCommunicator.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Communicator'**
+  String get achievementTitleWorkClearCommunicator;
+
+  /// No description provided for @achievementTitleWorkDeadlineDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Deadline Driver'**
+  String get achievementTitleWorkDeadlineDriver;
+
+  /// No description provided for @achievementTitleWorkBusinessReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Business Ready'**
+  String get achievementTitleWorkBusinessReady;
 }
 
 class _AppLocalizationsDelegate

@@ -127,5 +127,17 @@
   "achievementTitleDailyLifeHelpfulHand": "Helfende Hand",
   "achievementTitleDailyLifePlanMaker": "Planmacher",
   "achievementTitleDailyLifeDayTeller": "Tageserzähler",
-  "achievementTitleDailyLifeEverydayHero": "Alltagsheld"
+  "achievementTitleDailyLifeEverydayHero": "Alltagsheld",
+  "achievementTitleTravelAirportExpert": "Flughafenprofi",
+  "achievementTitleTravelHonoredGuest": "Ehrengast",
+  "achievementTitleTravelCityNavigator": "Stadtnavigator",
+  "achievementTitleTravelRideReady": "Fahrbereit",
+  "achievementTitleTravelBaggageFinder": "Gepäckfinder",
+  "achievementTitleTravelTraveler": "Reisender",
+  "achievementTitleWorkMeetingReady": "Bereit fürs Meeting",
+  "achievementTitleWorkStandupStar": "Stand-up-Star",
+  "achievementTitleWorkClientCaller": "Kundenanrufer",
+  "achievementTitleWorkClearCommunicator": "Klarer Kommunikator",
+  "achievementTitleWorkDeadlineDriver": "Terminprofi",
+  "achievementTitleWorkBusinessReady": "Businessbereit"
 }

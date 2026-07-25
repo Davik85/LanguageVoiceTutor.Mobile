@@ -1360,4 +1360,40 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get achievementTitleDailyLifeEverydayHero => 'Héros du quotidien';
+
+  @override
+  String get achievementTitleTravelAirportExpert => 'Expert d’aéroport';
+
+  @override
+  String get achievementTitleTravelHonoredGuest => 'Invité d’honneur';
+
+  @override
+  String get achievementTitleTravelCityNavigator => 'Navigateur urbain';
+
+  @override
+  String get achievementTitleTravelRideReady => 'Prêt à partir';
+
+  @override
+  String get achievementTitleTravelBaggageFinder => 'Chercheur de bagages';
+
+  @override
+  String get achievementTitleTravelTraveler => 'Voyageur';
+
+  @override
+  String get achievementTitleWorkMeetingReady => 'Prêt pour la réunion';
+
+  @override
+  String get achievementTitleWorkStandupStar => 'Star du point quotidien';
+
+  @override
+  String get achievementTitleWorkClientCaller => 'Appel client';
+
+  @override
+  String get achievementTitleWorkClearCommunicator => 'Communication claire';
+
+  @override
+  String get achievementTitleWorkDeadlineDriver => 'Maître des délais';
+
+  @override
+  String get achievementTitleWorkBusinessReady => 'Prêt pour les affaires';
 }

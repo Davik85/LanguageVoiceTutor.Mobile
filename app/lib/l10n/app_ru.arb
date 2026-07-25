@@ -134,5 +134,17 @@
   "achievementTitleDailyLifeHelpfulHand": "Рука помощи",
   "achievementTitleDailyLifePlanMaker": "Планировщик",
   "achievementTitleDailyLifeDayTeller": "Рассказ о дне",
-  "achievementTitleDailyLifeEverydayHero": "Герой будней"
+  "achievementTitleDailyLifeEverydayHero": "Герой будней",
+  "achievementTitleTravelAirportExpert": "Знаток аэропорта",
+  "achievementTitleTravelHonoredGuest": "Почётный гость",
+  "achievementTitleTravelCityNavigator": "Городской навигатор",
+  "achievementTitleTravelRideReady": "Готов к поездке",
+  "achievementTitleTravelBaggageFinder": "Искатель багажа",
+  "achievementTitleTravelTraveler": "Путешественник",
+  "achievementTitleWorkMeetingReady": "Готов к встрече",
+  "achievementTitleWorkStandupStar": "Звезда планёрки",
+  "achievementTitleWorkClientCaller": "Звонок клиенту",
+  "achievementTitleWorkClearCommunicator": "Говорю ясно",
+  "achievementTitleWorkDeadlineDriver": "Держу сроки",
+  "achievementTitleWorkBusinessReady": "Готов к делу"
 }
