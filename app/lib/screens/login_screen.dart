@@ -2,16 +2,29 @@ import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
 import '../l10n/app_localizations_context.dart';
+import '../l10n/device_language_defaults.dart';
 import '../services/auth_service.dart';
 import '../services/service_factory.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key, AuthService? authService})
-      : _authService = authService;
+  const LoginScreen({
+    super.key,
+    AuthService? authService,
+    DeviceLanguageDefaults? deviceLanguageDefaults,
+    ValueChanged<String>? onInterfaceLanguageLoaded,
+  })  : _authService = authService,
+        _deviceLanguageDefaults = deviceLanguageDefaults ??
+            const DeviceLanguageDefaults(
+              interfaceLanguageId: 'en',
+              nativeLanguageId: 'en',
+            ),
+        _onInterfaceLanguageLoaded = onInterfaceLanguageLoaded;
 
   static const String routeName = '/login';
   final AuthService? _authService;
+  final DeviceLanguageDefaults _deviceLanguageDefaults;
+  final ValueChanged<String>? _onInterfaceLanguageLoaded;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -51,9 +64,11 @@ class _LoginScreenState extends State<LoginScreen> {
       if (register) {
         await _authService.register(_emailController.text.trim(),
             _passwordController.text, _displayNameController.text.trim());
+        await _initializeNewAccountLanguages();
       } else {
         await _authService.login(
             _emailController.text.trim(), _passwordController.text);
+        await _loadExistingAccountLanguage();
       }
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, HomeScreen.routeName);
@@ -65,6 +80,34 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _error = 'Unable to sign in right now. Please try again.');
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  Future<void> _loadExistingAccountLanguage() async {
+    try {
+      final settings = await _authService.fetchUserSettings();
+      widget._onInterfaceLanguageLoaded?.call(settings.explanationLanguage);
+    } catch (_) {
+      // Authentication succeeded; retain the device-derived interface language.
+    }
+  }
+
+  Future<void> _initializeNewAccountLanguages() async {
+    try {
+      final current = await _authService.fetchUserSettings();
+      final result = await _authService.updateUserSettings(
+        current.copyWith(
+          nativeLanguage: widget._deviceLanguageDefaults.nativeLanguageId,
+          explanationLanguage:
+              widget._deviceLanguageDefaults.interfaceLanguageId,
+        ),
+      );
+      if (result.isSuccess && result.settings != null) {
+        widget._onInterfaceLanguageLoaded
+            ?.call(result.settings!.explanationLanguage);
+      }
+    } catch (_) {
+      // Registration succeeded; do not retry or make it appear to have failed.
     }
   }
 

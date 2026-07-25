@@ -37,15 +37,21 @@ class AppLocaleController extends ChangeNotifier {
     Locale('ar'),
   ];
 
-  Locale _locale = const Locale('en');
+  AppLocaleController({String? initialLanguageId})
+      : _locale = _localeFor(initialLanguageId);
+
+  Locale _locale;
 
   Locale get locale => _locale;
 
   void setLanguageId(String? languageId) {
     final normalized = languageId?.trim().toLowerCase();
-    final next = backendLocaleMap[normalized] ?? const Locale('en');
+    final next = _localeFor(normalized);
     if (_locale == next) return;
     _locale = next;
     notifyListeners();
   }
+
+  static Locale _localeFor(String? languageId) =>
+      backendLocaleMap[languageId?.trim().toLowerCase()] ?? const Locale('en');
 }

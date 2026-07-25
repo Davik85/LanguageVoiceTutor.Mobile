@@ -671,3 +671,18 @@ flutter test test/lesson_start_flow_test.dart
 ```
 
 The start-flow fixture must provide the Home requests it triggers: a permitted lesson-access result and unavailable Progress and Achievements results. It must not attempt to navigate to `/login`; that route is intentionally absent from this focused test app. The current `lesson_start_flow_test.dart` result is 60 passing tests, including the layout assertion that the larger microphone action is centered while keyboard and Hint are at the dock edges. `settings_screen_test.dart` covers the Rewards row opening the complete achievements screen, and `home_screen_test.dart` covers a selected daily bar displaying its backend-provided completed-lesson count. The lesson visual boundary is local to `LessonScreen`: Home and Settings retain product-blue typography, while feedback and summary retain their own neutral, sectioned presentation. Current combined focused result: 108 passing tests across Settings, Home, and lesson-start flow.
+
+## Android first-run language defaults
+
+- On an unauthenticated first launch, verify Splash and Login use the first
+  Android-preferred supported interface locale; unsupported values use English.
+- Verify interface and native language resolve independently (for example,
+  Ukrainian plus English produces interface `en` and native `uk`).
+- Verify existing authenticated startup and existing-account login load the
+  backend explanation language and make no settings PUT request.
+- Verify new registration fetches current settings and sends exactly one PUT
+  changing only native and explanation language; study language, tutor, level,
+  speech, and conversation values remain unchanged.
+- Verify a settings fetch or update failure after successful registration still
+  enters Home with the device-derived interface language.
+- No backend deployment is required for this client-only behavior.

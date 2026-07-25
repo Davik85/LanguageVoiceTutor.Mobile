@@ -32,6 +32,16 @@ void main() {
     expect(controller.locale.languageCode, 'en');
   });
 
+  test('starts with a resolved initial language without an update', () {
+    final controller = AppLocaleController(initialLanguageId: 'ja');
+    expect(controller.locale, const Locale('ja'));
+  });
+
+  test('unsupported initial language starts in English', () {
+    final controller = AppLocaleController(initialLanguageId: 'unsupported');
+    expect(controller.locale, const Locale('en'));
+  });
+
   test('new backend explanation-language IDs resolve to approved locales', () {
     final controller = AppLocaleController();
 

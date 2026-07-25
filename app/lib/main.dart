@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'config/app_config.dart';
 import 'l10n/app_localizations.dart';
 import 'l10n/app_locale_controller.dart';
+import 'l10n/device_language_defaults.dart';
 import 'services/auth_service.dart';
 import 'services/service_factory.dart';
 import 'services/practice_reminder_service.dart';
@@ -21,7 +22,13 @@ Future<void> main() async {
   try {
     await reminders.initialize();
   } catch (_) {}
-  runApp(LanguageVoiceTutorApp(practiceReminderService: reminders));
+  final deviceLanguageDefaults = resolveDeviceLanguageDefaults(
+    WidgetsBinding.instance.platformDispatcher.locales,
+  );
+  runApp(LanguageVoiceTutorApp(
+    practiceReminderService: reminders,
+    deviceLanguageDefaults: deviceLanguageDefaults,
+  ));
 }
 
 class LanguageVoiceTutorApp extends StatefulWidget {
@@ -29,14 +36,22 @@ class LanguageVoiceTutorApp extends StatefulWidget {
     super.key,
     AuthService? authService,
     PracticeReminderService? practiceReminderService,
+    DeviceLanguageDefaults? deviceLanguageDefaults,
+    Iterable<Locale>? deviceLocales,
   })  : _authService = authService ?? createAuthService(),
         _practiceReminderService =
             practiceReminderService ?? LocalPracticeReminderService(),
-        _premiumPurchaseAdapter = const UnavailablePremiumPurchaseAdapter();
+        _premiumPurchaseAdapter = const UnavailablePremiumPurchaseAdapter(),
+        _deviceLanguageDefaults = deviceLanguageDefaults ??
+            resolveDeviceLanguageDefaults(
+              deviceLocales ??
+                  WidgetsBinding.instance.platformDispatcher.locales,
+            );
 
   final AuthService _authService;
   final PracticeReminderService _practiceReminderService;
   final PremiumPurchaseAdapter _premiumPurchaseAdapter;
+  final DeviceLanguageDefaults _deviceLanguageDefaults;
 
   @override
   State<LanguageVoiceTutorApp> createState() => _LanguageVoiceTutorAppState();
@@ -48,7 +63,9 @@ class _LanguageVoiceTutorAppState extends State<LanguageVoiceTutorApp> {
   @override
   void initState() {
     super.initState();
-    _localeController = AppLocaleController();
+    _localeController = AppLocaleController(
+      initialLanguageId: widget._deviceLanguageDefaults.interfaceLanguageId,
+    );
   }
 
   @override
@@ -157,8 +174,12 @@ class _LanguageVoiceTutorAppState extends State<LanguageVoiceTutorApp> {
                 SplashScreen.routeName: (_) => SplashScreen(
                     authService: widget._authService,
                     onInterfaceLanguageLoaded: _localeController.setLanguageId),
-                LoginScreen.routeName: (_) =>
-                    LoginScreen(authService: widget._authService),
+                LoginScreen.routeName: (_) => LoginScreen(
+                      authService: widget._authService,
+                      deviceLanguageDefaults: widget._deviceLanguageDefaults,
+                      onInterfaceLanguageLoaded:
+                          _localeController.setLanguageId,
+                    ),
                 HomeScreen.routeName: (_) => HomeScreen(
                     authService: widget._authService,
                     practiceReminderService: widget._practiceReminderService),

@@ -95,8 +95,11 @@ Widget _app(
   AuthService service, {
   AuthService? homeService,
   AssetBundle? assetBundle,
+  Locale? locale,
+  ValueChanged<String>? onInterfaceLanguageLoaded,
 }) =>
     MaterialApp(
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => assetBundle == null
@@ -104,9 +107,17 @@ Widget _app(
           : DefaultAssetBundle(bundle: assetBundle, child: child!),
       routes: {
         '/home': (_) => HomeScreen(authService: homeService ?? service),
-        '/login': (_) => const Scaffold(body: Text('login')),
+        '/login': (context) => Scaffold(
+              body: Column(children: [
+                const Text('login'),
+                Text(Localizations.localeOf(context).languageCode),
+              ]),
+            ),
       },
-      home: SplashScreen(authService: service),
+      home: SplashScreen(
+        authService: service,
+        onInterfaceLanguageLoaded: onInterfaceLanguageLoaded,
+      ),
     );
 
 void main() {
@@ -121,6 +132,70 @@ void main() {
     await tester.pumpWidget(_app(service));
     await tester.pumpAndSettle();
     expect(find.text('login'), findsOneWidget);
+  });
+
+  testWidgets('unauthenticated startup retains the injected device language',
+      (tester) async {
+    final service = AuthService(
+      apiClient: _SplashApi({
+        '/api/auth/me': [const ApiResponse(statusCode: 401, body: '{}')],
+        '/api/auth/refresh': [const ApiResponse(statusCode: 401, body: '{}')],
+      }),
+      storage: _SplashStorage(),
+    );
+    await tester.pumpWidget(_app(service, locale: const Locale('ru')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('login'), findsOneWidget);
+    expect(find.text('ru'), findsOneWidget);
+  });
+
+  testWidgets(
+      'authenticated startup replaces the device language from settings',
+      (tester) async {
+    final assetBundle = _SplashAssetBundle();
+    final logo = (await tester.runAsync(createTestImage))!;
+    addTearDown(logo.dispose);
+    tester.binding.imageCache.putIfAbsent(
+      AssetBundleImageKey(
+        bundle: assetBundle,
+        name: AppConfig.logoAsset,
+        scale: 1.0,
+      ),
+      () => OneFrameImageStreamCompleter(
+        SynchronousFuture<ImageInfo>(ImageInfo(image: logo)),
+      ),
+    );
+    final languages = <String>[];
+    final service = AuthService(
+      apiClient: _SplashApi({
+        '/api/auth/me': [
+          const ApiResponse(
+            statusCode: 200,
+            body:
+                '{"userId":"u1","email":"user@example.com","createdAt":"2026-07-01T12:00:00Z"}',
+          ),
+        ],
+        '/api/me/settings': [
+          const ApiResponse(
+            statusCode: 200,
+            body:
+                '{"nativeLanguage":"en","studyLanguage":"English","explanationLanguage":"ja","speechVoice":"","speechSpeed":1,"conversationModeEnabled":false,"selectedTutorId":"lana","currentLevel":"A1"}',
+          ),
+        ],
+      }),
+      storage: _SplashStorage(),
+    );
+    await tester.pumpWidget(_app(
+      service,
+      homeService: _HomeAuthService(),
+      assetBundle: assetBundle,
+      onInterfaceLanguageLoaded: languages.add,
+    ));
+    await tester.pumpAndSettle();
+
+    expect(languages, ['ja']);
+    expect(find.byKey(const Key('home-branded-title')), findsOneWidget);
   });
 
   testWidgets('temporary failure stays on Splash and Retry reaches Home',
@@ -152,10 +227,12 @@ void main() {
       apiClient: api,
       storage: _SplashStorage(),
     );
+    final languages = ['ru'];
     await tester.pumpWidget(_app(
       service,
       homeService: _HomeAuthService(),
       assetBundle: assetBundle,
+      onInterfaceLanguageLoaded: languages.add,
     ));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('splash-retry-button')), findsOneWidget);
@@ -171,5 +248,6 @@ void main() {
       'GET /api/me/settings',
     ]);
     expect(find.byKey(const Key('home-branded-title')), findsOneWidget);
+    expect(languages, ['ru']);
   });
 }

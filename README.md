@@ -419,6 +419,20 @@ flutter analyze
 flutter test
 ```
 
+## Android first-run language defaults
+
+Before authentication, Mobile resolves the ordered Android preferred-language
+list independently for the interface and native-language defaults. Each value
+uses the first supported option, with English as its independent fallback.
+This device-derived interface language is used by Splash and Login.
+
+Backend `UserSettings` remain authoritative after authentication: an existing
+account's `explanationLanguage` replaces the device default without writing
+settings. A newly registered account fetches its initial settings once and
+saves only the resolved `nativeLanguage` and `explanationLanguage`, preserving
+the study language and all other backend-owned fields. No backend deployment
+is required.
+
 ## PR 3 lesson access check slice
 
 This slice adds only a small backend-connected lesson access check to the Flutter mobile client. The exact endpoint used is:

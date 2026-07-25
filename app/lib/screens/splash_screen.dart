@@ -52,7 +52,7 @@ class _SplashScreenState extends State<SplashScreen> {
           final settings = await _authService.fetchUserSettings();
           widget._onInterfaceLanguageLoaded?.call(settings.explanationLanguage);
         } catch (_) {
-          // The session is valid; leave the interface in its safe English fallback.
+          // The session is valid; retain the device-derived language on failure.
         }
         if (!mounted) return;
         await precacheImage(const AssetImage(AppConfig.logoAsset), context);
