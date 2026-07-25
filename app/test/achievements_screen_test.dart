@@ -694,4 +694,249 @@ void main() {
       );
     });
   });
+
+  group('job interview and restaurant achievement title localization', () {
+    const ids = [
+      'subtopic-job-interview-job_interview_tell_me_about_yourself-v1',
+      'subtopic-job-interview-job_interview_work_experience-v1',
+      'subtopic-job-interview-job_interview_strengths_and_weaknesses-v1',
+      'subtopic-job-interview-job_interview_why_do_you_want_this_job-v1',
+      'subtopic-job-interview-job_interview_asking_questions_at_the_end-v1',
+      'topic-job-interview-complete-v1',
+      'subtopic-restaurant-cafe-restaurant_and_cafe_booking_a_table-v1',
+      'subtopic-restaurant-cafe-restaurant_and_cafe_ordering_food-v1',
+      'subtopic-restaurant-cafe-restaurant_and_cafe_asking_about_ingredients-v1',
+      'subtopic-restaurant-cafe-restaurant_and_cafe_handling_a_wrong_order-v1',
+      'subtopic-restaurant-cafe-restaurant_and_cafe_paying_the_bill-v1',
+      'topic-restaurant-cafe-complete-v1',
+    ];
+    const titlesByLocale = {
+      'en': [
+        'Strong Introduction',
+        'Career Story',
+        'Self-Aware Candidate',
+        'Right Fit',
+        'Curious Candidate',
+        'Interview Ready',
+        'Table Booker',
+        'Menu Expert',
+        'Ingredient Guide',
+        'Order Fixer',
+        'Bill Settled',
+        'Dining Pro',
+      ],
+      'ru': [
+        'Уверенное знакомство',
+        'История карьеры',
+        'Осознанный кандидат',
+        'Точное совпадение',
+        'Любознательный кандидат',
+        'Готов к собеседованию',
+        'Бронь столика',
+        'Знаток меню',
+        'Знаток ингредиентов',
+        'Исправлю заказ',
+        'Счёт оплачен',
+        'Ресторанный профи',
+      ],
+      'es': [
+        'Presentación segura',
+        'Historia profesional',
+        'Candidato consciente',
+        'Encaje perfecto',
+        'Candidato curioso',
+        'Listo para la entrevista',
+        'Reserva de mesa',
+        'Experto en menú',
+        'Guía de ingredientes',
+        'Soluciona pedidos',
+        'Cuenta pagada',
+        'Experto en restaurantes',
+      ],
+      'fr': [
+        'Présentation assurée',
+        'Parcours professionnel',
+        'Candidat lucide',
+        'Le bon profil',
+        'Candidat curieux',
+        'Prêt pour l’entretien',
+        'Réservation de table',
+        'Expert du menu',
+        'Guide des ingrédients',
+        'Correcteur de commande',
+        'Addition réglée',
+        'Pro de la restauration',
+      ],
+      'de': [
+        'Starke Vorstellung',
+        'Karrieregeschichte',
+        'Selbstreflektierter Kandidat',
+        'Perfekte Besetzung',
+        'Neugieriger Kandidat',
+        'Bereit fürs Gespräch',
+        'Tischreservierer',
+        'Menüprofi',
+        'Zutatenkenner',
+        'Bestellretter',
+        'Rechnung beglichen',
+        'Gastronomieprofi',
+      ],
+    };
+    const representativePreviousTitles = {
+      'en': ['7-Day Streak', 'Everyday Hero', 'Traveler', 'Business Ready'],
+      'ru': ['Серия 7 дней', 'Герой будней', 'Путешественник', 'Готов к делу'],
+      'es': [
+        'Racha de 7 días',
+        'Héroe cotidiano',
+        'Viajero',
+        'Listo para los negocios',
+      ],
+      'fr': [
+        'Série de 7 jours',
+        'Héros du quotidien',
+        'Voyageur',
+        'Prêt pour les affaires',
+      ],
+      'de': [
+        '7-Tage-Serie',
+        'Alltagsheld',
+        'Reisender',
+        'Businessbereit',
+      ],
+    };
+    const catalogIds = [
+      'streak-7-v1',
+      'streak-30-v1',
+      'streak-60-v1',
+      'streak-100-v1',
+      'streak-365-v1',
+      'lessons-1-v1',
+      'lessons-5-v1',
+      'lessons-10-v1',
+      'lessons-25-v1',
+      'lessons-50-v1',
+      'lessons-100-v1',
+      'subtopic-daily-life-everyday_english_introductions-v1',
+      'subtopic-daily-life-everyday_english_small_talk_with_a_neighbor-v1',
+      'subtopic-daily-life-everyday_english_asking_for_help-v1',
+      'subtopic-daily-life-everyday_english_making_plans-v1',
+      'subtopic-daily-life-everyday_english_talking_about_your_day-v1',
+      'topic-daily-life-complete-v1',
+      'subtopic-travel-travel_airport_check_in-v1',
+      'subtopic-travel-travel_hotel_check_in-v1',
+      'subtopic-travel-travel_asking_for_directions-v1',
+      'subtopic-travel-travel_ordering_transport-v1',
+      'subtopic-travel-travel_lost_luggage-v1',
+      'topic-travel-complete-v1',
+      'subtopic-work-business-work_business_first_meeting-v1',
+      'subtopic-work-business-work_business_daily_standup-v1',
+      'subtopic-work-business-work_business_phone_call_with_a_client-v1',
+      'subtopic-work-business-work_business_asking_for_clarification-v1',
+      'subtopic-work-business-work_business_discussing_deadlines-v1',
+      'topic-work-business-complete-v1',
+      'subtopic-job-interview-job_interview_tell_me_about_yourself-v1',
+      'subtopic-job-interview-job_interview_work_experience-v1',
+      'subtopic-job-interview-job_interview_strengths_and_weaknesses-v1',
+      'subtopic-job-interview-job_interview_why_do_you_want_this_job-v1',
+      'subtopic-job-interview-job_interview_asking_questions_at_the_end-v1',
+      'topic-job-interview-complete-v1',
+      'subtopic-restaurant-cafe-restaurant_and_cafe_booking_a_table-v1',
+      'subtopic-restaurant-cafe-restaurant_and_cafe_ordering_food-v1',
+      'subtopic-restaurant-cafe-restaurant_and_cafe_asking_about_ingredients-v1',
+      'subtopic-restaurant-cafe-restaurant_and_cafe_handling_a_wrong_order-v1',
+      'subtopic-restaurant-cafe-restaurant_and_cafe_paying_the_bill-v1',
+      'topic-restaurant-cafe-complete-v1',
+    ];
+
+    testWidgets('all new IDs and the 41-ID catalog resolve in every locale',
+        (tester) async {
+      expect(catalogIds, hasLength(41));
+      expect(catalogIds.toSet(), hasLength(41));
+      for (final localeTitles in titlesByLocale.entries) {
+        late List<String> resolvedTitles;
+        late List<String> previousTitles;
+        late List<String> catalogTitles;
+        await tester.pumpWidget(MaterialApp(
+          locale: Locale(localeTitles.key),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              resolvedTitles = [
+                for (final id in ids)
+                  AchievementTitleResolver.resolve(context, _item(id, 'topic')),
+              ];
+              previousTitles = [
+                for (final id in [
+                  'streak-7-v1',
+                  'topic-daily-life-complete-v1',
+                  'topic-travel-complete-v1',
+                  'topic-work-business-complete-v1',
+                ])
+                  AchievementTitleResolver.resolve(context, _item(id, 'topic')),
+              ];
+              catalogTitles = [
+                for (final id in catalogIds)
+                  AchievementTitleResolver.resolve(
+                    context,
+                    _item(id, 'topic', title: 'Backend fallback title'),
+                  ),
+              ];
+              return const SizedBox();
+            },
+          ),
+        ));
+        await tester.pumpAndSettle();
+        expect(resolvedTitles, localeTitles.value);
+        expect(
+          previousTitles,
+          representativePreviousTitles[localeTitles.key],
+        );
+        expect(catalogTitles, isNot(contains('Backend fallback title')));
+      }
+    });
+
+    testWidgets(
+        'Russian cards and semantics use localized Job Interview and Restaurant titles',
+        (tester) async {
+      final response = AchievementsResponse(
+        generatedAtUtc: DateTime.utc(2026, 7, 19),
+        calendarTimezone: 'UTC',
+        activeStudyLanguage: 'English',
+        summary: const AchievementSummary(unlocked: 1, total: 3),
+        achievements: [
+          _item(ids.first, 'subtopic', unlocked: true),
+          _item(ids[6], 'subtopic'),
+          _item('unknown-final-id', 'subtopic',
+              title: 'Backend fallback title'),
+        ],
+        homeItems: const [],
+      );
+      await tester.pumpWidget(_screen(
+        AchievementsResult.success(response),
+        locale: const Locale('ru'),
+      ));
+      await tester.pumpAndSettle();
+      expect(find.text('Уверенное знакомство'), findsOneWidget);
+      expect(find.text('Бронь столика'), findsOneWidget);
+      expect(find.text('Backend fallback title'), findsOneWidget);
+      expect(
+        _semanticsLabel('Разблокированное достижение: Уверенное знакомство'),
+        findsOneWidget,
+      );
+      expect(
+        _semanticsLabel(
+          'Заблокированное достижение: Бронь столика. Прогресс: 3 из 7.',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(Key('all-achievement-${ids.first}')));
+      await tester.pumpAndSettle();
+      expect(
+        _semanticsLabel('Закрыть просмотр достижения Уверенное знакомство'),
+        findsOneWidget,
+      );
+    });
+  });
 }

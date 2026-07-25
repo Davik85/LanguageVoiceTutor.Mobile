@@ -450,6 +450,35 @@ void main() {
     });
   });
 
+  group('job interview and restaurant achievement title localization', () {
+    testWidgets(
+        'Home uses shared Job Interview and Restaurant title resolution',
+        (tester) async {
+      final interview =
+          _achievement('topic-job-interview-complete-v1', unlocked: true);
+      final restaurant =
+          _achievement('topic-restaurant-cafe-complete-v1', unlocked: true);
+      final response = AchievementsResponse(
+        generatedAtUtc: DateTime.utc(2026, 7, 19),
+        calendarTimezone: 'UTC',
+        activeStudyLanguage: 'English',
+        summary: const AchievementSummary(unlocked: 2, total: 2),
+        achievements: [interview, restaurant],
+        homeItems: [interview, restaurant],
+      );
+      await tester.pumpWidget(_home(
+        authService: FakeAuthService(
+          achievementsResult: AchievementsResult.success(response),
+        ),
+        locale: const Locale('ru'),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Готов к собеседованию'), findsOneWidget);
+      expect(find.text('Ресторанный профи'), findsOneWidget);
+    });
+  });
+
   testWidgets('new unlocked achievements are shown once in backend order',
       (tester) async {
     final presentationStore = MemoryAchievementPresentationStore();

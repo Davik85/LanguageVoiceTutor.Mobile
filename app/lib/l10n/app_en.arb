@@ -183,5 +183,17 @@
   "achievementTitleWorkClientCaller": "Client Caller",
   "achievementTitleWorkClearCommunicator": "Clear Communicator",
   "achievementTitleWorkDeadlineDriver": "Deadline Driver",
-  "achievementTitleWorkBusinessReady": "Business Ready"
+  "achievementTitleWorkBusinessReady": "Business Ready",
+  "achievementTitleInterviewStrongIntroduction": "Strong Introduction",
+  "achievementTitleInterviewCareerStory": "Career Story",
+  "achievementTitleInterviewSelfAwareCandidate": "Self-Aware Candidate",
+  "achievementTitleInterviewRightFit": "Right Fit",
+  "achievementTitleInterviewCuriousCandidate": "Curious Candidate",
+  "achievementTitleInterviewReady": "Interview Ready",
+  "achievementTitleRestaurantTableBooker": "Table Booker",
+  "achievementTitleRestaurantMenuExpert": "Menu Expert",
+  "achievementTitleRestaurantIngredientGuide": "Ingredient Guide",
+  "achievementTitleRestaurantOrderFixer": "Order Fixer",
+  "achievementTitleRestaurantBillSettled": "Bill Settled",
+  "achievementTitleRestaurantDiningPro": "Dining Pro"
 }

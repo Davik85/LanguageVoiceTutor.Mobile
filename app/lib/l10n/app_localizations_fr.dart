@@ -1396,4 +1396,42 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get achievementTitleWorkBusinessReady => 'Prêt pour les affaires';
+
+  @override
+  String get achievementTitleInterviewStrongIntroduction =>
+      'Présentation assurée';
+
+  @override
+  String get achievementTitleInterviewCareerStory => 'Parcours professionnel';
+
+  @override
+  String get achievementTitleInterviewSelfAwareCandidate => 'Candidat lucide';
+
+  @override
+  String get achievementTitleInterviewRightFit => 'Le bon profil';
+
+  @override
+  String get achievementTitleInterviewCuriousCandidate => 'Candidat curieux';
+
+  @override
+  String get achievementTitleInterviewReady => 'Prêt pour l’entretien';
+
+  @override
+  String get achievementTitleRestaurantTableBooker => 'Réservation de table';
+
+  @override
+  String get achievementTitleRestaurantMenuExpert => 'Expert du menu';
+
+  @override
+  String get achievementTitleRestaurantIngredientGuide =>
+      'Guide des ingrédients';
+
+  @override
+  String get achievementTitleRestaurantOrderFixer => 'Correcteur de commande';
+
+  @override
+  String get achievementTitleRestaurantBillSettled => 'Addition réglée';
+
+  @override
+  String get achievementTitleRestaurantDiningPro => 'Pro de la restauration';
 }

@@ -56,6 +56,30 @@ class AchievementTitleResolver {
           context.l10n.achievementTitleWorkDeadlineDriver,
         'topic-work-business-complete-v1' =>
           context.l10n.achievementTitleWorkBusinessReady,
+        'subtopic-job-interview-job_interview_tell_me_about_yourself-v1' =>
+          context.l10n.achievementTitleInterviewStrongIntroduction,
+        'subtopic-job-interview-job_interview_work_experience-v1' =>
+          context.l10n.achievementTitleInterviewCareerStory,
+        'subtopic-job-interview-job_interview_strengths_and_weaknesses-v1' =>
+          context.l10n.achievementTitleInterviewSelfAwareCandidate,
+        'subtopic-job-interview-job_interview_why_do_you_want_this_job-v1' =>
+          context.l10n.achievementTitleInterviewRightFit,
+        'subtopic-job-interview-job_interview_asking_questions_at_the_end-v1' =>
+          context.l10n.achievementTitleInterviewCuriousCandidate,
+        'topic-job-interview-complete-v1' =>
+          context.l10n.achievementTitleInterviewReady,
+        'subtopic-restaurant-cafe-restaurant_and_cafe_booking_a_table-v1' =>
+          context.l10n.achievementTitleRestaurantTableBooker,
+        'subtopic-restaurant-cafe-restaurant_and_cafe_ordering_food-v1' =>
+          context.l10n.achievementTitleRestaurantMenuExpert,
+        'subtopic-restaurant-cafe-restaurant_and_cafe_asking_about_ingredients-v1' =>
+          context.l10n.achievementTitleRestaurantIngredientGuide,
+        'subtopic-restaurant-cafe-restaurant_and_cafe_handling_a_wrong_order-v1' =>
+          context.l10n.achievementTitleRestaurantOrderFixer,
+        'subtopic-restaurant-cafe-restaurant_and_cafe_paying_the_bill-v1' =>
+          context.l10n.achievementTitleRestaurantBillSettled,
+        'topic-restaurant-cafe-complete-v1' =>
+          context.l10n.achievementTitleRestaurantDiningPro,
         _ => achievement.title,
       };
 }

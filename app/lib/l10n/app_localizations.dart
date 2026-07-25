@@ -2455,6 +2455,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Business Ready'**
   String get achievementTitleWorkBusinessReady;
+
+  /// No description provided for @achievementTitleInterviewStrongIntroduction.
+  ///
+  /// In en, this message translates to:
+  /// **'Strong Introduction'**
+  String get achievementTitleInterviewStrongIntroduction;
+
+  /// No description provided for @achievementTitleInterviewCareerStory.
+  ///
+  /// In en, this message translates to:
+  /// **'Career Story'**
+  String get achievementTitleInterviewCareerStory;
+
+  /// No description provided for @achievementTitleInterviewSelfAwareCandidate.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-Aware Candidate'**
+  String get achievementTitleInterviewSelfAwareCandidate;
+
+  /// No description provided for @achievementTitleInterviewRightFit.
+  ///
+  /// In en, this message translates to:
+  /// **'Right Fit'**
+  String get achievementTitleInterviewRightFit;
+
+  /// No description provided for @achievementTitleInterviewCuriousCandidate.
+  ///
+  /// In en, this message translates to:
+  /// **'Curious Candidate'**
+  String get achievementTitleInterviewCuriousCandidate;
+
+  /// No description provided for @achievementTitleInterviewReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Interview Ready'**
+  String get achievementTitleInterviewReady;
+
+  /// No description provided for @achievementTitleRestaurantTableBooker.
+  ///
+  /// In en, this message translates to:
+  /// **'Table Booker'**
+  String get achievementTitleRestaurantTableBooker;
+
+  /// No description provided for @achievementTitleRestaurantMenuExpert.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu Expert'**
+  String get achievementTitleRestaurantMenuExpert;
+
+  /// No description provided for @achievementTitleRestaurantIngredientGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Ingredient Guide'**
+  String get achievementTitleRestaurantIngredientGuide;
+
+  /// No description provided for @achievementTitleRestaurantOrderFixer.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Fixer'**
+  String get achievementTitleRestaurantOrderFixer;
+
+  /// No description provided for @achievementTitleRestaurantBillSettled.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill Settled'**
+  String get achievementTitleRestaurantBillSettled;
+
+  /// No description provided for @achievementTitleRestaurantDiningPro.
+  ///
+  /// In en, this message translates to:
+  /// **'Dining Pro'**
+  String get achievementTitleRestaurantDiningPro;
 }
 
 class _AppLocalizationsDelegate

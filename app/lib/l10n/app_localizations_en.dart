@@ -1382,4 +1382,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get achievementTitleWorkBusinessReady => 'Business Ready';
+
+  @override
+  String get achievementTitleInterviewStrongIntroduction =>
+      'Strong Introduction';
+
+  @override
+  String get achievementTitleInterviewCareerStory => 'Career Story';
+
+  @override
+  String get achievementTitleInterviewSelfAwareCandidate =>
+      'Self-Aware Candidate';
+
+  @override
+  String get achievementTitleInterviewRightFit => 'Right Fit';
+
+  @override
+  String get achievementTitleInterviewCuriousCandidate => 'Curious Candidate';
+
+  @override
+  String get achievementTitleInterviewReady => 'Interview Ready';
+
+  @override
+  String get achievementTitleRestaurantTableBooker => 'Table Booker';
+
+  @override
+  String get achievementTitleRestaurantMenuExpert => 'Menu Expert';
+
+  @override
+  String get achievementTitleRestaurantIngredientGuide => 'Ingredient Guide';
+
+  @override
+  String get achievementTitleRestaurantOrderFixer => 'Order Fixer';
+
+  @override
+  String get achievementTitleRestaurantBillSettled => 'Bill Settled';
+
+  @override
+  String get achievementTitleRestaurantDiningPro => 'Dining Pro';
 }

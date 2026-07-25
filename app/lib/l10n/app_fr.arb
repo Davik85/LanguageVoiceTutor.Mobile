@@ -139,5 +139,17 @@
   "achievementTitleWorkClientCaller": "Appel client",
   "achievementTitleWorkClearCommunicator": "Communication claire",
   "achievementTitleWorkDeadlineDriver": "Maître des délais",
-  "achievementTitleWorkBusinessReady": "Prêt pour les affaires"
+  "achievementTitleWorkBusinessReady": "Prêt pour les affaires",
+  "achievementTitleInterviewStrongIntroduction": "Présentation assurée",
+  "achievementTitleInterviewCareerStory": "Parcours professionnel",
+  "achievementTitleInterviewSelfAwareCandidate": "Candidat lucide",
+  "achievementTitleInterviewRightFit": "Le bon profil",
+  "achievementTitleInterviewCuriousCandidate": "Candidat curieux",
+  "achievementTitleInterviewReady": "Prêt pour l’entretien",
+  "achievementTitleRestaurantTableBooker": "Réservation de table",
+  "achievementTitleRestaurantMenuExpert": "Expert du menu",
+  "achievementTitleRestaurantIngredientGuide": "Guide des ingrédients",
+  "achievementTitleRestaurantOrderFixer": "Correcteur de commande",
+  "achievementTitleRestaurantBillSettled": "Addition réglée",
+  "achievementTitleRestaurantDiningPro": "Pro de la restauration"
 }

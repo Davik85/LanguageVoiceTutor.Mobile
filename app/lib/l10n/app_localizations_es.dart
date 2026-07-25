@@ -1394,4 +1394,43 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get achievementTitleWorkBusinessReady => 'Listo para los negocios';
+
+  @override
+  String get achievementTitleInterviewStrongIntroduction =>
+      'Presentación segura';
+
+  @override
+  String get achievementTitleInterviewCareerStory => 'Historia profesional';
+
+  @override
+  String get achievementTitleInterviewSelfAwareCandidate =>
+      'Candidato consciente';
+
+  @override
+  String get achievementTitleInterviewRightFit => 'Encaje perfecto';
+
+  @override
+  String get achievementTitleInterviewCuriousCandidate => 'Candidato curioso';
+
+  @override
+  String get achievementTitleInterviewReady => 'Listo para la entrevista';
+
+  @override
+  String get achievementTitleRestaurantTableBooker => 'Reserva de mesa';
+
+  @override
+  String get achievementTitleRestaurantMenuExpert => 'Experto en menú';
+
+  @override
+  String get achievementTitleRestaurantIngredientGuide =>
+      'Guía de ingredientes';
+
+  @override
+  String get achievementTitleRestaurantOrderFixer => 'Soluciona pedidos';
+
+  @override
+  String get achievementTitleRestaurantBillSettled => 'Cuenta pagada';
+
+  @override
+  String get achievementTitleRestaurantDiningPro => 'Experto en restaurantes';
 }

@@ -146,5 +146,17 @@
   "achievementTitleWorkClientCaller": "Звонок клиенту",
   "achievementTitleWorkClearCommunicator": "Говорю ясно",
   "achievementTitleWorkDeadlineDriver": "Держу сроки",
-  "achievementTitleWorkBusinessReady": "Готов к делу"
+  "achievementTitleWorkBusinessReady": "Готов к делу",
+  "achievementTitleInterviewStrongIntroduction": "Уверенное знакомство",
+  "achievementTitleInterviewCareerStory": "История карьеры",
+  "achievementTitleInterviewSelfAwareCandidate": "Осознанный кандидат",
+  "achievementTitleInterviewRightFit": "Точное совпадение",
+  "achievementTitleInterviewCuriousCandidate": "Любознательный кандидат",
+  "achievementTitleInterviewReady": "Готов к собеседованию",
+  "achievementTitleRestaurantTableBooker": "Бронь столика",
+  "achievementTitleRestaurantMenuExpert": "Знаток меню",
+  "achievementTitleRestaurantIngredientGuide": "Знаток ингредиентов",
+  "achievementTitleRestaurantOrderFixer": "Исправлю заказ",
+  "achievementTitleRestaurantBillSettled": "Счёт оплачен",
+  "achievementTitleRestaurantDiningPro": "Ресторанный профи"
 }

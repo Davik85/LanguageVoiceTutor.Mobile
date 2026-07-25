@@ -1395,4 +1395,43 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get achievementTitleWorkBusinessReady => 'Готов к делу';
+
+  @override
+  String get achievementTitleInterviewStrongIntroduction =>
+      'Уверенное знакомство';
+
+  @override
+  String get achievementTitleInterviewCareerStory => 'История карьеры';
+
+  @override
+  String get achievementTitleInterviewSelfAwareCandidate =>
+      'Осознанный кандидат';
+
+  @override
+  String get achievementTitleInterviewRightFit => 'Точное совпадение';
+
+  @override
+  String get achievementTitleInterviewCuriousCandidate =>
+      'Любознательный кандидат';
+
+  @override
+  String get achievementTitleInterviewReady => 'Готов к собеседованию';
+
+  @override
+  String get achievementTitleRestaurantTableBooker => 'Бронь столика';
+
+  @override
+  String get achievementTitleRestaurantMenuExpert => 'Знаток меню';
+
+  @override
+  String get achievementTitleRestaurantIngredientGuide => 'Знаток ингредиентов';
+
+  @override
+  String get achievementTitleRestaurantOrderFixer => 'Исправлю заказ';
+
+  @override
+  String get achievementTitleRestaurantBillSettled => 'Счёт оплачен';
+
+  @override
+  String get achievementTitleRestaurantDiningPro => 'Ресторанный профи';
 }
