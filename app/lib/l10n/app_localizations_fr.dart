@@ -1561,4 +1561,50 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get lessonContentLoadFailed =>
       'Impossible de charger le contenu de la leçon. Réessayez.';
+
+  @override
+  String get lessonHistoryDetails => 'Détails de la leçon';
+
+  @override
+  String get historySummary => 'Résumé';
+
+  @override
+  String get noHistoryConversation =>
+      'Aucune conversation n’est disponible pour cette leçon.';
+
+  @override
+  String get noHistorySummary =>
+      'Aucun résumé n’est disponible pour cette leçon.';
+
+  @override
+  String get overallSummary => 'Résumé général';
+
+  @override
+  String get historyTutor => 'Tuteur';
+
+  @override
+  String get historyYou => 'Vous';
+
+  @override
+  String get feedbackCorrectedText => 'Texte corrigé';
+
+  @override
+  String get feedbackExplanation => 'Explication';
+
+  @override
+  String get feedbackPraise => 'Encouragement';
+
+  @override
+  String get lessonUnavailable => 'Cette leçon n’est pas disponible.';
+
+  @override
+  String get lessonNoLongerAvailable => 'Cette leçon n’est plus disponible.';
+
+  @override
+  String get lessonHistoryUnavailable =>
+      'L’historique des leçons est temporairement indisponible. Réessayez.';
+
+  @override
+  String get lessonDetailLoadFailed =>
+      'Impossible de charger les détails de la leçon. Réessayez.';
 }

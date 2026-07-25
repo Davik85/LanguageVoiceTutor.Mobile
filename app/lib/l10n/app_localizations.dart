@@ -2737,6 +2737,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not load lesson content. Please try again.'**
   String get lessonContentLoadFailed;
+
+  /// No description provided for @lessonHistoryDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Lesson details'**
+  String get lessonHistoryDetails;
+
+  /// No description provided for @historySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get historySummary;
+
+  /// No description provided for @noHistoryConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversation is available for this lesson.'**
+  String get noHistoryConversation;
+
+  /// No description provided for @noHistorySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'No lesson summary is available.'**
+  String get noHistorySummary;
+
+  /// No description provided for @overallSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall summary'**
+  String get overallSummary;
+
+  /// No description provided for @historyTutor.
+  ///
+  /// In en, this message translates to:
+  /// **'Tutor'**
+  String get historyTutor;
+
+  /// No description provided for @historyYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get historyYou;
+
+  /// No description provided for @feedbackCorrectedText.
+  ///
+  /// In en, this message translates to:
+  /// **'Corrected text'**
+  String get feedbackCorrectedText;
+
+  /// No description provided for @feedbackExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Explanation'**
+  String get feedbackExplanation;
+
+  /// No description provided for @feedbackPraise.
+  ///
+  /// In en, this message translates to:
+  /// **'Praise'**
+  String get feedbackPraise;
+
+  /// No description provided for @lessonUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'That lesson is not available.'**
+  String get lessonUnavailable;
+
+  /// No description provided for @lessonNoLongerAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This lesson is no longer available.'**
+  String get lessonNoLongerAvailable;
+
+  /// No description provided for @lessonHistoryUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Lesson history is temporarily unavailable. Please try again.'**
+  String get lessonHistoryUnavailable;
+
+  /// No description provided for @lessonDetailLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load lesson details. Please try again.'**
+  String get lessonDetailLoadFailed;
 }
 
 class _AppLocalizationsDelegate

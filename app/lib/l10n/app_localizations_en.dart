@@ -1544,4 +1544,49 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get lessonContentLoadFailed =>
       'Could not load lesson content. Please try again.';
+
+  @override
+  String get lessonHistoryDetails => 'Lesson details';
+
+  @override
+  String get historySummary => 'Summary';
+
+  @override
+  String get noHistoryConversation =>
+      'No conversation is available for this lesson.';
+
+  @override
+  String get noHistorySummary => 'No lesson summary is available.';
+
+  @override
+  String get overallSummary => 'Overall summary';
+
+  @override
+  String get historyTutor => 'Tutor';
+
+  @override
+  String get historyYou => 'You';
+
+  @override
+  String get feedbackCorrectedText => 'Corrected text';
+
+  @override
+  String get feedbackExplanation => 'Explanation';
+
+  @override
+  String get feedbackPraise => 'Praise';
+
+  @override
+  String get lessonUnavailable => 'That lesson is not available.';
+
+  @override
+  String get lessonNoLongerAvailable => 'This lesson is no longer available.';
+
+  @override
+  String get lessonHistoryUnavailable =>
+      'Lesson history is temporarily unavailable. Please try again.';
+
+  @override
+  String get lessonDetailLoadFailed =>
+      'Could not load lesson details. Please try again.';
 }

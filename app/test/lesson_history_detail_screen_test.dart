@@ -132,125 +132,127 @@ Widget _screen(_DetailAuthService auth, {String sessionId = 'session-123'}) =>
     );
 
 void main() {
-  testWidgets('loads once and renders learner-facing detail content',
-      (tester) async {
-    final auth = _DetailAuthService([
-      (_) async =>
-          LessonHistoryDetailResult.success(_detail(summary: _summary())),
-    ]);
-    await tester.pumpWidget(_screen(auth));
-    await tester.pumpAndSettle();
-    expect(auth.sessionIds, ['session-123']);
-    for (final text in [
-      'Daily Life',
-      'Introductions',
-      'A1',
-      'Jul 10, 2026',
-      'Completed',
-      'At a cafe',
-      'Overall summary',
-      'You greeted clearly.',
-      'Strengths',
-      'Friendly tone',
-      'Improvements',
-      'Try a longer reply.',
-      'Next steps',
-      'Practise greetings tomorrow.',
-    ]) {
-      expect(find.text(text), findsOneWidget);
-    }
-    await tester.scrollUntilVisible(
-      find.text('¡Hola!'),
-      300,
-      scrollable: find.byType(Scrollable),
-    );
-    for (final text in [
-      'Hola',
-      '¡Hola!',
-      'You',
-      'Tutor',
-      'Feedback',
-      'Corrected text',
-      'Hola.'
-    ]) {
-      expect(find.text(text), findsOneWidget);
-    }
-    expect(tester.getTopLeft(find.text('Hola')).dy,
-        lessThan(tester.getTopLeft(find.text('¡Hola!')).dy));
-    for (final hidden in [
-      'private-session-id',
-      'private-user-id',
-      'internal-content-id',
-      'topic-id',
-      'summary-id',
-      'learner-message-id',
-      'feedback-id',
-      '12.5',
-      '0.88',
-      '850',
-      'voice',
-      'generated'
-    ]) {
-      expect(find.text(hidden), findsNothing);
-    }
-    expect(find.text('Vocabulary'), findsNothing);
-    expect(find.text('Grammar'), findsNothing);
-  });
+  group('lesson history detail localization', () {
+    testWidgets('loads once and renders learner-facing detail content',
+        (tester) async {
+      final auth = _DetailAuthService([
+        (_) async =>
+            LessonHistoryDetailResult.success(_detail(summary: _summary())),
+      ]);
+      await tester.pumpWidget(_screen(auth));
+      await tester.pumpAndSettle();
+      expect(auth.sessionIds, ['session-123']);
+      for (final text in [
+        'Daily Life',
+        'Introductions',
+        'A1',
+        'Completed',
+        'At a cafe',
+        'Overall summary',
+        'You greeted clearly.',
+        'Strengths',
+        'Friendly tone',
+        'Improvements',
+        'Try a longer reply.',
+        'Next steps',
+        'Practise greetings tomorrow.',
+      ]) {
+        expect(find.text(text), findsOneWidget);
+      }
+      await tester.scrollUntilVisible(
+        find.text('¡Hola!'),
+        300,
+        scrollable: find.byType(Scrollable),
+      );
+      for (final text in [
+        'Hola',
+        '¡Hola!',
+        'You',
+        'Tutor',
+        'Feedback',
+        'Corrected text',
+        'Hola.'
+      ]) {
+        expect(find.text(text), findsOneWidget);
+      }
+      expect(tester.getTopLeft(find.text('Hola')).dy,
+          lessThan(tester.getTopLeft(find.text('¡Hola!')).dy));
+      for (final hidden in [
+        'private-session-id',
+        'private-user-id',
+        'internal-content-id',
+        'topic-id',
+        'summary-id',
+        'learner-message-id',
+        'feedback-id',
+        '12.5',
+        '0.88',
+        '850',
+        'voice',
+        'generated'
+      ]) {
+        expect(find.text(hidden), findsNothing);
+      }
+      expect(find.text('Vocabulary'), findsNothing);
+      expect(find.text('Grammar'), findsNothing);
+    });
 
-  testWidgets('shows loading and missing-summary fallback', (tester) async {
-    final pending = Completer<LessonHistoryDetailResult>();
-    final auth = _DetailAuthService([(_) => pending.future]);
-    await tester.pumpWidget(_screen(auth));
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(auth.sessionIds, ['session-123']);
-    pending.complete(LessonHistoryDetailResult.success(_detail()));
-    await tester.pumpAndSettle();
-    expect(find.text('No lesson summary is available.'), findsOneWidget);
-  });
+    testWidgets('shows loading and missing-summary fallback', (tester) async {
+      final pending = Completer<LessonHistoryDetailResult>();
+      final auth = _DetailAuthService([(_) => pending.future]);
+      await tester.pumpWidget(_screen(auth));
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(auth.sessionIds, ['session-123']);
+      pending.complete(LessonHistoryDetailResult.success(_detail()));
+      await tester.pumpAndSettle();
+      expect(find.text('No lesson summary is available.'), findsOneWidget);
+    });
 
-  testWidgets('not found offers Back and retry is single-flight then succeeds',
-      (tester) async {
-    final pending = Completer<LessonHistoryDetailResult>();
-    final auth = _DetailAuthService([
-      (_) async => LessonHistoryDetailResult.unavailable(),
-      (_) => pending.future,
-    ]);
-    await tester.pumpWidget(_screen(auth));
-    await tester.pumpAndSettle();
-    expect(
-        find.byKey(const Key('lesson-history-detail-retry')), findsOneWidget);
-    await tester.tap(find.byKey(const Key('lesson-history-detail-retry')));
-    await tester.tap(find.byKey(const Key('lesson-history-detail-retry')));
-    await tester.pump();
-    expect(auth.sessionIds.length, 2);
-    pending.complete(LessonHistoryDetailResult.success(_detail()));
-    await tester.pumpAndSettle();
-    expect(find.text('Daily Life'), findsOneWidget);
-  });
+    testWidgets(
+        'not found offers Back and retry is single-flight then succeeds',
+        (tester) async {
+      final pending = Completer<LessonHistoryDetailResult>();
+      final auth = _DetailAuthService([
+        (_) async => LessonHistoryDetailResult.unavailable(),
+        (_) => pending.future,
+      ]);
+      await tester.pumpWidget(_screen(auth));
+      await tester.pumpAndSettle();
+      expect(
+          find.byKey(const Key('lesson-history-detail-retry')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('lesson-history-detail-retry')));
+      await tester.tap(find.byKey(const Key('lesson-history-detail-retry')));
+      await tester.pump();
+      expect(auth.sessionIds.length, 2);
+      pending.complete(LessonHistoryDetailResult.success(_detail()));
+      await tester.pumpAndSettle();
+      expect(find.text('Daily Life'), findsOneWidget);
+    });
 
-  testWidgets('not found message offers Back', (tester) async {
-    final notFound =
-        _DetailAuthService([(_) async => LessonHistoryDetailResult.notFound()]);
-    await tester.pumpWidget(_screen(notFound));
-    await tester.pumpAndSettle();
-    expect(find.text('This lesson is no longer available.'), findsOneWidget);
-    expect(find.text('Back'), findsOneWidget);
-  });
+    testWidgets('not found message offers Back', (tester) async {
+      final notFound = _DetailAuthService(
+          [(_) async => LessonHistoryDetailResult.notFound()]);
+      await tester.pumpWidget(_screen(notFound));
+      await tester.pumpAndSettle();
+      expect(find.text('This lesson is no longer available.'), findsOneWidget);
+      expect(find.text('Back'), findsOneWidget);
+    });
 
-  testWidgets('authentication uses the established Login route',
-      (tester) async {
-    final authRequired = _DetailAuthService(
-        [(_) async => LessonHistoryDetailResult.authRequired()]);
-    await tester.pumpWidget(_screen(authRequired));
-    await tester.pumpAndSettle();
-    expect(find.text('Login route'), findsOneWidget);
-  });
+    testWidgets('authentication uses the established Login route',
+        (tester) async {
+      final authRequired = _DetailAuthService(
+          [(_) async => LessonHistoryDetailResult.authRequired()]);
+      await tester.pumpWidget(_screen(authRequired));
+      await tester.pumpAndSettle();
+      expect(find.text('Login route'), findsOneWidget);
+    });
 
-  testWidgets('invalid id does not make a detail request', (tester) async {
-    final auth = _DetailAuthService([]);
-    await tester.pumpWidget(_screen(auth, sessionId: '  '));
-    await tester.pumpAndSettle();
-    expect(auth.sessionIds, isEmpty);
-    expect(find.text('That lesson is not available.'), findsOneWidget);
+    testWidgets('invalid id does not make a detail request', (tester) async {
+      final auth = _DetailAuthService([]);
+      await tester.pumpWidget(_screen(auth, sessionId: '  '));
+      await tester.pumpAndSettle();
+      expect(auth.sessionIds, isEmpty);
+      expect(find.text('That lesson is not available.'), findsOneWidget);
+    });
   });
 }

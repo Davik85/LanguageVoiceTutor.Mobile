@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations_context.dart';
 import '../models/lesson_history.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
@@ -21,7 +22,7 @@ class LessonHistoryDetailScreen extends StatefulWidget {
 
 class _LessonHistoryDetailScreenState extends State<LessonHistoryDetailScreen> {
   LessonHistoryDetail? _detail;
-  String? _error;
+  LessonHistoryStatus? _errorStatus;
   bool _isLoading = true;
   bool _isRequestInFlight = false;
   bool _canRetry = false;
@@ -38,7 +39,7 @@ class _LessonHistoryDetailScreenState extends State<LessonHistoryDetailScreen> {
     if (mounted) {
       setState(() {
         _isLoading = true;
-        _error = null;
+        _errorStatus = null;
         _canRetry = false;
       });
     }
@@ -57,7 +58,7 @@ class _LessonHistoryDetailScreenState extends State<LessonHistoryDetailScreen> {
     setState(() {
       _isLoading = false;
       _detail = result.detail;
-      _error = result.isSuccess ? null : result.message;
+      _errorStatus = result.isSuccess ? null : result.status;
       _canRetry = result.status == LessonHistoryStatus.unavailable ||
           result.status == LessonHistoryStatus.failed;
     });
@@ -67,12 +68,12 @@ class _LessonHistoryDetailScreenState extends State<LessonHistoryDetailScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
         key: const Key('lesson-history-detail-screen'),
-        appBar: AppBar(title: const Text('Lesson details')),
+        appBar: AppBar(title: Text(context.l10n.lessonHistoryDetails)),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _error != null
+            : _errorStatus != null
                 ? _DetailError(
-                    message: _error!,
+                    status: _errorStatus!,
                     canRetry: _canRetry,
                     onRetry: _loadDetail,
                   )
@@ -84,11 +85,11 @@ class _LessonHistoryDetailScreenState extends State<LessonHistoryDetailScreen> {
 
 class _DetailError extends StatelessWidget {
   const _DetailError({
-    required this.message,
+    required this.status,
     required this.canRetry,
     required this.onRetry,
   });
-  final String message;
+  final LessonHistoryStatus status;
   final bool canRetry;
   final VoidCallback onRetry;
 
@@ -97,18 +98,18 @@ class _DetailError extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(message, textAlign: TextAlign.center),
+            Text(_errorMessage(context, status), textAlign: TextAlign.center),
             const SizedBox(height: 16),
             if (canRetry)
               OutlinedButton.icon(
                 key: const Key('lesson-history-detail-retry'),
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+                label: Text(context.l10n.retry),
               ),
             OutlinedButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Back'),
+              child: Text(context.l10n.back),
             ),
           ]),
         ),
@@ -131,14 +132,16 @@ class _DetailContent extends StatelessWidget {
       children: [
         _OverviewCard(detail: detail),
         const SizedBox(height: 24),
-        Text('Summary', style: Theme.of(context).textTheme.titleLarge),
+        Text(context.l10n.historySummary,
+            style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
         _SummaryCard(summary: detail.summary),
         const SizedBox(height: 24),
-        Text('Conversation', style: Theme.of(context).textTheme.titleLarge),
+        Text(context.l10n.conversation,
+            style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
         if (detail.messages.isEmpty)
-          const Text('No conversation is available for this lesson.')
+          Text(context.l10n.noHistoryConversation)
         else
           for (final message in detail.messages) ...[
             _HistoryMessageBubble(message: message),
@@ -161,7 +164,7 @@ class _OverviewCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(_fallback(detail.topicTitle, 'Lesson'),
+            Text(_fallback(detail.topicTitle, context.l10n.lesson),
                 style: Theme.of(context).textTheme.titleMedium),
             if (detail.subtopicTitle.trim().isNotEmpty) ...[
               const SizedBox(height: 4),
@@ -169,10 +172,10 @@ class _OverviewCard extends StatelessWidget {
             ],
             const SizedBox(height: 12),
             Wrap(spacing: 12, runSpacing: 6, children: [
-              Text(_fallback(detail.level, 'Level')),
-              Text(_formatDate(detail.finishedAt ?? detail.startedAt)),
-              Text(_modeLabel(detail.modeUsed)),
-              Text(_statusLabel(detail.status)),
+              Text(_fallback(detail.level, context.l10n.level)),
+              Text(_formatDate(context, detail.finishedAt ?? detail.startedAt)),
+              Text(_modeLabel(context, detail.modeUsed)),
+              Text(_statusLabel(context, detail.status)),
             ]),
             if (detail.selectedContextTitle?.trim().isNotEmpty ?? false) ...[
               const SizedBox(height: 10),
@@ -192,18 +195,18 @@ class _SummaryCard extends StatelessWidget {
     final sections = summary == null
         ? const <(String, String)>[]
         : <(String, String)>[
-            ('Overall summary', summary!.summary),
-            ('Strengths', summary!.strengths ?? ''),
-            ('Improvements', summary!.improvements ?? ''),
-            ('Vocabulary', summary!.vocabulary ?? ''),
-            ('Grammar', summary!.grammar ?? ''),
-            ('Next steps', summary!.nextSteps ?? ''),
+            (context.l10n.overallSummary, summary!.summary),
+            (context.l10n.summaryStrengths, summary!.strengths ?? ''),
+            (context.l10n.summaryImprovements, summary!.improvements ?? ''),
+            (context.l10n.summaryVocabulary, summary!.vocabulary ?? ''),
+            (context.l10n.summaryGrammar, summary!.grammar ?? ''),
+            (context.l10n.summaryNextSteps, summary!.nextSteps ?? ''),
           ].where((section) => section.$2.trim().isNotEmpty).toList();
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: sections.isEmpty
-            ? const Text('No lesson summary is available.')
+            ? Text(context.l10n.noHistorySummary)
             : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 for (var index = 0; index < sections.length; index++) ...[
                   if (index > 0) const SizedBox(height: 16),
@@ -245,7 +248,7 @@ class _HistoryMessageBubble extends StatelessWidget {
           ),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(isTutor ? 'Tutor' : 'You',
+            Text(isTutor ? context.l10n.historyTutor : context.l10n.historyYou,
                 style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: isTutor
@@ -271,12 +274,12 @@ class _FeedbackCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sections = <(String, String)>[
-      ('Corrected text', feedback.correctedText ?? ''),
-      ('Explanation', feedback.explanation ?? ''),
-      ('Grammar tip', feedback.grammarTip ?? ''),
-      ('Vocabulary tip', feedback.vocabularyTip ?? ''),
-      ('Culture tip', feedback.cultureTip ?? ''),
-      ('Praise', feedback.praise ?? ''),
+      (context.l10n.feedbackCorrectedText, feedback.correctedText ?? ''),
+      (context.l10n.feedbackExplanation, feedback.explanation ?? ''),
+      (context.l10n.feedbackGrammarTip, feedback.grammarTip ?? ''),
+      (context.l10n.feedbackVocabularyTip, feedback.vocabularyTip ?? ''),
+      (context.l10n.feedbackCultureTip, feedback.cultureTip ?? ''),
+      (context.l10n.feedbackPraise, feedback.praise ?? ''),
     ].where((section) => section.$2.trim().isNotEmpty).toList();
     if (sections.isEmpty) return const SizedBox.shrink();
     return Padding(
@@ -287,8 +290,8 @@ class _FeedbackCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Feedback',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(context.l10n.lessonFeedback,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
             for (final section in sections) ...[
               const SizedBox(height: 8),
               Text(section.$1,
@@ -305,36 +308,31 @@ class _FeedbackCard extends StatelessWidget {
 String _fallback(String value, String fallback) =>
     value.trim().isEmpty ? fallback : value;
 
-String _modeLabel(String mode) {
+String _modeLabel(BuildContext context, String mode) {
   switch (mode.trim().toLowerCase()) {
     case 'text':
-      return 'Lesson chat';
+      return context.l10n.lessonChat;
     case 'voice':
     case 'conversation':
-      return 'Conversation';
+      return context.l10n.conversation;
     default:
-      return 'Lesson';
+      return context.l10n.lesson;
   }
 }
 
-String _statusLabel(String status) =>
-    status.trim().toLowerCase() == 'finished' ? 'Completed' : 'Completed';
+String _statusLabel(BuildContext context, String status) =>
+    context.l10n.completed;
 
-String _formatDate(DateTime date) {
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec'
-  ];
-  final local = date.toLocal();
-  return '${months[local.month - 1]} ${local.day}, ${local.year}';
-}
+String _formatDate(BuildContext context, DateTime date) =>
+    MaterialLocalizations.of(context).formatMediumDate(date.toLocal());
+
+String _errorMessage(BuildContext context, LessonHistoryStatus status) =>
+    switch (status) {
+      LessonHistoryStatus.validation => context.l10n.lessonUnavailable,
+      LessonHistoryStatus.notFound => context.l10n.lessonNoLongerAvailable,
+      LessonHistoryStatus.unavailable => context.l10n.lessonHistoryUnavailable,
+      LessonHistoryStatus.failed ||
+      LessonHistoryStatus.success =>
+        context.l10n.lessonDetailLoadFailed,
+      LessonHistoryStatus.authRequired => context.l10n.lessonDetailLoadFailed,
+    };

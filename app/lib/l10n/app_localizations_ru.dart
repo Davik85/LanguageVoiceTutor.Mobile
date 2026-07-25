@@ -1561,4 +1561,49 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get lessonContentLoadFailed =>
       'Не удалось загрузить содержание урока. Попробуйте ещё раз.';
+
+  @override
+  String get lessonHistoryDetails => 'Сведения об уроке';
+
+  @override
+  String get historySummary => 'Итоги';
+
+  @override
+  String get noHistoryConversation =>
+      'Для этого урока нет доступного разговора.';
+
+  @override
+  String get noHistorySummary => 'Для этого урока нет доступных итогов.';
+
+  @override
+  String get overallSummary => 'Общие итоги';
+
+  @override
+  String get historyTutor => 'Преподаватель';
+
+  @override
+  String get historyYou => 'Вы';
+
+  @override
+  String get feedbackCorrectedText => 'Исправленный текст';
+
+  @override
+  String get feedbackExplanation => 'Пояснение';
+
+  @override
+  String get feedbackPraise => 'Похвала';
+
+  @override
+  String get lessonUnavailable => 'Этот урок недоступен.';
+
+  @override
+  String get lessonNoLongerAvailable => 'Этот урок больше недоступен.';
+
+  @override
+  String get lessonHistoryUnavailable =>
+      'История уроков временно недоступна. Попробуйте ещё раз.';
+
+  @override
+  String get lessonDetailLoadFailed =>
+      'Не удалось загрузить сведения об уроке. Попробуйте ещё раз.';
 }

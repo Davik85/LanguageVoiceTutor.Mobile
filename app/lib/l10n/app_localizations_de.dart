@@ -1562,4 +1562,51 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get lessonContentLoadFailed =>
       'Der Lektionsinhalt konnte nicht geladen werden. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get lessonHistoryDetails => 'Lektionsdetails';
+
+  @override
+  String get historySummary => 'Zusammenfassung';
+
+  @override
+  String get noHistoryConversation =>
+      'Für diese Lektion ist keine Unterhaltung verfügbar.';
+
+  @override
+  String get noHistorySummary =>
+      'Für diese Lektion ist keine Zusammenfassung verfügbar.';
+
+  @override
+  String get overallSummary => 'Gesamtzusammenfassung';
+
+  @override
+  String get historyTutor => 'Tutor';
+
+  @override
+  String get historyYou => 'Sie';
+
+  @override
+  String get feedbackCorrectedText => 'Korrigierter Text';
+
+  @override
+  String get feedbackExplanation => 'Erklärung';
+
+  @override
+  String get feedbackPraise => 'Lob';
+
+  @override
+  String get lessonUnavailable => 'Diese Lektion ist nicht verfügbar.';
+
+  @override
+  String get lessonNoLongerAvailable =>
+      'Diese Lektion ist nicht mehr verfügbar.';
+
+  @override
+  String get lessonHistoryUnavailable =>
+      'Der Lektionsverlauf ist vorübergehend nicht verfügbar. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get lessonDetailLoadFailed =>
+      'Die Lektionsdetails konnten nicht geladen werden. Bitte versuchen Sie es erneut.';
 }

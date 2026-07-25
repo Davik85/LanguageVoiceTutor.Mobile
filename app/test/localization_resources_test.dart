@@ -26,6 +26,8 @@ void main() {
     // These placeholder-only accessibility templates are language-neutral.
     'topicCardSemantics',
     'situationCardSemantics',
+    // Spanish uses the same established tutor loanword.
+    'historyTutor',
     // Intentional compact English-only mobile voice-control labels.
     'autoSendMessage',
     'autoPlayTutorVoice',
