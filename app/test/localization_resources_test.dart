@@ -4,7 +4,21 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  const languages = ['en', 'ru', 'es', 'fr', 'de', 'it', 'pt', 'pt_PT', 'bg'];
+  const languages = [
+    'en',
+    'ru',
+    'es',
+    'fr',
+    'de',
+    'it',
+    'pt',
+    'pt_PT',
+    'bg',
+    'hr',
+    'sr',
+    'sr_Latn',
+    'pl',
+  ];
   const sharedEnglishExceptions = {
     'appTitle',
     'premium',
@@ -31,8 +45,11 @@ void main() {
     'bg': {'premiumOk'},
   };
   final temporaryMarker = RegExp(
-    r'^\s*(?:\[(?:it|pt|bg)\]\s*|(?:TODO|FIXME|TRANSLATE)\b)',
+    r'^\s*(?:\[(?:it|pt|bg|hr|sr|sr_Latn|pl)\]\s*|(?:FIXME|TRANSLATE)\b)',
+    caseSensitive: false,
   );
+  // Keep TODO uppercase-only so Spanish “Todo” (All time) remains valid.
+  final todoMarker = RegExp(r'^\s*TODO\b');
   final placeholder = RegExp(r'\{([A-Za-z_][A-Za-z0-9_]*)(?=,|\})');
 
   Map<String, dynamic> arb(String language) => jsonDecode(
@@ -67,7 +84,8 @@ void main() {
         expect(value, isA<String>(), reason: '$language.$key must be text');
         expect((value as String).trim(), isNotEmpty,
             reason: '$language.$key must not be blank');
-        expect(temporaryMarker.hasMatch(value), isFalse,
+        expect(temporaryMarker.hasMatch(value) || todoMarker.hasMatch(value),
+            isFalse,
             reason: '$language.$key contains a temporary marker');
         expect(placeholders(value), placeholders(english[key] as String),
             reason: '$language.$key must preserve placeholder names');
@@ -101,5 +119,24 @@ void main() {
     final portuguesePortugal = arb('pt_PT')..remove('@@locale');
 
     expect(portuguese, portuguesePortugal);
+  });
+
+  test('Serbian fallback and Latin Serbian ARBs only differ by locale', () {
+    final serbian = arb('sr')..remove('@@locale');
+    final serbianLatin = arb('sr_Latn')..remove('@@locale');
+
+    expect(serbian, serbianLatin);
+  });
+
+  test('Serbian ARBs contain only Latin-script text', () {
+    final cyrillic = RegExp(r'[\u0400-\u04FF]');
+
+    for (final language in ['sr', 'sr_Latn']) {
+      final resource = arb(language);
+      for (final key in messageKeys(resource)) {
+        expect(cyrillic.hasMatch(resource[key] as String), isFalse,
+            reason: '$language.$key must not contain Cyrillic text');
+      }
+    }
   });
 }

@@ -28,7 +28,7 @@ void main() {
   });
 
   test('unsupported explanation language safely displays English', () {
-    final controller = AppLocaleController()..setLanguageId('pl');
+    final controller = AppLocaleController()..setLanguageId('unsupported');
     expect(controller.locale.languageCode, 'en');
   });
 
@@ -46,15 +46,32 @@ void main() {
 
     controller.setLanguageId('bg');
     expect(controller.locale, const Locale('bg'));
+
+    controller.setLanguageId('hr');
+    expect(controller.locale, const Locale('hr'));
+
+    controller.setLanguageId('sr');
+    expect(
+      controller.locale,
+      const Locale.fromSubtags(languageCode: 'sr', scriptCode: 'Latn'),
+    );
+
+    controller.setLanguageId('pl');
+    expect(controller.locale, const Locale('pl'));
   });
 
-  test('application supported locales contain only the approved eight locales',
+  test('application supported locales contain only the approved eleven locales',
       () {
     const portuguesePortugal = Locale.fromSubtags(
       languageCode: 'pt',
       countryCode: 'PT',
     );
     const genericPortuguese = Locale('pt');
+    const serbianLatin = Locale.fromSubtags(
+      languageCode: 'sr',
+      scriptCode: 'Latn',
+    );
+    const genericSerbian = Locale('sr');
     final expected = {
       const Locale('en'),
       const Locale('ru'),
@@ -64,26 +81,41 @@ void main() {
       const Locale('it'),
       portuguesePortugal,
       const Locale('bg'),
+      const Locale('hr'),
+      serbianLatin,
+      const Locale('pl'),
     };
 
     expect(AppLocaleController.supportedLocales.toSet(), expected);
-    expect(AppLocaleController.supportedLocales, hasLength(8));
+    expect(AppLocaleController.supportedLocales, hasLength(11));
     expect(AppLocaleController.supportedLocales, contains(portuguesePortugal));
     expect(AppLocaleController.supportedLocales,
         isNot(contains(genericPortuguese)));
+    expect(AppLocaleController.supportedLocales, contains(serbianLatin));
+    expect(
+        AppLocaleController.supportedLocales, isNot(contains(genericSerbian)));
   });
 
-  test('generated Portuguese fallback is not a selectable application locale',
-      () {
+  test('generated fallback locales are not selectable application locales', () {
     const portuguesePortugal = Locale.fromSubtags(
       languageCode: 'pt',
       countryCode: 'PT',
     );
     const genericPortuguese = Locale('pt');
+    const serbianLatin = Locale.fromSubtags(
+      languageCode: 'sr',
+      scriptCode: 'Latn',
+    );
+    const genericSerbian = Locale('sr');
 
     expect(AppLocalizations.supportedLocales, contains(genericPortuguese));
     expect(AppLocalizations.supportedLocales, contains(portuguesePortugal));
+    expect(AppLocalizations.supportedLocales, contains(genericSerbian));
+    expect(AppLocalizations.supportedLocales, contains(serbianLatin));
+    expect(AppLocalizations.supportedLocales, hasLength(13));
     expect(AppLocaleController.supportedLocales,
         isNot(contains(genericPortuguese)));
+    expect(
+        AppLocaleController.supportedLocales, isNot(contains(genericSerbian)));
   });
 }

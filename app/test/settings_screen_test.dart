@@ -720,6 +720,39 @@ void main() {
     expect(find.text('B2 Upper-Intermediate'), findsOneWidget);
   });
 
+  testWidgets('Polish current-level dropdown fits a narrow screen',
+      (tester) async {
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.binding.setSurfaceSize(const Size(360, 800));
+    final auth = FakeAuthService(
+      initialSettings: const UserSettings(
+        nativeLanguage: 'en',
+        studyLanguage: 'es',
+        explanationLanguage: 'pl',
+        speechVoice: 'nova',
+        speechSpeed: 1.0,
+        conversationModeEnabled: true,
+        selectedTutorId: 'nelli',
+        currentLevel: 'A2',
+      ),
+    );
+
+    await tester.pumpWidget(_screen(auth, locale: const Locale('pl')));
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, 'Obecny poziom');
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('A2 podstawowy'), findsOneWidget);
+
+    final levelDropdown = find.byType(DropdownButtonFormField<String>).first;
+    expect(levelDropdown, findsOneWidget);
+    await tester.tap(levelDropdown);
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('B2 średnio zaawansowany wyższy'), findsOneWidget);
+  });
+
   testWidgets('selecting a level waits for save and sends canonical uppercase',
       (tester) async {
     final auth = FakeAuthService();

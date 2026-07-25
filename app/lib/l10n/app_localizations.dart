@@ -10,9 +10,12 @@ import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
 import 'app_localizations_es.dart';
 import 'app_localizations_fr.dart';
+import 'app_localizations_hr.dart';
 import 'app_localizations_it.dart';
+import 'app_localizations_pl.dart';
 import 'app_localizations_pt.dart';
 import 'app_localizations_ru.dart';
+import 'app_localizations_sr.dart';
 
 // ignore_for_file: type=lint
 
@@ -105,10 +108,14 @@ abstract class AppLocalizations {
     Locale('en'),
     Locale('es'),
     Locale('fr'),
+    Locale('hr'),
     Locale('it'),
+    Locale('pl'),
     Locale('pt'),
     Locale('pt', 'PT'),
-    Locale('ru')
+    Locale('ru'),
+    Locale('sr'),
+    Locale.fromSubtags(languageCode: 'sr', scriptCode: 'Latn')
   ];
 
   /// No description provided for @appTitle.
@@ -2846,9 +2853,12 @@ class _AppLocalizationsDelegate
         'en',
         'es',
         'fr',
+        'hr',
         'it',
+        'pl',
         'pt',
-        'ru'
+        'ru',
+        'sr'
       ].contains(locale.languageCode);
 
   @override
@@ -2856,6 +2866,18 @@ class _AppLocalizationsDelegate
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
+  // Lookup logic when language+script codes are specified.
+  switch (locale.languageCode) {
+    case 'sr':
+      {
+        switch (locale.scriptCode) {
+          case 'Latn':
+            return AppLocalizationsSrLatn();
+        }
+        break;
+      }
+  }
+
   // Lookup logic when language+country codes are specified.
   switch (locale.languageCode) {
     case 'pt':
@@ -2880,12 +2902,18 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsEs();
     case 'fr':
       return AppLocalizationsFr();
+    case 'hr':
+      return AppLocalizationsHr();
     case 'it':
       return AppLocalizationsIt();
+    case 'pl':
+      return AppLocalizationsPl();
     case 'pt':
       return AppLocalizationsPt();
     case 'ru':
       return AppLocalizationsRu();
+    case 'sr':
+      return AppLocalizationsSr();
   }
 
   throw FlutterError(

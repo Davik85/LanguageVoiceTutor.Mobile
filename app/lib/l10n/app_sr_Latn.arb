@@ -1,0 +1,662 @@
+{
+  "@@locale": "sr_Latn",
+  "appTitle": "Language Voice Tutor",
+  "settings": "Podešavanja",
+  "profile": "Profil",
+  "app": "Aplikacija",
+  "saveSettings": "Sačuvaj podešavanja",
+  "saving": "Čuvanje...",
+  "settingsSaved": "Podešavanja su sačuvana.",
+  "unableToSaveSettings": "Trenutno nije moguće sačuvati podešavanja.",
+  "learning": "Učenje",
+  "studyLanguage": "Jezik za učenje",
+  "nativeLanguage": "Maternji jezik",
+  "interfaceLanguage": "Jezik interfejsa",
+  "interfaceExplanationLanguage": "Jezik interfejsa / objašnjenja",
+  "interfaceLanguageDescription": "Menja samo jezik interfejsa aplikacije.",
+  "currentLevel": "Trenutni nivo",
+  "selectedTutor": "Izabrani tutor",
+  "loadingSettings": "Učitavanje podešavanja...",
+  "unableToLoadSettings": "Trenutno nije moguće učitati podešavanja.",
+  "retry": "Pokušajte ponovo",
+  "back": "Nazad",
+  "login": "Prijava",
+  "register": "Registracija",
+  "email": "E-pošta",
+  "password": "Lozinka",
+  "displayNameOptional": "Prikazano ime (opciono)",
+  "signIn": "Prijavite se",
+  "createAccount": "Napravite nalog",
+  "unableToCheckSession": "Trenutno nije moguće proveriti sesiju. Pokušajte ponovo.",
+  "lessons": "Lekcije",
+  "lessonHistory": "Istorija lekcija",
+  "progress": "Napredak",
+  "rewards": "Nagrade",
+  "viewAll": "Prikaži sve",
+  "achievements": "Dostignuća",
+  "account": "Nalog",
+  "logout": "Odjava",
+  "audio": "Zvuk",
+  "feedbackAndReports": "Povratne informacije i izveštaji",
+  "cancel": "Otkaži",
+  "submit": "Pošalji",
+  "send": "Pošalji",
+  "done": "Gotovo",
+  "openAndroidSettings": "Otvori Android podešavanja",
+  "hint": "Savet",
+  "finishLesson": "Završi lekciju",
+  "typeYourMessage": "Unesite poruku",
+  "sending": "Slanje...",
+  "languageNameEnglish": "Engleski",
+  "languageNameRussian": "Ruski",
+  "languageNameSpanish": "Španski",
+  "languageNameFrench": "Francuski",
+  "languageNameGerman": "Nemački",
+  "signInToApp": "Prijavite se u Language Voice Tutor",
+  "pleaseWait": "Sačekajte...",
+  "alreadyHaveAccount": "Već imam nalog",
+  "invalidEmail": "Unesite važeću e-mail adresu.",
+  "enterPassword": "Unesite lozinku.",
+  "chooseTopic": "Odaberite temu",
+  "chooseTopicTitle": "Odaberite temu",
+  "chooseTopicSubtitle": "Odaberite vrstu razgovora koju želite da vežbate.",
+  "chooseSituation": "Odaberite situaciju",
+  "chooseSituationTitle": "Odaberite situaciju",
+  "chooseSituationSubtitle": "Vežbajte jedan određeni trenutak iz ove teme.",
+  "viewAllRewards": "Pogledajte sve značke i nagrade za učenje.",
+  "accountDeletion": "Brisanje naloga",
+  "requestAccountDeletion": "Zahtev za brisanje naloga",
+  "loadingAccount": "Učitavanje naloga...",
+  "premiumAndSubscription": "Premium i pretplata",
+  "currentPassword": "Trenutna lozinka",
+  "reasonOptional": "Razlog (opciono)",
+  "submitting": "Slanje...",
+  "loadingTutors": "Učitavanje tutora...",
+  "noTutorsAvailable": "Trenutno nema dostupnih tutora.",
+  "loadingAudioSettings": "Učitavanje zvučnih podešavanja...",
+  "conversationModeEnabled": "Režim razgovora je omogućen",
+  "sendSuggestionOrReport": "Pošaljite predlog ili prijavite problem",
+  "reportType": "Vrsta prijave",
+  "pasteAiResponseOptional": "Nalepite AI odgovor (opciono)",
+  "lessonHistoryHeading": "Vaše nedavno završene lekcije",
+  "noCompletedLessons": "Još nema završenih lekcija",
+  "completedLessonsAppearHere": "Završene lekcije će se pojaviti ovde.",
+  "backToHome": "Nazad na početnu",
+  "lesson": "Lekcija",
+  "level": "Nivo",
+  "completed": "Završeno",
+  "finished": "Dovršeno",
+  "lessonChat": "Ćaskanje u lekciji",
+  "conversation": "Razgovor",
+  "turnCount": "{count, plural, =1{1 poruka} other{{count} poruka}}",
+  "@turnCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "achievementsUnavailable": "Još nema dostupnih dostignuća.",
+  "unlockedCount": "Otključano {unlocked} od {total}",
+  "@unlockedCount": {
+    "placeholders": {
+      "unlocked": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "learningLanguage": "Učenje jezika {language}",
+  "@learningLanguage": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "streaks": "Nizovi",
+  "lessonMilestones": "Prekretnice lekcija",
+  "topics": "Teme",
+  "situations": "Situacije",
+  "otherAchievements": "Ostala dostignuća",
+  "progressCount": "{current} od {total}",
+  "@progressCount": {
+    "placeholders": {
+      "current": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "startLesson": "Pokreni lekciju",
+  "openSettings": "Otvori podešavanja",
+  "keepLearningRhythm": "Održite ritam učenja",
+  "reminderPermissionExplanation": "Language Voice Tutor može da pošalje dva vesela dnevna podsetnika kako se vežbanje ne bi izgubilo u užurbanom danu. Vreme možete promeniti ili isključiti podsetnike u Podešavanjima.",
+  "notNow": "Ne sada",
+  "allowReminders": "Dozvoli podsetnike",
+  "achievementsTemporarilyUnavailable": "Dostignuća su privremeno nedostupna",
+  "achievementsEmpty": "Vaša dostignuća će se pojaviti ovde.",
+  "learningStreak": "{count, plural, =1{Niz učenja od 1 dana} other{Niz učenja od {count} dana}}",
+  "@learningStreak": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "learningStreakLoading": "Učitavanje niza učenja",
+  "learningStreakUnavailable": "Niz učenja nije dostupan",
+  "learnerFallbackName": "Učenik",
+  "premiumPlan": "Plan Premium",
+  "premiumTrial": "Premium probni period",
+  "freePlan": "Besplatan plan",
+  "signedInAs": "Prijavljeni ste kao {name}",
+  "@signedInAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumDetails": "Detalji o Premiumu",
+  "explorePremium": "Istražite Premium",
+  "freeLessonsAvailableToday": "{count, plural, =1{Danas je dostupna 1 besplatna lekcija} other{Danas su dostupne {count} besplatne lekcije}}",
+  "@freeLessonsAvailableToday": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "yourWeek": "Vaša nedelja",
+  "lessonsLastSevenDays": "{count, plural, =1{1 lekcija u poslednjih 7 dana} other{{count} lekcija u poslednjih 7 dana}}",
+  "@lessonsLastSevenDays": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "startStreakToday": "Pokrenite niz danas",
+  "activityUnavailable": "Aktivnost trenutno nije dostupna.",
+  "lessonsCompleted": "{count, plural, =1{1 završena lekcija} other{{count} završene lekcije}}",
+  "@lessonsCompleted": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "activityDaySemantics": "{date}: {count, plural, =1{1 završena lekcija} other{{count} završene lekcije}}",
+  "@activityDaySemantics": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "weekdayMon": "Pon",
+  "weekdayTue": "Uto",
+  "weekdayWed": "Sre",
+  "weekdayThu": "Čet",
+  "weekdayFri": "Pet",
+  "weekdaySat": "Sub",
+  "weekdaySun": "Ned",
+  "remindersTemporarilyUnavailable": "Podsetnici za vežbanje trenutno nisu dostupni.",
+  "unableToUpdateReminders": "Trenutno nije moguće ažurirati podsetnike. Pokušajte ponovo.",
+  "unableToLoadAccount": "Trenutno nije moguće učitati podatke o nalogu.",
+  "tutorChoicesUnavailable": "Izbor tutora trenutno nije dostupan. I dalje možete pregledati i sačuvati ostala podešavanja.",
+  "pleaseEnterDescription": "Unesite opis.",
+  "emailRequired": "Imejl je obavezan.",
+  "resetCodePasswordRequired": "Kod za resetovanje i nova lozinka su obavezni.",
+  "passwordsMustMatch": "Nova lozinka i potvrda moraju da se podudaraju.",
+  "signInToChangePassword": "Prijavite se da biste promenili lozinku.",
+  "currentPasswordRequired": "Trenutna lozinka je obavezna.",
+  "accountDeletionDescription": "Pošaljite zahtev za trajno brisanje naloga Language Voice Tutor i ličnih podataka.",
+  "accountDeletionNotice": "Slanjem ovog zahteva vaš nalog se ne briše odmah. Podrška će ga pregledati i obraditi i možda će tražiti dodatne informacije. Odgovor će biti poslat na imejl adresu povezanu sa vašim nalogom. Vaš nalog se ne smatra obrisanim samo zato što ste poslali ovaj zahtev.",
+  "noDisplayName": "Nema prikazanog imena",
+  "subscriptionUnavailable": "Pretplata nije dostupna",
+  "noPaidPlan": "Nema plaćenog plana",
+  "requestId": "ID zahteva: {id}",
+  "@requestId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "statusValue": "Stanje: {status}",
+  "@statusValue": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "passwordRecovery": "Lozinka i oporavak",
+  "accountEmail": "Imejl naloga",
+  "sendingResetInstructions": "Slanje uputstava za resetovanje...",
+  "forgotPassword": "Zaboravljena lozinka",
+  "resetCode": "Kod za resetovanje",
+  "newPassword": "Nova lozinka",
+  "confirmNewPassword": "Potvrdite novu lozinku",
+  "updatingPassword": "Ažuriranje lozinke...",
+  "resetPassword": "Resetuj lozinku",
+  "newAccountPassword": "Lozinka za novi nalog",
+  "confirmNewAccountPassword": "Potvrdite lozinku za novi nalog",
+  "changingPassword": "Promena lozinke...",
+  "changePassword": "Promeni lozinku",
+  "tutorVoice": "Glas tutora",
+  "speechSpeed": "Brzina govora: {speed}x",
+  "@speechSpeed": {
+    "placeholders": {
+      "speed": {
+        "type": "String"
+      }
+    }
+  },
+  "feedbackSuggestion": "Predlog",
+  "feedbackAppProblem": "Problem sa aplikacijom",
+  "feedbackAiResponse": "Odgovor veštačke inteligencije",
+  "yourSuggestion": "Vaš predlog",
+  "describeProblem": "Opišite problem",
+  "aiResponseProblem": "Šta nije u redu sa odgovorom veštačke inteligencije?",
+  "practiceReminders": "Podsetnici za vežbanje",
+  "localRemindersDescription": "Ovi podsetnici važe samo za ovaj uređaj.",
+  "dailyPracticeReminders": "Dnevni podsetnici za vežbanje",
+  "morningReminder": "Jutarnji podsetnik",
+  "eveningReminder": "Večernji podsetnik",
+  "notificationsAllowed": "Obaveštenja dozvoljena",
+  "notificationStatusUnavailable": "Status obaveštenja nije dostupan",
+  "notificationsBlocked": "Android blokira obaveštenja.",
+  "allowNotifications": "Dozvoli obaveštenja",
+  "feedbackReceived": "Hvala. Vaša poruka je primljena.",
+  "feedbackValidationFailure": "Proverite poruku i pokušajte ponovo.",
+  "feedbackUnavailable": "Povratne informacije trenutno nisu dostupne. Pokušajte ponovo.",
+  "deletionRequestAlreadyExists": "Aktivan zahtev za brisanje naloga već postoji.",
+  "deletionRequestSubmitted": "Vaš zahtev za brisanje naloga poslat je podršci na obradu.",
+  "incorrectCurrentPassword": "Vaša trenutna lozinka nije ispravna.",
+  "unableToReachService": "Nije moguće povezati se sa uslugom. Pokušajte ponovo.",
+  "unexpectedServiceResponse": "Usluga je vratila neočekivan odgovor. Pokušajte ponovo.",
+  "unableToSubmitRequest": "Trenutno nije moguće poslati zahtev. Pokušajte ponovo.",
+  "unableToLoadLearningSettings": "Trenutno nije moguće učitati podešavanja za učenje. Pokušajte ponovo.",
+  "settingsTemporarilyUnavailable": "Podešavanja trenutno nisu dostupna. Pokušajte ponovo.",
+  "selectedLevelContext": "Nivo: {level}",
+  "@selectedLevelContext": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "selectedLevelTopicContext": "Nivo: {level} / Tema: {topic}",
+  "@selectedLevelTopicContext": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      },
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "topicCardSemantics": "{label}. {description}",
+  "@topicCardSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "situationCardSemantics": "{label}. {description}",
+  "@situationCardSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "openTopicTooltip": "Otvori {topic}",
+  "@openTopicTooltip": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "openSituationTooltip": "Otvori {situation}",
+  "@openSituationTooltip": {
+    "placeholders": {
+      "situation": {
+        "type": "String"
+      }
+    }
+  },
+  "noSituationsAvailable": "Nema dostupnih situacija za ovu temu.",
+  "levelA1Label": "A1 početnik",
+  "levelA1Description": "Savladajte jednostavne pozdrave, izražavanje potreba i kratke svakodnevne odgovore.",
+  "levelA2Label": "A2 osnovni",
+  "levelA2Description": "Vodite uobičajene razgovore koristeći poznate reči i izraze.",
+  "levelB1Label": "B1 srednji",
+  "levelB1Description": "Vežbajte duže razgovore, izražavanje mišljenja i rešavanje svakodnevnih problema.",
+  "levelB2Label": "B2 viši srednji",
+  "levelB2Description": "Usavršite nijansirane razgovore sa prirodnijim detaljima.",
+  "topicDailyLifeLabel": "Svakodnevni život",
+  "topicDailyLifeDescription": "Neobavezni razgovori, upoznavanja i svakodnevne situacije.",
+  "topicTravelLabel": "Putovanja",
+  "topicTravelDescription": "Aerodromi, hoteli, uputstva i prevoz.",
+  "topicWorkBusinessLabel": "Posao i biznis",
+  "topicWorkBusinessDescription": "Sastanci, imejlovi, pozivi i razgovori na poslu.",
+  "topicJobInterviewLabel": "Razgovor za posao",
+  "topicJobInterviewDescription": "Vežbajte uobičajena pitanja i odgovore na razgovoru za posao.",
+  "topicRestaurantCafeLabel": "Restoran i kafić",
+  "topicRestaurantCafeDescription": "Naručivanje hrane, rezervisanje stolova i ljubazni zahtevi.",
+  "topicFreeConversationLabel": "Slobodan razgovor",
+  "topicFreeConversationDescription": "Otvorena vežba prilagođena onome što želite da kažete.",
+  "situationIntroductionsLabel": "Predstavljanje",
+  "situationIntroductionsDescription": "Predstavite se i postavite osnovna lična pitanja.",
+  "situationSmallTalkNeighborLabel": "Razgovarajte sa komšijom",
+  "situationSmallTalkNeighborDescription": "Vodite kratak prijateljski razgovor u kraju.",
+  "situationAskingForHelpLabel": "Zatražite pomoć",
+  "situationAskingForHelpDescription": "Zatražite pomoć u jednostavnoj svakodnevnoj situaciji.",
+  "situationMakingPlansLabel": "Dogovorite planove",
+  "situationMakingPlansDescription": "Isplanirajte aktivnost i dogovorite vreme i mesto.",
+  "situationTalkingAboutDayLabel": "Pričajte o svom danu",
+  "situationTalkingAboutDayDescription": "Opišite svoj dan i svakodnevnu rutinu.",
+  "situationAirportCheckInLabel": "Prijava na aerodromu",
+  "situationAirportCheckInDescription": "Prijavite se za let i potvrdite detalje putovanja.",
+  "situationHotelCheckInLabel": "Prijava u hotelu",
+  "situationHotelCheckInDescription": "Prijavite se u hotel i postavite uobičajena pitanja.",
+  "situationAskingForDirectionsLabel": "Pitajte za put",
+  "situationAskingForDirectionsDescription": "Pitajte za i razumite uputstva u novom gradu.",
+  "situationOrderingTransportLabel": "Naručite prevoz",
+  "situationOrderingTransportDescription": "Organizujte taksi ili deljenu vožnju do odredišta.",
+  "situationLostLuggageLabel": "Izgubljeni prtljag",
+  "situationLostLuggageDescription": "Prijavite izgubljeni prtljag i objasnite svoju situaciju.",
+  "situationFirstMeetingLabel": "Prvi sastanak",
+  "situationFirstMeetingDescription": "Predstavite se na novom poslovnom sastanku.",
+  "situationDailyStandupLabel": "Dnevni kratki sastanak",
+  "situationDailyStandupDescription": "Dajte kratko ažuriranje o svojim zadacima.",
+  "situationClientPhoneCallLabel": "Telefonski poziv sa klijentom",
+  "situationClientPhoneCallDescription": "Obavite ljubazan i jasan poslovni poziv.",
+  "situationAskingForClarificationLabel": "Zatražite pojašnjenje",
+  "situationAskingForClarificationDescription": "Postavite dodatna pitanja da biste potvrdili zahteve.",
+  "situationDiscussingDeadlinesLabel": "Razgovarajte o rokovima",
+  "situationDiscussingDeadlinesDescription": "Razgovarajte o rasporedu i očekivanjima isporuke.",
+  "situationTellMeAboutYourselfLabel": "Recite nešto o sebi",
+  "situationTellMeAboutYourselfDescription": "Predstavite se kratko i relevantno, kao na razgovoru za posao.",
+  "situationWorkExperienceLabel": "Radno iskustvo",
+  "situationWorkExperienceDescription": "Opišite prethodni rad, odgovornosti i jedan rezultat.",
+  "situationStrengthsWeaknessesLabel": "Prednosti i mane",
+  "situationStrengthsWeaknessesDescription": "Profesionalno razgovarajte o jednoj prednosti i jednoj oblasti za poboljšanje.",
+  "situationWhyThisJobLabel": "Zašto želite ovaj posao?",
+  "situationWhyThisJobDescription": "Objasnite svoju motivaciju i povežite radno mesto sa svojim veštinama.",
+  "situationQuestionsAtEndLabel": "Postavite pitanja na kraju",
+  "situationQuestionsAtEndDescription": "Postavite ljubazna, korisna pitanja pre završetka razgovora za posao.",
+  "situationBookingTableLabel": "Rezervišite sto",
+  "situationBookingTableDescription": "Pozovite ili se obratite osoblju da biste rezervisali sto.",
+  "situationOrderingFoodLabel": "Naručite hranu",
+  "situationOrderingFoodDescription": "Naručite obrok i postavite jednostavna pitanja o meniju.",
+  "situationAskingIngredientsLabel": "Pitajte o sastojcima",
+  "situationAskingIngredientsDescription": "Pitajte o alergijama i sastojcima jela.",
+  "situationWrongOrderLabel": "Rešite pogrešnu porudžbinu",
+  "situationWrongOrderDescription": "Ljubazno objasnite problem sa porudžbinom.",
+  "situationPayingBillLabel": "Platite račun",
+  "situationPayingBillDescription": "Zatražite račun i završite plaćanje.",
+  "situationOpenConversationLabel": "Otvoreni razgovor",
+  "situationOpenConversationDescription": "Vežbajte bilo koju temu uz fleksibilna dodatna pitanja.",
+  "premium": "Premium",
+  "premiumStatusLoadingSemantics": "Učitavanje Premium statusa",
+  "premiumStatusTemporarilyUnavailable": "Premium status trenutno nije dostupan. Pokušajte ponovo.",
+  "premiumStatusSemantics": "Stanje usluge Premium: {status}",
+  "@premiumStatusSemantics": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumActive": "Premium je aktivan",
+  "premiumActiveDescription": "Vežbajte bez dnevnog ograničenja besplatnih lekcija.",
+  "premiumEndsOn": "Premium ističe {date}.",
+  "@premiumEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumTrialActiveDescription": "Vaša Premium probna verzija je aktivna.",
+  "premiumTrialEndsOn": "Probni period ističe {date}.",
+  "@premiumTrialEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "freeLessonsRemainingToday": "{count, plural, =0{Danas nema preostalih besplatnih lekcija.} one{Danas je preostala {count} besplatna lekcija.} few{Danas su preostale {count} besplatne lekcije.} other{Danas je preostalo {count} besplatnih lekcija.}}",
+  "@freeLessonsRemainingToday": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "premiumRemovesDailyLimit": "Premium uklanja dnevno ograničenje lekcija.",
+  "premiumAccountLinked": "Premium pristup je povezan sa vašim nalogom Language Voice Tutor.",
+  "premiumSharedAcrossClients": "Vaš potvrđeni Premium status deli se među podržanim Language Voice Tutor klijentima.",
+  "premiumBenefits": "Prednosti usluge Premium",
+  "premiumBenefitDailyLimit": "• Vežbajte bez dnevnog ograničenja besplatnih lekcija",
+  "premiumBenefitAcrossDevices": "• Koristite isti Premium pristup na podržanim uređajima",
+  "premiumBenefitAccountData": "• Držite nalog, napredak, istoriju i podešavanja za učenje zajedno",
+  "getPremium": "Nabavite Premium",
+  "restorePurchases": "Vrati kupovine",
+  "refreshPremiumStatus": "Osveži stanje",
+  "billingProviderExplanation": "Promene naplate moraju se rešavati preko pružaoca usluge kod kog je Premium kupljen.",
+  "googlePlayPurchasesUnavailableTitle": "Google Play kupovine još nisu dostupne",
+  "restorePurchasesUnavailableTitle": "Vraćanje kupovina još nije dostupno",
+  "googlePlayPurchasesUnavailableDescription": "Kupovine će biti povezane u sledećem koraku. Ova verzija ne može da vam naplati niti aktivira Premium.",
+  "restorePurchasesUnavailableDescription": "Vraćanje kupovina preko Google Playa biće povezano sa procesom naplate. Trenutni status naloga se i dalje učitava iz aplikacije Language Voice Tutor.",
+  "purchasePendingConfirmation": "Obrada kupovine još nije potvrđena. Uskoro ponovo osvežite stanje.",
+  "purchaseActionFailed": "Trenutno nije moguće dovršiti taj zahtev. Pokušajte ponovo.",
+  "premiumOk": "U redu",
+  "leaveLessonTitle": "Napustiti lekciju?",
+  "leaveLessonDescription": "Napustite li lekciju, ona će se završiti bez sažetka.",
+  "stay": "Ostanite",
+  "leaveLesson": "Napustite lekciju",
+  "finishLessonTitle": "Završiti lekciju?",
+  "finishLessonDescription": "Završiti ovu lekciju i pogledati sažetak?",
+  "continueLesson": "Nastavite lekciju",
+  "gettingHint": "Preuzimanje saveta...",
+  "dismissHint": "Sakrij savet",
+  "finishingLesson": "Završavanje lekcije...",
+  "finishLessonAuthRequired": "Prijavite se ponovo da biste završili lekciju.",
+  "finishLessonSessionUnavailable": "Ova sesija lekcije više nije dostupna.",
+  "finishLessonFailed": "Nije moguće završiti lekciju. Proverite vezu i pokušajte ponovo.",
+  "lessonFeedback": "Povratne informacije",
+  "loadingLessonFeedback": "Učitavanje povratnih informacija...",
+  "showLessonFeedback": "Prikaži povratne informacije",
+  "hideLessonFeedback": "Sakrij povratne informacije",
+  "retryLessonFeedback": "Pokušaj ponovo da dobiješ povratne informacije",
+  "feedbackNotReady": "Povratne informacije još nisu spremne. Pokušajte ponovo.",
+  "feedbackQuickSummary": "Kratak sažetak",
+  "feedbackCorrectedVersion": "Ispravljena verzija",
+  "feedbackGrammarTip": "Gramatički savet",
+  "feedbackVocabularyTip": "Savet za vokabular",
+  "feedbackCultureTip": "Kulturni savet",
+  "feedbackNaturalVersion": "Prirodnija verzija",
+  "lessonFeedbackAuthRequired": "Prijavite se ponovo da biste nastavili lekciju.",
+  "lessonFeedbackSessionEnded": "Ova lekcija je već završena.",
+  "lessonFeedbackNotAvailableForMessage": "Povratne informacije nisu dostupne za ovu poruku.",
+  "lessonFeedbackFailed": "Nije moguće dobiti povratne informacije. Pokušajte ponovo.",
+  "lessonStartBlocked": "Iskoristili ste današnju besplatnu lekciju. Pokušajte ponovo sutra ili nadogradite.",
+  "lessonStartConflict": "Već imate aktivnu lekciju. Završite je ili je napustite pre pokretanja nove.",
+  "lessonStartAuthRequired": "Prijavite se ponovo da biste pokrenuli lekciju.",
+  "lessonStartUnavailable": "Nije moguće pokrenuti lekciju. Proverite vezu i pokušajte ponovo.",
+  "lessonStartFailed": "Nije moguće pokrenuti lekciju. Pokušajte ponovo.",
+  "lessonSummary": "Sažetak lekcije",
+  "lessonCompleted": "Lekcija je završena",
+  "summaryWhatWentWell": "Šta je bilo dobro",
+  "summaryStrengths": "Prednosti",
+  "summaryImprovements": "Oblasti za poboljšanje",
+  "summaryVocabulary": "Rečnik",
+  "summaryGrammar": "Gramatika",
+  "summaryNextSteps": "Sledeći koraci",
+  "retrySummary": "Pokušaj ponovo da napraviš sažetak",
+  "summaryUnavailableMessage": "Lekcija je sačuvana, ali nije moguće napraviti sažetak za ovu lekciju.",
+  "summaryAuthRequiredMessage": "Prijavite se ponovo da biste učitali sažetak lekcije.",
+  "summaryLoadErrorMessage": "Lekcija je sačuvana, ali trenutno nije moguće učitati sažetak.",
+  "startRecording": "Pokreni snimanje",
+  "stopRecording": "Zaustavi snimanje",
+  "progressCompletedLessons": "Završene lekcije",
+  "progressAllTime": "Ukupno",
+  "progressLast7Days": "Poslednjih 7 dana",
+  "progressLast30Days": "Poslednjih 30 dana",
+  "progressCurrentStreak": "Trenutni niz",
+  "progressLongestStreak": "Najduži niz",
+  "progressRecentActivity": "Nedavna aktivnost",
+  "progressLastCompletedLesson": "Poslednja završena lekcija",
+  "progressLessonsByLanguage": "Lekcije po jeziku",
+  "progressLessonsByLevel": "Lekcije po nivou",
+  "progressEmptyTitle": "Vaš napredak će se pojaviti ovde",
+  "progressEmptyDescription": "Završene lekcije će se pojaviti ovde nakon što završite lekciju.",
+  "progressUnavailable": "Napredak trenutno nije dostupan. Pokušajte ponovo.",
+  "progressLoadFailed": "Nije moguće učitati napredak. Pokušajte ponovo.",
+  "progressStreakDays": "{count, plural, =0{0 dana} one{1 dan} few{{count} dana} other{{count} dana}}",
+  "achievementsLoadFailed": "Nije moguće učitati dostignuća. Pokušajte ponovo.",
+  "achievementUnlockedSemantics": "Otključano dostignuće: {title}",
+  "@achievementUnlockedSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "achievementLockedSemantics": "Zaključano dostignuće: {title}. Napredak: {current} od {target}.",
+  "@achievementLockedSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "current": {
+        "type": "num"
+      },
+      "target": {
+        "type": "num"
+      }
+    }
+  },
+  "closeAchievementPreview": "Zatvori pregled dostignuća {title}",
+  "@closeAchievementPreview": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "closeAllAchievementPreviews": "Zatvori sve preglede dostignuća",
+  "achievementTitleStreak7": "Niz od 7 dana",
+  "achievementTitleStreak30": "Niz od 30 dana",
+  "achievementTitleStreak60": "Niz od 60 dana",
+  "achievementTitleStreak100": "Niz od 100 dana",
+  "achievementTitleStreak365": "Niz od 365 dana",
+  "achievementTitleLessons1": "Prvi korak",
+  "achievementTitleLessons5": "Početak putovanja",
+  "achievementTitleLessons10": "10 lekcija iza vas",
+  "achievementTitleLessons25": "Postojan učenik",
+  "achievementTitleLessons50": "50 lekcija iza vas",
+  "achievementTitleLessons100": "Klub stotke",
+  "achievementTitleDailyLifeIntroductions": "Prvi pozdrav",
+  "achievementTitleDailyLifeNeighborChat": "Razgovor sa komšijom",
+  "achievementTitleDailyLifeHelpfulHand": "Ruka pomoći",
+  "achievementTitleDailyLifePlanMaker": "Tvorac planova",
+  "achievementTitleDailyLifeDayTeller": "Pripovedač dana",
+  "achievementTitleDailyLifeEverydayHero": "Svakodnevni heroj",
+  "achievementTitleTravelAirportExpert": "Stručnjak za aerodrom",
+  "achievementTitleTravelHonoredGuest": "Počasni gost",
+  "achievementTitleTravelCityNavigator": "Gradski navigator",
+  "achievementTitleTravelRideReady": "Spreman za vožnju",
+  "achievementTitleTravelBaggageFinder": "Pronalažač prtljaga",
+  "achievementTitleTravelTraveler": "Putnik",
+  "achievementTitleWorkMeetingReady": "Spreman za sastanak",
+  "achievementTitleWorkStandupStar": "Zvezda dnevnog sastanka",
+  "achievementTitleWorkClientCaller": "Poziv sa klijentom",
+  "achievementTitleWorkClearCommunicator": "Jasan sagovornik",
+  "achievementTitleWorkDeadlineDriver": "Majstor rokova",
+  "achievementTitleWorkBusinessReady": "Spreman za biznis",
+  "achievementTitleInterviewStrongIntroduction": "Upečatljivo predstavljanje",
+  "achievementTitleInterviewCareerStory": "Priča o karijeri",
+  "achievementTitleInterviewSelfAwareCandidate": "Samosvestan kandidat",
+  "achievementTitleInterviewRightFit": "Pravi izbor",
+  "achievementTitleInterviewCuriousCandidate": "Radoznao kandidat",
+  "achievementTitleInterviewReady": "Spreman za intervju",
+  "achievementTitleRestaurantTableBooker": "Majstor rezervacija",
+  "achievementTitleRestaurantMenuExpert": "Poznavalac menija",
+  "achievementTitleRestaurantIngredientGuide": "Vodič za sastojke",
+  "achievementTitleRestaurantOrderFixer": "Rešavač porudžbina",
+  "achievementTitleRestaurantBillSettled": "Račun plaćen",
+  "achievementTitleRestaurantDiningPro": "Gurmanski znalac",
+  "autoSendMessage": "Auto-send message",
+  "autoPlayTutorVoice": "Auto-play tutor voice",
+  "voiceRecognitionUnclear": "Nije moguće jasno prepoznati vaš odgovor. Pokušajte ponovo.",
+  "microphoneBlockedOpenSettings": "Pristup mikrofonu je blokiran. Otvorite Android podešavanja da biste ga omogućili.",
+  "microphonePermissionDeniedRetry": "Pristup mikrofonu nije odobren. Dodirnite mikrofon da pokušate ponovo.",
+  "recordingStartFailedCheckMicrophone": "Nije moguće pokrenuti snimanje. Proverite mikrofon.",
+  "recordingStartFailed": "Nije moguće pokrenuti snimanje. Pokušajte ponovo.",
+  "recordingTooShort": "Snimite malo duži odgovor.",
+  "recordingStopFailed": "Nije moguće zaustaviti snimanje. Pokušajte ponovo.",
+  "recordingProcessingFailed": "Nije moguće obraditi taj snimak. Pokušajte ponovo.",
+  "recordingAuthRequired": "Prijavite se ponovo da biste koristili snimanje.",
+  "transcriptionTemporarilyUnavailable": "Transkripcija trenutno nije dostupna. Pokušajte ponovo uskoro.",
+  "transcriptionTimedOut": "Transkripcija je predugo trajala. Pokušajte ponovo.",
+  "transcriptionConnectionFailed": "Veza je prekinuta tokom transkripcije. Pokušajte ponovo.",
+  "transcriptionFailed": "Nije moguće transkribovati taj snimak. Pokušajte ponovo.",
+  "voiceTemporarilyUnavailable": "Glas trenutno nije dostupan. Pokušajte ponovo uskoro.",
+  "voicePlaybackFailed": "Nije moguće reprodukovati glas. Pokušajte ponovo.",
+  "voicePlaybackTimedOut": "Reprodukcija glasa je predugo trajala. Pokušajte ponovo.",
+  "voicePlaybackStopped": "Reprodukcija glasa je zaustavljena. Možete ponovo snimati.",
+  "replaceTypedTextTitle": "Zameniti uneti tekst?",
+  "replaceTypedTextDescription": "Koristiti transkribovani snimak umesto unete skice?",
+  "keepTypedText": "Zadrži uneti tekst",
+  "replaceTypedText": "Zameni uneti tekst",
+  "transcribingRecording": "Transkribovanje snimka...",
+  "retryLessonContent": "Pokušaj ponovo da učitaš sadržaj lekcije",
+  "translation": "Prevod",
+  "playVoice": "Reprodukuj glas",
+  "openConversationMode": "Režim otvorenog razgovora",
+  "conversationPaused": "Razgovor je pauziran. Možete ponovo snimati.",
+  "tutorReplyTimedOut": "Tutor je predugo odgovarao. Pokušajte ponovo.",
+  "conversationSendFailed": "Nije moguće poslati taj odgovor. Pokušajte ponovo da snimite.",
+  "openAndroidSettingsFailed": "Nije moguće otvoriti Android podešavanja. Pokušajte ponovo.",
+  "conversationReady": "Vaš razgovor je spreman.",
+  "tutorAvatarSemantics": "Avatar tutora",
+  "lessonContentLoadFailed": "Nije moguće učitati sadržaj lekcije. Pokušajte ponovo.",
+  "lessonHistoryDetails": "Detalji lekcije",
+  "historySummary": "Sažetak",
+  "noHistoryConversation": "Za ovu lekciju nema dostupnog razgovora.",
+  "noHistorySummary": "Nema dostupnog sažetka lekcije.",
+  "overallSummary": "Ukupan sažetak",
+  "historyTutor": "Vaš tutor",
+  "historyYou": "Vi",
+  "feedbackCorrectedText": "Ispravljeni tekst",
+  "feedbackExplanation": "Objašnjenje",
+  "feedbackPraise": "Pohvala",
+  "lessonUnavailable": "Ta lekcija nije dostupna.",
+  "lessonNoLongerAvailable": "Ova lekcija više nije dostupna.",
+  "lessonHistoryUnavailable": "Istorija lekcija trenutno nije dostupna. Pokušajte ponovo.",
+  "lessonDetailLoadFailed": "Nije moguće učitati detalje lekcije. Pokušajte ponovo."
+}

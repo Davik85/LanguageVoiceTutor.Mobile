@@ -1,0 +1,662 @@
+{
+  "@@locale": "pl",
+  "appTitle": "Language Voice Tutor",
+  "settings": "Ustawienia",
+  "profile": "Profil",
+  "app": "Aplikacja",
+  "saveSettings": "Zapisz ustawienia",
+  "saving": "Zapisywanie...",
+  "settingsSaved": "Ustawienia zapisane.",
+  "unableToSaveSettings": "Nie można teraz zapisać ustawień.",
+  "learning": "Nauka",
+  "studyLanguage": "Język nauki",
+  "nativeLanguage": "Język ojczysty",
+  "interfaceLanguage": "Język interfejsu",
+  "interfaceExplanationLanguage": "Język interfejsu / objaśnień",
+  "interfaceLanguageDescription": "Zmienia tylko język interfejsu aplikacji.",
+  "currentLevel": "Obecny poziom",
+  "selectedTutor": "Wybrany lektor",
+  "loadingSettings": "Ładowanie ustawień...",
+  "unableToLoadSettings": "Nie można teraz wczytać ustawień.",
+  "retry": "Spróbuj ponownie",
+  "back": "Wstecz",
+  "login": "Logowanie",
+  "register": "Rejestracja",
+  "email": "E-mail",
+  "password": "Hasło",
+  "displayNameOptional": "Nazwa wyświetlana (opcjonalnie)",
+  "signIn": "Zaloguj się",
+  "createAccount": "Utwórz konto",
+  "unableToCheckSession": "Nie można sprawdzić sesji. Spróbuj ponownie.",
+  "lessons": "Lekcje",
+  "lessonHistory": "Historia lekcji",
+  "progress": "Postępy",
+  "rewards": "Nagrody",
+  "viewAll": "Zobacz wszystko",
+  "achievements": "Osiągnięcia",
+  "account": "Konto",
+  "logout": "Wyloguj się",
+  "audio": "Dźwięk",
+  "feedbackAndReports": "Opinie i zgłoszenia",
+  "cancel": "Anuluj",
+  "submit": "Prześlij",
+  "send": "Wyślij",
+  "done": "Gotowe",
+  "openAndroidSettings": "Otwórz ustawienia Androida",
+  "hint": "Wskazówka",
+  "finishLesson": "Zakończ lekcję",
+  "typeYourMessage": "Wpisz wiadomość",
+  "sending": "Wysyłanie...",
+  "languageNameEnglish": "Angielski",
+  "languageNameRussian": "Rosyjski",
+  "languageNameSpanish": "Hiszpański",
+  "languageNameFrench": "Francuski",
+  "languageNameGerman": "Niemiecki",
+  "signInToApp": "Zaloguj się do Language Voice Tutor",
+  "pleaseWait": "Proszę czekać...",
+  "alreadyHaveAccount": "Mam już konto",
+  "invalidEmail": "Wprowadź poprawny adres e-mail.",
+  "enterPassword": "Wprowadź hasło.",
+  "chooseTopic": "Wybierz temat",
+  "chooseTopicTitle": "Wybierz temat",
+  "chooseTopicSubtitle": "Wybierz rodzaj rozmowy, który chcesz przećwiczyć.",
+  "chooseSituation": "Wybierz sytuację",
+  "chooseSituationTitle": "Wybierz sytuację",
+  "chooseSituationSubtitle": "Przećwicz konkretny moment z tego tematu.",
+  "viewAllRewards": "Zobacz wszystkie odznaki i nagrody za naukę.",
+  "accountDeletion": "Usuwanie konta",
+  "requestAccountDeletion": "Prośba o usunięcie konta",
+  "loadingAccount": "Ładowanie konta...",
+  "premiumAndSubscription": "Premium i subskrypcja",
+  "currentPassword": "Aktualne hasło",
+  "reasonOptional": "Powód (opcjonalnie)",
+  "submitting": "Przesyłanie...",
+  "loadingTutors": "Ładowanie lektorów...",
+  "noTutorsAvailable": "Brak dostępnych lektorów.",
+  "loadingAudioSettings": "Ładowanie ustawień dźwięku...",
+  "conversationModeEnabled": "Tryb rozmowy włączony",
+  "sendSuggestionOrReport": "Wyślij sugestię lub zgłoś problem",
+  "reportType": "Typ zgłoszenia",
+  "pasteAiResponseOptional": "Wklej odpowiedź AI (opcjonalnie)",
+  "lessonHistoryHeading": "Ostatnio ukończone lekcje",
+  "noCompletedLessons": "Brak ukończonych lekcji",
+  "completedLessonsAppearHere": "Ukończone lekcje pojawią się tutaj.",
+  "backToHome": "Powrót do strony głównej",
+  "lesson": "Lekcja",
+  "level": "Poziom",
+  "completed": "Ukończono",
+  "finished": "Zakończono",
+  "lessonChat": "Czat lekcji",
+  "conversation": "Rozmowa",
+  "turnCount": "{count, plural, =1{1 wypowiedź} other{{count} wypowiedzi}}",
+  "@turnCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "achievementsUnavailable": "Brak dostępnych osiągnięć.",
+  "unlockedCount": "Odblokowano {unlocked} z {total}",
+  "@unlockedCount": {
+    "placeholders": {
+      "unlocked": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "learningLanguage": "Nauka języka {language}",
+  "@learningLanguage": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "streaks": "Serie",
+  "lessonMilestones": "Kamienie milowe lekcji",
+  "topics": "Tematy",
+  "situations": "Sytuacje",
+  "otherAchievements": "Inne osiągnięcia",
+  "progressCount": "{current} z {total}",
+  "@progressCount": {
+    "placeholders": {
+      "current": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "startLesson": "Rozpocznij lekcję",
+  "openSettings": "Otwórz ustawienia",
+  "keepLearningRhythm": "Utrzymaj rytm nauki",
+  "reminderPermissionExplanation": "Language Voice Tutor może wysyłać dwa pogodne codzienne przypomnienia, aby ćwiczenia nie zginęły w natłoku dnia. Godziny możesz zmienić lub wyłączyć przypomnienia w Ustawieniach.",
+  "notNow": "Nie teraz",
+  "allowReminders": "Zezwól na przypomnienia",
+  "achievementsTemporarilyUnavailable": "Osiągnięcia są tymczasowo niedostępne",
+  "achievementsEmpty": "Twoje osiągnięcia pojawią się tutaj.",
+  "learningStreak": "{count, plural, =1{Seria nauki: 1 dzień} other{Seria nauki: {count} dni}}",
+  "@learningStreak": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "learningStreakLoading": "Ładowanie serii nauki",
+  "learningStreakUnavailable": "Seria nauki jest niedostępna",
+  "learnerFallbackName": "Uczeń",
+  "premiumPlan": "Plan Premium",
+  "premiumTrial": "Okres próbny Premium",
+  "freePlan": "Plan bezpłatny",
+  "signedInAs": "Zalogowano jako {name}",
+  "@signedInAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumDetails": "Szczegóły Premium",
+  "explorePremium": "Poznaj Premium",
+  "freeLessonsAvailableToday": "{count, plural, =1{Dziś dostępna jest 1 bezpłatna lekcja} other{Dziś dostępnych jest {count} bezpłatnych lekcji}}",
+  "@freeLessonsAvailableToday": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "yourWeek": "Twój tydzień",
+  "lessonsLastSevenDays": "{count, plural, =1{1 lekcja w ostatnich 7 dniach} other{{count} lekcji w ostatnich 7 dniach}}",
+  "@lessonsLastSevenDays": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "startStreakToday": "Rozpocznij serię dziś",
+  "activityUnavailable": "Aktywność jest teraz niedostępna.",
+  "lessonsCompleted": "{count, plural, =1{1 ukończona lekcja} other{{count} ukończonych lekcji}}",
+  "@lessonsCompleted": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "activityDaySemantics": "{date}: {count, plural, =1{1 ukończona lekcja} other{{count} ukończonych lekcji}}",
+  "@activityDaySemantics": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "weekdayMon": "Pon",
+  "weekdayTue": "Wt",
+  "weekdayWed": "Śr",
+  "weekdayThu": "Czw",
+  "weekdayFri": "Pt",
+  "weekdaySat": "Sob",
+  "weekdaySun": "Niedz",
+  "remindersTemporarilyUnavailable": "Przypomnienia o ćwiczeniach są tymczasowo niedostępne.",
+  "unableToUpdateReminders": "Nie można teraz zaktualizować przypomnień. Spróbuj ponownie.",
+  "unableToLoadAccount": "Nie można teraz wczytać danych konta.",
+  "tutorChoicesUnavailable": "Wybór tutora jest teraz niedostępny. Nadal możesz przejrzeć i zapisać pozostałe ustawienia.",
+  "pleaseEnterDescription": "Wpisz opis.",
+  "emailRequired": "Adres e-mail jest wymagany.",
+  "resetCodePasswordRequired": "Kod resetujący i nowe hasło są wymagane.",
+  "passwordsMustMatch": "Nowe hasło i potwierdzenie muszą być zgodne.",
+  "signInToChangePassword": "Zaloguj się, aby zmienić hasło.",
+  "currentPasswordRequired": "Bieżące hasło jest wymagane.",
+  "accountDeletionDescription": "Wyślij żądanie trwałego usunięcia konta Language Voice Tutor i danych osobowych.",
+  "accountDeletionNotice": "Wysłanie tego żądania nie powoduje natychmiastowego usunięcia konta. Dział pomocy przejrzy je i przetworzy, a także może poprosić o więcej informacji. Odpowiedź zostanie wysłana na adres e-mail powiązany z Twoim kontem. Konto nie jest uznawane za usunięte tylko dlatego, że wysłano to żądanie.",
+  "noDisplayName": "Brak nazwy wyświetlanej",
+  "subscriptionUnavailable": "Subskrypcja jest niedostępna",
+  "noPaidPlan": "Brak płatnego planu",
+  "requestId": "Identyfikator żądania: {id}",
+  "@requestId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "statusValue": "Stan: {status}",
+  "@statusValue": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "passwordRecovery": "Hasło i odzyskiwanie",
+  "accountEmail": "Adres e-mail konta",
+  "sendingResetInstructions": "Wysyłanie instrukcji resetowania...",
+  "forgotPassword": "Nie pamiętasz hasła?",
+  "resetCode": "Kod resetujący",
+  "newPassword": "Nowe hasło",
+  "confirmNewPassword": "Potwierdź nowe hasło",
+  "updatingPassword": "Aktualizacja hasła...",
+  "resetPassword": "Zresetuj hasło",
+  "newAccountPassword": "Hasło do nowego konta",
+  "confirmNewAccountPassword": "Potwierdź hasło do nowego konta",
+  "changingPassword": "Zmiana hasła...",
+  "changePassword": "Zmień hasło",
+  "tutorVoice": "Głos tutora",
+  "speechSpeed": "Szybkość mowy: {speed}x",
+  "@speechSpeed": {
+    "placeholders": {
+      "speed": {
+        "type": "String"
+      }
+    }
+  },
+  "feedbackSuggestion": "Sugestia",
+  "feedbackAppProblem": "Problem z aplikacją",
+  "feedbackAiResponse": "Odpowiedź AI",
+  "yourSuggestion": "Twoja sugestia",
+  "describeProblem": "Opisz problem",
+  "aiResponseProblem": "Co było nie tak z odpowiedzią AI?",
+  "practiceReminders": "Przypomnienia o ćwiczeniach",
+  "localRemindersDescription": "Te przypomnienia są zapisane lokalnie na tym urządzeniu.",
+  "dailyPracticeReminders": "Codzienne przypomnienia o ćwiczeniach",
+  "morningReminder": "Poranne przypomnienie",
+  "eveningReminder": "Wieczorne przypomnienie",
+  "notificationsAllowed": "Powiadomienia są dozwolone",
+  "notificationStatusUnavailable": "Stan powiadomień jest niedostępny",
+  "notificationsBlocked": "Android blokuje powiadomienia.",
+  "allowNotifications": "Zezwól na powiadomienia",
+  "feedbackReceived": "Dziękujemy. Twoja wiadomość została odebrana.",
+  "feedbackValidationFailure": "Sprawdź wiadomość i spróbuj ponownie.",
+  "feedbackUnavailable": "Opinie są tymczasowo niedostępne. Spróbuj ponownie.",
+  "deletionRequestAlreadyExists": "Aktywne żądanie usunięcia konta już istnieje.",
+  "deletionRequestSubmitted": "Twoje żądanie usunięcia konta zostało wysłane do działu pomocy technicznej.",
+  "incorrectCurrentPassword": "Twoje bieżące hasło jest nieprawidłowe.",
+  "unableToReachService": "Nie można połączyć się z usługą. Spróbuj ponownie.",
+  "unexpectedServiceResponse": "Usługa zwróciła nieoczekiwaną odpowiedź. Spróbuj ponownie.",
+  "unableToSubmitRequest": "Nie można teraz wysłać żądania. Spróbuj ponownie.",
+  "unableToLoadLearningSettings": "Nie można teraz wczytać ustawień nauki. Spróbuj ponownie.",
+  "settingsTemporarilyUnavailable": "Ustawienia są tymczasowo niedostępne. Spróbuj ponownie.",
+  "selectedLevelContext": "Poziom: {level}",
+  "@selectedLevelContext": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "selectedLevelTopicContext": "Poziom: {level} / Temat: {topic}",
+  "@selectedLevelTopicContext": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      },
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "topicCardSemantics": "{label}. {description}",
+  "@topicCardSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "situationCardSemantics": "{label}. {description}",
+  "@situationCardSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "openTopicTooltip": "Otwórz {topic}",
+  "@openTopicTooltip": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "openSituationTooltip": "Otwórz {situation}",
+  "@openSituationTooltip": {
+    "placeholders": {
+      "situation": {
+        "type": "String"
+      }
+    }
+  },
+  "noSituationsAvailable": "Brak dostępnych sytuacji dla tego tematu.",
+  "levelA1Label": "A1 początkujący",
+  "levelA1Description": "Opanuj proste powitania, wyrażanie potrzeb i krótkie codzienne odpowiedzi.",
+  "levelA2Label": "A2 podstawowy",
+  "levelA2Description": "Prowadź rutynowe rozmowy, używając znanych słów i zwrotów.",
+  "levelB1Label": "B1 średnio zaawansowany",
+  "levelB1Description": "Ćwicz dłuższe rozmowy, wyrażanie opinii i rozwiązywanie codziennych problemów.",
+  "levelB2Label": "B2 średnio zaawansowany wyższy",
+  "levelB2Description": "Doskonal bardziej zniuansowane rozmowy z naturalniejszymi szczegółami.",
+  "topicDailyLifeLabel": "Codzienne życie",
+  "topicDailyLifeDescription": "Luźne rozmowy, przedstawianie się i codzienne sytuacje.",
+  "topicTravelLabel": "Podróże",
+  "topicTravelDescription": "Lotniska, hotele, wskazówki dojazdu i transport.",
+  "topicWorkBusinessLabel": "Praca i biznes",
+  "topicWorkBusinessDescription": "Spotkania, e-maile, rozmowy telefoniczne i rozmowy w pracy.",
+  "topicJobInterviewLabel": "Rozmowa kwalifikacyjna",
+  "topicJobInterviewDescription": "Ćwicz typowe pytania i odpowiedzi podczas rozmowy kwalifikacyjnej.",
+  "topicRestaurantCafeLabel": "Restauracja i kawiarnia",
+  "topicRestaurantCafeDescription": "Zamawianie jedzenia, rezerwowanie stolików i uprzejme prośby.",
+  "topicFreeConversationLabel": "Swobodna rozmowa",
+  "topicFreeConversationDescription": "Otwarta praktyka skupiona na tym, co chcesz powiedzieć.",
+  "situationIntroductionsLabel": "Przedstawianie się",
+  "situationIntroductionsDescription": "Przedstaw się i zadaj podstawowe pytania osobiste.",
+  "situationSmallTalkNeighborLabel": "Porozmawiaj z sąsiadem",
+  "situationSmallTalkNeighborDescription": "Przeprowadź krótką, przyjazną rozmowę w okolicy domu.",
+  "situationAskingForHelpLabel": "Poproś o pomoc",
+  "situationAskingForHelpDescription": "Poproś o pomoc w prostej codziennej sytuacji.",
+  "situationMakingPlansLabel": "Zaplanuj coś",
+  "situationMakingPlansDescription": "Zaplanuj aktywność i uzgodnij czas oraz miejsce.",
+  "situationTalkingAboutDayLabel": "Opowiedz o swoim dniu",
+  "situationTalkingAboutDayDescription": "Opisz swój dzień i codzienną rutynę.",
+  "situationAirportCheckInLabel": "Odprawa na lotnisku",
+  "situationAirportCheckInDescription": "Odpraw się na lot i potwierdź szczegóły podróży.",
+  "situationHotelCheckInLabel": "Zameldowanie w hotelu",
+  "situationHotelCheckInDescription": "Zamelduj się w hotelu i zadaj typowe pytania.",
+  "situationAskingForDirectionsLabel": "Zapytaj o drogę",
+  "situationAskingForDirectionsDescription": "Zapytaj o drogę i zrozum wskazówki w nowym mieście.",
+  "situationOrderingTransportLabel": "Zamów transport",
+  "situationOrderingTransportDescription": "Zamów taksówkę lub przejazd współdzielony do celu.",
+  "situationLostLuggageLabel": "Zagubiony bagaż",
+  "situationLostLuggageDescription": "Zgłoś zagubiony bagaż i wyjaśnij swoją sytuację.",
+  "situationFirstMeetingLabel": "Pierwsze spotkanie",
+  "situationFirstMeetingDescription": "Przedstaw się na nowym spotkaniu w pracy.",
+  "situationDailyStandupLabel": "Codzienne spotkanie zespołu",
+  "situationDailyStandupDescription": "Przekaż krótką informację o swoich zadaniach.",
+  "situationClientPhoneCallLabel": "Rozmowa telefoniczna z klientem",
+  "situationClientPhoneCallDescription": "Przeprowadź uprzejmą i rzeczową rozmowę biznesową.",
+  "situationAskingForClarificationLabel": "Poproś o wyjaśnienie",
+  "situationAskingForClarificationDescription": "Zadaj dodatkowe pytania, aby potwierdzić wymagania.",
+  "situationDiscussingDeadlinesLabel": "Omów terminy",
+  "situationDiscussingDeadlinesDescription": "Porozmawiaj o harmonogramie i oczekiwaniach dotyczących dostawy.",
+  "situationTellMeAboutYourselfLabel": "Opowiedz o sobie",
+  "situationTellMeAboutYourselfDescription": "Przedstaw się krótko i rzeczowo, jak na rozmowie kwalifikacyjnej.",
+  "situationWorkExperienceLabel": "Doświadczenie zawodowe",
+  "situationWorkExperienceDescription": "Opisz wcześniejszą pracę, obowiązki i jeden rezultat.",
+  "situationStrengthsWeaknessesLabel": "Mocne i słabe strony",
+  "situationStrengthsWeaknessesDescription": "Omów profesjonalnie jedną mocną stronę i jeden obszar do poprawy.",
+  "situationWhyThisJobLabel": "Dlaczego chcesz tę pracę?",
+  "situationWhyThisJobDescription": "Wyjaśnij swoją motywację i połącz stanowisko ze swoimi umiejętnościami.",
+  "situationQuestionsAtEndLabel": "Zadaj pytania na końcu",
+  "situationQuestionsAtEndDescription": "Zadaj uprzejme, przydatne pytania przed zakończeniem rozmowy kwalifikacyjnej.",
+  "situationBookingTableLabel": "Zarezerwuj stolik",
+  "situationBookingTableDescription": "Zadzwoń lub porozmawiaj z obsługą, aby zarezerwować stolik.",
+  "situationOrderingFoodLabel": "Zamów jedzenie",
+  "situationOrderingFoodDescription": "Zamów posiłek i zadaj proste pytania o menu.",
+  "situationAskingIngredientsLabel": "Zapytaj o składniki",
+  "situationAskingIngredientsDescription": "Zapytaj o alergie i składniki dania.",
+  "situationWrongOrderLabel": "Rozwiąż problem z błędnym zamówieniem",
+  "situationWrongOrderDescription": "Uprzejmie wyjaśnij problem z zamówieniem.",
+  "situationPayingBillLabel": "Zapłać rachunek",
+  "situationPayingBillDescription": "Poproś o rachunek i dokończ płatność.",
+  "situationOpenConversationLabel": "Otwarta rozmowa",
+  "situationOpenConversationDescription": "Ćwicz dowolny temat z elastycznymi pytaniami uzupełniającymi.",
+  "premium": "Premium",
+  "premiumStatusLoadingSemantics": "Ładowanie statusu Premium",
+  "premiumStatusTemporarilyUnavailable": "Status Premium jest tymczasowo niedostępny. Spróbuj ponownie.",
+  "premiumStatusSemantics": "Stan Premium: {status}",
+  "@premiumStatusSemantics": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumActive": "Premium jest aktywny",
+  "premiumActiveDescription": "Ćwicz bez dziennego limitu bezpłatnych lekcji.",
+  "premiumEndsOn": "Premium wygasa {date}.",
+  "@premiumEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumTrialActiveDescription": "Twój okres próbny Premium jest aktywny.",
+  "premiumTrialEndsOn": "Okres próbny wygasa {date}.",
+  "@premiumTrialEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "freeLessonsRemainingToday": "{count, plural, =0{Dziś nie pozostały żadne bezpłatne lekcje.} one{Dziś pozostała {count} bezpłatna lekcja.} few{Dziś pozostały {count} bezpłatne lekcje.} many{Dziś pozostało {count} bezpłatnych lekcji.} other{Dziś pozostało {count} bezpłatnych lekcji.}}",
+  "@freeLessonsRemainingToday": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "premiumRemovesDailyLimit": "Premium usuwa dzienny limit lekcji.",
+  "premiumAccountLinked": "Dostęp Premium jest powiązany z Twoim kontem Language Voice Tutor.",
+  "premiumSharedAcrossClients": "Twój potwierdzony status Premium jest współdzielony między obsługiwanymi klientami Language Voice Tutor.",
+  "premiumBenefits": "Korzyści Premium",
+  "premiumBenefitDailyLimit": "• Ćwicz bez dziennego limitu bezpłatnych lekcji",
+  "premiumBenefitAcrossDevices": "• Korzystaj z tego samego dostępu Premium na obsługiwanych urządzeniach",
+  "premiumBenefitAccountData": "• Przechowuj konto, postępy, historię i ustawienia nauki w jednym miejscu",
+  "getPremium": "Zyskaj Premium",
+  "restorePurchases": "Przywróć zakupy",
+  "refreshPremiumStatus": "Odśwież stan",
+  "billingProviderExplanation": "Zmiany rozliczeniowe muszą być obsługiwane przez dostawcę, u którego kupiono Premium.",
+  "googlePlayPurchasesUnavailableTitle": "Zakupy w Google Play nie są jeszcze dostępne",
+  "restorePurchasesUnavailableTitle": "Przywracanie zakupów nie jest jeszcze dostępne",
+  "googlePlayPurchasesUnavailableDescription": "Zakupy zostaną połączone w kolejnym kroku. Ta wersja nie może obciążyć Cię opłatą ani aktywować Premium.",
+  "restorePurchasesUnavailableDescription": "Przywracanie zakupów przez Google Play zostanie połączone z procesem rozliczeniowym. Bieżący stan konta nadal jest ładowany z Language Voice Tutor.",
+  "purchasePendingConfirmation": "Przetwarzanie zakupu nie zostało jeszcze potwierdzone. Wkrótce ponownie odśwież stan.",
+  "purchaseActionFailed": "Nie można teraz wykonać tego żądania. Spróbuj ponownie.",
+  "premiumOk": "Dobrze",
+  "leaveLessonTitle": "Opuścić lekcję?",
+  "leaveLessonDescription": "Opuszczenie tej lekcji zakończy ją bez utworzenia podsumowania.",
+  "stay": "Zostań",
+  "leaveLesson": "Opuść lekcję",
+  "finishLessonTitle": "Zakończyć lekcję?",
+  "finishLessonDescription": "Zakończyć tę lekcję i wyświetlić podsumowanie?",
+  "continueLesson": "Kontynuuj lekcję",
+  "gettingHint": "Pobieranie wskazówki...",
+  "dismissHint": "Ukryj wskazówkę",
+  "finishingLesson": "Kończenie lekcji...",
+  "finishLessonAuthRequired": "Zaloguj się ponownie, aby zakończyć lekcję.",
+  "finishLessonSessionUnavailable": "Ta sesja lekcji nie jest już dostępna.",
+  "finishLessonFailed": "Nie można zakończyć lekcji. Sprawdź połączenie i spróbuj ponownie.",
+  "lessonFeedback": "Informacja zwrotna",
+  "loadingLessonFeedback": "Ładowanie informacji zwrotnej...",
+  "showLessonFeedback": "Pokaż informację zwrotną",
+  "hideLessonFeedback": "Ukryj informację zwrotną",
+  "retryLessonFeedback": "Ponów próbę uzyskania informacji zwrotnej",
+  "feedbackNotReady": "Informacja zwrotna nie jest jeszcze gotowa. Spróbuj ponownie.",
+  "feedbackQuickSummary": "Krótkie podsumowanie",
+  "feedbackCorrectedVersion": "Poprawiona wersja",
+  "feedbackGrammarTip": "Wskazówka gramatyczna",
+  "feedbackVocabularyTip": "Wskazówka dotycząca słownictwa",
+  "feedbackCultureTip": "Wskazówka kulturowa",
+  "feedbackNaturalVersion": "Bardziej naturalna wersja",
+  "lessonFeedbackAuthRequired": "Zaloguj się ponownie, aby kontynuować lekcję.",
+  "lessonFeedbackSessionEnded": "Ta lekcja już się zakończyła.",
+  "lessonFeedbackNotAvailableForMessage": "Informacja zwrotna nie jest dostępna dla tej wiadomości.",
+  "lessonFeedbackFailed": "Nie można uzyskać informacji zwrotnej. Spróbuj ponownie.",
+  "lessonStartBlocked": "Wykorzystano dzisiejszą bezpłatną lekcję. Spróbuj ponownie jutro lub przejdź na wyższy plan.",
+  "lessonStartConflict": "Masz już aktywną lekcję. Zakończ ją lub opuść przed rozpoczęciem nowej.",
+  "lessonStartAuthRequired": "Zaloguj się ponownie, aby rozpocząć lekcję.",
+  "lessonStartUnavailable": "Nie można rozpocząć lekcji. Sprawdź połączenie i spróbuj ponownie.",
+  "lessonStartFailed": "Nie można rozpocząć lekcji. Spróbuj ponownie.",
+  "lessonSummary": "Podsumowanie lekcji",
+  "lessonCompleted": "Lekcja ukończona",
+  "summaryWhatWentWell": "Co poszło dobrze",
+  "summaryStrengths": "Mocne strony",
+  "summaryImprovements": "Obszary do poprawy",
+  "summaryVocabulary": "Słownictwo",
+  "summaryGrammar": "Gramatyka",
+  "summaryNextSteps": "Kolejne kroki",
+  "retrySummary": "Ponów próbę utworzenia podsumowania",
+  "summaryUnavailableMessage": "Lekcja została zapisana, ale nie można utworzyć dla niej podsumowania.",
+  "summaryAuthRequiredMessage": "Zaloguj się ponownie, aby wczytać podsumowanie lekcji.",
+  "summaryLoadErrorMessage": "Lekcja została zapisana, ale nie można teraz wczytać podsumowania.",
+  "startRecording": "Rozpocznij nagrywanie",
+  "stopRecording": "Zatrzymaj nagrywanie",
+  "progressCompletedLessons": "Ukończone lekcje",
+  "progressAllTime": "Łącznie",
+  "progressLast7Days": "Ostatnie 7 dni",
+  "progressLast30Days": "Ostatnie 30 dni",
+  "progressCurrentStreak": "Aktualna seria",
+  "progressLongestStreak": "Najdłuższa seria",
+  "progressRecentActivity": "Ostatnia aktywność",
+  "progressLastCompletedLesson": "Ostatnia ukończona lekcja",
+  "progressLessonsByLanguage": "Lekcje według języka",
+  "progressLessonsByLevel": "Lekcje według poziomu",
+  "progressEmptyTitle": "Twoje postępy pojawią się tutaj",
+  "progressEmptyDescription": "Ukończone lekcje pojawią się tutaj po zakończeniu lekcji.",
+  "progressUnavailable": "Postępy są tymczasowo niedostępne. Spróbuj ponownie.",
+  "progressLoadFailed": "Nie można wczytać postępów. Spróbuj ponownie.",
+  "progressStreakDays": "{count, plural, =0{0 dni} one{1 dzień} few{{count} dni} many{{count} dni} other{{count} dni}}",
+  "achievementsLoadFailed": "Nie można wczytać osiągnięć. Spróbuj ponownie.",
+  "achievementUnlockedSemantics": "Odblokowane osiągnięcie: {title}",
+  "@achievementUnlockedSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "achievementLockedSemantics": "Zablokowane osiągnięcie: {title}. Postęp: {current} z {target}.",
+  "@achievementLockedSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "current": {
+        "type": "num"
+      },
+      "target": {
+        "type": "num"
+      }
+    }
+  },
+  "closeAchievementPreview": "Zamknij podgląd osiągnięcia {title}",
+  "@closeAchievementPreview": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "closeAllAchievementPreviews": "Zamknij wszystkie podglądy osiągnięć",
+  "achievementTitleStreak7": "Seria 7 dni",
+  "achievementTitleStreak30": "Seria 30 dni",
+  "achievementTitleStreak60": "Seria 60 dni",
+  "achievementTitleStreak100": "Seria 100 dni",
+  "achievementTitleStreak365": "Seria 365 dni",
+  "achievementTitleLessons1": "Pierwszy krok",
+  "achievementTitleLessons5": "Dobry początek",
+  "achievementTitleLessons10": "10 ukończonych lekcji",
+  "achievementTitleLessons25": "Wytrwały uczeń",
+  "achievementTitleLessons50": "50 ukończonych lekcji",
+  "achievementTitleLessons100": "Klub setki",
+  "achievementTitleDailyLifeIntroductions": "Pierwsze powitanie",
+  "achievementTitleDailyLifeNeighborChat": "Sąsiedzka pogawędka",
+  "achievementTitleDailyLifeHelpfulHand": "Pomocna dłoń",
+  "achievementTitleDailyLifePlanMaker": "Twórca planów",
+  "achievementTitleDailyLifeDayTeller": "Opowiadacz dnia",
+  "achievementTitleDailyLifeEverydayHero": "Codzienny bohater",
+  "achievementTitleTravelAirportExpert": "Ekspert lotniskowy",
+  "achievementTitleTravelHonoredGuest": "Honorowy gość",
+  "achievementTitleTravelCityNavigator": "Miejski nawigator",
+  "achievementTitleTravelRideReady": "Gotowy do jazdy",
+  "achievementTitleTravelBaggageFinder": "Poszukiwacz bagażu",
+  "achievementTitleTravelTraveler": "Podróżnik",
+  "achievementTitleWorkMeetingReady": "Gotowy na spotkanie",
+  "achievementTitleWorkStandupStar": "Gwiazda codziennego spotkania",
+  "achievementTitleWorkClientCaller": "Telefon do klienta",
+  "achievementTitleWorkClearCommunicator": "Jasny rozmówca",
+  "achievementTitleWorkDeadlineDriver": "Mistrz terminów",
+  "achievementTitleWorkBusinessReady": "Gotowy do biznesu",
+  "achievementTitleInterviewStrongIntroduction": "Pewne przedstawienie się",
+  "achievementTitleInterviewCareerStory": "Historia kariery",
+  "achievementTitleInterviewSelfAwareCandidate": "Świadomy siebie kandydat",
+  "achievementTitleInterviewRightFit": "Idealne dopasowanie",
+  "achievementTitleInterviewCuriousCandidate": "Ciekawy kandydat",
+  "achievementTitleInterviewReady": "Gotowy na rozmowę",
+  "achievementTitleRestaurantTableBooker": "Mistrz rezerwacji",
+  "achievementTitleRestaurantMenuExpert": "Ekspert menu",
+  "achievementTitleRestaurantIngredientGuide": "Przewodnik po składnikach",
+  "achievementTitleRestaurantOrderFixer": "Mistrz zamówień",
+  "achievementTitleRestaurantBillSettled": "Rachunek opłacony",
+  "achievementTitleRestaurantDiningPro": "Restauracyjny ekspert",
+  "autoSendMessage": "Auto-send message",
+  "autoPlayTutorVoice": "Auto-play tutor voice",
+  "voiceRecognitionUnclear": "Nie udało się wyraźnie rozpoznać odpowiedzi. Spróbuj ponownie.",
+  "microphoneBlockedOpenSettings": "Dostęp do mikrofonu jest zablokowany. Otwórz ustawienia Androida, aby go włączyć.",
+  "microphonePermissionDeniedRetry": "Nie przyznano dostępu do mikrofonu. Dotknij mikrofonu, aby spróbować ponownie.",
+  "recordingStartFailedCheckMicrophone": "Nie można rozpocząć nagrywania. Sprawdź mikrofon.",
+  "recordingStartFailed": "Nie można rozpocząć nagrywania. Spróbuj ponownie.",
+  "recordingTooShort": "Nagraj nieco dłuższą odpowiedź.",
+  "recordingStopFailed": "Nie można zatrzymać nagrywania. Spróbuj ponownie.",
+  "recordingProcessingFailed": "Nie można przetworzyć tego nagrania. Spróbuj ponownie.",
+  "recordingAuthRequired": "Zaloguj się ponownie, aby korzystać z nagrywania.",
+  "transcriptionTemporarilyUnavailable": "Transkrypcja jest tymczasowo niedostępna. Spróbuj ponownie za chwilę.",
+  "transcriptionTimedOut": "Transkrypcja trwała zbyt długo. Spróbuj ponownie.",
+  "transcriptionConnectionFailed": "Połączenie zostało przerwane podczas transkrypcji. Spróbuj ponownie.",
+  "transcriptionFailed": "Nie można transkrybować tego nagrania. Spróbuj ponownie.",
+  "voiceTemporarilyUnavailable": "Głos jest tymczasowo niedostępny. Spróbuj ponownie za chwilę.",
+  "voicePlaybackFailed": "Nie można odtworzyć głosu. Spróbuj ponownie.",
+  "voicePlaybackTimedOut": "Odtwarzanie głosu trwało zbyt długo. Spróbuj ponownie.",
+  "voicePlaybackStopped": "Odtwarzanie głosu zostało zatrzymane. Możesz nagrać ponownie.",
+  "replaceTypedTextTitle": "Zastąpić wpisany tekst?",
+  "replaceTypedTextDescription": "Użyć transkrypcji nagrania zamiast wpisanego szkicu?",
+  "keepTypedText": "Zachowaj wpisany tekst",
+  "replaceTypedText": "Zastąp wpisany tekst",
+  "transcribingRecording": "Transkrybowanie nagrania...",
+  "retryLessonContent": "Ponów próbę wczytania treści lekcji",
+  "translation": "Tłumaczenie",
+  "playVoice": "Odtwórz głos",
+  "openConversationMode": "Tryb otwartej rozmowy",
+  "conversationPaused": "Rozmowa wstrzymana. Możesz nagrać ponownie.",
+  "tutorReplyTimedOut": "Tutor zbyt długo odpowiadał. Spróbuj ponownie.",
+  "conversationSendFailed": "Nie można wysłać tej odpowiedzi. Spróbuj nagrać ją ponownie.",
+  "openAndroidSettingsFailed": "Nie można otworzyć ustawień Androida. Spróbuj ponownie.",
+  "conversationReady": "Rozmowa jest gotowa.",
+  "tutorAvatarSemantics": "Awatar tutora",
+  "lessonContentLoadFailed": "Nie można wczytać treści lekcji. Spróbuj ponownie.",
+  "lessonHistoryDetails": "Szczegóły lekcji",
+  "historySummary": "Podsumowanie",
+  "noHistoryConversation": "Brak dostępnej rozmowy dla tej lekcji.",
+  "noHistorySummary": "Brak dostępnego podsumowania lekcji.",
+  "overallSummary": "Ogólne podsumowanie",
+  "historyTutor": "Twój tutor",
+  "historyYou": "Ty",
+  "feedbackCorrectedText": "Poprawiony tekst",
+  "feedbackExplanation": "Wyjaśnienie",
+  "feedbackPraise": "Pochwała",
+  "lessonUnavailable": "Ta lekcja nie jest dostępna.",
+  "lessonNoLongerAvailable": "Ta lekcja nie jest już dostępna.",
+  "lessonHistoryUnavailable": "Historia lekcji jest tymczasowo niedostępna. Spróbuj ponownie.",
+  "lessonDetailLoadFailed": "Nie można wczytać szczegółów lekcji. Spróbuj ponownie."
+}

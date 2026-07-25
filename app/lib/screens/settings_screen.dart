@@ -1098,8 +1098,18 @@ class _LessonLevelDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => DropdownButtonFormField<String>(
+        isExpanded: true,
         decoration: InputDecoration(labelText: context.l10n.currentLevel),
         initialValue: canonicalLessonLevel(value),
+        selectedItemBuilder: (context) => lessonLevels
+            .map(
+              (level) => Text(
+                context.l10n.localizedLevel(level).label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            )
+            .toList(),
         items: lessonLevels
             .map((level) => DropdownMenuItem(
                   value: canonicalLessonLevel(level.id),
@@ -1304,15 +1314,24 @@ class _LanguageDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final supportedIds = options.map((option) => option.id).toSet();
+    String displayName(LanguageOption option) =>
+        context.l10n.localeName.startsWith('en')
+            ? option.label
+            : _nativeLanguageName(option.id, option.label);
     return DropdownButtonFormField<String>(
+      isExpanded: true,
       decoration: InputDecoration(labelText: label),
       initialValue: supportedIds.contains(value) ? value : null,
+      selectedItemBuilder: (context) => options
+          .map((option) => Text(
+                displayName(option),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ))
+          .toList(),
       items: options
           .map((option) => DropdownMenuItem(
-              value: option.id,
-              child: Text(context.l10n.localeName.startsWith('en')
-                  ? option.label
-                  : _nativeLanguageName(option.id, option.label))))
+              value: option.id, child: Text(displayName(option))))
           .toList(),
       onChanged: (v) {
         if (v != null) onChanged(v);
