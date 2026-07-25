@@ -101,13 +101,7 @@ class _LanguageVoiceTutorAppState extends State<LanguageVoiceTutorApp> {
         builder: (context, _) => MaterialApp(
               title: AppConfig.appName,
               locale: _localeController.locale,
-              supportedLocales: const [
-                Locale('en'),
-                Locale('ru'),
-                Locale('es'),
-                Locale('fr'),
-                Locale('de'),
-              ],
+              supportedLocales: AppLocaleController.supportedLocales,
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               theme: baseTheme.copyWith(
                 textTheme: softBlueTextTheme,

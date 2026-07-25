@@ -1,0 +1,662 @@
+{
+  "@@locale": "bg",
+  "appTitle": "Language Voice Tutor",
+  "settings": "Настройки",
+  "profile": "Профил",
+  "app": "Приложение",
+  "saveSettings": "Запазване на настройките",
+  "saving": "Запазване...",
+  "settingsSaved": "Настройките са запазени.",
+  "unableToSaveSettings": "Настройките не могат да бъдат запазени в момента.",
+  "learning": "Обучение",
+  "studyLanguage": "Език за изучаване",
+  "nativeLanguage": "Роден език",
+  "interfaceLanguage": "Език на интерфейса",
+  "interfaceExplanationLanguage": "Език на интерфейса / обясненията",
+  "interfaceLanguageDescription": "Променя само езика на интерфейса на приложението.",
+  "currentLevel": "Текущо ниво",
+  "selectedTutor": "Избран преподавател",
+  "loadingSettings": "Зареждане на настройките...",
+  "unableToLoadSettings": "Настройките не могат да бъдат заредени в момента.",
+  "retry": "Опитай отново",
+  "back": "Назад",
+  "login": "Вход",
+  "register": "Регистрация",
+  "email": "Имейл",
+  "password": "Парола",
+  "displayNameOptional": "Показвано име (незадължително)",
+  "signIn": "Вход",
+  "createAccount": "Създаване на акаунт",
+  "unableToCheckSession": "Сесията не може да бъде проверена. Опитайте отново.",
+  "lessons": "Уроци",
+  "lessonHistory": "История на уроците",
+  "progress": "Напредък",
+  "rewards": "Награди",
+  "viewAll": "Виж всички",
+  "achievements": "Постижения",
+  "account": "Акаунт",
+  "logout": "Изход",
+  "audio": "Аудио",
+  "feedbackAndReports": "Обратна връзка и отчети",
+  "cancel": "Отказ",
+  "submit": "Изпрати",
+  "send": "Изпрати",
+  "done": "Готово",
+  "openAndroidSettings": "Отвори настройките на Android",
+  "hint": "Подсказка",
+  "finishLesson": "Завърши урока",
+  "typeYourMessage": "Въведете съобщението си",
+  "sending": "Изпращане...",
+  "languageNameEnglish": "Английски",
+  "languageNameRussian": "Руски",
+  "languageNameSpanish": "Испански",
+  "languageNameFrench": "Френски",
+  "languageNameGerman": "Немски",
+  "signInToApp": "Вход в Language Voice Tutor",
+  "pleaseWait": "Моля, изчакайте...",
+  "alreadyHaveAccount": "Вече имам акаунт",
+  "invalidEmail": "Въведете валиден имейл адрес.",
+  "enterPassword": "Въведете паролата си.",
+  "chooseTopic": "Изберете тема",
+  "chooseTopicTitle": "Изберете тема",
+  "chooseTopicSubtitle": "Изберете вида разговор, който искате да упражнявате.",
+  "chooseSituation": "Изберете ситуация",
+  "chooseSituationTitle": "Изберете ситуация",
+  "chooseSituationSubtitle": "Упражнете конкретен момент от тази тема.",
+  "viewAllRewards": "Вижте всички значки и награди за обучение.",
+  "accountDeletion": "Изтриване на акаунт",
+  "requestAccountDeletion": "Заявете изтриване на акаунта",
+  "loadingAccount": "Зареждане на акаунта...",
+  "premiumAndSubscription": "Premium и абонамент",
+  "currentPassword": "Текуща парола",
+  "reasonOptional": "Причина (незадължително)",
+  "submitting": "Изпращане...",
+  "loadingTutors": "Зареждане на преподаватели...",
+  "noTutorsAvailable": "В момента няма налични преподаватели.",
+  "loadingAudioSettings": "Зареждане на аудио настройките...",
+  "conversationModeEnabled": "Режимът за разговор е включен",
+  "sendSuggestionOrReport": "Изпратете предложение или докладвайте проблем",
+  "reportType": "Тип на сигнала",
+  "pasteAiResponseOptional": "Поставете отговора на ИИ (незадължително)",
+  "lessonHistoryHeading": "Последните ви завършени уроци",
+  "noCompletedLessons": "Все още няма завършени уроци",
+  "completedLessonsAppearHere": "Завършените уроци ще се показват тук.",
+  "backToHome": "Към началния екран",
+  "lesson": "Урок",
+  "level": "Ниво",
+  "completed": "Завършен",
+  "finished": "Приключен",
+  "lessonChat": "Чат на урока",
+  "conversation": "Разговор",
+  "turnCount": "{count, plural, =1{1 реплика} other{{count} реплики}}",
+  "@turnCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "achievementsUnavailable": "Все още няма налични постижения.",
+  "unlockedCount": "Отключени {unlocked} от {total}",
+  "@unlockedCount": {
+    "placeholders": {
+      "unlocked": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "learningLanguage": "Изучаване на {language}",
+  "@learningLanguage": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "streaks": "Поредици",
+  "lessonMilestones": "Етапи на уроците",
+  "topics": "Теми",
+  "situations": "Ситуации",
+  "otherAchievements": "Други постижения",
+  "progressCount": "{current} от {total}",
+  "@progressCount": {
+    "placeholders": {
+      "current": {
+        "type": "num"
+      },
+      "total": {
+        "type": "num"
+      }
+    }
+  },
+  "startLesson": "Започни урок",
+  "openSettings": "Отвори настройките",
+  "keepLearningRhythm": "Поддържайте ритъма си на учене",
+  "reminderPermissionExplanation": "Language Voice Tutor може да ви изпраща две весели ежедневни напомняния, за да не се изгуби практиката в натоварения ден. Можете да промените часовете или да изключите напомнянията в Настройки.",
+  "notNow": "Не сега",
+  "allowReminders": "Разрешаване на напомняния",
+  "achievementsTemporarilyUnavailable": "Постиженията временно не са достъпни",
+  "achievementsEmpty": "Вашите постижения ще се появят тук.",
+  "learningStreak": "{count, plural, =1{Поредица от 1 ден} other{Поредица от {count} дни}}",
+  "@learningStreak": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "learningStreakLoading": "Зареждане на поредицата за учене",
+  "learningStreakUnavailable": "Поредицата за учене не е налична",
+  "learnerFallbackName": "Учащ",
+  "premiumPlan": "Premium план",
+  "premiumTrial": "Пробен Premium период",
+  "freePlan": "Безплатен план",
+  "signedInAs": "Влезли сте като {name}",
+  "@signedInAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumDetails": "Детайли за Premium",
+  "explorePremium": "Разгледайте Premium",
+  "freeLessonsAvailableToday": "{count, plural, =1{1 безплатен урок е наличен днес} other{{count} безплатни урока са налични днес}}",
+  "@freeLessonsAvailableToday": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "yourWeek": "Вашата седмица",
+  "lessonsLastSevenDays": "{count, plural, =1{1 урок през последните 7 дни} other{{count} урока през последните 7 дни}}",
+  "@lessonsLastSevenDays": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "startStreakToday": "Започнете поредицата си днес",
+  "activityUnavailable": "Дейността не е достъпна в момента.",
+  "lessonsCompleted": "{count, plural, =1{1 завършен урок} other{{count} завършени урока}}",
+  "@lessonsCompleted": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "activityDaySemantics": "{date}: {count, plural, =1{1 завършен урок} other{{count} завършени урока}}",
+  "@activityDaySemantics": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "weekdayMon": "Пн",
+  "weekdayTue": "Вт",
+  "weekdayWed": "Ср",
+  "weekdayThu": "Чт",
+  "weekdayFri": "Пт",
+  "weekdaySat": "Сб",
+  "weekdaySun": "Нд",
+  "remindersTemporarilyUnavailable": "Напомнянията за практика временно не са достъпни.",
+  "unableToUpdateReminders": "Напомнянията не могат да бъдат актуализирани в момента. Моля, опитайте отново.",
+  "unableToLoadAccount": "Данните за акаунта не могат да бъдат заредени в момента.",
+  "tutorChoicesUnavailable": "Изборът на преподавател временно не е наличен. Все пак можете да прегледате и запазите останалите си настройки.",
+  "pleaseEnterDescription": "Моля, въведете описание.",
+  "emailRequired": "Имейлът е задължителен.",
+  "resetCodePasswordRequired": "Кодът за нулиране и новата парола са задължителни.",
+  "passwordsMustMatch": "Новата парола и потвърждението трябва да съвпадат.",
+  "signInToChangePassword": "Влезте, за да промените паролата си.",
+  "currentPasswordRequired": "Текущата парола е задължителна.",
+  "accountDeletionDescription": "Изпратете заявка за окончателно изтриване на вашия акаунт в Language Voice Tutor и личните ви данни.",
+  "accountDeletionNotice": "Изпращането на тази заявка не изтрива акаунта ви незабавно. Екипът за поддръжка ще я прегледа и обработи и може да поиска допълнителна информация. Отговорът им ще бъде изпратен на имейл адреса, свързан с вашия акаунт. Акаунтът ви не се счита за изтрит само защото сте изпратили тази заявка.",
+  "noDisplayName": "Няма показвано име",
+  "subscriptionUnavailable": "Абонаментът не е наличен",
+  "noPaidPlan": "Няма платен план",
+  "requestId": "ID на заявката: {id}",
+  "@requestId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "statusValue": "Състояние: {status}",
+  "@statusValue": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "passwordRecovery": "Парола и възстановяване",
+  "accountEmail": "Имейл на акаунта",
+  "sendingResetInstructions": "Изпращане на инструкции за нулиране...",
+  "forgotPassword": "Забравена парола",
+  "resetCode": "Код за нулиране",
+  "newPassword": "Нова парола",
+  "confirmNewPassword": "Потвърдете новата парола",
+  "updatingPassword": "Актуализиране на паролата...",
+  "resetPassword": "Нулиране на паролата",
+  "newAccountPassword": "Нова парола за акаунта",
+  "confirmNewAccountPassword": "Потвърдете новата парола за акаунта",
+  "changingPassword": "Промяна на паролата...",
+  "changePassword": "Промяна на паролата",
+  "tutorVoice": "Глас на преподавателя",
+  "speechSpeed": "Скорост на речта: {speed}x",
+  "@speechSpeed": {
+    "placeholders": {
+      "speed": {
+        "type": "String"
+      }
+    }
+  },
+  "feedbackSuggestion": "Предложение",
+  "feedbackAppProblem": "Проблем с приложението",
+  "feedbackAiResponse": "Отговор на ИИ",
+  "yourSuggestion": "Вашето предложение",
+  "describeProblem": "Опишете проблема",
+  "aiResponseProblem": "Какво не беше наред с отговора на ИИ?",
+  "practiceReminders": "Напомняния за практика",
+  "localRemindersDescription": "Тези напомняния са локални за това устройство.",
+  "dailyPracticeReminders": "Ежедневни напомняния за практика",
+  "morningReminder": "Сутрешно напомняне",
+  "eveningReminder": "Вечерно напомняне",
+  "notificationsAllowed": "Разрешени известия",
+  "notificationStatusUnavailable": "Състоянието на известията не е налично",
+  "notificationsBlocked": "Известията са блокирани от Android.",
+  "allowNotifications": "Разрешаване на известия",
+  "feedbackReceived": "Благодарим. Съобщението ви е получено.",
+  "feedbackValidationFailure": "Проверете съобщението си и опитайте отново.",
+  "feedbackUnavailable": "Обратната връзка временно не е достъпна. Моля, опитайте отново.",
+  "deletionRequestAlreadyExists": "Вече има активна заявка за изтриване на акаунта.",
+  "deletionRequestSubmitted": "Заявката ви за изтриване на акаунта е изпратена за обработка от поддръжката.",
+  "incorrectCurrentPassword": "Текущата ви парола не е вярна.",
+  "unableToReachService": "Услугата не може да бъде достигната. Моля, опитайте отново.",
+  "unexpectedServiceResponse": "Услугата върна неочакван отговор. Моля, опитайте отново.",
+  "unableToSubmitRequest": "Заявката ви не може да бъде изпратена в момента. Моля, опитайте отново.",
+  "unableToLoadLearningSettings": "Настройките ви за обучение не могат да бъдат заредени в момента. Моля, опитайте отново.",
+  "settingsTemporarilyUnavailable": "Настройките временно не са достъпни. Моля, опитайте отново.",
+  "selectedLevelContext": "Ниво: {level}",
+  "@selectedLevelContext": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "selectedLevelTopicContext": "Ниво: {level} / Тема: {topic}",
+  "@selectedLevelTopicContext": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      },
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "topicCardSemantics": "{label}. {description}",
+  "@topicCardSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "situationCardSemantics": "{label}. {description}",
+  "@situationCardSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "openTopicTooltip": "Отвори {topic}",
+  "@openTopicTooltip": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "openSituationTooltip": "Отвори {situation}",
+  "@openSituationTooltip": {
+    "placeholders": {
+      "situation": {
+        "type": "String"
+      }
+    }
+  },
+  "noSituationsAvailable": "Няма налични ситуации за тази тема.",
+  "levelA1Label": "A1 Начинаещ",
+  "levelA1Description": "Изградете основни поздрави, изразете нуждите си и дайте кратки ежедневни отговори.",
+  "levelA2Label": "A2 Основно ниво",
+  "levelA2Description": "Водете обичайни разговори с познати думи и фрази.",
+  "levelB1Label": "B1 Средно ниво",
+  "levelB1Description": "Упражнявайте по-дълги разговори, изразяване на мнение и решаване на ежедневни проблеми.",
+  "levelB2Label": "B2 Средно напреднало",
+  "levelB2Description": "Усъвършенствайте разговори с нюанси и по-естествени детайли.",
+  "topicDailyLifeLabel": "Ежедневие",
+  "topicDailyLifeDescription": "Неформални разговори, представяне и ежедневни ситуации.",
+  "topicTravelLabel": "Пътуване",
+  "topicTravelDescription": "Летища, хотели, упътвания и транспорт.",
+  "topicWorkBusinessLabel": "Работа и бизнес",
+  "topicWorkBusinessDescription": "Срещи, имейли, обаждания и разговори на работното място.",
+  "topicJobInterviewLabel": "Интервю за работа",
+  "topicJobInterviewDescription": "Упражнявайте често срещани въпроси и отговори за интервю.",
+  "topicRestaurantCafeLabel": "Ресторант и кафе",
+  "topicRestaurantCafeDescription": "Поръчване на храна, резервиране на маси и учтиви молби.",
+  "topicFreeConversationLabel": "Свободен разговор",
+  "topicFreeConversationDescription": "Свободна практика според това, което искате да кажете.",
+  "situationIntroductionsLabel": "Запознаване",
+  "situationIntroductionsDescription": "Представете се и задайте основни лични въпроси.",
+  "situationSmallTalkNeighborLabel": "Разговор със съсед",
+  "situationSmallTalkNeighborDescription": "Проведете кратък приятелски разговор близо до дома.",
+  "situationAskingForHelpLabel": "Поискайте помощ",
+  "situationAskingForHelpDescription": "Поискайте помощ в проста ежедневна ситуация.",
+  "situationMakingPlansLabel": "Правене на планове",
+  "situationMakingPlansDescription": "Планирайте дейност и се разберете за час и място.",
+  "situationTalkingAboutDayLabel": "Разговор за деня ви",
+  "situationTalkingAboutDayDescription": "Опишете деня си и ежедневната си рутина.",
+  "situationAirportCheckInLabel": "Регистрация на летището",
+  "situationAirportCheckInDescription": "Регистрирайте се за полет и потвърдете подробностите за пътуването.",
+  "situationHotelCheckInLabel": "Настаняване в хотел",
+  "situationHotelCheckInDescription": "Настанете се в хотел и задайте често срещани въпроси.",
+  "situationAskingForDirectionsLabel": "Попитайте за упътване",
+  "situationAskingForDirectionsDescription": "Поискайте и разберете упътвания в нов град.",
+  "situationOrderingTransportLabel": "Поръчайте транспорт",
+  "situationOrderingTransportDescription": "Организирайте такси или споделено пътуване до вашата дестинация.",
+  "situationLostLuggageLabel": "Изгубен багаж",
+  "situationLostLuggageDescription": "Съобщете за изгубен багаж и обяснете ситуацията си.",
+  "situationFirstMeetingLabel": "Първа среща",
+  "situationFirstMeetingDescription": "Представете се на нова работна среща.",
+  "situationDailyStandupLabel": "Ежедневна оперативка",
+  "situationDailyStandupDescription": "Дайте кратка информация за задачите си.",
+  "situationClientPhoneCallLabel": "Телефонен разговор с клиент",
+  "situationClientPhoneCallDescription": "Проведете учтив и ясен служебен разговор.",
+  "situationAskingForClarificationLabel": "Поискайте разяснение",
+  "situationAskingForClarificationDescription": "Задайте допълнителни въпроси, за да потвърдите изискванията.",
+  "situationDiscussingDeadlinesLabel": "Обсъдете срокове",
+  "situationDiscussingDeadlinesDescription": "Говорете за срокове и очаквания за доставка.",
+  "situationTellMeAboutYourselfLabel": "Разкажете ми за себе си",
+  "situationTellMeAboutYourselfDescription": "Направете кратко лично представяне, подходящо за интервю.",
+  "situationWorkExperienceLabel": "Професионален опит",
+  "situationWorkExperienceDescription": "Опишете предишна работа, отговорности и един резултат.",
+  "situationStrengthsWeaknessesLabel": "Силни и слаби страни",
+  "situationStrengthsWeaknessesDescription": "Говорете професионално за една силна страна и една област за подобрение.",
+  "situationWhyThisJobLabel": "Защо искате тази работа?",
+  "situationWhyThisJobDescription": "Обяснете мотивацията си и свържете ролята с уменията си.",
+  "situationQuestionsAtEndLabel": "Задайте въпроси накрая",
+  "situationQuestionsAtEndDescription": "Задайте учтиви и полезни въпроси преди края на интервюто.",
+  "situationBookingTableLabel": "Резервирайте маса",
+  "situationBookingTableDescription": "Обадете се или говорете с някого, за да резервирате маса.",
+  "situationOrderingFoodLabel": "Поръчайте храна",
+  "situationOrderingFoodDescription": "Поръчайте ястие и задайте прости въпроси за менюто.",
+  "situationAskingIngredientsLabel": "Попитайте за съставките",
+  "situationAskingIngredientsDescription": "Попитайте за алергии и съставките на ястията.",
+  "situationWrongOrderLabel": "Решаване на проблем с грешна поръчка",
+  "situationWrongOrderDescription": "Учтиво обяснете проблем с поръчката си.",
+  "situationPayingBillLabel": "Плащане на сметката",
+  "situationPayingBillDescription": "Поискайте сметката и извършете плащането.",
+  "situationOpenConversationLabel": "Свободен разговор",
+  "situationOpenConversationDescription": "Упражнявайте всяка тема с гъвкави допълнителни въпроси.",
+  "premium": "Premium",
+  "premiumStatusLoadingSemantics": "Зареждане на състоянието на Premium",
+  "premiumStatusTemporarilyUnavailable": "Състоянието на Premium временно не е достъпно. Моля, опитайте отново.",
+  "premiumStatusSemantics": "Състояние на Premium: {status}",
+  "@premiumStatusSemantics": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumActive": "Premium е активен",
+  "premiumActiveDescription": "Упражнявайте без дневното ограничение за безплатни уроци.",
+  "premiumEndsOn": "Premium приключва на {date}.",
+  "@premiumEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumTrialActiveDescription": "Пробният ви период за Premium е активен.",
+  "premiumTrialEndsOn": "Пробният период приключва на {date}.",
+  "@premiumTrialEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "freeLessonsRemainingToday": "{count, plural, =0{Днес не остават безплатни уроци.} =1{Днес остава 1 безплатен урок.} other{Днес остават {count} безплатни урока.}}",
+  "@freeLessonsRemainingToday": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "premiumRemovesDailyLimit": "Premium премахва дневното ограничение за уроци.",
+  "premiumAccountLinked": "Достъпът до Premium е свързан с вашия акаунт в Language Voice Tutor.",
+  "premiumSharedAcrossClients": "Потвърденото ви състояние на Premium се споделя между поддържаните клиенти на Language Voice Tutor.",
+  "premiumBenefits": "Предимства на Premium",
+  "premiumBenefitDailyLimit": "• Упражнявайте без дневното ограничение за безплатни уроци",
+  "premiumBenefitAcrossDevices": "• Използвайте един и същ достъп до Premium на поддържани устройства",
+  "premiumBenefitAccountData": "• Съхранявайте заедно акаунта, напредъка, историята и настройките за обучение",
+  "getPremium": "Вземете Premium",
+  "restorePurchases": "Възстановяване на покупки",
+  "refreshPremiumStatus": "Обновете състоянието",
+  "billingProviderExplanation": "Промените в плащането трябва да се извършват чрез доставчика, от който е закупен Premium.",
+  "googlePlayPurchasesUnavailableTitle": "Покупките в Google Play все още не са налични",
+  "restorePurchasesUnavailableTitle": "Възстановяването на покупки все още не е налично",
+  "googlePlayPurchasesUnavailableDescription": "Покупките ще бъдат свързани в следващата стъпка. Тази версия не може да ви таксува или да активира Premium.",
+  "restorePurchasesUnavailableDescription": "Възстановяването от Google Play ще бъде свързано с платежния процес. Текущото състояние на акаунта ви все още се зарежда от Language Voice Tutor.",
+  "purchasePendingConfirmation": "Обработката на покупката все още не е потвърдена. Обновете състоянието отново след малко.",
+  "purchaseActionFailed": "Заявката не може да бъде изпълнена в момента. Моля, опитайте отново.",
+  "premiumOk": "OK",
+  "leaveLessonTitle": "Да напуснете урока?",
+  "leaveLessonDescription": "Ако напуснете, този незавършен урок ще приключи без създаване на обобщение.",
+  "stay": "Останете",
+  "leaveLesson": "Напуснете урока",
+  "finishLessonTitle": "Да завършите урока?",
+  "finishLessonDescription": "Да завършите ли този урок и да видите обобщението?",
+  "continueLesson": "Продължете урока",
+  "gettingHint": "Получаване на подсказка...",
+  "dismissHint": "Скрийте подсказката",
+  "finishingLesson": "Завършване на урока...",
+  "finishLessonAuthRequired": "Влезте отново, за да завършите урока.",
+  "finishLessonSessionUnavailable": "Тази сесия на урока вече не е налична.",
+  "finishLessonFailed": "Урокът не можа да бъде завършен. Проверете връзката си и опитайте отново.",
+  "lessonFeedback": "Обратна връзка",
+  "loadingLessonFeedback": "Зареждане на обратна връзка...",
+  "showLessonFeedback": "Покажи обратната връзка",
+  "hideLessonFeedback": "Скрий обратната връзка",
+  "retryLessonFeedback": "Опитай отново за обратна връзка",
+  "feedbackNotReady": "Обратната връзка все още не е готова. Моля, опитайте отново.",
+  "feedbackQuickSummary": "Кратко обобщение",
+  "feedbackCorrectedVersion": "Коригирана версия",
+  "feedbackGrammarTip": "Граматичен съвет",
+  "feedbackVocabularyTip": "Съвет за лексиката",
+  "feedbackCultureTip": "Културен съвет",
+  "feedbackNaturalVersion": "По-естествена версия",
+  "lessonFeedbackAuthRequired": "Влезте отново, за да продължите урока.",
+  "lessonFeedbackSessionEnded": "Този урок вече е приключил.",
+  "lessonFeedbackNotAvailableForMessage": "Обратната връзка не е налична за това съобщение.",
+  "lessonFeedbackFailed": "Обратна връзка не можа да бъде получена. Моля, опитайте отново.",
+  "lessonStartBlocked": "Използвахте безплатния урок за днес. Опитайте отново утре или преминете към Premium.",
+  "lessonStartConflict": "Вече имате активен урок. Завършете го или го напуснете, преди да започнете нов.",
+  "lessonStartAuthRequired": "Влезте отново, за да започнете урок.",
+  "lessonStartUnavailable": "Урокът не можа да бъде започнат. Проверете връзката си и опитайте отново.",
+  "lessonStartFailed": "Урокът не можа да бъде започнат. Моля, опитайте отново.",
+  "lessonSummary": "Обобщение на урока",
+  "lessonCompleted": "Урокът е завършен",
+  "summaryWhatWentWell": "Какво се получи добре",
+  "summaryStrengths": "Силни страни",
+  "summaryImprovements": "Подобрения",
+  "summaryVocabulary": "Лексика",
+  "summaryGrammar": "Граматика",
+  "summaryNextSteps": "Следващи стъпки",
+  "retrySummary": "Опитай отново обобщението",
+  "summaryUnavailableMessage": "Урокът е запазен, но за него не можа да бъде създадено обобщение.",
+  "summaryAuthRequiredMessage": "Влезте отново, за да заредите обобщението на урока.",
+  "summaryLoadErrorMessage": "Урокът е запазен, но обобщението не може да бъде заредено в момента.",
+  "startRecording": "Започни запис",
+  "stopRecording": "Спри записа",
+  "progressCompletedLessons": "Завършени уроци",
+  "progressAllTime": "За цялото време",
+  "progressLast7Days": "Последните 7 дни",
+  "progressLast30Days": "Последните 30 дни",
+  "progressCurrentStreak": "Текуща поредица",
+  "progressLongestStreak": "Най-дълга поредица",
+  "progressRecentActivity": "Скорошна активност",
+  "progressLastCompletedLesson": "Последен завършен урок",
+  "progressLessonsByLanguage": "Уроци по език",
+  "progressLessonsByLevel": "Уроци по ниво",
+  "progressEmptyTitle": "Напредъкът ви ще се появи тук",
+  "progressEmptyDescription": "Завършените уроци ще се появят тук, след като завършите урок.",
+  "progressUnavailable": "Напредъкът временно не е достъпен. Моля, опитайте отново.",
+  "progressLoadFailed": "Напредъкът не можа да бъде зареден. Моля, опитайте отново.",
+  "progressStreakDays": "{count, plural, =0{0 дни} =1{1 ден} other{{count} дни}}",
+  "achievementsLoadFailed": "Постиженията не можаха да бъдат заредени. Моля, опитайте отново.",
+  "achievementUnlockedSemantics": "Отключено постижение: {title}",
+  "@achievementUnlockedSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "achievementLockedSemantics": "Заключено постижение: {title}. Напредък: {current} от {target}.",
+  "@achievementLockedSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "current": {
+        "type": "num"
+      },
+      "target": {
+        "type": "num"
+      }
+    }
+  },
+  "closeAchievementPreview": "Затвори предварителния преглед на постижението {title}",
+  "@closeAchievementPreview": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "closeAllAchievementPreviews": "Затвори всички предварителни прегледи на постижения",
+  "achievementTitleStreak7": "Поредица от 7 дни",
+  "achievementTitleStreak30": "Поредица от 30 дни",
+  "achievementTitleStreak60": "Поредица от 60 дни",
+  "achievementTitleStreak100": "Поредица от 100 дни",
+  "achievementTitleStreak365": "Поредица от 365 дни",
+  "achievementTitleLessons1": "Първа стъпка",
+  "achievementTitleLessons5": "Начало",
+  "achievementTitleLessons10": "10 завършени урока",
+  "achievementTitleLessons25": "Постоянен учащ",
+  "achievementTitleLessons50": "50 завършени урока",
+  "achievementTitleLessons100": "Клуб 100",
+  "achievementTitleDailyLifeIntroductions": "Първи поздрав",
+  "achievementTitleDailyLifeNeighborChat": "Разговор със съсед",
+  "achievementTitleDailyLifeHelpfulHand": "Подадена ръка",
+  "achievementTitleDailyLifePlanMaker": "Създател на планове",
+  "achievementTitleDailyLifeDayTeller": "Разказвач на деня",
+  "achievementTitleDailyLifeEverydayHero": "Всекидневен герой",
+  "achievementTitleTravelAirportExpert": "Експерт по летища",
+  "achievementTitleTravelHonoredGuest": "Почетен гост",
+  "achievementTitleTravelCityNavigator": "Градски навигатор",
+  "achievementTitleTravelRideReady": "Готов за път",
+  "achievementTitleTravelBaggageFinder": "Откривател на багаж",
+  "achievementTitleTravelTraveler": "Пътешественик",
+  "achievementTitleWorkMeetingReady": "Готов за срещи",
+  "achievementTitleWorkStandupStar": "Звезда на оперативката",
+  "achievementTitleWorkClientCaller": "Експерт по разговори с клиенти",
+  "achievementTitleWorkClearCommunicator": "Ясен комуникатор",
+  "achievementTitleWorkDeadlineDriver": "Майстор на сроковете",
+  "achievementTitleWorkBusinessReady": "Готов за бизнеса",
+  "achievementTitleInterviewStrongIntroduction": "Силно представяне",
+  "achievementTitleInterviewCareerStory": "Професионална история",
+  "achievementTitleInterviewSelfAwareCandidate": "Осъзнат кандидат",
+  "achievementTitleInterviewRightFit": "Подходящ кандидат",
+  "achievementTitleInterviewCuriousCandidate": "Любознателен кандидат",
+  "achievementTitleInterviewReady": "Готов за интервю",
+  "achievementTitleRestaurantTableBooker": "Майстор на резервациите",
+  "achievementTitleRestaurantMenuExpert": "Експерт по менюто",
+  "achievementTitleRestaurantIngredientGuide": "Наръчник за съставките",
+  "achievementTitleRestaurantOrderFixer": "Поправител на поръчки",
+  "achievementTitleRestaurantBillSettled": "Сметката е платена",
+  "achievementTitleRestaurantDiningPro": "Майстор на ресторанта",
+  "autoSendMessage": "Auto-send message",
+  "autoPlayTutorVoice": "Auto-play tutor voice",
+  "voiceRecognitionUnclear": "Не успях да разпозная това ясно. Моля, опитайте отново.",
+  "microphoneBlockedOpenSettings": "Достъпът до микрофона е блокиран. Отворете настройките на Android, за да го разрешите.",
+  "microphonePermissionDeniedRetry": "Достъпът до микрофона не беше предоставен. Докоснете микрофона, за да опитате отново.",
+  "recordingStartFailedCheckMicrophone": "Записът не можа да бъде започнат. Проверете микрофона си.",
+  "recordingStartFailed": "Записът не можа да бъде започнат. Моля, опитайте отново.",
+  "recordingTooShort": "Моля, запишете малко по-дълъг отговор.",
+  "recordingStopFailed": "Записът не можа да бъде спрян. Моля, опитайте отново.",
+  "recordingProcessingFailed": "Записът не можа да бъде обработен. Моля, опитайте отново.",
+  "recordingAuthRequired": "Влезте отново, за да използвате записа.",
+  "transcriptionTemporarilyUnavailable": "Транскрипцията временно не е достъпна. Моля, опитайте отново след малко.",
+  "transcriptionTimedOut": "Транскрипцията отне твърде много време. Моля, опитайте отново.",
+  "transcriptionConnectionFailed": "Връзката прекъсна по време на транскрипцията. Моля, опитайте отново.",
+  "transcriptionFailed": "Записът не можа да бъде транскрибиран. Моля, опитайте отново.",
+  "voiceTemporarilyUnavailable": "Гласът временно не е наличен. Моля, опитайте отново след малко.",
+  "voicePlaybackFailed": "Гласът не можа да бъде възпроизведен. Моля, опитайте отново.",
+  "voicePlaybackTimedOut": "Възпроизвеждането на гласа отне твърде много време. Моля, опитайте отново.",
+  "voicePlaybackStopped": "Възпроизвеждането на гласа спря. Можете да запишете отново.",
+  "replaceTypedTextTitle": "Да замените въведения текст?",
+  "replaceTypedTextDescription": "Да използвате транскрибирания запис вместо написаната чернова?",
+  "keepTypedText": "Запази въведения текст",
+  "replaceTypedText": "Замени въведения текст",
+  "transcribingRecording": "Транскрибиране на записа...",
+  "retryLessonContent": "Опитай отново съдържанието на урока",
+  "translation": "Превод",
+  "playVoice": "Възпроизведи гласа",
+  "openConversationMode": "Отвори режим на разговор",
+  "conversationPaused": "Разговорът е на пауза. Можете да запишете отново.",
+  "tutorReplyTimedOut": "Преподавателят се забави твърде много с отговора. Моля, опитайте отново.",
+  "conversationSendFailed": "Отговорът не можа да бъде изпратен. Опитайте да запишете отново.",
+  "openAndroidSettingsFailed": "Настройките на Android не можаха да бъдат отворени. Моля, опитайте отново.",
+  "conversationReady": "Разговорът ви е готов.",
+  "tutorAvatarSemantics": "Аватар на преподавателя",
+  "lessonContentLoadFailed": "Съдържанието на урока не можа да бъде заредено. Моля, опитайте отново.",
+  "lessonHistoryDetails": "Детайли за урока",
+  "historySummary": "Обобщение",
+  "noHistoryConversation": "Няма наличен разговор за този урок.",
+  "noHistorySummary": "Няма налично обобщение на урока.",
+  "overallSummary": "Общо обобщение",
+  "historyTutor": "Преподавател",
+  "historyYou": "Вие",
+  "feedbackCorrectedText": "Коригиран текст",
+  "feedbackExplanation": "Обяснение",
+  "feedbackPraise": "Похвала",
+  "lessonUnavailable": "Този урок не е наличен.",
+  "lessonNoLongerAvailable": "Този урок вече не е наличен.",
+  "lessonHistoryUnavailable": "Историята на уроците временно не е достъпна. Моля, опитайте отново.",
+  "lessonDetailLoadFailed": "Детайлите за урока не можаха да бъдат заредени. Моля, опитайте отново."
+}
