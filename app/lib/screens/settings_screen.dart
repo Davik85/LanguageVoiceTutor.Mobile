@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
@@ -218,6 +220,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             : null;
         _settingsError = null;
       });
+      _syncReminderLanguage(settings.explanationLanguage);
     } on ApiException catch (error) {
       if (!mounted) return;
       if (error.message == 'Please sign in again.') return _goToLogin();
@@ -244,6 +247,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           _confirmedSettings = saved;
           _settingsError = null;
         });
+        _syncReminderLanguage(saved.explanationLanguage);
         widget._onInterfaceLanguageSaved?.call(saved.explanationLanguage);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.l10n.settingsSaved)),
@@ -271,6 +275,14 @@ class _SettingsScreenState extends State<SettingsScreen>
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  void _syncReminderLanguage(String? languageId) {
+    unawaited(
+      _practiceReminderService.setInterfaceLanguage(languageId).catchError(
+            (_) => false,
+          ),
+    );
   }
 
   Future<void> _submitFeedback() async {

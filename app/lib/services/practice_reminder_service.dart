@@ -4,6 +4,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 import 'practice_reminder_preferences.dart';
+import 'practice_reminder_messages.dart';
 
 enum ReminderPermissionState { granted, blocked, unavailable }
 
@@ -99,6 +100,7 @@ abstract class PracticeReminderService {
   Future<bool> setMorningTime(int hour, int minute);
   Future<bool> setEveningTime(int hour, int minute);
   Future<bool> markExplanationHandled();
+  Future<bool> setInterfaceLanguage(String? languageId);
   Future<bool> reconcile();
 }
 
@@ -160,6 +162,22 @@ class LocalPracticeReminderService implements PracticeReminderService {
   @override
   Future<bool> setEveningTime(int h, int m) =>
       _save((p) => p.copyWith(eveningHour: h, eveningMinute: m));
+  @override
+  Future<bool> setInterfaceLanguage(String? languageId) async {
+    try {
+      final preferences = await _store.read();
+      final normalized =
+          PracticeReminderMessages.normalizeLanguageId(languageId);
+      final stored = PracticeReminderMessages.normalizeLanguageId(
+          preferences.interfaceLanguageId);
+      if (stored == normalized) return true;
+      await _store.write(preferences.copyWith(interfaceLanguageId: normalized));
+      return reconcile();
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<bool> _save(
       PracticeReminderPreferences Function(PracticeReminderPreferences)
           change) async {
@@ -183,18 +201,11 @@ class LocalPracticeReminderService implements PracticeReminderService {
         return _timezoneReady;
       }
       await _cancel();
-      await _schedule(
-          morningId,
-          p.morningHour,
-          p.morningMinute,
-          'Ready for a tiny language win? 🌞',
-          'A few minutes of practice today can make a big difference. Let’s go!');
-      await _schedule(
-          eveningId,
-          p.eveningHour,
-          p.eveningMinute,
-          'Keep your streak glowing! 🔥',
-          'There’s still time for a quick lesson and one more win today.');
+      final messages = PracticeReminderMessages.resolve(p.interfaceLanguageId);
+      await _schedule(morningId, p.morningHour, p.morningMinute,
+          messages.morningTitle, messages.morningBody);
+      await _schedule(eveningId, p.eveningHour, p.eveningMinute,
+          messages.eveningTitle, messages.eveningBody);
       return true;
     } catch (_) {
       return false;

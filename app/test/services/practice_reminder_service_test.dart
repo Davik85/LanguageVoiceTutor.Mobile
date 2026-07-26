@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/services/practice_reminder_preferences.dart';
+import 'package:language_voice_tutor_mobile/services/practice_reminder_messages.dart';
 import 'package:language_voice_tutor_mobile/services/practice_reminder_service.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
@@ -149,5 +150,69 @@ void main() {
                 tz.TZDateTime.utc(2026))
             .reconcile(),
         isFalse);
+  });
+  group('localized practice reminder messages', () {
+    test('reconcile schedules localized copy for both stable IDs', () async {
+      final notifications = _Notifications();
+      await service(
+              _Store(
+                  const PracticeReminderPreferences(interfaceLanguageId: 'ja')),
+              notifications,
+              _Platform(ReminderPermissionState.granted),
+              tz.TZDateTime.utc(2026))
+          .reconcile();
+      final messages = PracticeReminderMessages.resolve('ja');
+      expect(notifications.scheduled.map((request) => request.id), [
+        LocalPracticeReminderService.morningId,
+        LocalPracticeReminderService.eveningId
+      ]);
+      expect(notifications.scheduled.map((request) => request.title),
+          [messages.morningTitle, messages.eveningTitle]);
+      expect(notifications.scheduled.map((request) => request.body),
+          [messages.morningBody, messages.eveningBody]);
+    });
+
+    test('a language change reschedules the same IDs and preserves times',
+        () async {
+      final store = _Store(const PracticeReminderPreferences(
+          interfaceLanguageId: 'en',
+          morningHour: 7,
+          morningMinute: 15,
+          eveningHour: 21,
+          eveningMinute: 45));
+      final notifications = _Notifications();
+      final reminderService = service(store, notifications,
+          _Platform(ReminderPermissionState.granted), tz.TZDateTime.utc(2026));
+      expect(await reminderService.setInterfaceLanguage('pt-PT'), isTrue);
+      expect(store.value.interfaceLanguageId, 'pt');
+      expect([
+        store.value.morningHour,
+        store.value.morningMinute,
+        store.value.eveningHour,
+        store.value.eveningMinute
+      ], [
+        7,
+        15,
+        21,
+        45
+      ]);
+      expect(notifications.scheduled.map((request) => request.id), [
+        LocalPracticeReminderService.morningId,
+        LocalPracticeReminderService.eveningId
+      ]);
+      expect(notifications.scheduled.first.title,
+          PracticeReminderMessages.resolve('pt').morningTitle);
+    });
+
+    test('an unchanged normalized language does not reschedule', () async {
+      final notifications = _Notifications();
+      final reminderService = service(
+          _Store(const PracticeReminderPreferences(interfaceLanguageId: 'sr')),
+          notifications,
+          _Platform(ReminderPermissionState.granted),
+          tz.TZDateTime.utc(2026));
+      expect(await reminderService.setInterfaceLanguage('sr-Latn'), isTrue);
+      expect(notifications.scheduled, isEmpty);
+    });
   });
 }

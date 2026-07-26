@@ -1,5 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'practice_reminder_messages.dart';
+
 class PracticeReminderPreferences {
   const PracticeReminderPreferences({
     this.enabled = true,
@@ -8,6 +10,7 @@ class PracticeReminderPreferences {
     this.eveningHour = 20,
     this.eveningMinute = 0,
     this.permissionExplanationHandled = false,
+    this.interfaceLanguageId = 'en',
   });
 
   final bool enabled;
@@ -16,6 +19,7 @@ class PracticeReminderPreferences {
   final int eveningHour;
   final int eveningMinute;
   final bool permissionExplanationHandled;
+  final String interfaceLanguageId;
 
   PracticeReminderPreferences copyWith(
           {bool? enabled,
@@ -23,7 +27,8 @@ class PracticeReminderPreferences {
           int? morningMinute,
           int? eveningHour,
           int? eveningMinute,
-          bool? permissionExplanationHandled}) =>
+          bool? permissionExplanationHandled,
+          String? interfaceLanguageId}) =>
       PracticeReminderPreferences(
         enabled: enabled ?? this.enabled,
         morningHour: morningHour ?? this.morningHour,
@@ -32,6 +37,7 @@ class PracticeReminderPreferences {
         eveningMinute: eveningMinute ?? this.eveningMinute,
         permissionExplanationHandled:
             permissionExplanationHandled ?? this.permissionExplanationHandled,
+        interfaceLanguageId: interfaceLanguageId ?? this.interfaceLanguageId,
       );
 }
 
@@ -52,6 +58,8 @@ class SecurePracticeReminderPreferenceStore
   static const eveningMinuteKey = 'lvt_practice_reminder_evening_minute';
   static const explanationHandledKey =
       'lvt_practice_reminder_permission_explanation_handled';
+  static const interfaceLanguageIdKey =
+      'lvt_practice_reminder_interface_language_id';
 
   @override
   Future<PracticeReminderPreferences> read() async {
@@ -71,6 +79,8 @@ class SecurePracticeReminderPreferenceStore
         eveningHour: value(eveningHourKey, 20, 23),
         eveningMinute: value(eveningMinuteKey, 0, 59),
         permissionExplanationHandled: values[explanationHandledKey] == 'true',
+        interfaceLanguageId: PracticeReminderMessages.normalizeLanguageId(
+            values[interfaceLanguageIdKey]),
       );
     } catch (_) {
       return const PracticeReminderPreferences();
@@ -88,6 +98,10 @@ class SecurePracticeReminderPreferenceStore
       _storage.write(
           key: explanationHandledKey,
           value: '${p.permissionExplanationHandled}'),
+      _storage.write(
+          key: interfaceLanguageIdKey,
+          value: PracticeReminderMessages.normalizeLanguageId(
+              p.interfaceLanguageId)),
     ]);
   }
 }

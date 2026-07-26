@@ -16,6 +16,8 @@ import 'package:language_voice_tutor_mobile/models/user_settings.dart';
 import 'package:language_voice_tutor_mobile/screens/settings_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
+import 'package:language_voice_tutor_mobile/services/practice_reminder_preferences.dart';
+import 'package:language_voice_tutor_mobile/services/practice_reminder_service.dart';
 import 'package:language_voice_tutor_mobile/services/tutor_options_service.dart';
 
 class FakeApiClient implements ApiClient {
@@ -175,9 +177,44 @@ class _MemoryStorage implements SessionStorage {
       {required String accessToken, required String refreshToken}) async {}
 }
 
+class FakePracticeReminderService implements PracticeReminderService {
+  final synchronizedLanguageIds = <String?>[];
+  bool failLanguageSynchronization = false;
+  @override
+  Future<void> initialize() async {}
+  @override
+  Future<PracticeReminderPreferences> preferences() async =>
+      const PracticeReminderPreferences();
+  @override
+  Future<ReminderPermissionState> permissionState() async =>
+      ReminderPermissionState.granted;
+  @override
+  Future<bool> requestPermission() async => true;
+  @override
+  Future<bool> openAndroidSettings() async => true;
+  @override
+  Future<bool> setEnabled(bool enabled) async => true;
+  @override
+  Future<bool> setMorningTime(int hour, int minute) async => true;
+  @override
+  Future<bool> setEveningTime(int hour, int minute) async => true;
+  @override
+  Future<bool> markExplanationHandled() async => true;
+  @override
+  Future<bool> setInterfaceLanguage(String? languageId) async {
+    synchronizedLanguageIds.add(languageId);
+    if (failLanguageSynchronization) throw StateError('reminders');
+    return true;
+  }
+
+  @override
+  Future<bool> reconcile() async => true;
+}
+
 Widget _screen(FakeAuthService auth,
         {Locale locale = const Locale('en'),
-        ValueChanged<String>? onInterfaceLanguageSaved}) =>
+        ValueChanged<String>? onInterfaceLanguageSaved,
+        PracticeReminderService? practiceReminderService}) =>
     MaterialApp(
         locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -188,6 +225,7 @@ Widget _screen(FakeAuthService auth,
         home: SettingsScreen(
             authService: auth,
             tutorOptionsService: FakeTutorOptionsService(),
+            practiceReminderService: practiceReminderService,
             onInterfaceLanguageSaved: onInterfaceLanguageSaved));
 
 Finder get _settingsScrollable => find.byType(Scrollable).first;
@@ -249,6 +287,68 @@ Future<void> _openAccountDeletion(WidgetTester tester) async {
 }
 
 void main() {
+  group('localized practice reminder messages', () {
+    testWidgets('settings load synchronizes explanationLanguage only',
+        (tester) async {
+      final reminders = FakePracticeReminderService();
+      final auth = FakeAuthService(
+        initialSettings: const UserSettings(
+          nativeLanguage: 'ru',
+          studyLanguage: 'ja',
+          explanationLanguage: 'ko',
+          speechVoice: 'nova',
+          speechSpeed: 1.0,
+          conversationModeEnabled: true,
+          selectedTutorId: 'nelli',
+          currentLevel: 'A1',
+        ),
+      );
+      await tester
+          .pumpWidget(_screen(auth, practiceReminderService: reminders));
+      await tester.pumpAndSettle();
+      expect(reminders.synchronizedLanguageIds, ['ko']);
+    });
+
+    testWidgets(
+        'successful settings save synchronizes confirmed explanationLanguage',
+        (tester) async {
+      final reminders = FakePracticeReminderService();
+      final auth = FakeAuthService(
+        confirmedSave: const UserSettings(
+          nativeLanguage: 'en',
+          studyLanguage: 'es',
+          explanationLanguage: 'pt',
+          speechVoice: 'nova',
+          speechSpeed: 1.0,
+          conversationModeEnabled: true,
+          selectedTutorId: 'nelli',
+          currentLevel: 'A1',
+        ),
+      );
+      await tester
+          .pumpWidget(_screen(auth, practiceReminderService: reminders));
+      await tester.pumpAndSettle();
+      await _scrollToText(tester, 'Save settings');
+      await tester.tap(find.text('Save settings'));
+      await tester.pumpAndSettle();
+      expect(reminders.synchronizedLanguageIds, ['en', 'pt']);
+    });
+
+    testWidgets(
+        'reminder synchronization failure does not fail a successful save',
+        (tester) async {
+      final reminders = FakePracticeReminderService()
+        ..failLanguageSynchronization = true;
+      await tester.pumpWidget(
+          _screen(FakeAuthService(), practiceReminderService: reminders));
+      await tester.pumpAndSettle();
+      await _scrollToText(tester, 'Save settings');
+      await tester.tap(find.text('Save settings'));
+      await tester.pumpAndSettle();
+      expect(find.text('Settings saved.'), findsOneWidget);
+    });
+  });
+
   testWidgets('successful save applies the confirmed explanation language',
       (tester) async {
     String? appliedLanguage;
