@@ -7,7 +7,10 @@ void main() {
   final scenario = LessonRuntimeScenario.fromJson({
     'id': 'everyday_english_introductions',
     'metadata': {'subtopic': 'Introductions'},
-    'conversationFlow': {'opening': 'Hello.'},
+    'conversationFlow': {
+      'opening': 'Hello.',
+      'defaultOpeningExample': 'Welcome! What is your name?',
+    },
   });
   const variant = LessonRuntimeContextVariant(
       id: 'c',
@@ -35,5 +38,88 @@ void main() {
     expect(text, contains('Très bien'));
     expect(text, contains('Comment tu t’appelles ?'));
     expect(text, isNot(contains('Great choice')));
+  });
+  test('custom context uses runtime default opening with Desktop fallback', () {
+    const builder = LessonRoleplayOpeningBuilder();
+    expect(
+      builder.buildCustomContextOpening(
+        scenario: scenario,
+        customContext: 'Meeting a colleague',
+        studyLanguage: StudyLanguageDefinitions.resolve('en'),
+        tutorDisplayName: 'Runtime Tutor',
+      ),
+      'Good idea. Let\'s keep it simple: Meeting a colleague.\n\n'
+      'Welcome! What is your name?',
+    );
+    final fallback = LessonRuntimeScenario.fromJson({
+      'metadata': {'subtopic': 'Other'},
+      'conversationFlow': {},
+    });
+    expect(
+      builder.buildCustomContextOpening(
+        scenario: fallback,
+        customContext: 'At a park',
+        studyLanguage: StudyLanguageDefinitions.resolve('en'),
+        tutorDisplayName: 'Runtime Tutor',
+      ),
+      'Good idea. Let\'s keep it simple: At a park.\n\n'
+      'Hi! Nice to meet you. What\'s your name?',
+    );
+  });
+
+  test('custom context resolves both CMS tutor placeholders', () {
+    const builder = LessonRoleplayOpeningBuilder();
+    for (final placeholder in const ['{tutorName}', '{TutorName}']) {
+      final placeholderScenario = LessonRuntimeScenario.fromJson({
+        'metadata': {'subtopic': 'Other'},
+        'conversationFlow': {
+          'defaultOpeningExample':
+              'Hello! I\'m $placeholder. What\'s your name?',
+        },
+      });
+
+      final text = builder.buildCustomContextOpening(
+        scenario: placeholderScenario,
+        customContext: 'Meeting a colleague',
+        studyLanguage: StudyLanguageDefinitions.resolve('en'),
+        tutorDisplayName: 'Runtime Tutor',
+      );
+
+      expect(
+        text,
+        'Good idea. Let\'s keep it simple: Meeting a colleague.\n\n'
+        'Hello! I\'m Runtime Tutor. What\'s your name?',
+      );
+      expect(text, isNot(contains(placeholder)));
+    }
+  });
+
+  test('known context falls back to the CMS default opening example', () {
+    const builder = LessonRoleplayOpeningBuilder();
+    const blankVariant = LessonRuntimeContextVariant(
+      id: 'fallback',
+      title: 'Context',
+      localizedTitle: '',
+      openingLine: '   ',
+      contextConfirmationLine: 'Great choice.',
+      openingIntent: 'start',
+    );
+    final fallbackScenario = LessonRuntimeScenario.fromJson({
+      'metadata': {'subtopic': 'Other'},
+      'conversationFlow': {
+        'opening': 'This opening must not be used.',
+        'defaultOpeningExample': 'Hello! I\'m {TutorName}. What\'s your name?',
+      },
+    });
+
+    expect(
+      builder.buildKnownContextOpening(
+        scenario: fallbackScenario,
+        variant: blankVariant,
+        studyLanguage: StudyLanguageDefinitions.resolve('en'),
+        tutorDisplayName: 'Runtime Tutor',
+      ),
+      'Great choice.\n\nHello! I\'m Runtime Tutor. What\'s your name?',
+    );
   });
 }

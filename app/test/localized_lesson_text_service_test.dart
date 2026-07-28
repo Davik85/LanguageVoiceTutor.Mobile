@@ -12,7 +12,11 @@ void main() {
       'subtopic': 'Introductions',
       'lessonType': 'guided_roleplay',
     },
-    'lessonSetup': {'setupMessage': 'English setup'},
+    'lessonSetup': {
+      'setupMessage': 'Hi, {{userDisplayName}}!\n\n'
+          'Meeting a new neighbor,,,\n\n'
+          '1. Say hello\n2. Ask a question',
+    },
     'learningGoal': {'goal': 'English goal'},
     'conversationFlow': {'opening': 'Today we practice introductions.'},
     'controlledVariation': {
@@ -38,14 +42,45 @@ void main() {
     'runtimeContent': {'lessonPhase': 'active_roleplay'},
   });
 
-  test('English preserves the existing English setup path', () {
+  test('English preserves the CMS setup template formatting', () {
     final text = LocalizedLessonTextService.buildSetupMessage(
       scenario: scenario,
       studyLanguage: StudyLanguageDefinitions.resolve('en'),
+      userDisplayName: 'David',
     );
-    expect(text, contains('Today we practice introductions.'));
-    expect(text, contains('Goal: English goal'));
-    expect(text, contains('1. Meeting a new neighbor'));
+    expect(
+      text,
+      'Hi, David!\n\nMeeting a new neighbor,,,\n\n'
+      '1. Say hello\n2. Ask a question',
+    );
+    expect(text, isNot(contains('Today we practice introductions.')));
+    expect(text, isNot(contains('{{userDisplayName}}')));
+  });
+
+  test('English setup uses the exact Desktop fallback when CMS is blank', () {
+    final blankSetupScenario = LessonRuntimeScenario.fromJson({
+      'metadata': {'subtopic': 'Other'},
+      'lessonSetup': {'setupMessage': '   '},
+      'conversationFlow': {'opening': 'This must not be shown.'},
+    });
+    expect(
+      LocalizedLessonTextService.buildSetupMessage(
+        scenario: blankSetupScenario,
+        studyLanguage: StudyLanguageDefinitions.resolve('en'),
+      ),
+      "Hi! Let's practice this situation. Are you ready?",
+    );
+  });
+
+  test('blank display name keeps the safe setup greeting fallback', () {
+    expect(
+      LocalizedLessonTextService.buildSetupMessage(
+        scenario: scenario,
+        studyLanguage: StudyLanguageDefinitions.resolve('en'),
+      ),
+      'Hi!\n\nMeeting a new neighbor,,,\n\n'
+      '1. Say hello\n2. Ask a question',
+    );
   });
 
   final setupExpectations = <String, List<String>>{
@@ -64,7 +99,7 @@ void main() {
       for (final expected in entry.value) {
         expect(text, contains(expected));
       }
-      expect(text, isNot(contains('English setup')));
+      expect(text, isNot(contains('Meeting a new neighbor,,,')));
     });
   }
 
@@ -116,6 +151,27 @@ void main() {
         spanish,
       ),
       contains('Me llamo'),
+    );
+  });
+
+  test('custom context opening matches Desktop wording and preserves input',
+      () {
+    expect(
+      LocalizedLessonTextService.buildCustomContextStartMessage(
+        customContext: ' Meeting a colleague ',
+        openingLine: 'Welcome! What is your name?',
+        studyLanguage: StudyLanguageDefinitions.resolve('en'),
+      ),
+      'Good idea. Let\'s keep it simple: Meeting a colleague.\n\n'
+      'Welcome! What is your name?',
+    );
+    expect(
+      LocalizedLessonTextService.buildCustomContextStartMessage(
+        customContext: 'Une réunion',
+        openingLine: 'Bonjour !',
+        studyLanguage: StudyLanguageDefinitions.resolve('fr'),
+      ),
+      'Bonne idée. Restons simples : Une réunion.\n\nBonjour !',
     );
   });
 

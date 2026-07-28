@@ -220,6 +220,14 @@ Expected boundary checks:
 
 Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
 
+## Accepted bounded full-lesson context verification
+
+Accepted automated verification: `flutter analyze` passed and the complete Mobile Flutter suite passed **512 tests**. The actual B2 `LessonScreen` regression retained the learner name from turn 1 and origin from turn 2 through turn 31; its turn-31 request carried 63 prior guided-transcript messages, excluded the current learner turn from history, sent that turn separately as `userMessage`, and used hard/final limits of 32. Learner turn 32 completed locally without a normal lesson-reply request and left **Finish** enabled.
+
+Backend verification passed **422 tests**; backend and Desktop builds passed. Backend prompt tests cover level-aware capacities 33/43/53/67, fallback 10, cap 70, filtering before truncation, chronological order, trailing-only duplicate removal, early-fact retention, current-message single inclusion, and the single anti-repeat instruction.
+
+Do not treat this automated result as deployed or physical-device evidence. After backend deployment, run a real-device 12–15-turn conversation, a B2 smoke through wrap-up/final, and confirm the tutor does not repeat questions about learner name or origin.
+
 
 
 ## Current authentication resilience and Feedback & reports checks

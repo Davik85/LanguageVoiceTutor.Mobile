@@ -228,6 +228,7 @@ class LessonRuntimeLevelProfile {
 class LessonRuntimeConversationFlow {
   const LessonRuntimeConversationFlow({
     required this.opening,
+    required this.defaultOpeningExample,
     required this.firstUserTask,
     required this.guidedPracticeFollowUpQuestions,
     required this.variationOrComplication,
@@ -239,6 +240,7 @@ class LessonRuntimeConversationFlow {
   });
 
   final String opening;
+  final String defaultOpeningExample;
   final String firstUserTask;
   final List<String> guidedPracticeFollowUpQuestions;
   final String variationOrComplication;
@@ -251,6 +253,7 @@ class LessonRuntimeConversationFlow {
   factory LessonRuntimeConversationFlow.fromJson(Map<String, dynamic> json) =>
       LessonRuntimeConversationFlow(
         opening: _string(json, 'opening'),
+        defaultOpeningExample: _string(json, 'defaultOpeningExample'),
         firstUserTask: _string(json, 'firstUserTask'),
         guidedPracticeFollowUpQuestions:
             _stringList(_value(json, 'guidedPracticeFollowUpQuestions')),

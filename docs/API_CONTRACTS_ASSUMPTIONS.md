@@ -179,6 +179,12 @@ Persisted lesson messages use:
 POST /api/me/lesson-sessions/{sessionId}/messages
 ```
 
+### Normal lesson-reply prompt context
+
+The existing `POST /api/lesson-chat/reply` contract is unchanged. `userMessage` is the current learner input; `recentMessages` contains only prior eligible messages in oldest-to-newest order. The current input must not also appear in `recentMessages`. Mobile derives its bounded prior-history capacity from the effective final learner turn: `min((effectiveFinalLearnerTurn * 2) + 3, 70)`, with fallback `10` for a missing or non-positive final turn. The backend applies the same final cap and removes only a trailing learner-history item that exactly duplicates `userMessage`, preserving legitimate older repeated phrases for older clients.
+
+`backendSessionId` continues to identify the authenticated lesson session; it does not create provider-side conversation memory. The backend does not load persisted lesson-session messages to hydrate a normal reply prompt. Persisted messages are the history/summary/feedback/session record, while `recentMessages` is the client-supplied prompt context. Existing learner and runtime tutor display-name fields remain supplied through the same request contract. No route or API JSON field was added or renamed for bounded history.
+
 Do not use the premature placeholder endpoint below for real mobile lessons at this stage:
 
 ```http

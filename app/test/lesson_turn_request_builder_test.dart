@@ -21,7 +21,7 @@ void main() {
       'grammarFocus': ['would like']
     },
     'levelProfiles': {
-      'A1': {'softWrapUpAfterUserTurn': 3, 'finalMessageAtUserTurn': 4}
+      'A1': {'softWrapUpAfterUserTurn': 10, 'finalMessageAtUserTurn': 15}
     },
     'conversationFlow': {'opening': 'Opening', 'firstUserTask': 'Answer'},
     'roleplayBeats': [],
@@ -76,6 +76,10 @@ void main() {
       userMessage: 'I need a room',
       lastBotMessage: 'Opening',
       learnerTurnCount: 1,
+      lessonPhase: LessonLivePhase.activeRoleplay,
+      hasWrapUpStarted: false,
+      shouldStartWrappingUp: false,
+      shouldEndLessonNow: false,
       recentMessages: const [
         LessonRecentConversationMessage(sender: 'Tutor', text: 'Opening')
       ],
@@ -91,7 +95,8 @@ void main() {
     expect(request.runtimeContentVersionNumber, 7);
   });
 
-  test('does not fabricate a missing backend lesson phase', () {
+  test('uses explicitly supplied live lesson state instead of runtime snapshot',
+      () {
     final request = const LessonTurnRequestBuilder().build(
       scenario: scenario,
       settings: settings,
@@ -99,6 +104,10 @@ void main() {
       userMessage: 'Hello',
       lastBotMessage: '',
       learnerTurnCount: 1,
+      lessonPhase: LessonLivePhase.wrapUp,
+      hasWrapUpStarted: true,
+      shouldStartWrappingUp: false,
+      shouldEndLessonNow: false,
       recentMessages: const [],
       backendSessionId: 'session',
       context: const LessonContextSelection(
@@ -107,7 +116,63 @@ void main() {
           isCustomContext: true,
           selectedContextTitle: 'Custom'),
     );
-    expect(request.lessonPhase, isEmpty);
+    expect(request.lessonPhase, 'wrap_up');
+    expect(request.hasWrapUpStarted, isTrue);
+  });
+
+  test('resolves level-aware bounded history limits', () {
+    const builder = LessonTurnRequestBuilder();
+    expect(
+      builder.resolveHistoryMessageLimit(
+        scenario: scenario,
+        selectedLevel: 'A1',
+      ),
+      33,
+    );
+
+    final b2Scenario = LessonRuntimeScenario(
+      id: scenario.id,
+      metadata: scenario.metadata,
+      lessonSetup: scenario.lessonSetup,
+      learningGoal: scenario.learningGoal,
+      situation: scenario.situation,
+      targetLanguage: scenario.targetLanguage,
+      levelProfiles: const {
+        'B2': LessonRuntimeLevelProfile(
+          difficultyNotes: '',
+          tutorLanguageStyle: '',
+          expectedUserResponse: '',
+          feedbackStrictness: '',
+          hintStrategy: '',
+          correctionPriority: '',
+          conversationDepth: '',
+          exampleGoodAnswer: '',
+          exampleStretchAnswer: '',
+          addedKeyPhrases: [],
+          addedUsefulConstructions: [],
+          addedGrammarFocus: [],
+          softWrapUpAfterUserTurn: 0,
+          finalMessageAtUserTurn: 32,
+        ),
+      },
+      conversationFlow: scenario.conversationFlow,
+      roleplayBeats: scenario.roleplayBeats,
+      reciprocalQuestionHandling: scenario.reciprocalQuestionHandling,
+      expectedScenarioProgression: scenario.expectedScenarioProgression,
+      aiTutorPromptInstructions: scenario.aiTutorPromptInstructions,
+      promptTemplates: scenario.promptTemplates,
+      controlledVariation: scenario.controlledVariation,
+      hintRules: scenario.hintRules,
+      runtimeContent: scenario.runtimeContent,
+      tutorProfiles: scenario.tutorProfiles,
+    );
+    expect(
+      builder.resolveHistoryMessageLimit(
+        scenario: b2Scenario,
+        selectedLevel: 'B2',
+      ),
+      67,
+    );
   });
 
   test('all six study languages send exact centralized request metadata', () {
@@ -136,6 +201,10 @@ void main() {
         userMessage: 'Hello',
         lastBotMessage: '',
         learnerTurnCount: 1,
+        lessonPhase: LessonLivePhase.activeRoleplay,
+        hasWrapUpStarted: false,
+        shouldStartWrappingUp: false,
+        shouldEndLessonNow: false,
         recentMessages: const [],
         backendSessionId: 'session',
         context: const LessonContextSelection(

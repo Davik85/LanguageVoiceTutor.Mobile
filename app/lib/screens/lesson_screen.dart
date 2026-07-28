@@ -78,6 +78,14 @@ class _LessonActionAvailability {
   final bool canUseHint;
 }
 
+class _ActiveLessonState {
+  _ActiveLessonState({required this.phase});
+
+  LessonLivePhase phase;
+  int activeRoleplayLearnerTurnCount = 0;
+  bool hasWrapUpStarted = false;
+}
+
 class LessonScreen extends StatefulWidget {
   const LessonScreen({
     super.key,
@@ -149,9 +157,10 @@ class _LessonScreenState extends State<LessonScreen>
   int _hintRequestGeneration = 0;
   String? _selectedContextId;
   String? _selectedContextTitle;
+  String _authenticatedLearnerDisplayName = '';
   String? _customLearnerContext;
   List<LessonRuntimeContextVariant> _voiceClarificationChoices = const [];
-  int _activeRoleplayLearnerTurnCount = 0;
+  late _ActiveLessonState _activeLessonState;
   String? _finishError;
   LessonSummaryResponse? _lessonSummary;
   LessonCompletionStatus? _summaryStatus;
@@ -185,6 +194,9 @@ class _LessonScreenState extends State<LessonScreen>
     _isStarting = widget.selection != null;
     _selectedContextId = widget.selection?.selectedContextId?.trim();
     _selectedContextTitle = widget.selection?.selectedContextTitle?.trim();
+    _activeLessonState = _ActiveLessonState(
+      phase: _initialLiveLessonPhase(widget.selection),
+    );
     if (widget.selection != null) {
       _startLessonSession(showLoadingState: false);
     }
@@ -288,9 +300,13 @@ class _LessonScreenState extends State<LessonScreen>
       _lessonSessionEnded = false;
       _scenario = null;
       _settings = null;
+      _authenticatedLearnerDisplayName = '';
       _recordingState = LearnerRecordingUiState.idle;
       _messages.clear();
       _voiceClarificationChoices = const [];
+      _activeLessonState = _ActiveLessonState(
+        phase: _initialLiveLessonPhase(selection),
+      );
     });
 
     try {
@@ -298,15 +314,25 @@ class _LessonScreenState extends State<LessonScreen>
       final scenario = await _authService.fetchLessonRuntimeScenario(
         scenarioKey: selection.lessonContentId,
       );
+      String userDisplayName = '';
+      try {
+        userDisplayName =
+            (await _authService.loadCurrentUser()).displayName ?? '';
+      } catch (_) {}
       _debugRuntimeDiagnostics(scenario, settings);
       final openingMessage = _buildInitialTutorMessage(
         scenario: scenario,
         studyLanguage: StudyLanguageDefinitions.resolve(settings.studyLanguage),
+        userDisplayName: userDisplayName,
       );
       if (!mounted) return;
       setState(() {
         _settings = settings;
         _scenario = scenario;
+        _authenticatedLearnerDisplayName = userDisplayName.trim();
+        _activeLessonState = _ActiveLessonState(
+          phase: _initialLiveLessonPhase(selection, scenario),
+        );
         _messages.add(openingMessage);
         _isLoadingScenario = false;
       });
@@ -395,11 +421,13 @@ class _LessonScreenState extends State<LessonScreen>
   _LessonChatMessage _buildInitialTutorMessage({
     required LessonRuntimeScenario scenario,
     required StudyLanguageDefinition studyLanguage,
+    required String userDisplayName,
   }) {
     return _LessonChatMessage.tutor(
       LocalizedLessonTextService.buildSetupMessage(
         scenario: scenario,
         studyLanguage: studyLanguage,
+        userDisplayName: userDisplayName,
       ),
     );
   }
@@ -527,6 +555,7 @@ class _LessonScreenState extends State<LessonScreen>
                 recordingGeneration != _recordingOperationGeneration)) ||
         _isFinishing ||
         _isCompleted ||
+        _activeLessonState.phase == LessonLivePhase.completed ||
         _lessonSessionEnded ||
         _isAuthenticationRequired) {
       return null;
@@ -734,14 +763,16 @@ class _LessonScreenState extends State<LessonScreen>
       learnerInput: contextInput,
       studyLanguage: studyLanguage,
     );
-    _selectedContextId = resolved.selectedContextId;
-    _selectedContextTitle = resolved.selectedContextTitle;
-    _customLearnerContext =
-        resolved.isCustomContext ? resolved.selectedContextTitle : null;
     _voiceClarificationChoices = const [];
 
     final useLocalCmsContextStart =
-        !hadSelectedContextBeforeResolution && resolved.isKnownCmsContext;
+        _activeLessonState.phase == LessonLivePhase.setupContextSelection &&
+            !hadSelectedContextBeforeResolution &&
+            resolved.isKnownCmsContext;
+    final useLocalCustomContextStart =
+        _activeLessonState.phase == LessonLivePhase.setupContextSelection &&
+            !hadSelectedContextBeforeResolution &&
+            resolved.isCustomContext;
     if (kDebugMode) {
       debugPrint(
         'context_branch inputResolved=${resolved.selectedContextVariant != null} '
@@ -751,12 +782,23 @@ class _LessonScreenState extends State<LessonScreen>
         'selectedContextBefore=$hadSelectedContextBeforeResolution '
         'selectedContextAfter=$_hasSelectedContext '
         'localCmsBranch=$useLocalCmsContextStart '
-        'lessonReplyBranch=${!useLocalCmsContextStart}',
+        'localCustomBranch=$useLocalCustomContextStart '
+        'lessonReplyBranch=${!(useLocalCmsContextStart || useLocalCustomContextStart)}',
       );
     }
 
     if (useLocalCmsContextStart) {
       return _startKnownContextRoleplay(
+        session: session,
+        scenario: scenario,
+        settings: settings,
+        context: resolved,
+        learnerText: contextInput,
+        source: source,
+      );
+    }
+    if (useLocalCustomContextStart) {
+      return _startCustomContextRoleplay(
         session: session,
         scenario: scenario,
         settings: settings,
@@ -772,7 +814,38 @@ class _LessonScreenState extends State<LessonScreen>
       orElse: () => _LessonChatMessage.tutor(''),
     );
     final updatedMessages = [..._messages, userMessage];
-    final learnerTurnCount = _activeRoleplayLearnerTurnCount + 1;
+    final isContextSelectionTurn =
+        _activeLessonState.phase == LessonLivePhase.setupContextSelection &&
+            resolved.isContextSelectionTurn;
+    final learnerTurnCount = isContextSelectionTurn
+        ? _activeLessonState.activeRoleplayLearnerTurnCount
+        : _activeLessonState.activeRoleplayLearnerTurnCount + 1;
+    final limits = _turnRequestBuilder.resolveTurnLimits(
+      scenario: scenario,
+      selectedLevel: selection.level,
+    );
+    if (!isContextSelectionTurn &&
+        limits.finalMessageAtUserTurn > 0 &&
+        learnerTurnCount >= limits.finalMessageAtUserTurn) {
+      return _completeLocalFinalTurn(
+        session: session,
+        scenario: scenario,
+        studyLanguage: StudyLanguageDefinitions.resolve(settings.studyLanguage),
+        userMessage: userMessage,
+        learnerTurnCount: learnerTurnCount,
+        source: source,
+        overrideText: overrideText,
+        suppressAutomaticPlayback: suppressAutomaticPlayback,
+      );
+    }
+    final requestPhase = isContextSelectionTurn
+        ? LessonLivePhase.activeRoleplay
+        : _phaseForNextLearnerTurn(learnerTurnCount, limits);
+    final shouldStartWrappingUp = !isContextSelectionTurn &&
+        !_activeLessonState.hasWrapUpStarted &&
+        requestPhase == LessonLivePhase.wrapUp;
+    final shouldEndLessonNow =
+        !isContextSelectionTurn && requestPhase == LessonLivePhase.finalPhase;
     final request = _turnRequestBuilder.build(
       scenario: scenario,
       settings: settings,
@@ -780,9 +853,22 @@ class _LessonScreenState extends State<LessonScreen>
       userMessage: contextInput,
       lastBotMessage: lastBotMessage.text,
       learnerTurnCount: learnerTurnCount,
-      recentMessages: _recentConversationMessages(updatedMessages),
+      lessonPhase: requestPhase,
+      hasWrapUpStarted: _activeLessonState.hasWrapUpStarted,
+      shouldStartWrappingUp: shouldStartWrappingUp,
+      shouldEndLessonNow: shouldEndLessonNow,
+      recentMessages: _recentConversationMessages(
+        _messages,
+        limit: _turnRequestBuilder.resolveHistoryMessageLimit(
+          scenario: scenario,
+          selectedLevel: selection.level,
+        ),
+        tutorDisplayName: _runtimeTutorDisplayName(settings),
+      ),
       backendSessionId: session.lessonSessionId,
       context: resolved,
+      isContextSelectionTurn: isContextSelectionTurn,
+      userDisplayName: _authenticatedLearnerDisplayName,
     );
     if (kDebugMode) {
       debugPrint(
@@ -833,9 +919,9 @@ class _LessonScreenState extends State<LessonScreen>
         _automaticVoiceSubmissionInFlight = false;
         _messages.removeWhere((message) => identical(message, userMessage));
         _sendError = result.message;
-        if (automaticVoiceSubmission &&
-            _messageController.text.trim().isEmpty &&
-            recordingGeneration == _recordingOperationGeneration) {
+        if (_messageController.text.trim().isEmpty &&
+            (!automaticVoiceSubmission ||
+                recordingGeneration == _recordingOperationGeneration)) {
           _messageController.text = text;
           _isTextComposerVisible = true;
         }
@@ -851,7 +937,12 @@ class _LessonScreenState extends State<LessonScreen>
       _automaticVoiceSubmissionInFlight = false;
       _sendError = null;
       if (tutorMessage != null) _messages.add(tutorMessage);
-      _activeRoleplayLearnerTurnCount = learnerTurnCount;
+      if (isContextSelectionTurn) _commitContext(resolved);
+      _activeLessonState.phase = requestPhase;
+      _activeLessonState.activeRoleplayLearnerTurnCount = learnerTurnCount;
+      if (shouldStartWrappingUp) {
+        _activeLessonState.hasWrapUpStarted = true;
+      }
     });
     _scrollTranscriptToBottom();
 
@@ -874,6 +965,66 @@ class _LessonScreenState extends State<LessonScreen>
       );
     }
     return botText;
+  }
+
+  Future<String?> _completeLocalFinalTurn({
+    required LessonSessionResponse session,
+    required LessonRuntimeScenario scenario,
+    required StudyLanguageDefinition studyLanguage,
+    required _LessonChatMessage userMessage,
+    required int learnerTurnCount,
+    required String source,
+    required String? overrideText,
+    required bool suppressAutomaticPlayback,
+  }) async {
+    final englishFinalText = scenario.conversationFlow.finalMessage.trim();
+    if (englishFinalText.isEmpty) {
+      setState(() => _sendError = 'This lesson final message is unavailable.');
+      return null;
+    }
+    final finalText = LocalizedLessonTextService.buildFinalLessonMessage(
+      englishFinalText,
+      studyLanguage,
+    );
+    final tutorMessage = _LessonChatMessage.tutor(finalText);
+    setState(() {
+      _sendError = null;
+      _hintText = null;
+      _hintError = null;
+      _recordingState = LearnerRecordingUiState.idle;
+      _messages.addAll([userMessage, tutorMessage]);
+      _activeLessonState.activeRoleplayLearnerTurnCount = learnerTurnCount;
+      _activeLessonState.phase = LessonLivePhase.finalPhase;
+      _isSending = true;
+      if (overrideText == null) {
+        _messageController.clear();
+        _composerContainsVoiceTranscript = false;
+      }
+    });
+    _scrollTranscriptToBottom();
+
+    final persistence = _persistFinalLearnerMessage(
+      sessionId: session.lessonSessionId,
+      studyLanguage: session.studyLanguage,
+      userMessage: userMessage,
+      turnNumber: learnerTurnCount,
+      source: source,
+    );
+    userMessage.persistenceOperation = persistence;
+    _trackMessagePersistence(persistence);
+    if (!suppressAutomaticPlayback && _autoPlayBotVoice) {
+      await _playTutorVoice(
+        tutorMessage,
+        purpose: AudioSpeechPurpose.lessonChatTts,
+      );
+    }
+    if (!mounted) return finalText;
+    setState(() {
+      _isSending = false;
+      _automaticVoiceSubmissionInFlight = false;
+      _activeLessonState.phase = LessonLivePhase.completed;
+    });
+    return finalText;
   }
 
   Future<String?> _startKnownContextRoleplay({
@@ -916,7 +1067,9 @@ class _LessonScreenState extends State<LessonScreen>
       _hintError = null;
       _recordingState = LearnerRecordingUiState.idle;
       _messages.addAll([userMessage, tutorMessage]);
-      _activeRoleplayLearnerTurnCount = 0;
+      _commitContext(context);
+      _activeLessonState.phase = LessonLivePhase.activeRoleplay;
+      _activeLessonState.activeRoleplayLearnerTurnCount = 0;
       if (source == 'typed' || _composerContainsVoiceTranscript) {
         _messageController.clear();
       }
@@ -937,6 +1090,55 @@ class _LessonScreenState extends State<LessonScreen>
       debugPrint(
           'cms_context_start contextMessageAdded=true openingMessageAdded=true contextPersistScheduled=true openingPersistScheduled=true lessonReplyCalled=false');
     }
+    return opening;
+  }
+
+  Future<String?> _startCustomContextRoleplay({
+    required LessonSessionResponse session,
+    required LessonRuntimeScenario scenario,
+    required UserSettings settings,
+    required LessonContextSelection context,
+    required String learnerText,
+    required String source,
+  }) async {
+    final customContext = context.selectedContextTitle?.trim() ?? '';
+    if (customContext.isEmpty) return null;
+    final opening = _roleplayOpeningBuilder.buildCustomContextOpening(
+      scenario: scenario,
+      customContext: customContext,
+      studyLanguage: StudyLanguageDefinitions.resolve(settings.studyLanguage),
+      tutorDisplayName: _runtimeTutorDisplayName(settings),
+    );
+    final userMessage = _LessonChatMessage.user(
+      learnerText,
+      isContextSelection: true,
+    );
+    final tutorMessage = _LessonChatMessage.tutor(opening, isCmsOpening: true);
+    setState(() {
+      _sendError = null;
+      _hintText = null;
+      _hintError = null;
+      _recordingState = LearnerRecordingUiState.idle;
+      _messages.addAll([userMessage, tutorMessage]);
+      _commitContext(context);
+      _activeLessonState.phase = LessonLivePhase.activeRoleplay;
+      _activeLessonState.activeRoleplayLearnerTurnCount = 0;
+      if (source == 'typed' || _composerContainsVoiceTranscript) {
+        _messageController.clear();
+      }
+      _composerContainsVoiceTranscript = false;
+    });
+    _scrollTranscriptToBottom();
+    final persistence = _persistChatMessages(
+      sessionId: session.lessonSessionId,
+      studyLanguage: session.studyLanguage,
+      userMessage: userMessage,
+      botText: opening,
+      turnNumber: 0,
+      source: source,
+    );
+    userMessage.persistenceOperation = persistence;
+    _trackMessagePersistence(persistence);
     return opening;
   }
 
@@ -970,7 +1172,7 @@ class _LessonScreenState extends State<LessonScreen>
       return;
     }
 
-    if (_isFirstActiveRoleplayStep(scenario) &&
+    if (_isFirstActiveRoleplayStep &&
         _messages
             .where((message) => message.isUser && !message.isContextSelection)
             .isEmpty &&
@@ -990,8 +1192,12 @@ class _LessonScreenState extends State<LessonScreen>
       (message) => message.isBot,
       orElse: () => _LessonChatMessage.tutor(''),
     );
-    final learnerTurnCount =
-        _messages.where((message) => message.isUser).length;
+    final turnLimits = _turnRequestBuilder.resolveTurnLimits(
+      scenario: scenario,
+      selectedLevel: selection.level,
+    );
+    final committedLearnerTurnCount =
+        _activeLessonState.activeRoleplayLearnerTurnCount;
     final request = _turnRequestBuilder.build(
       scenario: scenario,
       settings: settings,
@@ -1000,8 +1206,21 @@ class _LessonScreenState extends State<LessonScreen>
           ? _hintFallbackUserMessage
           : _messageController.text.trim(),
       lastBotMessage: lastBotMessage.text,
-      learnerTurnCount: learnerTurnCount,
-      recentMessages: _recentConversationMessages(_messages),
+      learnerTurnCount: committedLearnerTurnCount,
+      lessonPhase: _activeLessonState.phase,
+      hasWrapUpStarted: _activeLessonState.hasWrapUpStarted,
+      shouldStartWrappingUp: turnLimits.softWrapUpAfterUserTurn > 0 &&
+          committedLearnerTurnCount >= turnLimits.softWrapUpAfterUserTurn,
+      shouldEndLessonNow: turnLimits.finalMessageAtUserTurn > 0 &&
+          committedLearnerTurnCount >= turnLimits.finalMessageAtUserTurn,
+      recentMessages: _recentConversationMessages(
+        _messages,
+        limit: _turnRequestBuilder.resolveHistoryMessageLimit(
+          scenario: scenario,
+          selectedLevel: selection.level,
+        ),
+        tutorDisplayName: _runtimeTutorDisplayName(settings),
+      ),
       backendSessionId: session.lessonSessionId,
       context: LessonContextSelectionResolver.resolve(
         scenario: scenario,
@@ -1040,9 +1259,46 @@ class _LessonScreenState extends State<LessonScreen>
     _scrollTranscriptToBottom();
   }
 
-  bool _isFirstActiveRoleplayStep(LessonRuntimeScenario scenario) =>
-      scenario.runtimeContent.lessonPhase.trim().toLowerCase() ==
-      'active_roleplay';
+  LessonLivePhase _initialLiveLessonPhase(
+    LessonStartSelection? selection, [
+    LessonRuntimeScenario? scenario,
+  ]) {
+    final hasSelectedContext =
+        (selection?.selectedContextId?.trim().isNotEmpty ?? false) ||
+            (selection?.selectedContextTitle?.trim().isNotEmpty ?? false);
+    return scenario?.metadata.lessonType.trim().toLowerCase() ==
+                'free_conversation' ||
+            hasSelectedContext
+        ? LessonLivePhase.activeRoleplay
+        : LessonLivePhase.setupContextSelection;
+  }
+
+  void _commitContext(LessonContextSelection context) {
+    _selectedContextId = context.selectedContextId;
+    _selectedContextTitle = context.selectedContextTitle;
+    _customLearnerContext =
+        context.isCustomContext ? context.selectedContextTitle : null;
+  }
+
+  LessonLivePhase _phaseForNextLearnerTurn(
+    int learnerTurnCount,
+    LessonTurnLimits limits,
+  ) {
+    if (limits.finalMessageAtUserTurn > 0 &&
+        learnerTurnCount >= limits.finalMessageAtUserTurn) {
+      return LessonLivePhase.finalPhase;
+    }
+    if (_activeLessonState.hasWrapUpStarted ||
+        (limits.softWrapUpAfterUserTurn > 0 &&
+            learnerTurnCount >= limits.softWrapUpAfterUserTurn)) {
+      return LessonLivePhase.wrapUp;
+    }
+    return LessonLivePhase.activeRoleplay;
+  }
+
+  bool get _isFirstActiveRoleplayStep =>
+      _activeLessonState.phase == LessonLivePhase.activeRoleplay &&
+      _activeLessonState.activeRoleplayLearnerTurnCount == 0;
 
   bool get _hasSelectedContext =>
       (_selectedContextId?.isNotEmpty ?? false) ||
@@ -1121,22 +1377,50 @@ class _LessonScreenState extends State<LessonScreen>
     }
   }
 
+  Future<void> _persistFinalLearnerMessage({
+    required String sessionId,
+    required String studyLanguage,
+    required _LessonChatMessage userMessage,
+    required int turnNumber,
+    required String source,
+  }) async {
+    final feedbackNotReadyMessage = context.l10n.feedbackNotReady;
+    try {
+      userMessage.persistedBackendMessageId =
+          await _authService.persistLessonSessionMessage(
+        sessionId: sessionId,
+        request: CreateLessonSessionMessageRequest(
+          role: 'user',
+          text: userMessage.text,
+          source: source,
+          turnNumber: turnNumber,
+          isValidLessonTurn: true,
+          studyLanguage: studyLanguage,
+        ),
+      );
+      userMessage.persistenceError = null;
+    } catch (_) {
+      userMessage.persistenceError = feedbackNotReadyMessage;
+    }
+  }
+
   List<LessonRecentConversationMessage> _recentConversationMessages(
-    List<_LessonChatMessage> messages,
-  ) {
-    const limit = 8;
-    final slice = messages.length <= limit
-        ? messages
-        : messages.sublist(messages.length - limit);
-    return slice
+    List<_LessonChatMessage> messages, {
+    required int limit,
+    required String tutorDisplayName,
+  }) {
+    final eligible = messages
         .where((message) => message.text.trim().isNotEmpty)
         .map(
           (message) => LessonRecentConversationMessage(
-            sender: message.isBot ? 'Tutor' : 'User',
+            sender: message.isBot ? tutorDisplayName : 'User',
             text: message.text,
           ),
         )
         .toList(growable: false);
+    return eligible.length <= limit
+        ? eligible
+        : eligible.sublist(eligible.length - limit);
   }
 
   String _safeErrorMessage(Object error, {required String fallback}) {
@@ -1219,11 +1503,14 @@ class _LessonScreenState extends State<LessonScreen>
             _recordingState == LearnerRecordingUiState.recording ||
             _recordingState == LearnerRecordingUiState.stopping ||
             _recordingState == LearnerRecordingUiState.transcribing;
+    final isCompletedAwaitingFinish =
+        _activeLessonState.phase == LessonLivePhase.completed;
     return _LessonActionAvailability(
       canSendText: lessonReady &&
           !_isSending &&
           !_isFinishing &&
           !_isCompleted &&
+          !isCompletedAwaitingFinish &&
           !_lessonSessionEnded &&
           !_isAuthenticationRequired &&
           !recordingBusy,
@@ -1235,6 +1522,7 @@ class _LessonScreenState extends State<LessonScreen>
           !_isAbandoning &&
           !_isFinishing &&
           !_isCompleted &&
+          !isCompletedAwaitingFinish &&
           !_lessonSessionEnded &&
           !_isAuthenticationRequired &&
           (_recordingState == LearnerRecordingUiState.idle ||
@@ -1244,6 +1532,7 @@ class _LessonScreenState extends State<LessonScreen>
       canUsePlaceholders: lessonReady &&
           !_isFinishing &&
           !_isCompleted &&
+          !isCompletedAwaitingFinish &&
           !_lessonSessionEnded &&
           !_isAuthenticationRequired,
       canUseFeedback: lessonReady &&
@@ -1269,6 +1558,7 @@ class _LessonScreenState extends State<LessonScreen>
           !_isHintLoading &&
           !_isFinishing &&
           !_isCompleted &&
+          !isCompletedAwaitingFinish &&
           !_lessonSessionEnded &&
           !_isAuthenticationRequired,
     );
@@ -1285,11 +1575,14 @@ class _LessonScreenState extends State<LessonScreen>
       !_isFinishing &&
       !_isCompleted;
 
+  bool get _canGoBack => _activeLessonState.phase != LessonLivePhase.completed;
+
   bool get _hasActiveLessonSession =>
       (_startResult?.isReady ?? false) && !_lessonSessionEnded && !_isCompleted;
 
   bool get _canAbandon =>
       _hasActiveLessonSession &&
+      _activeLessonState.phase != LessonLivePhase.completed &&
       !_isSending &&
       !_isHintLoading &&
       !_isFinishing &&
@@ -1300,6 +1593,7 @@ class _LessonScreenState extends State<LessonScreen>
       !_isAbandoning;
 
   Future<void> _handleLeaveRequest() async {
+    if (_activeLessonState.phase == LessonLivePhase.completed) return;
     await _cancelLearnerRecording();
     if (!mounted) return;
     if (!_hasActiveLessonSession) {
@@ -1406,7 +1700,7 @@ class _LessonScreenState extends State<LessonScreen>
     final pendingPersistenceCount = _pendingMessagePersistence.length;
     await _waitForPendingMessagePersistence();
     if (!mounted) return;
-    final turns = _messages.where((message) => message.isUser).length;
+    final turns = _activeLessonState.activeRoleplayLearnerTurnCount;
     if (kDebugMode) {
       debugPrint(
         'lesson_finish request_started validTurnCount=$turns '
@@ -2054,15 +2348,25 @@ class _LessonScreenState extends State<LessonScreen>
       (value) => value.isBot,
       orElse: () => _LessonChatMessage.tutor(''),
     );
-    final learnerTurnCount = _messages.where((value) => value.isUser).length;
     final request = _turnRequestBuilder.build(
       scenario: scenario,
       settings: settings,
       selectedLevel: selection.level,
       userMessage: message.text,
       lastBotMessage: lastBotMessage.text,
-      learnerTurnCount: learnerTurnCount,
-      recentMessages: _recentConversationMessages(_messages),
+      learnerTurnCount: _activeLessonState.activeRoleplayLearnerTurnCount,
+      lessonPhase: _activeLessonState.phase,
+      hasWrapUpStarted: _activeLessonState.hasWrapUpStarted,
+      shouldStartWrappingUp: false,
+      shouldEndLessonNow: false,
+      recentMessages: _recentConversationMessages(
+        _messages,
+        limit: _turnRequestBuilder.resolveHistoryMessageLimit(
+          scenario: scenario,
+          selectedLevel: selection.level,
+        ),
+        tutorDisplayName: _runtimeTutorDisplayName(settings),
+      ),
       backendSessionId: session.lessonSessionId,
       context: LessonContextSelectionResolver.resolve(
         scenario: scenario,
@@ -2187,6 +2491,7 @@ class _LessonScreenState extends State<LessonScreen>
                                   canFinish: _canFinish,
                                   finishError: _finishError,
                                   onBack: _handleLeaveRequest,
+                                  canGoBack: _canGoBack,
                                   onFinish: _confirmFinishLesson,
                                   onRetryStart: _isStarting
                                       ? null
@@ -2283,6 +2588,7 @@ class _LessonWorkspace extends StatelessWidget {
     required this.canFinish,
     required this.finishError,
     required this.onBack,
+    required this.canGoBack,
     required this.onFinish,
     required this.onRetryStart,
     required this.onRetryLoad,
@@ -2331,6 +2637,7 @@ class _LessonWorkspace extends StatelessWidget {
   final bool canFinish;
   final String? finishError;
   final VoidCallback onBack;
+  final bool canGoBack;
   final VoidCallback onFinish;
   final VoidCallback? onRetryStart;
   final Future<void> Function() onRetryLoad;
@@ -2378,6 +2685,7 @@ class _LessonWorkspace extends StatelessWidget {
               tutorId: tutorId,
               status: tutorStatus,
               onBack: onBack,
+              canGoBack: canGoBack,
               canFinish: canFinish,
               onFinish: onFinish,
               canOpenConversationMode: canOpenConversationMode,
@@ -2895,7 +3203,7 @@ class _LessonMessageBubble extends StatelessWidget {
                                   : message.feedbackError != null
                                       ? context.l10n.retryLessonFeedback
                                       : context.l10n.showLessonFeedback,
-                          onPressed: actionAvailability.canUsePlaceholders
+                          onPressed: actionAvailability.canUseFeedback
                               ? () => onFeedback(message)
                               : null,
                           icon:
@@ -3292,6 +3600,7 @@ class _TutorHeader extends StatelessWidget {
     required this.tutorId,
     required this.status,
     required this.onBack,
+    required this.canGoBack,
     required this.canFinish,
     required this.onFinish,
     required this.canOpenConversationMode,
@@ -3302,6 +3611,7 @@ class _TutorHeader extends StatelessWidget {
   final String tutorId;
   final LessonTutorStatus status;
   final VoidCallback onBack;
+  final bool canGoBack;
   final bool canFinish;
   final VoidCallback onFinish;
   final bool canOpenConversationMode;
@@ -3390,7 +3700,7 @@ class _TutorHeader extends StatelessWidget {
                       child: IconButton(
                         key: const Key('lesson-back-button'),
                         tooltip: context.l10n.back,
-                        onPressed: onBack,
+                        onPressed: canGoBack ? onBack : null,
                         icon: const Icon(Icons.arrow_back),
                       ),
                     ),

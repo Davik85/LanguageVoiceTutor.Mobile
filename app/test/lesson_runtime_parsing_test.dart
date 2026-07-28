@@ -12,7 +12,11 @@ void main() {
       'situation': {},
       'targetLanguage': {},
       'levelProfiles': {},
-      'conversationFlow': {'opening': 'Opening', 'firstUserTask': 'Reply'},
+      'conversationFlow': {
+        'opening': 'Opening',
+        'defaultOpeningExample': 'Hello! Shall we start?',
+        'firstUserTask': 'Reply',
+      },
       'roleplayBeats': [],
       'reciprocalQuestionHandling': {},
       'expectedScenarioProgression': [],
@@ -46,9 +50,18 @@ void main() {
     expect(runtime.tutorProfiles.single.displayName, 'Runtime Tutor');
     expect(runtime.aiTutorPromptInstructions, ['runtime instruction']);
     expect(runtime.conversationFlow.opening, 'Opening');
+    expect(runtime.conversationFlow.defaultOpeningExample,
+        'Hello! Shall we start?');
     expect(runtime.learningGoal.goal, 'Goal');
     expect(runtime.controlledVariation.contextVariants.single.openingLine,
         'Hi {tutorName}');
     expect(runtime.runtimeContent.lessonPhase, isEmpty);
+  });
+
+  test('keeps a missing default opening example safely empty', () {
+    final runtime = LessonRuntimeScenario.fromJson({
+      'conversationFlow': {'opening': 'Opening'},
+    });
+    expect(runtime.conversationFlow.defaultOpeningExample, isEmpty);
   });
 }

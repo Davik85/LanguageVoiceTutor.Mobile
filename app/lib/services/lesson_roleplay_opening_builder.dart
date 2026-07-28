@@ -6,6 +6,9 @@ import 'localized_lesson_text_service.dart';
 class LessonRoleplayOpeningBuilder {
   const LessonRoleplayOpeningBuilder();
 
+  static const _defaultCustomContextOpening =
+      "Hi! Nice to meet you. What's your name?";
+
   String buildKnownContextOpening({
     required LessonRuntimeScenario scenario,
     required LessonRuntimeContextVariant variant,
@@ -26,7 +29,7 @@ class LessonRoleplayOpeningBuilder {
     );
     final englishOpening = _replaceTutorName(
       variant.openingLine.trim().isEmpty
-          ? scenario.conversationFlow.opening
+          ? scenario.conversationFlow.defaultOpeningExample
           : variant.openingLine,
       tutorDisplayName,
     );
@@ -38,6 +41,30 @@ class LessonRoleplayOpeningBuilder {
     return [confirmation, opening]
         .where((part) => part.trim().isNotEmpty)
         .join('\n\n');
+  }
+
+  String buildCustomContextOpening({
+    required LessonRuntimeScenario scenario,
+    required String customContext,
+    required StudyLanguageDefinition studyLanguage,
+    required String tutorDisplayName,
+  }) {
+    final englishOpening = _replaceTutorName(
+      scenario.conversationFlow.defaultOpeningExample.trim().isEmpty
+          ? _defaultCustomContextOpening
+          : scenario.conversationFlow.defaultOpeningExample.trim(),
+      tutorDisplayName,
+    );
+    final opening = LocalizedLessonTextService.buildContextOpeningLine(
+      englishOpeningLine: englishOpening,
+      scenario: scenario,
+      studyLanguage: studyLanguage,
+    );
+    return LocalizedLessonTextService.buildCustomContextStartMessage(
+      customContext: customContext,
+      openingLine: opening,
+      studyLanguage: studyLanguage,
+    );
   }
 
   String _replaceTutorName(String value, String tutorDisplayName) => value

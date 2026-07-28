@@ -9,6 +9,40 @@ import 'lesson_context_selection_resolver.dart';
 class LessonTurnRequestBuilder {
   const LessonTurnRequestBuilder();
 
+  static const fallbackHistoryMessageLimit = 10;
+  static const maximumHistoryMessageLimit = 70;
+  static const setupContextHistoryOverhead = 3;
+
+  LessonTurnLimits resolveTurnLimits({
+    required LessonRuntimeScenario scenario,
+    required String selectedLevel,
+  }) {
+    final levelProfile = scenario.levelProfileFor(selectedLevel);
+    return LessonTurnLimits(
+      softWrapUpAfterUserTurn: levelProfile.softWrapUpAfterUserTurn > 0
+          ? levelProfile.softWrapUpAfterUserTurn
+          : scenario.runtimeContent.softWrapUpAfterUserTurn,
+      finalMessageAtUserTurn: levelProfile.finalMessageAtUserTurn > 0
+          ? levelProfile.finalMessageAtUserTurn
+          : scenario.runtimeContent.finalMessageAtUserTurn,
+    );
+  }
+
+  int resolveHistoryMessageLimit({
+    required LessonRuntimeScenario scenario,
+    required String selectedLevel,
+  }) {
+    final finalTurn = resolveTurnLimits(
+      scenario: scenario,
+      selectedLevel: selectedLevel,
+    ).finalMessageAtUserTurn;
+    if (finalTurn <= 0) return fallbackHistoryMessageLimit;
+
+    return (finalTurn * 2 + setupContextHistoryOverhead)
+        .clamp(0, maximumHistoryMessageLimit)
+        .toInt();
+  }
+
   LessonChatRequest build({
     required LessonRuntimeScenario scenario,
     required UserSettings settings,
@@ -16,12 +50,18 @@ class LessonTurnRequestBuilder {
     required String userMessage,
     required String lastBotMessage,
     required int learnerTurnCount,
+    required LessonLivePhase lessonPhase,
+    required bool hasWrapUpStarted,
+    required bool shouldStartWrappingUp,
+    required bool shouldEndLessonNow,
     required List<LessonRecentConversationMessage> recentMessages,
     required String backendSessionId,
     required LessonContextSelection context,
+    bool? isContextSelectionTurn,
     int? sourceMessageId,
     String? sourcePersistedMessageId,
     String sourceMessageKind = '',
+    String userDisplayName = '',
   }) {
     final studyLanguage =
         StudyLanguageDefinitions.resolve(settings.studyLanguage);
@@ -47,15 +87,20 @@ class LessonTurnRequestBuilder {
       targetLanguageName: studyLanguage.englishName,
       targetLanguageNativeName: studyLanguage.nativeName,
       targetLanguageCode: studyLanguage.transcriptionLanguageCode,
-      userDisplayName: '',
+      userDisplayName: userDisplayName,
       learnerTurnCount: learnerTurnCount,
+      lessonPhase: lessonPhase.contractValue,
+      hasWrapUpStarted: hasWrapUpStarted,
+      shouldStartWrappingUp: shouldStartWrappingUp,
+      shouldEndLessonNow: shouldEndLessonNow,
       recentMessages: recentMessages,
       backendSessionId: backendSessionId,
       selectedContextTitle: context.selectedContextTitle ?? '',
       selectedContextLocalizedTitle:
           context.selectedContextLocalizedTitle ?? '',
       selectedContextVariant: context.selectedContextVariant,
-      isContextSelectionTurn: context.isContextSelectionTurn,
+      isContextSelectionTurn:
+          isContextSelectionTurn ?? context.isContextSelectionTurn,
       sourceMessageId: sourceMessageId,
       sourcePersistedMessageId: sourcePersistedMessageId,
       sourceMessageKind: sourceMessageKind,
@@ -63,4 +108,14 @@ class LessonTurnRequestBuilder {
       tutorDisplayName: tutor?.displayName.trim() ?? '',
     );
   }
+}
+
+class LessonTurnLimits {
+  const LessonTurnLimits({
+    required this.softWrapUpAfterUserTurn,
+    required this.finalMessageAtUserTurn,
+  });
+
+  final int softWrapUpAfterUserTurn;
+  final int finalMessageAtUserTurn;
 }

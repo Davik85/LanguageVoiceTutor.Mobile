@@ -9,9 +9,12 @@ abstract final class LocalizedLessonTextService {
   static String buildSetupMessage({
     required LessonRuntimeScenario scenario,
     required StudyLanguageDefinition studyLanguage,
+    String userDisplayName = '',
   }) {
     final language = _resolve(studyLanguage);
-    if (_isEnglish(language)) return _buildEnglishSetupMessage(scenario);
+    if (_isEnglish(language)) {
+      return _buildEnglishSetupMessage(scenario, userDisplayName);
+    }
 
     final subtopic = adaptShortScenarioText(
       scenario.metadata.subtopic,
@@ -44,7 +47,7 @@ abstract final class LocalizedLessonTextService {
       'it' => 'Oggi pratichiamo: $subtopic.\n\nObiettivo: $goal\n\n'
           'Scegli una situazione:\n$choiceBlock\n\n'
           'Oppure proponi una tua situazione su questo tema.',
-      _ => _buildEnglishSetupMessage(scenario),
+      _ => _buildEnglishSetupMessage(scenario, userDisplayName),
     };
   }
 
@@ -96,6 +99,23 @@ abstract final class LocalizedLessonTextService {
       'es' => 'Empecemos de forma sencilla. ¿Qué quieres decir primero?',
       'it' => 'Cominciamo in modo semplice. Che cosa vuoi dire per prima cosa?',
       _ => englishOpeningLine.trim(),
+    };
+  }
+
+  static String buildCustomContextStartMessage({
+    required String customContext,
+    required String openingLine,
+    required StudyLanguageDefinition studyLanguage,
+  }) {
+    final language = _resolve(studyLanguage);
+    final context = customContext.trim();
+    return switch (language.id) {
+      'fr' => 'Bonne idée. Restons simples : $context.\n\n$openingLine',
+      'de' => 'Gute Idee. Halten wir es einfach: $context.\n\n$openingLine',
+      'pt' => 'Boa ideia. Vamos manter simples: $context.\n\n$openingLine',
+      'es' => 'Buena idea. Mantengámoslo sencillo: $context.\n\n$openingLine',
+      'it' => 'Buona idea. Manteniamola semplice: $context.\n\n$openingLine',
+      _ => 'Good idea. Let\'s keep it simple: $context.\n\n$openingLine',
     };
   }
 
@@ -251,31 +271,22 @@ abstract final class LocalizedLessonTextService {
     return mappings[language.id]?[key] ?? normalized;
   }
 
-  static String _buildEnglishSetupMessage(LessonRuntimeScenario scenario) {
-    final parts = <String>[];
-    final openingLine = scenario.conversationFlow.opening.trim().isNotEmpty
-        ? scenario.conversationFlow.opening.trim()
-        : scenario.lessonSetup.setupMessage.trim();
-    final goal = scenario.learningGoal.goal.trim();
-    if (openingLine.isNotEmpty) parts.add(openingLine);
-    if (goal.isNotEmpty) parts.add('Goal: $goal');
-    final choices = scenario.controlledVariation.contextVariants
-        .take(3)
-        .map((variant) => variant.title.trim())
-        .where((value) => value.isNotEmpty)
-        .toList(growable: false);
-    if (choices.isNotEmpty) {
-      parts.add([
-        'Choose a situation:',
-        ...choices.indexed.map((entry) => '${entry.$1 + 1}. ${entry.$2}'),
-      ].join('\n'));
+  static String _buildEnglishSetupMessage(
+    LessonRuntimeScenario scenario,
+    String userDisplayName,
+  ) {
+    final template = scenario.lessonSetup.setupMessage.trim();
+    if (template.isEmpty) {
+      return "Hi! Let's practice this situation. Are you ready?";
     }
-    final subtopic = scenario.metadata.subtopic.trim();
-    if (subtopic.isNotEmpty) {
-      parts.add(
-          'Or suggest your own situation about ${subtopic.toLowerCase()}.');
-    }
-    return parts.isEmpty ? 'Your lesson is ready.' : parts.join('\n\n');
+    final name = userDisplayName.trim();
+    final rendered = name.isEmpty
+        ? template.replaceAll('Hi, {{userDisplayName}}!', 'Hi!')
+        : template.replaceAll('{{userDisplayName}}', name);
+    return rendered
+        .replaceAll('{{userDisplayName}}', '')
+        .replaceAll('Hi, !', 'Hi!')
+        .trim();
   }
 
   static String _adaptGoal(

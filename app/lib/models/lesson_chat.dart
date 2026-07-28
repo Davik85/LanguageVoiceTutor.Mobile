@@ -1,5 +1,21 @@
 import 'lesson_runtime.dart';
 
+enum LessonLivePhase {
+  setupContextSelection,
+  activeRoleplay,
+  wrapUp,
+  finalPhase,
+  completed;
+
+  String get contractValue => switch (this) {
+        LessonLivePhase.setupContextSelection => 'setup_context_selection',
+        LessonLivePhase.activeRoleplay => 'active_roleplay',
+        LessonLivePhase.wrapUp => 'wrap_up',
+        LessonLivePhase.finalPhase => 'final',
+        LessonLivePhase.completed => 'completed',
+      };
+}
+
 class LessonChatRequest {
   const LessonChatRequest({
     required this.selectedLevel,
@@ -300,6 +316,10 @@ class LessonChatRequest {
     required String targetLanguageCode,
     required String userDisplayName,
     required int learnerTurnCount,
+    required String lessonPhase,
+    required bool hasWrapUpStarted,
+    required bool shouldStartWrappingUp,
+    required bool shouldEndLessonNow,
     required List<LessonRecentConversationMessage> recentMessages,
     required String backendSessionId,
     int? sourceMessageId,
@@ -340,11 +360,11 @@ class LessonChatRequest {
       remainingLearnerTurns: finalTurn > 0
           ? (finalTurn - learnerTurnCount).clamp(0, finalTurn)
           : 0,
-      shouldStartWrappingUp: softTurn > 0 && learnerTurnCount >= softTurn,
-      shouldEndLessonNow: finalTurn > 0 && learnerTurnCount >= finalTurn,
+      shouldStartWrappingUp: shouldStartWrappingUp,
+      shouldEndLessonNow: shouldEndLessonNow,
       recentMessages: recentMessages,
-      lessonPhase: scenario.runtimeContent.lessonPhase,
-      hasWrapUpStarted: scenario.runtimeContent.hasWrapUpStarted,
+      lessonPhase: lessonPhase,
+      hasWrapUpStarted: hasWrapUpStarted,
       lessonScenarioId: scenario.id,
       level: selectedLevel,
       topic: scenario.metadata.topic,
