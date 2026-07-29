@@ -52,6 +52,7 @@ class LessonContextSelectionResolver {
               : LocalizedLessonTextService.localizedScenarioTitle(
                   variant,
                   studyLanguage,
+                  scenario,
                 );
           final candidates = <String>[
             variant.title,
@@ -82,6 +83,7 @@ class LessonContextSelectionResolver {
             : LocalizedLessonTextService.localizedScenarioTitle(
                 match,
                 studyLanguage,
+                scenario,
               ),
         // A selected context remains part of every later request, but it only
         // represents a selection on the learner turn which chose it.

@@ -6,6 +6,38 @@ import '../models/study_language_definition.dart';
 /// English CMS/runtime text remains semantic source material. Stable CMS IDs,
 /// canonical English titles, and runtime scenario keys are never translated.
 abstract final class LocalizedLessonTextService {
+  static LessonRuntimeLocalizedSetup? validBackendLocalizedSetup(
+      LessonRuntimeScenario scenario, StudyLanguageDefinition studyLanguage) {
+    final language = _resolve(studyLanguage);
+    if (_isEnglish(language)) {
+      return null;
+    }
+    final setup = scenario.localizedSetup;
+    if (setup == null ||
+        setup.status != 'complete' ||
+        setup.fallbackUsed ||
+        setup.resolvedStudyLanguageId != language.id ||
+        (setup.setupMessageTemplate?.trim().isEmpty ?? true)) {
+      return null;
+    }
+    final ids =
+        scenario.controlledVariation.contextVariants.map((v) => v.id).toList();
+    final titles = setup.contextVariantDisplayTitles;
+    if (ids.any((id) => id.trim().isEmpty) ||
+        ids.toSet().length != ids.length ||
+        ids.map((id) => id.toLowerCase()).toSet().length != ids.length ||
+        titles.length != ids.length ||
+        titles.keys.any((id) => id.trim().isEmpty) ||
+        titles.values.any((title) => title.trim().isEmpty) ||
+        titles.keys.map((id) => id.toLowerCase()).toSet().length !=
+            titles.length ||
+        !titles.keys.toSet().containsAll(ids) ||
+        !ids.toSet().containsAll(titles.keys)) {
+      return null;
+    }
+    return setup;
+  }
+
   static String buildSetupMessage({
     required LessonRuntimeScenario scenario,
     required StudyLanguageDefinition studyLanguage,
@@ -15,6 +47,11 @@ abstract final class LocalizedLessonTextService {
     if (_isEnglish(language)) {
       return _buildEnglishSetupMessage(scenario, userDisplayName);
     }
+    final backend = validBackendLocalizedSetup(scenario, language);
+    if (backend != null) {
+      return _renderBackendTemplate(
+          backend.setupMessageTemplate!, userDisplayName);
+    }
 
     final subtopic = adaptShortScenarioText(
       scenario.metadata.subtopic,
@@ -23,7 +60,7 @@ abstract final class LocalizedLessonTextService {
     final goal = _adaptGoal(scenario, language);
     final choices = scenario.controlledVariation.contextVariants
         .take(3)
-        .map((variant) => localizedScenarioTitle(variant, language))
+        .map((variant) => localizedScenarioTitle(variant, language, scenario))
         .toList(growable: false);
     final choiceBlock = choices.isEmpty
         ? _localizeChooseSimpleSituation(language, subtopic)
@@ -51,20 +88,49 @@ abstract final class LocalizedLessonTextService {
     };
   }
 
-  static String localizedScenarioTitle(
-    LessonRuntimeContextVariant variant,
-    StudyLanguageDefinition studyLanguage,
-  ) =>
-      adaptShortScenarioText(variant.title, studyLanguage);
+  static String localizedScenarioTitle(LessonRuntimeContextVariant variant,
+          StudyLanguageDefinition studyLanguage,
+          [LessonRuntimeScenario? scenario]) =>
+      scenario == null
+          ? adaptShortScenarioText(variant.title, studyLanguage)
+          : backendLocalizedScenarioTitle(
+              scenario: scenario,
+              variant: variant,
+              studyLanguage: studyLanguage);
+
+  static String backendLocalizedScenarioTitle(
+          {required LessonRuntimeScenario scenario,
+          required LessonRuntimeContextVariant variant,
+          required StudyLanguageDefinition studyLanguage}) =>
+      validBackendLocalizedSetup(scenario, studyLanguage)
+          ?.contextVariantDisplayTitles[variant.id] ??
+      localizedScenarioTitle(variant, studyLanguage);
+
+  static String _renderBackendTemplate(
+      String template, String userDisplayName) {
+    if (userDisplayName.trim().isNotEmpty) {
+      return template.replaceAll('{{userDisplayName}}', userDisplayName);
+    }
+    var result = template
+        .replaceAll(', {{userDisplayName}}', '')
+        .replaceAll('{{userDisplayName}}', '');
+    if (result.startsWith('¡') && result.indexOf('!') > 0) {
+      result = result.substring(1);
+    }
+    return result;
+  }
 
   static String buildContextConfirmationLine({
     required LessonRuntimeContextVariant variant,
+    String resolvedLocalizedTitle = '',
     required StudyLanguageDefinition studyLanguage,
     required String englishFallback,
   }) {
     final language = _resolve(studyLanguage);
     if (_isEnglish(language)) return englishFallback.trim();
-    final title = localizedScenarioTitle(variant, language);
+    final title = resolvedLocalizedTitle.trim().isEmpty
+        ? localizedScenarioTitle(variant, language)
+        : resolvedLocalizedTitle;
     return switch (language.id) {
       'fr' => 'Très bien ! Imaginons cette situation : $title.',
       'de' => 'Sehr gut! Stellen wir uns diese Situation vor: $title.',
@@ -126,7 +192,8 @@ abstract final class LocalizedLessonTextService {
     final language = _resolve(studyLanguage);
     final titles = scenario.controlledVariation.contextVariants
         .take(3)
-        .map((variant) => '"${localizedScenarioTitle(variant, language)}"')
+        .map((variant) =>
+            '"${localizedScenarioTitle(variant, language, scenario)}"')
         .toList(growable: false);
     final subtopic = adaptShortScenarioText(
       scenario.metadata.subtopic,

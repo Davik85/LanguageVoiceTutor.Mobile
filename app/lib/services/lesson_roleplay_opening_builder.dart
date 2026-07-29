@@ -14,6 +14,7 @@ class LessonRoleplayOpeningBuilder {
     required LessonRuntimeContextVariant variant,
     required StudyLanguageDefinition studyLanguage,
     required String tutorDisplayName,
+    String? resolvedLocalizedTitle,
   }) {
     final englishConfirmation = _replaceTutorName(
       variant.contextConfirmationLine.trim().isEmpty
@@ -24,6 +25,7 @@ class LessonRoleplayOpeningBuilder {
     final confirmation =
         LocalizedLessonTextService.buildContextConfirmationLine(
       variant: variant,
+      resolvedLocalizedTitle: resolvedLocalizedTitle ?? '',
       studyLanguage: studyLanguage,
       englishFallback: englishConfirmation,
     );

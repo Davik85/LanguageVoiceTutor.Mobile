@@ -579,9 +579,11 @@ class _LessonScreenState extends State<LessonScreen>
         variants: scenario.controlledVariation.contextVariants,
         localizedTitlesById: {
           for (final variant in scenario.controlledVariation.contextVariants)
-            variant.id: LocalizedLessonTextService.localizedScenarioTitle(
-              variant,
-              studyLanguage,
+            variant.id:
+                LocalizedLessonTextService.backendLocalizedScenarioTitle(
+              scenario: scenario,
+              variant: variant,
+              studyLanguage: studyLanguage,
             ),
         },
       );
@@ -631,10 +633,11 @@ class _LessonScreenState extends State<LessonScreen>
                 .map((variant) => VoiceScenarioCandidateRequest(
                       id: variant.id,
                       title: variant.title,
-                      description:
-                          LocalizedLessonTextService.localizedScenarioTitle(
-                        variant,
-                        studyLanguage,
+                      description: LocalizedLessonTextService
+                          .backendLocalizedScenarioTitle(
+                        scenario: scenario,
+                        variant: variant,
+                        studyLanguage: studyLanguage,
                       ),
                     ))
                 .toList(growable: false),
@@ -722,7 +725,7 @@ class _LessonScreenState extends State<LessonScreen>
               .toList(growable: false);
           final choiceText = choices.indexed
               .map((entry) => '${entry.$1 + 1}. '
-                  '${LocalizedLessonTextService.localizedScenarioTitle(entry.$2, studyLanguage)}')
+                  '${LocalizedLessonTextService.backendLocalizedScenarioTitle(scenario: scenario, variant: entry.$2, studyLanguage: studyLanguage)}')
               .join('\n');
           final backendClarification = response.clarificationText?.trim();
           final message = backendClarification?.isNotEmpty == true
@@ -1042,6 +1045,7 @@ class _LessonScreenState extends State<LessonScreen>
       variant: variant,
       studyLanguage: StudyLanguageDefinitions.resolve(settings.studyLanguage),
       tutorDisplayName: _runtimeTutorDisplayName(settings),
+      resolvedLocalizedTitle: context.selectedContextLocalizedTitle,
     );
     if (opening.isEmpty) {
       if (kDebugMode) {

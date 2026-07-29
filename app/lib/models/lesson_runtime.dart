@@ -16,6 +16,7 @@ class LessonRuntimeScenario {
     required this.controlledVariation,
     required this.hintRules,
     required this.runtimeContent,
+    this.localizedSetup,
     this.tutorProfiles = const [],
   });
 
@@ -35,6 +36,7 @@ class LessonRuntimeScenario {
   final LessonRuntimeControlledVariation controlledVariation;
   final LessonRuntimeHintRules hintRules;
   final LessonRuntimeContent runtimeContent;
+  final LessonRuntimeLocalizedSetup? localizedSetup;
   final List<LessonRuntimeTutorProfile> tutorProfiles;
 
   factory LessonRuntimeScenario.fromJson(Map<String, dynamic> json) =>
@@ -69,6 +71,10 @@ class LessonRuntimeScenario {
         hintRules: LessonRuntimeHintRules.fromJson(_object(json, 'hintRules')),
         runtimeContent:
             LessonRuntimeContent.fromJson(_object(json, 'runtimeContent')),
+        localizedSetup: json['localizedSetup'] is Map<String, dynamic>
+            ? LessonRuntimeLocalizedSetup.fromJson(
+                json['localizedSetup'] as Map<String, dynamic>)
+            : null,
         tutorProfiles: _list(_value(json, 'tutorProfiles'))
             .map((value) => LessonRuntimeTutorProfile.fromJson(_map(value)))
             .toList(growable: false),
@@ -76,6 +82,33 @@ class LessonRuntimeScenario {
 
   LessonRuntimeLevelProfile levelProfileFor(String level) =>
       levelProfiles[level] ?? const LessonRuntimeLevelProfile.empty();
+}
+
+class LessonRuntimeLocalizedSetup {
+  const LessonRuntimeLocalizedSetup(
+      {required this.resolvedStudyLanguageId,
+      required this.setupMessageTemplate,
+      required this.contextVariantDisplayTitles,
+      required this.source,
+      required this.status,
+      required this.fallbackUsed});
+  final String resolvedStudyLanguageId;
+  final String? setupMessageTemplate;
+  final Map<String, String> contextVariantDisplayTitles;
+  final String source;
+  final String status;
+  final bool fallbackUsed;
+  factory LessonRuntimeLocalizedSetup.fromJson(Map<String, dynamic> json) =>
+      LessonRuntimeLocalizedSetup(
+          resolvedStudyLanguageId: _string(json, 'resolvedStudyLanguageId'),
+          setupMessageTemplate: json['setupMessageTemplate'] is String
+              ? json['setupMessageTemplate'] as String
+              : null,
+          contextVariantDisplayTitles:
+              _stringMap(_value(json, 'contextVariantDisplayTitles')),
+          source: _string(json, 'source'),
+          status: _string(json, 'status'),
+          fallbackUsed: _bool(json, 'fallbackUsed'));
 }
 
 class LessonRuntimeTutorProfile {
