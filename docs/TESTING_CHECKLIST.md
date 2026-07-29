@@ -682,6 +682,17 @@ The start-flow fixture must provide the Home requests it triggers: a permitted l
 
 ## Android first-run language defaults
 
+## Localized lesson setup closeout
+
+- Completed in `01d6226` (`Use backend localized lesson setup in Mobile`).
+- `flutter analyze` completed with no issues and the full Flutter suite passed 512 tests.
+- Owner manual Android verification successfully covered a non-English new-lesson opening and known-context confirmation using backend response-owned `localizedSetup`.
+- Verify valid templates render only the user display name, including the blank-name greeting, and preserve backend formatting.
+- Verify stable-ID title resolution for numeric, local, canonical, and alias selections; confirmation must not mix English and target-language titles.
+- Verify absent or invalid response localization uses target-language packaged fallback; English stays canonical and an already-open lesson remains unchanged.
+- Focused automated coverage does not claim every malformed-response edge case; additional cases remain optional follow-up.
+- No Android APK/AAB signing, Play Console upload, or store release is included.
+
 - Implemented in `312ca245` (`feat: derive first-run languages from Android`).
 - On an unauthenticated first launch, verify Splash and Login use the first
   Android-preferred supported interface locale; unsupported values use English.

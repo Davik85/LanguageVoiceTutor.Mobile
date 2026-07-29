@@ -14,6 +14,10 @@ All mobile-to-backend communication must use HTTPS.
 
 This document records expected contracts and assumptions before implementation. Endpoint names are placeholders unless already confirmed by backend documentation or backend code. Exact paths, methods, payloads, response shapes, authentication requirements, and error codes must be confirmed before Flutter runtime code is added.
 
+## Localized lesson setup response
+
+The completed Mobile integration at commit `01d6226` consumes the additive, response-owned nullable `localizedSetup` field returned by lesson start. It does not read or model the authored CMS/backend `setupLocalizations` field. English remains canonical. For a non-English study language, Mobile accepts `localizedSetup` only when its language matches the selected study language, its setup template is nonblank, its placeholder set exactly matches the expected placeholders, and it contains exactly one nonblank localized title for every canonical stable context-variant ID. It renders only `{{userDisplayName}}`, preserving the remaining backend template formatting. Context-title lookup is by stable ID, including numeric, local, canonical, and alias selection paths. Missing or invalid response data uses the packaged target-language fallback and must not show canonical English. This contract does not alter lesson requests, scenario keys, CMS authoring data, or backend ownership.
+
 ## Authentication and session expectations
 
 Expected behavior:
