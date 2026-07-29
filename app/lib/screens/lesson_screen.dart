@@ -3594,6 +3594,86 @@ class _FeedbackSectionCard extends StatelessWidget {
       );
 }
 
+class _CheckeredFinishFlagIcon extends StatelessWidget {
+  const _CheckeredFinishFlagIcon();
+
+  @override
+  Widget build(BuildContext context) => const SizedBox(
+        width: 24,
+        height: 24,
+        child: CustomPaint(painter: _CheckeredFinishFlagPainter()),
+      );
+}
+
+class _CheckeredFinishFlagPainter extends CustomPainter {
+  const _CheckeredFinishFlagPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const black = Color(0xFF151515);
+    final mast = Paint()
+      ..color = black
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      Offset(size.width * 0.22, size.height * 0.14),
+      Offset(size.width * 0.22, size.height * 0.86),
+      mast,
+    );
+
+    final flag = Path()
+      ..moveTo(size.width * 0.26, size.height * 0.18)
+      ..cubicTo(
+        size.width * 0.50,
+        size.height * 0.07,
+        size.width * 0.70,
+        size.height * 0.29,
+        size.width * 0.90,
+        size.height * 0.16,
+      )
+      ..lineTo(size.width * 0.90, size.height * 0.66)
+      ..cubicTo(
+        size.width * 0.70,
+        size.height * 0.79,
+        size.width * 0.50,
+        size.height * 0.57,
+        size.width * 0.26,
+        size.height * 0.68,
+      )
+      ..close();
+
+    canvas.save();
+    canvas.clipPath(flag);
+    final cellWidth = size.width * 0.64 / 4;
+    final cellHeight = size.height * 0.56 / 3;
+    for (var row = 0; row < 3; row++) {
+      for (var column = 0; column < 4; column++) {
+        canvas.drawRect(
+          Rect.fromLTWH(
+            size.width * 0.26 + column * cellWidth,
+            size.height * 0.14 + row * cellHeight,
+            cellWidth,
+            cellHeight,
+          ),
+          Paint()..color = (row + column).isEven ? black : Colors.white,
+        );
+      }
+    }
+    canvas.restore();
+    canvas.drawPath(
+      flag,
+      Paint()
+        ..color = black
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _CheckeredFinishFlagPainter oldDelegate) =>
+      false;
+}
+
 class _TutorHeader extends StatelessWidget {
   const _TutorHeader({
     required this.displayName,
@@ -3669,8 +3749,8 @@ class _TutorHeader extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: 0,
-            right: 0,
+            top: 16,
+            right: 16,
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: colorScheme.surface.withValues(alpha: 0.78),
@@ -3680,7 +3760,7 @@ class _TutorHeader extends StatelessWidget {
                 key: const Key('lesson-action-finish'),
                 tooltip: context.l10n.finishLesson,
                 onPressed: canFinish ? onFinish : null,
-                icon: const Icon(Icons.flag_outlined),
+                icon: const _CheckeredFinishFlagIcon(),
               ),
             ),
           ),
