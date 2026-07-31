@@ -22,7 +22,7 @@ class TutorAvatarAssetResolver {
       TutorAvatarSurface.conversationMode => 'conversation_mode',
     };
     return 'assets/avatars/$surfacePath/$normalizedTutor/'
-        'avatar-${_stateName(state)}.gif';
+        'avatar-${_assetStateName(state)}.gif';
   }
 
   String idlePath({
@@ -36,12 +36,13 @@ class TutorAvatarAssetResolver {
     return _knownTutorIds.contains(normalized) ? normalized : 'lana';
   }
 
-  String _stateName(TutorAvatarState state) => switch (state) {
-        TutorAvatarState.idle => 'idle',
-        TutorAvatarState.listening => 'listening',
-        TutorAvatarState.transcribing => 'transcribing',
-        TutorAvatarState.thinking => 'thinking',
+  String _assetStateName(TutorAvatarState state) => switch (state) {
         TutorAvatarState.speaking => 'speaking',
+        TutorAvatarState.idle ||
+        TutorAvatarState.listening ||
+        TutorAvatarState.transcribing ||
+        TutorAvatarState.thinking =>
+          'idle',
       };
 }
 

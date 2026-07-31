@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../widgets/tutor_avatar.dart';
 
-/// Warms just the selected tutor's state GIFs for a surface.
+/// Warms the selected tutor's resolved avatar GIFs for a surface.
 class TutorAvatarPreloader {
   TutorAvatarPreloader({
     TutorAvatarAssetResolver? resolver,
@@ -45,6 +45,7 @@ class TutorAvatarPreloader {
               tutorId: tutorId,
               state: state,
             ))
+        .toSet()
         .toList(growable: false);
     final assets = await _loadAssets();
     if (!context.mounted) return false;

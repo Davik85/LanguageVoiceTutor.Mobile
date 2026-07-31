@@ -4,25 +4,48 @@ import 'package:language_voice_tutor_mobile/widgets/tutor_avatar.dart';
 void main() {
   const resolver = TutorAvatarAssetResolver();
 
-  test('conversation avatar resolves Lana canonical idle asset', () {
-    expect(
-      resolver.resolve(
-        surface: TutorAvatarSurface.conversationMode,
-        tutorId: ' Lana ',
-        state: TutorAvatarState.idle,
-      ),
-      'assets/avatars/conversation_mode/lana/avatar-idle.gif',
-    );
-  });
+  for (final surface in TutorAvatarSurface.values) {
+    final surfacePath = switch (surface) {
+      TutorAvatarSurface.lessonChat => 'lesson_chat',
+      TutorAvatarSurface.conversationMode => 'conversation_mode',
+    };
 
-  test('conversation avatar resolves David canonical state asset', () {
+    group('$surfacePath avatar mapping', () {
+      test('maps idle, listening, thinking, and transcribing to idle', () {
+        for (final state in <TutorAvatarState>[
+          TutorAvatarState.idle,
+          TutorAvatarState.listening,
+          TutorAvatarState.thinking,
+          TutorAvatarState.transcribing,
+        ]) {
+          expect(
+            resolver.resolve(surface: surface, tutorId: ' Lana ', state: state),
+            'assets/avatars/$surfacePath/lana/avatar-idle.gif',
+          );
+        }
+      });
+
+      test('maps speaking to the tutor-specific speaking GIF', () {
+        expect(
+          resolver.resolve(
+            surface: surface,
+            tutorId: 'david',
+            state: TutorAvatarState.speaking,
+          ),
+          'assets/avatars/$surfacePath/david/avatar-speaking.gif',
+        );
+      });
+    });
+  }
+
+  test('preserves safe fallback for unsupported tutor IDs', () {
     expect(
       resolver.resolve(
-        surface: TutorAvatarSurface.conversationMode,
-        tutorId: 'david',
+        surface: TutorAvatarSurface.lessonChat,
+        tutorId: 'unknown',
         state: TutorAvatarState.speaking,
       ),
-      'assets/avatars/conversation_mode/david/avatar-speaking.gif',
+      'assets/avatars/lesson_chat/lana/avatar-speaking.gif',
     );
   });
 

@@ -9,8 +9,11 @@ void main() {
     final loaded = <String>[];
     final preloader = TutorAvatarPreloader(
       loadAssets: () async => TutorAvatarState.values
-          .map((state) =>
-              'assets/avatars/lesson_chat/lana/avatar-${state.name}.gif')
+          .map((state) => const TutorAvatarAssetResolver().resolve(
+                surface: TutorAvatarSurface.lessonChat,
+                tutorId: 'lana',
+                state: state,
+              ))
           .toSet(),
       precache: (provider, _) async =>
           loaded.add((provider as AssetImage).assetName),
@@ -28,7 +31,10 @@ void main() {
       return const SizedBox();
     })));
     await tester.pumpAndSettle();
-    expect(loaded, hasLength(TutorAvatarState.values.length));
+    expect(loaded, hasLength(2));
+    expect(loaded, contains('assets/avatars/lesson_chat/lana/avatar-idle.gif'));
+    expect(loaded,
+        contains('assets/avatars/lesson_chat/lana/avatar-speaking.gif'));
     expect(loaded.every((path) => path.contains('/lana/')), isTrue);
   });
 
