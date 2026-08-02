@@ -3,6 +3,43 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+def releaseSigningProperties = new Properties()
+def releaseStoreFile = null
+def releaseSigningConfigurationError = null
+def keyPropertiesFile = rootProject.file("key.properties")
+
+if (!keyPropertiesFile.isFile()) {
+    releaseSigningConfigurationError =
+        "Release signing configuration is missing: app/android/key.properties does not exist."
+} else {
+    keyPropertiesFile.withInputStream { releaseSigningProperties.load(it) }
+
+    def requiredSigningProperties = ["storeFile", "storePassword", "keyAlias", "keyPassword"]
+    def missingSigningProperties = requiredSigningProperties.findAll {
+        !releaseSigningProperties.getProperty(it)?.trim()
+    }
+    if (!missingSigningProperties.isEmpty()) {
+        releaseSigningConfigurationError =
+            "Release signing configuration is incomplete: required key.properties values are missing or blank."
+    } else {
+        releaseStoreFile = file(releaseSigningProperties.getProperty("storeFile").trim())
+        if (!releaseStoreFile.isFile()) {
+            releaseSigningConfigurationError =
+                "Release signing configuration is invalid: the configured keystore file does not exist."
+        }
+    }
+}
+
+gradle.taskGraph.whenReady { taskGraph ->
+    def appReleaseTaskInGraph = taskGraph.allTasks.any { task ->
+        task.project.path == project.path &&
+            task.name.toLowerCase(java.util.Locale.ROOT).contains("release")
+    }
+    if (appReleaseTaskInGraph && releaseSigningConfigurationError != null) {
+        throw new GradleException(releaseSigningConfigurationError)
+    }
+}
+
 android {
     namespace = "com.languagevoicetutor.mobile"
     compileSdk = flutter.compileSdkVersion
@@ -14,6 +51,23 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    signingConfigs {
+        release {
+            if (releaseSigningConfigurationError == null) {
+                storeFile = releaseStoreFile
+                storePassword = releaseSigningProperties.getProperty("storePassword").trim()
+                keyAlias = releaseSigningProperties.getProperty("keyAlias").trim()
+                keyPassword = releaseSigningProperties.getProperty("keyPassword").trim()
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.release
+        }
     }
 
     compileOptions {

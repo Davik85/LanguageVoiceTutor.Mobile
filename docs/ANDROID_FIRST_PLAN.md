@@ -184,6 +184,25 @@ Interface localization remains separate from the six study languages. The long-t
 - Ensure network security permits HTTPS to production backend.
 - Avoid storing sensitive provider or backend secrets in the app bundle.
 
+## Local Android release signing
+
+Android release signing has an external-keystore boundary: the upload keystore, its passwords, and its filesystem location stay outside Git and outside the app bundle. Copy `app/android/key.properties.example` to the ignored local-only `app/android/key.properties`, then set only these values: `storeFile`, `storePassword`, `keyAlias`, and `keyPassword`. Passwords are stored only in that ignored local file; never commit it, the keystore, or a private path.
+
+Release Gradle tasks fail closed when that file is missing, a required value is blank, or the configured keystore does not exist. Debug and other non-release Gradle tasks do not require it. Build the upload bundle with:
+
+```bash
+flutter build appbundle --release
+```
+
+Before upload, verify the produced AAB and the local upload certificate without exposing passwords:
+
+```bash
+jarsigner -verify -strict -verbose:summary build/app/outputs/bundle/release/app-release.aab
+keytool -list -v -keystore C:/secure/path/to/upload-keystore.jks -alias your-upload-key-alias
+```
+
+Success requires `jar verified.` in the `jarsigner` output. Treat `jar is unsigned` or `Not a signed jar file` as a failure even if the process exit code is zero. The upload certificate SHA-256 must be `36:40:5D:B4:56:47:B2:3C:68:EE:2D:AB:12:21:70:CA:DE:06:11:38:28:D9:9D:02:AB:62:54:33:E2:F5:0B:F7`. Increase `versionCode` before every future Google Play upload. Do not upload an AAB while the Google Play upload-key reset still shows as processing.
+
 ## iOS posture
 
 The repository should avoid Android-only architectural decisions where reasonable, but iOS should not drive V1 implementation. Do not create iOS project files until the team explicitly approves an iOS phase.

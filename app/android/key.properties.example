@@ -1,0 +1,5 @@
+# Local-only Android upload-keystore configuration. Never commit key.properties.
+storeFile=C:/secure/path/to/upload-keystore.jks
+storePassword=REPLACE_LOCALLY
+keyAlias=your-upload-key-alias
+keyPassword=REPLACE_LOCALLY

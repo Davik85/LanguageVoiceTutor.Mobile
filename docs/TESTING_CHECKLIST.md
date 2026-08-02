@@ -360,6 +360,10 @@ Before any store release:
 - Confirm crash reporting and analytics consent behavior.
 - Confirm production backend environment configuration.
 - Confirm no secrets are present in the app bundle or repository.
+- Keep the upload keystore, its passwords, and its private filesystem location outside Git. Create ignored local `app/android/key.properties` from `app/android/key.properties.example` with only `storeFile`, `storePassword`, `keyAlias`, and `keyPassword`; passwords belong only in that ignored file.
+- Run `flutter build appbundle --release`. Release tasks must fail before building if local signing configuration is missing, incomplete, or points to a missing keystore; debug/non-release Gradle tasks must still configure without it.
+- Verify the resulting AAB with `jarsigner -verify -strict -verbose:summary build/app/outputs/bundle/release/app-release.aab` and verify the selected upload alias with `keytool -list -v -keystore <local-keystore-path> -alias <upload-key-alias>`. Success requires `jar verified.` in the `jarsigner` output; treat `jar is unsigned` or `Not a signed jar file` as a failure even if the process exit code is zero. Confirm SHA-256 `36:40:5D:B4:56:47:B2:3C:68:EE:2D:AB:12:21:70:CA:DE:06:11:38:28:D9:9D:02:AB:62:54:33:E2:F5:0B:F7`.
+- Increase `versionCode` before a future Google Play upload, and do not upload an AAB while the Google Play upload-key reset remains processing.
 
 ## PR 2 auth/account/subscription-status checks
 
