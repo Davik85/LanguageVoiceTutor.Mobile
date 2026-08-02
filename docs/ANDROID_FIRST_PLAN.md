@@ -188,20 +188,33 @@ Interface localization remains separate from the six study languages. The long-t
 
 Android release signing has an external-keystore boundary: the upload keystore, its passwords, and its filesystem location stay outside Git and outside the app bundle. Copy `app/android/key.properties.example` to the ignored local-only `app/android/key.properties`, then set only these values: `storeFile`, `storePassword`, `keyAlias`, and `keyPassword`. Passwords are stored only in that ignored local file; never commit it, the keystore, or a private path.
 
-Release Gradle tasks fail closed when that file is missing, a required value is blank, or the configured keystore does not exist. Debug and other non-release Gradle tasks do not require it. Build the upload bundle with:
+Reproducible Android release signing is complete and verified. Release Gradle tasks fail closed when that file is missing, a required value is blank, or the configured keystore does not exist. Debug and other non-release Gradle tasks do not require it. Build the upload bundle with:
 
 ```bash
 flutter build appbundle --release
 ```
 
-Before upload, verify the produced AAB and the local upload certificate without exposing passwords:
+Before upload, make two separate checks without exposing passwords.
+
+1. Verify signature integrity:
 
 ```bash
-jarsigner -verify -strict -verbose:summary build/app/outputs/bundle/release/app-release.aab
-keytool -list -v -keystore C:/secure/path/to/upload-keystore.jks -alias your-upload-key-alias
+jarsigner -verify -verbose:summary build/app/outputs/bundle/release/app-release.aab
 ```
 
-Success requires `jar verified.` in the `jarsigner` output. Treat `jar is unsigned` or `Not a signed jar file` as a failure even if the process exit code is zero. The upload certificate SHA-256 must be `36:40:5D:B4:56:47:B2:3C:68:EE:2D:AB:12:21:70:CA:DE:06:11:38:28:D9:9D:02:AB:62:54:33:E2:F5:0B:F7`. Increase `versionCode` before every future Google Play upload. Do not upload an AAB while the Google Play upload-key reset still shows as processing.
+Success requires `jar verified` in the output and must not contain `jar is unsigned` or `Not a signed jar file`.
+
+2. Verify the embedded upload-certificate identity:
+
+```bash
+keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab
+```
+
+The embedded certificate SHA-256 must be `36:40:5D:B4:56:47:B2:3C:68:EE:2D:AB:12:21:70:CA:DE:06:11:38:28:D9:9D:02:AB:62:54:33:E2:F5:0B:F7`. `jarsigner -strict` may report PKIX or self-signed-certificate errors for a valid self-signed Google Play upload certificate, so strict trust-chain output is not the project acceptance criterion and those warnings do not make the AAB invalid.
+
+The verified output was exactly `app/build/app/outputs/bundle/release/app-release.aab` (191983753 bytes), SHA-256 `8C633D4689066BF0BE17B7B7AA266B4049750965092D5642C589DF5F6865A7ED`. Its embedded upload certificate SHA-1 was `60:A8:13:5D:A6:B1:72:00:F2:6A:80:D2:F9:91:A9:01:CC:EB:F8:9B`, and its SHA-256 matched the expected value above and the newly registered Google Play upload certificate. The Google Play upload-key reset remains processing: do not upload this AAB or create a new one until processing completes and `versionCode` has been increased.
+
+Core Internal smoke testing passed on three physical Android devices, including Android 13 and Android 16. Login, account settings, History, Progress, lesson start, microphone permission, speech recognition, notifications, notification disable behavior, and initial system-language detection for both application and native language worked as expected. No obvious critical application errors were found. Extended exploratory testing remains ongoing; this does not establish full public-release readiness.
 
 ## iOS posture
 

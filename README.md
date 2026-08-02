@@ -1,5 +1,15 @@
 # Language Voice Tutor Mobile
 
+## Current Android release-signing and physical smoke-test status
+
+Reproducible Android release signing is complete and verified. The upload keystore remains external to the repository; ignored local `app/android/key.properties` supplies the four signing values, and no keystore, password, private key, or real properties file is tracked.
+
+The verified release output was exactly `app/build/app/outputs/bundle/release/app-release.aab` (191983753 bytes), with SHA-256 `8C633D4689066BF0BE17B7B7AA266B4049750965092D5642C589DF5F6865A7ED`. Signature integrity was verified, and the embedded upload certificate SHA-1 was `60:A8:13:5D:A6:B1:72:00:F2:6A:80:D2:F9:91:A9:01:CC:EB:F8:9B`; its SHA-256 was `36:40:5D:B4:56:47:B2:3C:68:EE:2D:AB:12:21:70:CA:DE:06:11:38:28:D9:9D:02:AB:62:54:33:E2:F5:0B:F7`, matching the newly registered Google Play upload certificate.
+
+Core Internal testing passed on three physical Android devices, including Android 13 and Android 16. Login, account settings, History, Progress, lesson start, microphone permission, speech recognition, notifications, notification disable behavior, and initial system-language detection for both application and native language worked as expected. No obvious critical application errors were found. Extended exploratory testing is still ongoing; this is not a claim of complete physical QA or public-release readiness.
+
+The Google Play upload-key reset remains processing. Do not upload this AAB or create a new upload until processing is complete and `versionCode` has been increased.
+
 ## Interface localization and Android first-run defaults
 
 Mobile has fourteen selectable interface locales: `en`, `ru`, `es`, `fr`, `de`, `it`, `pt-PT`, `bg`, `hr`, `sr-Latn`, `pl`, `ja`, `ko`, and `ar`. Each selectable ARB catalog has 453 messages. Flutter `gen-l10n` also generates generic `pt` and `sr` fallback variants; these are internal fallbacks, not additional selectable application locales (16 generated variants in total). Localization groups were added in `e6b3b8c` (Croatian, Serbian, Polish) and `cd799c3` (Japanese, Korean, Arabic); Android first-run defaults were added in `312ca245` (`feat: derive first-run languages from Android`).
