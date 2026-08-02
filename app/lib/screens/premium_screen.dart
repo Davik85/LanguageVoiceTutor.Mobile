@@ -5,6 +5,7 @@ import '../models/subscription_status.dart';
 import '../l10n/app_localizations_context.dart';
 import '../services/auth_service.dart';
 import '../services/premium_purchase_adapter.dart';
+import '../services/premium_purchase_coordinator.dart';
 import '../services/service_factory.dart';
 import '../theme/app_visuals.dart';
 import 'login_screen.dart';
@@ -18,14 +19,17 @@ class PremiumScreen extends StatefulWidget {
     super.key,
     AuthService? authService,
     PremiumPurchaseAdapter? purchaseAdapter,
+    PremiumPurchaseCoordinator? purchaseCoordinator,
     this.purchaseAction,
     this.restoreAction,
   })  : _authService = authService,
-        _purchaseAdapter = purchaseAdapter;
+        _purchaseAdapter = purchaseAdapter,
+        _purchaseCoordinator = purchaseCoordinator;
 
   static const routeName = '/premium';
   final AuthService? _authService;
   final PremiumPurchaseAdapter? _purchaseAdapter;
+  final PremiumPurchaseCoordinator? _purchaseCoordinator;
   @Deprecated('Use purchaseAdapter in new code.')
   final PurchaseEntryAction? purchaseAction;
   @Deprecated('Use purchaseAdapter in new code.')
@@ -38,6 +42,8 @@ class PremiumScreen extends StatefulWidget {
 class _PremiumScreenState extends State<PremiumScreen> {
   late final AuthService _authService;
   late final PremiumPurchaseAdapter _purchaseAdapter;
+  late final PremiumPurchaseCoordinator _purchaseCoordinator;
+  late final bool _ownsPurchaseCoordinator;
   SubscriptionStatus? _status;
   String? _error;
   bool _loading = false;
@@ -50,8 +56,33 @@ class _PremiumScreenState extends State<PremiumScreen> {
     _authService = widget._authService ?? createAuthService();
     _purchaseAdapter =
         widget._purchaseAdapter ?? const UnavailablePremiumPurchaseAdapter();
-    _purchaseAdapter.initialize();
+    _ownsPurchaseCoordinator = widget._purchaseCoordinator == null;
+    _purchaseCoordinator = widget._purchaseCoordinator ??
+        PremiumPurchaseCoordinator(
+          authService: _authService,
+          purchaseAdapter: _purchaseAdapter,
+        );
+    _purchaseCoordinator.addListener(_onPurchaseStateChanged);
+    _purchaseCoordinator.initialize();
     _load();
+  }
+
+  void _onPurchaseStateChanged() {
+    if (!mounted) return;
+    final refreshedStatus = _purchaseCoordinator.lastResult?.subscriptionStatus;
+    setState(() {
+      if (refreshedStatus != null) _status = refreshedStatus;
+    });
+  }
+
+  @override
+  void dispose() {
+    _purchaseCoordinator.removeListener(_onPurchaseStateChanged);
+    if (_ownsPurchaseCoordinator) {
+      _purchaseCoordinator.close();
+      _purchaseCoordinator.dispose();
+    }
+    super.dispose();
   }
 
   Future<void> _load({bool refresh = false}) async {
@@ -116,42 +147,29 @@ class _PremiumScreenState extends State<PremiumScreen> {
       }
       return;
     }
-    if (!await _purchaseAdapter.isAvailable) {
+    if (_purchaseCoordinator.state ==
+        PremiumPurchaseCoordinatorState.unavailable) {
       await _showUnavailable(restore: restore);
       return;
     }
     setState(() => _runningAction = true);
     try {
       if (restore) {
-        await _purchaseAdapter.restorePurchases();
+        final result = await _purchaseCoordinator.restorePurchases();
+        if (result.state == PremiumPurchaseCoordinatorState.unavailable &&
+            mounted) {
+          await _showUnavailable(restore: true);
+        }
         return;
       }
-      // Production has no configured catalog, so it can never launch a store flow.
-      final catalog = await _purchaseAdapter.loadSubscriptionProducts(const {});
-      if (catalog.products.isEmpty) {
+      final result = await _purchaseCoordinator.startPurchase();
+      if (result.state == PremiumPurchaseCoordinatorState.unavailable) {
         await _showUnavailable(restore: false);
         return;
       }
-      final result =
-          await _purchaseAdapter.launchSubscriptionOffer(catalog.products.first)
-              ? PurchaseEntryResult.completed
-              : PurchaseEntryResult.failed;
       if (!mounted) return;
-      switch (result) {
-        case PurchaseEntryResult.completed:
-          await _load(refresh: true);
-          if (mounted &&
-              _status != null &&
-              !_status!.premiumActive &&
-              !_status!.trialActive) {
-            setState(() => _error = context.l10n.purchasePendingConfirmation);
-          }
-        case PurchaseEntryResult.cancelled:
-          break;
-        case PurchaseEntryResult.failed:
-          setState(() => _error = context.l10n.purchaseActionFailed);
-        case PurchaseEntryResult.unavailable:
-          await _showUnavailable(restore: restore);
+      if (result.state == PremiumPurchaseCoordinatorState.failed) {
+        setState(() => _error = context.l10n.purchaseActionFailed);
       }
     } catch (_) {
       if (mounted) {

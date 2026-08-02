@@ -8,6 +8,7 @@ import 'services/auth_service.dart';
 import 'services/service_factory.dart';
 import 'services/practice_reminder_service.dart';
 import 'services/premium_purchase_adapter.dart';
+import 'services/premium_purchase_coordinator.dart';
 import 'screens/home_screen.dart';
 import 'screens/lesson_screen.dart';
 import 'screens/login_screen.dart';
@@ -36,12 +37,16 @@ class LanguageVoiceTutorApp extends StatefulWidget {
     super.key,
     AuthService? authService,
     PracticeReminderService? practiceReminderService,
+    PremiumPurchaseAdapter? premiumPurchaseAdapter,
+    Set<String> premiumProductIds = const {},
     DeviceLanguageDefaults? deviceLanguageDefaults,
     Iterable<Locale>? deviceLocales,
   })  : _authService = authService ?? createAuthService(),
         _practiceReminderService =
             practiceReminderService ?? LocalPracticeReminderService(),
-        _premiumPurchaseAdapter = const UnavailablePremiumPurchaseAdapter(),
+        _premiumPurchaseAdapter =
+            premiumPurchaseAdapter ?? const UnavailablePremiumPurchaseAdapter(),
+        _premiumProductIds = Set.unmodifiable(premiumProductIds),
         _deviceLanguageDefaults = deviceLanguageDefaults ??
             resolveDeviceLanguageDefaults(
               deviceLocales ??
@@ -51,6 +56,7 @@ class LanguageVoiceTutorApp extends StatefulWidget {
   final AuthService _authService;
   final PracticeReminderService _practiceReminderService;
   final PremiumPurchaseAdapter _premiumPurchaseAdapter;
+  final Set<String> _premiumProductIds;
   final DeviceLanguageDefaults _deviceLanguageDefaults;
 
   @override
@@ -59,6 +65,7 @@ class LanguageVoiceTutorApp extends StatefulWidget {
 
 class _LanguageVoiceTutorAppState extends State<LanguageVoiceTutorApp> {
   late final AppLocaleController _localeController;
+  late final PremiumPurchaseCoordinator _premiumPurchaseCoordinator;
 
   @override
   void initState() {
@@ -66,11 +73,19 @@ class _LanguageVoiceTutorAppState extends State<LanguageVoiceTutorApp> {
     _localeController = AppLocaleController(
       initialLanguageId: widget._deviceLanguageDefaults.interfaceLanguageId,
     );
+    _premiumPurchaseCoordinator = PremiumPurchaseCoordinator(
+      authService: widget._authService,
+      purchaseAdapter: widget._premiumPurchaseAdapter,
+      productIds: widget._premiumProductIds,
+    );
+    _premiumPurchaseCoordinator.initialize();
   }
 
   @override
   void dispose() {
     _localeController.dispose();
+    _premiumPurchaseCoordinator.close();
+    _premiumPurchaseCoordinator.dispose();
     super.dispose();
   }
 
@@ -191,7 +206,7 @@ class _LanguageVoiceTutorAppState extends State<LanguageVoiceTutorApp> {
                     onInterfaceLanguageSaved: _localeController.setLanguageId),
                 PremiumScreen.routeName: (_) => PremiumScreen(
                     authService: widget._authService,
-                    purchaseAdapter: widget._premiumPurchaseAdapter),
+                    purchaseCoordinator: _premiumPurchaseCoordinator),
               },
             ));
   }

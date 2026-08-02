@@ -5,6 +5,7 @@ import '../api/api_client.dart';
 import '../models/auth_models.dart';
 import '../models/account_deletion_request.dart';
 import '../models/feedback_report.dart';
+import '../models/google_play_purchase_verification.dart';
 import '../models/audio_speech.dart';
 import '../models/audio_transcription.dart';
 import '../models/lesson_access_decision.dart';
@@ -206,6 +207,68 @@ class AuthService {
   Future<SubscriptionStatus> fetchSubscriptionStatus() async {
     final response = await _authenticatedGet('/api/me/subscription-status');
     return SubscriptionStatus.fromJson(_decodeObject(response.body));
+  }
+
+  Future<GooglePlayPurchaseVerificationResponse> verifyGooglePlayPurchase(
+      String purchaseToken) async {
+    if (purchaseToken.trim().isEmpty) {
+      return const GooglePlayPurchaseVerificationResponse(
+        result: GooglePlayPurchaseVerificationResult.malformed,
+        subscriptionStatusRefreshRecommended: false,
+      );
+    }
+    try {
+      final response = (await _sendWithSessionRecovery(
+        (token) => _apiClient.post(
+          '/api/me/billing/google-play/purchases/verify',
+          body: GooglePlayPurchaseVerificationRequest(purchaseToken).toJson(),
+          accessToken: token,
+        ),
+        (response) => response.statusCode == 401,
+      ))
+          .response;
+      if (response.statusCode == 429) {
+        return const GooglePlayPurchaseVerificationResponse(
+          result: GooglePlayPurchaseVerificationResult.temporarilyUnavailable,
+          subscriptionStatusRefreshRecommended: false,
+        );
+      }
+      if (response.statusCode == 503 ||
+          response.statusCode == 200 ||
+          response.statusCode == 400) {
+        return GooglePlayPurchaseVerificationResponse.tryParse(
+                _decodeObject(response.body)) ??
+            const GooglePlayPurchaseVerificationResponse(
+              result: GooglePlayPurchaseVerificationResult.malformed,
+              subscriptionStatusRefreshRecommended: false,
+            );
+      }
+      if (response.statusCode >= 500) {
+        return const GooglePlayPurchaseVerificationResponse(
+          result: GooglePlayPurchaseVerificationResult.temporarilyUnavailable,
+          subscriptionStatusRefreshRecommended: false,
+        );
+      }
+      return const GooglePlayPurchaseVerificationResponse(
+        result: GooglePlayPurchaseVerificationResult.malformed,
+        subscriptionStatusRefreshRecommended: false,
+      );
+    } on _AuthenticationRequiredException {
+      return const GooglePlayPurchaseVerificationResponse(
+        result: GooglePlayPurchaseVerificationResult.authenticationRequired,
+        subscriptionStatusRefreshRecommended: false,
+      );
+    } on ApiException {
+      return const GooglePlayPurchaseVerificationResponse(
+        result: GooglePlayPurchaseVerificationResult.temporarilyUnavailable,
+        subscriptionStatusRefreshRecommended: false,
+      );
+    } catch (_) {
+      return const GooglePlayPurchaseVerificationResponse(
+        result: GooglePlayPurchaseVerificationResult.malformed,
+        subscriptionStatusRefreshRecommended: false,
+      );
+    }
   }
 
   Future<LessonAccessDecision> fetchLessonAccessDecision() async {

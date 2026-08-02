@@ -8,6 +8,7 @@ import 'package:language_voice_tutor_mobile/models/audio_speech.dart';
 import 'package:language_voice_tutor_mobile/models/audio_transcription.dart';
 import 'package:language_voice_tutor_mobile/models/account_deletion_request.dart';
 import 'package:language_voice_tutor_mobile/models/feedback_report.dart';
+import 'package:language_voice_tutor_mobile/models/google_play_purchase_verification.dart';
 import 'package:language_voice_tutor_mobile/models/language_options.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_chat.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_runtime.dart';
@@ -320,6 +321,126 @@ const userSettingsResponseBody =
     '{"nativeLanguage":"tr","studyLanguage":"en","explanationLanguage":"ru","speechVoice":"coral","speechSpeed":1.1,"conversationModeEnabled":true,"selectedTutorId":"lana","currentLevel":"A1"}';
 
 void main() {
+  test('Google Play verification posts the exact token contract', () async {
+    const path = '/api/me/billing/google-play/purchases/verify';
+    final api = FakeApiClient()
+      ..responses[path] = [
+        const ApiResponse(
+          statusCode: 200,
+          body:
+              '{"result":"verified","message":"ignored","subscriptionStatusRefreshRecommended":true}',
+        )
+      ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+    final result = await service.verifyGooglePlayPurchase(' token-as-sent ');
+    expect(api.calls, ['POST $path']);
+    expect(api.bodies.single, {'purchaseToken': ' token-as-sent '});
+    expect(result.result, GooglePlayPurchaseVerificationResult.verified);
+    expect(result.subscriptionStatusRefreshRecommended, isTrue);
+  });
+
+  test('Google Play verification preserves documented 503 result bodies',
+      () async {
+    const path = '/api/me/billing/google-play/purchases/verify';
+    final api = FakeApiClient()
+      ..responses[path] = [
+        const ApiResponse(
+          statusCode: 503,
+          body:
+              '{"result":"acknowledgement_pending","message":"ignored","subscriptionStatusRefreshRecommended":true}',
+        ),
+        const ApiResponse(
+          statusCode: 503,
+          body:
+              '{"result":"not_configured","message":"ignored","subscriptionStatusRefreshRecommended":false}',
+        ),
+      ];
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+    final first = await service.verifyGooglePlayPurchase('first');
+    final second = await service.verifyGooglePlayPurchase('second');
+    expect(first.result,
+        GooglePlayPurchaseVerificationResult.acknowledgementPending);
+    expect(first.subscriptionStatusRefreshRecommended, isTrue);
+    expect(second.result, GooglePlayPurchaseVerificationResult.notConfigured);
+  });
+
+  test('Google Play verification rejects blank tokens without a request',
+      () async {
+    final api = FakeApiClient();
+    final result = await AuthService(apiClient: api, storage: MemoryStorage())
+        .verifyGooglePlayPurchase('   ');
+    expect(api.calls, isEmpty);
+    expect(result.result, GooglePlayPurchaseVerificationResult.malformed);
+  });
+
+  test('Google Play verification maps every supported backend result',
+      () async {
+    const path = '/api/me/billing/google-play/purchases/verify';
+    final expected = <String, GooglePlayPurchaseVerificationResult>{
+      'verified': GooglePlayPurchaseVerificationResult.verified,
+      'acknowledgement_pending':
+          GooglePlayPurchaseVerificationResult.acknowledgementPending,
+      'pending': GooglePlayPurchaseVerificationResult.pending,
+      'ownership_conflict':
+          GooglePlayPurchaseVerificationResult.ownershipConflict,
+      'invalid_purchase': GooglePlayPurchaseVerificationResult.invalidPurchase,
+      'unsupported_product':
+          GooglePlayPurchaseVerificationResult.unsupportedProduct,
+      'not_configured': GooglePlayPurchaseVerificationResult.notConfigured,
+      'temporarily_unavailable':
+          GooglePlayPurchaseVerificationResult.temporarilyUnavailable,
+    };
+    final api = FakeApiClient()
+      ..responses[path] = expected.keys
+          .map((value) => ApiResponse(
+              statusCode: 200,
+              body:
+                  '{"result":"$value","message":"server-only","subscriptionStatusRefreshRecommended":false}'))
+          .toList();
+    final service = AuthService(apiClient: api, storage: MemoryStorage());
+    for (final entry in expected.entries) {
+      expect((await service.verifyGooglePlayPurchase('token')).result,
+          entry.value);
+    }
+  });
+
+  test('Google Play verification refreshes once and fails closed safely',
+      () async {
+    const path = '/api/me/billing/google-play/purchases/verify';
+    final api = FakeApiClient()
+      ..responses[path] = [
+        const ApiResponse(statusCode: 401, body: '{}'),
+        const ApiResponse(
+            statusCode: 200,
+            body:
+                '{"result":"verified","message":"server-only","subscriptionStatusRefreshRecommended":false}'),
+        const ApiResponse(statusCode: 429, body: '{"result":"verified"}'),
+        const ApiResponse(statusCode: 500, body: '{"result":"verified"}'),
+        const ApiResponse(statusCode: 200, body: 'not json'),
+        const ApiResponse(
+            statusCode: 200,
+            body:
+                '{"result":"unknown","subscriptionStatusRefreshRecommended":false}'),
+        const ApiResponse(
+            statusCode: 200,
+            body:
+                '{"result":"verified","subscriptionStatusRefreshRecommended":"true"}'),
+      ];
+    final storage = MemoryStorage();
+    final service = AuthService(apiClient: api, storage: storage);
+    expect((await service.verifyGooglePlayPurchase('token')).result,
+        GooglePlayPurchaseVerificationResult.verified);
+    expect(
+        api.calls.where((call) => call == 'POST /api/auth/refresh').length, 1);
+    expect(api.tokens[2], 'new-access');
+    for (var index = 0; index < 5; index++) {
+      expect(
+          (await service.verifyGooglePlayPurchase('token')).result,
+          index < 2
+              ? GooglePlayPurchaseVerificationResult.temporarilyUnavailable
+              : GooglePlayPurchaseVerificationResult.malformed);
+    }
+  });
   test('study language values are converted to backend-compatible names', () {
     expect(LanguageOptions.backendStudyLanguageNameFor('es'), 'Spanish');
     expect(LanguageOptions.backendStudyLanguageNameFor(null), 'English');

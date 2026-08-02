@@ -14,7 +14,6 @@ abstract class PremiumPurchaseAdapter {
   Future<bool> launchSubscriptionOffer(PremiumStoreProduct product,
       {String? obfuscatedAccountId});
   Future<void> restorePurchases({String? obfuscatedAccountId});
-  Future<bool> completeVerifiedPurchase(String productId);
   Future<void> dispose();
 }
 
@@ -38,7 +37,6 @@ class UnavailablePremiumPurchaseAdapter implements PremiumPurchaseAdapter {
   @override
   Future<void> restorePurchases({String? obfuscatedAccountId}) async {}
   @override
-  Future<bool> completeVerifiedPurchase(String productId) async => false;
   @override
   Future<void> dispose() async {}
 }
@@ -49,7 +47,6 @@ class GooglePlayPremiumPurchaseAdapter implements PremiumPurchaseAdapter {
       : _store = store ?? InAppPurchase.instance;
   final InAppPurchase _store;
   final _events = StreamController<PremiumPurchaseEvent>.broadcast();
-  final Map<String, PurchaseDetails> _uncompleted = {};
   StreamSubscription<List<PurchaseDetails>>? _subscription;
   bool _initialized = false;
   bool _available = false;
@@ -161,10 +158,6 @@ class GooglePlayPremiumPurchaseAdapter implements PremiumPurchaseAdapter {
         PurchaseStatus.canceled => PremiumPurchaseEventStatus.cancelled,
         PurchaseStatus.error => PremiumPurchaseEventStatus.failed,
       };
-      if (purchase.pendingCompletePurchase &&
-          status != PremiumPurchaseEventStatus.pending) {
-        _uncompleted[purchase.productID] = purchase;
-      }
       _events.add(PremiumPurchaseEvent(
           status: status,
           productId: purchase.productID,
@@ -177,15 +170,6 @@ class GooglePlayPremiumPurchaseAdapter implements PremiumPurchaseAdapter {
               ? PremiumPurchaseFailure.storeError
               : null));
     }
-  }
-
-  @override
-  Future<bool> completeVerifiedPurchase(String productId) async {
-    final purchase = _uncompleted.remove(productId);
-    if (purchase == null || !purchase.pendingCompletePurchase) return false;
-    // Backend verification and entitlement activation must succeed first; only then may Google Play completion occur.
-    await _store.completePurchase(purchase);
-    return true;
   }
 
   @override

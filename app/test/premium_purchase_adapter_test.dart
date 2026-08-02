@@ -19,7 +19,6 @@ void main() {
             rawPrice: 0,
             currencyCode: '')),
         isFalse);
-    expect(await adapter.completeVerifiedPurchase('test-id'), isFalse);
     await expectLater(adapter.purchaseEvents, emitsDone);
   });
 
