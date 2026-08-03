@@ -138,4 +138,58 @@ void main() {
     expect(coordinator.state, PremiumPurchaseCoordinatorState.completed);
     await coordinator.close();
   });
+
+  test('restored purchase follows the verified backend result', () async {
+    final auth = _CoordinatorAuth(
+        (_) async => const GooglePlayPurchaseVerificationResponse(
+              result: GooglePlayPurchaseVerificationResult.verified,
+              subscriptionStatusRefreshRecommended: false,
+            ));
+    final adapter = _EventAdapter();
+    final coordinator = PremiumPurchaseCoordinator(
+        authService: auth,
+        purchaseAdapter: adapter,
+        productIds: {'configured'});
+    await coordinator.initialize();
+    adapter.events.add(const PremiumPurchaseEvent(
+        status: PremiumPurchaseEventStatus.restored,
+        productId: 'configured',
+        purchaseToken: 'token',
+        requiresCompletion: false));
+    await Future<void>.delayed(Duration.zero);
+    expect(auth.verificationCalls, 1);
+    expect(coordinator.state, PremiumPurchaseCoordinatorState.completed);
+    await coordinator.close();
+  });
+
+  test('acknowledgement pending and unsafe results remain fail-closed',
+      () async {
+    for (final result in GooglePlayPurchaseVerificationResult.values.where(
+        (value) => value != GooglePlayPurchaseVerificationResult.verified)) {
+      final auth =
+          _CoordinatorAuth((_) async => GooglePlayPurchaseVerificationResponse(
+                result: result,
+                subscriptionStatusRefreshRecommended: false,
+              ));
+      final adapter = _EventAdapter();
+      final coordinator = PremiumPurchaseCoordinator(
+          authService: auth,
+          purchaseAdapter: adapter,
+          productIds: {'configured'});
+      await coordinator.initialize();
+      adapter.events.add(const PremiumPurchaseEvent(
+          status: PremiumPurchaseEventStatus.purchased,
+          productId: 'configured',
+          purchaseToken: 'token',
+          requiresCompletion: false));
+      await Future<void>.delayed(Duration.zero);
+      final expected = result == GooglePlayPurchaseVerificationResult.pending ||
+              result ==
+                  GooglePlayPurchaseVerificationResult.acknowledgementPending
+          ? PremiumPurchaseCoordinatorState.pending
+          : PremiumPurchaseCoordinatorState.failed;
+      expect(coordinator.state, expected, reason: '$result must fail closed');
+      await coordinator.close();
+    }
+  });
 }

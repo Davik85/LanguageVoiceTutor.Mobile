@@ -21,7 +21,8 @@ The mobile app may initiate a Google Play purchase and receive a purchase token 
 5. Backend maps the verified purchase to the authenticated Language Voice Tutor account.
 6. Backend updates subscription and entitlement state.
 7. Mobile refreshes subscription status from backend.
-8. Mobile displays the backend-confirmed entitlement state.
+8. `verified` proves persistence plus successful backend-owned Google Play acknowledgement. `acknowledgement_pending` means the entitlement was persisted and backend acknowledgement retry remains pending; Mobile calls neither Google Play acknowledgement nor `completePurchase` for either result.
+9. Mobile displays the backend-confirmed entitlement state.
 
 ## Rules
 
@@ -40,6 +41,7 @@ The mobile app must not:
 Backend remains responsible for:
 
 - Google Play purchase token verification.
+- Google Play acknowledgement and acknowledgement retry.
 - Product and subscription mapping.
 - Duplicate purchase handling.
 - Account entitlement updates.
