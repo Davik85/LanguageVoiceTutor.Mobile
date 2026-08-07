@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/models/premium_purchase.dart';
 import 'package:language_voice_tutor_mobile/models/google_play_purchase_verification.dart';
+import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/premium_purchase_adapter.dart';
 import 'package:language_voice_tutor_mobile/services/premium_purchase_coordinator.dart';
@@ -36,17 +37,27 @@ class _Api implements ApiClient {
 }
 
 class _CoordinatorAuth extends AuthService {
-  _CoordinatorAuth(this.verification)
+  _CoordinatorAuth(this.verification, {this.subscriptionStatus})
       : super(apiClient: _Api(), storage: _Storage());
   final Future<GooglePlayPurchaseVerificationResponse> Function(String)
       verification;
+  final Future<SubscriptionStatus> Function()? subscriptionStatus;
   int verificationCalls = 0;
+  int subscriptionStatusCalls = 0;
 
   @override
   Future<GooglePlayPurchaseVerificationResponse> verifyGooglePlayPurchase(
       String token) {
     verificationCalls++;
     return verification(token);
+  }
+
+  @override
+  Future<SubscriptionStatus> fetchSubscriptionStatus() {
+    subscriptionStatusCalls++;
+    final fetch = subscriptionStatus;
+    if (fetch == null) throw StateError('Unexpected subscription refresh');
+    return fetch();
   }
 }
 
@@ -85,6 +96,21 @@ class _EventAdapter implements PremiumPurchaseAdapter {
     await events.close();
   }
 }
+
+SubscriptionStatus _subscriptionStatus({required bool premiumActive}) =>
+    SubscriptionStatus(
+      userId: 'backend-user',
+      planId: premiumActive ? 'premium' : null,
+      planName: premiumActive ? 'Premium' : null,
+      premiumActive: premiumActive,
+      trialActive: false,
+      subscriptionStatus: premiumActive ? 'active' : null,
+      billingProvider: premiumActive ? 'google_play' : null,
+      freeLessonUsedToday: 0,
+      freeLessonRemainingToday: premiumActive ? 0 : 1,
+      checkedAtUtc: DateTime.utc(2026, 8, 7, 12),
+      enforcementEnabled: true,
+    );
 
 void main() {
   test('unavailable production-safe adapter initializes without store work',
@@ -159,6 +185,139 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     expect(auth.verificationCalls, 1);
     expect(coordinator.state, PremiumPurchaseCoordinatorState.completed);
+    await coordinator.close();
+  });
+
+  test('verified purchase refreshes and exposes backend Premium status once',
+      () async {
+    final backendStatus = _subscriptionStatus(premiumActive: true);
+    final auth = _CoordinatorAuth(
+      (_) async => const GooglePlayPurchaseVerificationResponse(
+        result: GooglePlayPurchaseVerificationResult.verified,
+        subscriptionStatusRefreshRecommended: true,
+      ),
+      subscriptionStatus: () async => backendStatus,
+    );
+    final adapter = _EventAdapter();
+    final coordinator = PremiumPurchaseCoordinator(
+      authService: auth,
+      purchaseAdapter: adapter,
+      productIds: {'configured'},
+    );
+    await coordinator.initialize();
+
+    adapter.events.add(const PremiumPurchaseEvent(
+      status: PremiumPurchaseEventStatus.purchased,
+      productId: 'configured',
+      purchaseToken: 'refresh-token',
+      requiresCompletion: false,
+    ));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(auth.verificationCalls, 1);
+    expect(auth.subscriptionStatusCalls, 1);
+    expect(coordinator.state, PremiumPurchaseCoordinatorState.completed);
+    expect(coordinator.lastResult?.subscriptionStatus, same(backendStatus));
+    expect(coordinator.lastResult?.subscriptionStatus?.premiumActive, isTrue);
+    expect(coordinator.lastResult?.subscriptionStatus?.displayLabel, 'Premium');
+    await coordinator.close();
+  });
+
+  test('verified purchase without refresh does not invent Premium status',
+      () async {
+    final auth = _CoordinatorAuth(
+      (_) async => const GooglePlayPurchaseVerificationResponse(
+        result: GooglePlayPurchaseVerificationResult.verified,
+        subscriptionStatusRefreshRecommended: false,
+      ),
+    );
+    final adapter = _EventAdapter();
+    final coordinator = PremiumPurchaseCoordinator(
+      authService: auth,
+      purchaseAdapter: adapter,
+      productIds: {'configured'},
+    );
+    await coordinator.initialize();
+
+    adapter.events.add(const PremiumPurchaseEvent(
+      status: PremiumPurchaseEventStatus.purchased,
+      productId: 'configured',
+      purchaseToken: 'no-refresh-token',
+      requiresCompletion: false,
+    ));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(auth.verificationCalls, 1);
+    expect(auth.subscriptionStatusCalls, 0);
+    expect(coordinator.state, PremiumPurchaseCoordinatorState.completed);
+    expect(coordinator.lastResult?.subscriptionStatus, isNull);
+    await coordinator.close();
+  });
+
+  test('verified purchase preserves backend non-Premium subscription status',
+      () async {
+    final backendStatus = _subscriptionStatus(premiumActive: false);
+    final auth = _CoordinatorAuth(
+      (_) async => const GooglePlayPurchaseVerificationResponse(
+        result: GooglePlayPurchaseVerificationResult.verified,
+        subscriptionStatusRefreshRecommended: true,
+      ),
+      subscriptionStatus: () async => backendStatus,
+    );
+    final adapter = _EventAdapter();
+    final coordinator = PremiumPurchaseCoordinator(
+      authService: auth,
+      purchaseAdapter: adapter,
+      productIds: {'configured'},
+    );
+    await coordinator.initialize();
+
+    adapter.events.add(const PremiumPurchaseEvent(
+      status: PremiumPurchaseEventStatus.purchased,
+      productId: 'configured',
+      purchaseToken: 'backend-free-token',
+      requiresCompletion: false,
+    ));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(auth.verificationCalls, 1);
+    expect(auth.subscriptionStatusCalls, 1);
+    expect(coordinator.state, PremiumPurchaseCoordinatorState.completed);
+    expect(coordinator.lastResult?.subscriptionStatus, same(backendStatus));
+    expect(coordinator.lastResult?.subscriptionStatus?.premiumActive, isFalse);
+    expect(coordinator.lastResult?.subscriptionStatus?.displayLabel, 'Free');
+    await coordinator.close();
+  });
+
+  test('verified purchase status refresh failure does not synthesize Premium',
+      () async {
+    final auth = _CoordinatorAuth(
+      (_) async => const GooglePlayPurchaseVerificationResponse(
+        result: GooglePlayPurchaseVerificationResult.verified,
+        subscriptionStatusRefreshRecommended: true,
+      ),
+      subscriptionStatus: () async => throw StateError('backend unavailable'),
+    );
+    final adapter = _EventAdapter();
+    final coordinator = PremiumPurchaseCoordinator(
+      authService: auth,
+      purchaseAdapter: adapter,
+      productIds: {'configured'},
+    );
+    await coordinator.initialize();
+
+    adapter.events.add(const PremiumPurchaseEvent(
+      status: PremiumPurchaseEventStatus.purchased,
+      productId: 'configured',
+      purchaseToken: 'refresh-failure-token',
+      requiresCompletion: false,
+    ));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(auth.verificationCalls, 1);
+    expect(auth.subscriptionStatusCalls, 1);
+    expect(coordinator.state, PremiumPurchaseCoordinatorState.completed);
+    expect(coordinator.lastResult?.subscriptionStatus, isNull);
     await coordinator.close();
   });
 
