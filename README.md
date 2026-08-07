@@ -36,7 +36,7 @@ Mobile has a dedicated learner-facing Progress screen, opened from **Settings ->
 
 ## Current mobile navigation and visual system
 
-Mobile now includes a learner-facing Premium screen with backend-confirmed Free, Trial, and Premium status plus non-charging purchase and restore placeholders; Google Play Billing remains a later stage.
+Mobile now includes a learner-facing Premium screen with backend-confirmed Free, Trial, and Premium status plus a disabled Google Play purchase/restore foundation. Purchase-token verification, backend acknowledgement, status refresh, restore routing, and backend lifecycle/reconciliation foundations are implemented, but no real product ID is connected and production billing runtime remains disabled.
 
 Home is a compact, vertically scrollable learner dashboard: current backend-owned streak, existing logo with the three-part Language Voice Tutor wordmark, **Start lesson**, account/plan summary, the final seven backend activity entries, and **Open Settings**. The wordmark uses blue, orange/red, and green vertical gradients; Home action buttons use the blue/white brand gradient. Account and activity surfaces are matte translucent cards over the shared light-blue-to-golden background.
 
@@ -282,9 +282,9 @@ The mobile client must use the same backend account, subscription and entitlemen
 
 Account deletion is completed by the shared backend/Admin workflow. Mobile submission remains a support request, not immediate local deletion. After backend anonymization, new login and refresh fail; an already-issued access token may remain usable only until normal expiry, after which Mobile must clear the invalid session when refresh proves invalid. This is accepted current behavior and no Mobile code change is requested.
 
-The approved next implementation order is: (1) align documentation; (2) implement local Android practice reminders; (3) add complete learner-facing Premium UI and purchase entry points; (4) implement the Google Play Billing bridge with backend verification and restore/reconciliation; and (5) localize the complete static Mobile interface. Notifications V1 is local-only, with product-settings reminders enabled by default at 09:00 and 20:00 in the device local timezone; both times are editable and all reminders can be disabled. It uses neither Firebase nor backend/push state. Android notification permission is still required, must be requested only after the learner sees product value, and denial must not cause a prompt on every launch. Device-local schedules must retain their local-time semantics across timezone changes and be restored after reboot where Android requires it; cross-device lesson completion cannot always suppress a local reminder.
+The Google Play billing bridge foundation is implemented but intentionally disabled. Remaining billing work is configuration and controlled enablement: Play Console subscription/base-plan setup, approved product-ID mapping, backend credentials/Data Protection and RTDN/Pub/Sub provisioning, real adapter/runtime enablement, and a controlled sandbox purchase before rollout. Notifications V1 is local-only, with product-settings reminders enabled by default at 09:00 and 20:00 in the device local timezone; both times are editable and all reminders can be disabled. It uses neither Firebase nor backend/push state. Android notification permission is still required, must be requested only after the learner sees product value, and denial must not cause a prompt on every launch. Device-local schedules must retain their local-time semantics across timezone changes and be restored after reboot where Android requires it; cross-device lesson completion cannot always suppress a local reminder.
 
-Premium UI and Google Play Billing are separate stages. Premium remains backend-owned and backend-verified: a local button, purchase callback, or unverified Play result never unlocks Premium. Billing is complete only after purchase-token submission, backend verification, entitlement refresh, restore/reconciliation, and subscription lifecycle handling. Paddle remains unchanged for website/desktop, while shared backend entitlement makes valid provider purchases visible to other clients.
+Premium remains backend-owned and backend-verified: a local button, purchase callback, or verified Play result never unlocks Premium by itself. Mobile submits tokens and optionally refreshes backend `SubscriptionStatus`; Google Play, Paddle, trial, and manual-admin feed the same provider-neutral Premium calculation. Implemented repository foundation does not imply an enabled production runtime or a validated sandbox purchase.
 
 The implemented fourteen interface locales remain separate from the six study languages. Unsupported saved interface values display English without rewriting the backend setting. Localization never translates AI replies, learner messages, backend-generated content, CMS identifiers, canonical scenario keys, internal IDs, or backend data. Arabic uses localized text in the fixed-LTR shell; physical-device review remains pending without implying globally mirrored RTL UI.
 
@@ -399,7 +399,7 @@ Before implementing real backend integration, the team should confirm:
 4. Minimum Android SDK, target Android SDK, Flutter channel/version, and supported device classes.
 5. Future Conversation mode scope, UX, and API boundaries.
 6. Future automatic tutor playback behavior, if approved separately.
-7. Google Play Billing product IDs, backend verification endpoint contract, and entitlement reconciliation behavior.
+7. Google Play Billing product/base-plan IDs and the controlled production configuration, enablement, and sandbox-validation procedure; the backend verification and reconciliation contracts are already implemented.
 8. Analytics, crash reporting, privacy consent, and logging requirements.
 
 ## PR 2 auth, account, and subscription-status slice

@@ -157,7 +157,7 @@ The approved implementation order is:
 1. Update and align documentation.
 2. Implement local Android practice reminders.
 3. Add complete learner-facing Premium UI and purchase entry points.
-4. Implement the Google Play Billing bridge with backend verification and restore/reconciliation.
+4. Configure and enable the implemented Google Play billing bridge for a controlled sandbox purchase, then validate it before rollout.
 5. Maintain the implemented fourteen-locale interface behavior. General Google Play installation and system-language first-run defaults are physically verified; retain the expanded locale-specific clean-install matrix as separate follow-up validation.
 
 Notifications V1 is local device scheduling only: no Firebase, remote/server push, backend endpoint, push-token registration, remote provider, backend notification state, or background microphone behavior. Product settings enable reminders by default, using device-local 09:00 morning and 20:00 evening reminders with cheerful daily-practice and streak-preservation wording. Learners can change either time or disable all reminders. Android permission is still required before delivery; ask only after the learner has seen the product benefit, do not reprompt every launch after denial, and provide an Android-settings route where practical. Do not request exact-alarm permission unless later investigation proves it necessary. Future implementation must keep 09:00/20:00 device-local semantics across timezone changes and restore schedules after reboot when Android requires it. These local schedules are not official backend account state and cannot always be suppressed after lessons completed on another device.
@@ -184,7 +184,7 @@ This priority preserves the product boundary:
 - Lesson start, tutor message exchange, lesson history, and progress retrieval/update through backend APIs.
 - Completed learner voice upload to backend transcription for speech-to-text.
 - Completed manual TTS playback using backend-provided WAV responses; automatic tutor playback remains future work.
-- Google Play Billing bridge where the mobile app receives a purchase token and sends it to the backend for verification.
+- Implemented Google Play Billing bridge foundation: Mobile sends purchase tokens to the authenticated backend, handles verification states, refreshes backend `SubscriptionStatus` when recommended, and routes restore events through backend verification without granting Premium locally.
 
 ## Out of scope for Mobile V1 foundation
 
@@ -268,11 +268,11 @@ Completed and remaining Mobile V1 or later phases:
 - Automatic tutor playback.
 - Animated tutor GIF loading and state binding.
 - Fullscreen Conversation mode. **Complete** for current Mobile voice flow; further realtime/continuous conversation remains future work.
-- Google Play Billing.
+- Google Play billing production configuration, runtime enablement, controlled sandbox validation, and rollout. The repository foundation is implemented but disabled.
 - Apple billing.
 - Analytics, crash reporting, and store release work.
 
 
 ## Next isolated engineering task
 
-Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Learner microphone recording plus speech-to-text is complete in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Mobile voice lesson and Conversation mode flows are complete in functional commit `f195dc2` (`feat: add mobile voice lesson and conversation flows`), and Desktop-parity transcription behavior is documented here with no backend deployment requirement; see `docs/MOBILE_VOICE_LESSON_STATE.md` for the broader voice scenario flow and validation record. Lesson History and Progress are complete. Progress uses the separate backend-owned aggregate endpoint; do not implement local Progress from the recent History list. Mobile billing, analytics, crash reporting, and store release remain future work.
+Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Learner microphone recording plus speech-to-text is complete in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Mobile voice lesson and Conversation mode flows are complete in functional commit `f195dc2` (`feat: add mobile voice lesson and conversation flows`), and Desktop-parity transcription behavior is documented here with no backend deployment requirement; see `docs/MOBILE_VOICE_LESSON_STATE.md` for the broader voice scenario flow and validation record. Lesson History and Progress are complete. Progress uses the separate backend-owned aggregate endpoint; do not implement local Progress from the recent History list. The Google Play billing foundation is implemented; production configuration/runtime enablement, controlled sandbox validation, and rollout remain future work alongside analytics, crash reporting, and final store release.

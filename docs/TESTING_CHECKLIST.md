@@ -216,7 +216,7 @@ Expected boundary checks:
 - Network/backend abandon failures keep the learner on the lesson screen and allow retry; authentication failures use the existing authentication-required behavior.
 - The backend stale active-session interval remains two minutes, with no backend timeout change and no mobile heartbeat. Confirmed Back releases the session immediately; force-close or termination without confirmed leave falls back to the existing backend timeout.
 - No temporary mobile-only backend endpoints, new safe/catalog endpoints, duplicate mobile prompt/runtime system, or backend changes are introduced without an approved final shared lesson-runtime design.
-- Per-message Translation, real per-message learner Feedback, manual tutor-message TTS playback, learner microphone recording plus speech-to-text, and mobile voice lesson and Conversation mode flows are complete. Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Learner microphone recording plus speech-to-text is complete in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Mobile voice lesson and Conversation mode flows are complete in functional commit `f195dc2` (`feat: add mobile voice lesson and conversation flows`); see `docs/MOBILE_VOICE_LESSON_STATE.md` for the authoritative voice scenario flow. History and Progress are complete; Progress uses its separate backend-owned aggregate contract and must not be calculated from the recent History list. Mobile billing, analytics, crash reporting, and store release remain future work. Heartbeat or timeout reduction is optional future reliability work only if real user feedback requires it.
+- Per-message Translation, real per-message learner Feedback, manual tutor-message TTS playback, learner microphone recording plus speech-to-text, and mobile voice lesson and Conversation mode flows are complete. Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Learner microphone recording plus speech-to-text is complete in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Mobile voice lesson and Conversation mode flows are complete in functional commit `f195dc2` (`feat: add mobile voice lesson and conversation flows`); see `docs/MOBILE_VOICE_LESSON_STATE.md` for the authoritative voice scenario flow. History and Progress are complete; Progress uses its separate backend-owned aggregate contract and must not be calculated from the recent History list. The Google Play billing foundation is implemented but disabled; production configuration/runtime enablement, sandbox validation, analytics, crash reporting, and final store release remain future work. Heartbeat or timeout reduction is optional future reliability work only if real user feedback requires it.
 
 Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
 
@@ -333,21 +333,27 @@ The current localization implementation uses Flutter `gen-l10n` with fourteen se
 
 Current automated verification: `flutter gen-l10n` passed; `flutter analyze` reported no issues; the complete Flutter suite passed 479 tests; and `flutter build apk --debug` succeeded. The only build notice was the non-blocking `flutter_timezone` future Kotlin Gradle migration warning. Focused resolver, locale-controller, Splash, Login/registration, localization-resource, and fixed-LTR directionality tests are present. Historical counts elsewhere in this checklist remain historical feature evidence, not the current full-suite baseline.
 
-## Future billing checks
+## Google Play billing checks
 
-After Google Play Billing runtime code exists, add checks for:
+Implemented automated foundation coverage includes:
 
-- Sandbox purchase success.
-- Pending purchase state.
-- Purchase cancellation.
-- Purchase token backend submission.
-- Backend verification success.
-- Backend verification failure.
-- Entitlement refresh after purchase.
-- Restore or reconciliation flow.
-- Grace period, account hold, cancellation, and expiration states.
+- authenticated purchase-token backend submission;
+- verified, acknowledgement-pending, pending, and fail-closed result handling;
+- backend `SubscriptionStatus` refresh only when recommended;
+- verified purchase remaining separate from backend Premium state;
+- restore events routed through backend verification;
+- backend verification, ownership, acknowledgement, linked-purchase, RTDN/reconciliation, and lifecycle projection coverage.
 
-Before billing implementation, complete the separate learner-facing Premium UI and purchase-entry-point stage. Confirm that local buttons, purchase callbacks, and unverified store results never unlock Premium; billing requires purchase-token submission, backend verification, entitlement refresh, restore/reconciliation, relevant lifecycle states, and no Paddle change for website/desktop.
+Still required after controlled configuration and runtime enablement:
+
+- real sandbox purchase success and backend acknowledgement evidence;
+- pending purchase and cancellation behavior through Play;
+- restore/reconciliation with the configured product;
+- RTDN/Pub/Sub delivery;
+- grace period, account hold, pause, cancellation, expiration, and confirmed revocation against sandbox state;
+- proof that Paddle, trial, and manual-admin Premium remain independent.
+
+Local buttons, purchase callbacks, and verified store results never unlock Premium. Mobile must continue to display only backend `SubscriptionStatus`, and full-refund void notifications must remain refund/reconciliation signals rather than automatic revocation.
 
 ## Future release-readiness checks
 
@@ -677,7 +683,7 @@ flutter build apk --debug
 
 Current checkpoint result superseding the earlier saved-level-only counts: format checked 129 files; `flutter gen-l10n` passed; `flutter analyze` passed; focused Home/selection/runtime coverage passed 113 tests; the full suite passed 382 tests; and the debug APK build passed. Choose Level references remain removal statements only, and the canonical lesson/runtime contract is covered directly.
 
-Real Translation is complete in functional commit `9d2476b` (`Add mobile message translation`). Real per-message learner Feedback is complete in functional commit `f1e8f16` (`Add mobile learner message feedback`). Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Learner microphone recording plus speech-to-text is complete in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Mobile voice lesson and Conversation mode flows are complete in functional commit `f195dc2` (`feat: add mobile voice lesson and conversation flows`). Desktop-parity transcription behavior is complete for the documented Mobile state: Lesson Chat and Conversation mode share the same transcription request builder, speech recognition always uses the selected study language definition, native/explanation language do not influence transcription, and the existing `POST /api/audio/transcribe` multipart contract remains unchanged with no backend deployment requirement. Completed verification: `dart format` succeeded; `flutter analyze` completed with no issues; `lesson_start_flow_test.dart` passed with 58 tests; `conversation_mode_screen_test.dart` passed with 5 tests; `transcript_script_normalizer_test.dart` passed with 3 tests; transcription-parity focused tests passed with 12 tests; full Flutter suite passed with 197 tests and 0 failures; debug Android APK build succeeded. The saved-level learner-level/start-flow slice has completed physical Android validation. Broader repeated testing on different physical devices and network conditions may still be useful; do not declare voice recognition fully stabilized yet. Missing Lesson Chat avatar assets remain separate. The optional Desktop Realtime transcription language issue is outside this Mobile change. History is implemented and verified. Still unimplemented: the separate backend-owned Progress aggregate contract, mobile billing, analytics, crash reporting, and store release.
+Real Translation is complete in functional commit `9d2476b` (`Add mobile message translation`). Real per-message learner Feedback is complete in functional commit `f1e8f16` (`Add mobile learner message feedback`). Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Learner microphone recording plus speech-to-text is complete in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Mobile voice lesson and Conversation mode flows are complete in functional commit `f195dc2` (`feat: add mobile voice lesson and conversation flows`). Desktop-parity transcription behavior is complete for the documented Mobile state: Lesson Chat and Conversation mode share the same transcription request builder, speech recognition always uses the selected study language definition, native/explanation language do not influence transcription, and the existing `POST /api/audio/transcribe` multipart contract remains unchanged with no backend deployment requirement. Completed verification: `dart format` succeeded; `flutter analyze` completed with no issues; `lesson_start_flow_test.dart` passed with 58 tests; `conversation_mode_screen_test.dart` passed with 5 tests; `transcript_script_normalizer_test.dart` passed with 3 tests; transcription-parity focused tests passed with 12 tests; full Flutter suite passed with 197 tests and 0 failures; debug Android APK build succeeded. The saved-level learner-level/start-flow slice has completed physical Android validation. Broader repeated testing on different physical devices and network conditions may still be useful; do not declare voice recognition fully stabilized yet. Missing Lesson Chat avatar assets remain separate. The optional Desktop Realtime transcription language issue is outside this Mobile change. History is implemented and verified. The Google Play billing foundation is implemented but disabled; production configuration/runtime enablement, sandbox validation, analytics, crash reporting, and store release remain pending.
 
 ## Current achievements and lesson-presentation regression checks
 
