@@ -175,6 +175,12 @@ The Premium UI and Google Play billing bridge foundation are implemented, while 
 
 Interface localization remains separate from the six study languages. The long-term approved interface languages are `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `pl`, `ar`, `ja`, `ko`, `sr`, `hr`, and `bg`; the current Stage 1 implementation covers `en`, `ru`, `es`, `fr`, and `de`. Localization applies only to interface presentation and never to AI replies, learner messages, backend-generated content, CMS identifiers, canonical scenario keys, internal IDs, or backend data. Remaining languages, remaining screens, and Arabic right-to-left verification are later work.
 
+### Future coordinated ORRALEN rebrand
+
+Language Voice Tutor remains the current Mobile product/application name; the public website's ORRALEN company/master branding does not mean this client is already rebranded. A future Mobile pass must first audit visible app branding, launcher and in-app logo assets, user-facing product/brand strings, Google Play presentation after the account/app transfer is stable, and future iOS presentation where applicable, then obtain separate approval before changing them.
+
+That pass must preserve `com.languagevoicetutor.mobile`, backend API URLs, account/database identity, backend-owned Premium, signing and update continuity, subscriptions/base-plan IDs, and existing user History/Progress. Store-facing developer/product naming remains a separate reviewed step; visual branding must not create a new product/payment identity.
+
 ## Android implementation considerations
 
 - Confirm minimum SDK and target SDK before creating project files.

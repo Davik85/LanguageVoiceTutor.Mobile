@@ -1,5 +1,15 @@
 # Language Voice Tutor Mobile
 
+## ORRALEN branding and continuity boundary
+
+Documentation checkpoint: 2026-08-22. Repository `HEAD` and freshly fetched `origin/main` both resolved to `7288e3e2cf52e41727a7c058bdb8873957831bfb`.
+
+ORRALEN is the operating/company/master brand presented on the public website and legal/company surfaces, and the operating company is ORRALEN TECHNOLOGIES LTD. Language Voice Tutor remains the current product/application name. This Mobile client has not yet completed a product-facing ORRALEN rebrand; its current visible branding, launcher/in-app assets, and user-facing strings remain in place until a separate audit and approved implementation pass.
+
+The future Mobile rebrand must preserve existing users and update continuity. It must not change Android package `com.languagevoicetutor.mobile`, backend API URLs, user account identity/database architecture, backend-owned Premium entitlement architecture, signing continuity, app History/Progress, or Google Play subscription/base-plan IDs merely for branding. Store-facing developer/product naming is a separate reviewed step and must not create a new payment/product identity.
+
+Current Google Play account-transfer boundary: a new Orralen UK developer account and UK merchant profile were created, and formal transfer of `com.languagevoicetutor.mobile` was initiated and accepted by the destination account. The transfer is not documented as completed without newer verified evidence. Google Play Billing production remains disabled until the legal/account transfer state and sandbox prerequisites are explicitly completed and separately approved.
+
 ## Current Android release, Play verification, and physical Internal testing status
 
 Reproducible Android release signing is complete and verified. Release signing fails closed when required local configuration is missing, incomplete, or points to a missing keystore. The upload keystore remains external to the repository; ignored local `app/android/key.properties` supplies the four signing values, real `key.properties` and `local.properties` are not tracked, private keystore files are not tracked, release builds explicitly use `signingConfigs.release`, and no debug-signing fallback was found.
