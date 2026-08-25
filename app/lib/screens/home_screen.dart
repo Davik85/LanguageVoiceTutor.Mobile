@@ -594,65 +594,55 @@ class _HomeTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titleStyle = Theme.of(context).textTheme.headlineSmall?.copyWith(
-          fontWeight: FontWeight.w800,
-          height: 1.06,
-          letterSpacing: -0.35,
-        );
-    return Row(children: [
-      ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.asset(
-          AppConfig.logoAsset,
-          key: const Key('app-logo'),
-          semanticLabel: AppConfig.logoSemanticLabel,
-          width: 64,
-          height: 64,
-          fit: BoxFit.contain,
-        ),
-      ),
-      const SizedBox(width: 12),
-      Expanded(
-        child: Semantics(
-          label: AppConfig.appName,
-          header: true,
-          child: ExcludeSemantics(
-            child: Text.rich(
-              TextSpan(style: titleStyle, children: [
-                TextSpan(
-                  text: 'Language',
-                  style: _wordmarkGradient(
-                      const Color(0xFF39B9F2), const Color(0xFF173F9D)),
+    return Semantics(
+      key: const Key('home-branded-title'),
+      label: 'Orralen, ${AppConfig.appName}',
+      header: true,
+      child: ExcludeSemantics(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Flexible(
+              flex: 11,
+              fit: FlexFit.loose,
+              child: ClipRect(
+                child: Align(
+                  alignment: const Alignment(0, -0.24),
+                  widthFactor: 1,
+                  heightFactor: 0.62,
+                  child: Image.asset(
+                    AppConfig.homeOrralenAsset,
+                    key: const Key('home-orralen-logo'),
+                    height: 100,
+                    fit: BoxFit.contain,
+                  ),
                 ),
-                TextSpan(
-                  text: ' Voice',
-                  style: _wordmarkGradient(
-                      const Color(0xFFFFB12B), const Color(0xFFD7382B)),
-                ),
-                TextSpan(
-                  text: ' Tutor',
-                  style: _wordmarkGradient(
-                      const Color(0xFF96E942), const Color(0xFF218D24)),
-                ),
-              ]),
-              key: const Key('home-branded-title'),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
+            Flexible(
+              flex: 20,
+              fit: FlexFit.loose,
+              child: Transform.translate(
+                offset: const Offset(0, 6),
+                child: ClipRect(
+                  child: Align(
+                    widthFactor: 1,
+                    heightFactor: 0.36,
+                    child: Image.asset(
+                      AppConfig.homeWordmarkAsset,
+                      key: const Key('home-language-voice-tutor-wordmark'),
+                      height: 66,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-    ]);
+    );
   }
-
-  TextStyle _wordmarkGradient(Color top, Color bottom) => TextStyle(
-        foreground: Paint()
-          ..shader = LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [top, bottom],
-          ).createShader(const Rect.fromLTWH(0, 0, 1, 42)),
-      );
 }
 
 class _HomeActionButton extends StatelessWidget {
@@ -768,7 +758,7 @@ class _StreakBadge extends StatelessWidget {
             ? context.l10n.learningStreakLoading
             : context.l10n.learningStreakUnavailable;
     final text = isReady
-        ? '$currentDays 🍪'
+        ? '$currentDays'
         : state == _HomeProgressState.loading
             ? '…'
             : '—';
@@ -781,10 +771,31 @@ class _StreakBadge extends StatelessWidget {
           decoration: BoxDecoration(
             color: state == _HomeProgressState.unavailable
                 ? Theme.of(context).colorScheme.surfaceContainerHighest
-                : const Color(0xFFFFE0B2),
+                : const Color(0xFFD8F3E8),
             borderRadius: BorderRadius.circular(999),
           ),
-          child: Text(text, style: Theme.of(context).textTheme.labelLarge),
+          child: isReady
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(text, style: Theme.of(context).textTheme.labelLarge),
+                    const SizedBox(width: 4),
+                    ClipRect(
+                      child: Align(
+                        widthFactor: 0.57,
+                        heightFactor: 0.68,
+                        child: Image.asset(
+                          AppConfig.homeEmeraldAsset,
+                          key: const Key('home-streak-emerald'),
+                          width: 24,
+                          height: 24,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : Text(text, style: Theme.of(context).textTheme.labelLarge),
         ),
       ),
     );

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
+import 'package:language_voice_tutor_mobile/config/app_config.dart';
 import 'package:language_voice_tutor_mobile/l10n/app_localizations.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
 import 'package:language_voice_tutor_mobile/models/achievements.dart';
@@ -269,20 +270,40 @@ void main() {
 
     expect(find.byKey(const Key('home-branded-title')), findsOneWidget);
     expect(
-      find.text('Language Voice Tutor', findRichText: true),
-      findsOneWidget,
-    );
-    expect(find.bySemanticsLabel('Language Voice Tutor'), findsOneWidget);
-    expect(find.byKey(const Key('app-logo')), findsOneWidget);
-    expect(find.bySemanticsLabel('Language Voice Tutor logo'), findsOneWidget);
+        find.bySemanticsLabel('Orralen, Language Voice Tutor'), findsOneWidget);
+    expect(find.byKey(const Key('home-orralen-logo')), findsOneWidget);
+    expect(find.byKey(const Key('home-language-voice-tutor-wordmark')),
+        findsOneWidget);
 
-    final wordmark = tester.widget<Text>(
-      find.byKey(const Key('home-branded-title')),
+    final orralenLogo = tester.widget<Image>(
+      find.byKey(const Key('home-orralen-logo')),
     );
-    final spans = (wordmark.textSpan! as TextSpan).children!;
-    expect((spans[0] as TextSpan).style?.foreground?.shader, isNotNull);
-    expect((spans[1] as TextSpan).style?.foreground?.shader, isNotNull);
-    expect((spans[2] as TextSpan).style?.foreground?.shader, isNotNull);
+    final wordmark = tester.widget<Image>(
+      find.byKey(const Key('home-language-voice-tutor-wordmark')),
+    );
+    expect((orralenLogo.image as AssetImage).assetName,
+        AppConfig.homeOrralenAsset);
+    expect(
+        (wordmark.image as AssetImage).assetName, AppConfig.homeWordmarkAsset);
+    expect(
+        tester.getCenter(find.byKey(const Key('home-orralen-logo'))).dx,
+        lessThan(tester
+            .getCenter(
+                find.byKey(const Key('home-language-voice-tutor-wordmark')))
+            .dx));
+    expect(
+        tester.getSize(find.byKey(const Key('home-orralen-logo'))).height,
+        greaterThan(tester
+            .getSize(
+                find.byKey(const Key('home-language-voice-tutor-wordmark')))
+            .height));
+    expect(
+        tester
+                .getTopLeft(
+                    find.byKey(const Key('home-language-voice-tutor-wordmark')))
+                .dx -
+            tester.getTopRight(find.byKey(const Key('home-orralen-logo'))).dx,
+        lessThanOrEqualTo(4));
   });
 
   testWidgets('home uses the compact approved layout', (tester) async {
@@ -579,7 +600,12 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    expect(find.text('115 🍪'), findsOneWidget);
+    expect(find.text('115'), findsOneWidget);
+    expect(find.byKey(const Key('home-streak-emerald')), findsOneWidget);
+    final emerald = tester.widget<Image>(
+      find.byKey(const Key('home-streak-emerald')),
+    );
+    expect((emerald.image as AssetImage).assetName, AppConfig.homeEmeraldAsset);
     expect(tester.takeException(), isNull);
     await tester.binding.setSurfaceSize(null);
   });

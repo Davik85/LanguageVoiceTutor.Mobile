@@ -32,6 +32,9 @@ flutter:
   uses-material-design: true
   assets:
     - assets/brand/lvt-logo.png
+    - assets/home/orralen.png
+    - "assets/home/language voice tutor.png"
+    - assets/home/emerald.png
     - assets/avatars/lesson_chat/lana/
     - assets/avatars/lesson_chat/nelli/
     - assets/avatars/lesson_chat/david/
