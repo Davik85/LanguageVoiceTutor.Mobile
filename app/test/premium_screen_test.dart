@@ -57,7 +57,11 @@ SubscriptionStatus status(
         String? tariff,
         String? plan,
         DateTime? trialEnd,
-        DateTime? premiumEnd}) =>
+        DateTime? premiumEnd,
+        bool includePurchaseGate = true,
+        bool? purchaseAllowed,
+        String? purchaseBlockReasonCode,
+        String? purchaseBlockingProvider}) =>
     SubscriptionStatus(
       userId: 'u',
       premiumActive: premium,
@@ -70,6 +74,14 @@ SubscriptionStatus status(
       planName: plan,
       trialEndsAtUtc: trialEnd,
       premiumEndsAtUtc: premiumEnd,
+      googlePlayPurchaseAllowed:
+          includePurchaseGate ? (purchaseAllowed ?? !premium) : null,
+      googlePlayPurchaseBlockReasonCode: includePurchaseGate
+          ? (purchaseAllowed ?? !premium)
+              ? 'none'
+              : (purchaseBlockReasonCode ?? 'external_auto_renew_active')
+          : null,
+      googlePlayPurchaseBlockingProvider: purchaseBlockingProvider,
     );
 
 Widget screen(FakeAuth auth,
@@ -197,6 +209,54 @@ void main() {
     expect(find.text('Gold'), findsOneWidget);
     expect(find.text('Get Premium'), findsNothing);
     expect(find.textContaining('Premium ends'), findsOneWidget);
+  });
+
+  testWidgets(
+      'trial and manual Premium can offer an explicitly allowed purchase',
+      (tester) async {
+    final auth = FakeAuth([
+      status(trial: true, purchaseAllowed: true),
+      status(premium: true, purchaseAllowed: true),
+    ]);
+    await tester.pumpWidget(screen(auth));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Get Premium'), findsOneWidget);
+    await tapVisible(tester, find.text('Refresh status'));
+    expect(find.text('Premium active'), findsOneWidget);
+    expect(find.text('Get Premium'), findsOneWidget);
+  });
+
+  for (final blocked in const [
+    ('paddle', 'external_auto_renew_active'),
+    ('google_play', 'external_auto_renew_active'),
+    (null, 'renewal_ownership_ambiguous'),
+  ]) {
+    testWidgets('${blocked.$1 ?? 'ambiguous'} renewal ownership hides purchase',
+        (tester) async {
+      final auth = FakeAuth([
+        status(
+          purchaseAllowed: false,
+          purchaseBlockReasonCode: blocked.$2,
+          purchaseBlockingProvider: blocked.$1,
+        )
+      ]);
+      await tester.pumpWidget(screen(auth));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Get Premium'), findsNothing);
+      expect(find.text('Restore purchases'), findsOneWidget);
+    });
+  }
+
+  testWidgets('missing purchase eligibility hides purchase but keeps restore',
+      (tester) async {
+    await tester
+        .pumpWidget(screen(FakeAuth([status(includePurchaseGate: false)])));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Get Premium'), findsNothing);
+    expect(find.text('Restore purchases'), findsOneWidget);
   });
 
   testWidgets('uses plan name only when current tariff is blank',

@@ -167,6 +167,9 @@ class _PremiumScreenState extends State<PremiumScreen> {
         await _showUnavailable(restore: false);
         return;
       }
+      if (result.state == PremiumPurchaseCoordinatorState.blocked) {
+        return;
+      }
       if (!mounted) return;
       if (result.state == PremiumPurchaseCoordinatorState.failed) {
         setState(() => _error = context.l10n.purchaseActionFailed);
@@ -313,19 +316,22 @@ class _PremiumScreenState extends State<PremiumScreen> {
 
   Widget _actions() {
     final active = _status!.premiumActive;
+    final purchaseAllowed = _status!.explicitlyAllowsNewGooglePlayPurchase;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      if (!active) ...[
+      if (purchaseAllowed) ...[
         FilledButton(
           onPressed: _runningAction ? null : () => _runAction(restore: false),
           child: Text(_runningAction
               ? context.l10n.pleaseWait
               : context.l10n.getPremium),
         ),
+      ],
+      if (!active) ...[
         TextButton(
           onPressed: _runningAction ? null : () => _runAction(restore: true),
           child: Text(context.l10n.restorePurchases),
         ),
-      ] else
+      ] else if (!purchaseAllowed)
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: Text(context.l10n.billingProviderExplanation),

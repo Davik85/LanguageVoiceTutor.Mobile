@@ -18,6 +18,10 @@ class SubscriptionStatus {
     this.premiumDisplayStatusCode,
     this.premiumStartsAtUtc,
     this.premiumEndsAtUtc,
+    this.googlePlayPurchaseAllowed,
+    this.googlePlayPurchaseBlockReasonCode,
+    this.googlePlayPurchaseBlockingProvider,
+    this.hasValidCheckedAtUtc = true,
     required this.enforcementEnabled,
   });
 
@@ -39,6 +43,10 @@ class SubscriptionStatus {
   final String? premiumDisplayStatusCode;
   final DateTime? premiumStartsAtUtc;
   final DateTime? premiumEndsAtUtc;
+  final bool? googlePlayPurchaseAllowed;
+  final String? googlePlayPurchaseBlockReasonCode;
+  final String? googlePlayPurchaseBlockingProvider;
+  final bool hasValidCheckedAtUtc;
   final bool enforcementEnabled;
 
   factory SubscriptionStatus.fromJson(Map<String, dynamic> json) =>
@@ -64,8 +72,34 @@ class SubscriptionStatus {
             _stringOrNull(json['premiumDisplayStatusCode']),
         premiumStartsAtUtc: _dateOrNull(json['premiumStartsAtUtc']),
         premiumEndsAtUtc: _dateOrNull(json['premiumEndsAtUtc']),
+        googlePlayPurchaseAllowed:
+            _boolOrNull(json['googlePlayPurchaseAllowed']),
+        googlePlayPurchaseBlockReasonCode:
+            _stringOrNull(json['googlePlayPurchaseBlockReasonCode']),
+        googlePlayPurchaseBlockingProvider:
+            _stringOrNull(json['googlePlayPurchaseBlockingProvider']),
+        hasValidCheckedAtUtc: _dateOrNull(json['checkedAtUtc']) != null,
         enforcementEnabled: _bool(json['enforcementEnabled']),
       );
+
+  static const googlePlayPurchaseAllowedReasonCode = 'none';
+
+  bool get explicitlyAllowsNewGooglePlayPurchase =>
+      googlePlayPurchaseAllowed == true &&
+      googlePlayPurchaseBlockReasonCode ==
+          googlePlayPurchaseAllowedReasonCode &&
+      (googlePlayPurchaseBlockingProvider == null ||
+          googlePlayPurchaseBlockingProvider!.trim().isEmpty);
+
+  bool hasFreshGooglePlayPurchaseGate({DateTime? nowUtc}) {
+    if (!hasValidCheckedAtUtc || !explicitlyAllowsNewGooglePlayPurchase) {
+      return false;
+    }
+    final now = (nowUtc ?? DateTime.now()).toUtc();
+    final checkedAt = checkedAtUtc.toUtc();
+    return checkedAt.isAfter(now.subtract(const Duration(minutes: 5))) &&
+        checkedAt.isBefore(now.add(const Duration(minutes: 5)));
+  }
 
   String get displayLabel {
     if (premiumActive) return 'Premium';
@@ -79,6 +113,7 @@ class SubscriptionStatus {
   static String _string(Object? value) => value is String ? value : '';
   static String? _stringOrNull(Object? value) => value is String ? value : null;
   static bool _bool(Object? value) => value is bool ? value : false;
+  static bool? _boolOrNull(Object? value) => value is bool ? value : null;
   static int _int(Object? value) => value is int
       ? value
       : value is num

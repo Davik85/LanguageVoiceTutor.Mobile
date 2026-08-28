@@ -15,6 +15,7 @@ enum PremiumPurchaseCoordinatorState {
   unavailable,
   loadingCatalog,
   ready,
+  blocked,
   launching,
   restoring,
   pending,
@@ -92,14 +93,24 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
         _catalog.products.isEmpty) {
       return _result(PremiumPurchaseCoordinatorState.unavailable);
     }
-    final accountId = await _obfuscatedAccountId();
-    if (accountId == null) {
-      return _result(PremiumPurchaseCoordinatorState.failed);
+    final identity = await _purchaseIdentity();
+    if (identity == null) {
+      return _setResult(PremiumPurchaseCoordinatorState.failed);
+    }
+    SubscriptionStatus status;
+    try {
+      status = await _authService.fetchSubscriptionStatus();
+    } catch (_) {
+      return _setResult(PremiumPurchaseCoordinatorState.failed);
+    }
+    if (status.userId.trim() != identity.userId ||
+        !status.hasFreshGooglePlayPurchaseGate()) {
+      return _setResult(PremiumPurchaseCoordinatorState.blocked);
     }
     _setState(PremiumPurchaseCoordinatorState.launching);
     final launched = await _purchaseAdapter.launchSubscriptionOffer(
         _catalog.products.first,
-        obfuscatedAccountId: accountId);
+        obfuscatedAccountId: identity.obfuscatedAccountId);
     if (!launched) _setState(PremiumPurchaseCoordinatorState.failed);
     return _result(launched
         ? PremiumPurchaseCoordinatorState.launching
@@ -111,13 +122,14 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
     if (_state == PremiumPurchaseCoordinatorState.unavailable) {
       return _result(PremiumPurchaseCoordinatorState.unavailable);
     }
-    final accountId = await _obfuscatedAccountId();
-    if (accountId == null) {
+    final identity = await _purchaseIdentity();
+    if (identity == null) {
       return _result(PremiumPurchaseCoordinatorState.failed);
     }
     _setState(PremiumPurchaseCoordinatorState.restoring);
     try {
-      await _purchaseAdapter.restorePurchases(obfuscatedAccountId: accountId);
+      await _purchaseAdapter.restorePurchases(
+          obfuscatedAccountId: identity.obfuscatedAccountId);
       return _result(PremiumPurchaseCoordinatorState.restoring);
     } catch (_) {
       _setState(PremiumPurchaseCoordinatorState.failed);
@@ -125,11 +137,15 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
     }
   }
 
-  Future<String?> _obfuscatedAccountId() async {
+  Future<({String userId, String obfuscatedAccountId})?>
+      _purchaseIdentity() async {
     try {
       final userId = (await _authService.loadCurrentUser()).userId.trim();
       if (!_isValidUserId(userId)) return null;
-      return sha256.convert(utf8.encode(userId)).toString();
+      return (
+        userId: userId,
+        obfuscatedAccountId: sha256.convert(utf8.encode(userId)).toString()
+      );
     } catch (_) {
       return null;
     }
@@ -192,6 +208,14 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
   PremiumPurchaseCoordinatorResult _result(
       PremiumPurchaseCoordinatorState state) {
     return PremiumPurchaseCoordinatorResult(state: state);
+  }
+
+  PremiumPurchaseCoordinatorResult _setResult(
+      PremiumPurchaseCoordinatorState state) {
+    final result = PremiumPurchaseCoordinatorResult(state: state);
+    _lastResult = result;
+    _setState(state);
+    return result;
   }
 
   void _setState(PremiumPurchaseCoordinatorState state) {

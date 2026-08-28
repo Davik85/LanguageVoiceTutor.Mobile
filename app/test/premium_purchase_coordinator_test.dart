@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
+import 'package:language_voice_tutor_mobile/models/auth_models.dart';
 import 'package:language_voice_tutor_mobile/models/premium_purchase.dart';
 import 'package:language_voice_tutor_mobile/models/google_play_purchase_verification.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
@@ -46,6 +47,13 @@ class _CoordinatorAuth extends AuthService {
   int subscriptionStatusCalls = 0;
 
   @override
+  Future<AuthUser> loadCurrentUser() async => AuthUser(
+        userId: 'backend-user',
+        email: 'user@example.test',
+        createdAt: DateTime.utc(2026, 8, 1),
+      );
+
+  @override
   Future<GooglePlayPurchaseVerificationResponse> verifyGooglePlayPurchase(
       String token) {
     verificationCalls++;
@@ -62,14 +70,20 @@ class _CoordinatorAuth extends AuthService {
 }
 
 class _EventAdapter implements PremiumPurchaseAdapter {
-  _EventAdapter()
-      : events = StreamController<PremiumPurchaseEvent>.broadcast(
+  _EventAdapter({
+    this.products = const [],
+    this.launchResult = false,
+  }) : events = StreamController<PremiumPurchaseEvent>.broadcast(
           onListen: () {},
         );
   final StreamController<PremiumPurchaseEvent> events;
   int initializeCalls = 0;
   int subscriptions = 0;
   int disposeCalls = 0;
+  int launchCalls = 0;
+  int restoreCalls = 0;
+  final List<PremiumStoreProduct> products;
+  final bool launchResult;
   @override
   Stream<PremiumPurchaseEvent> get purchaseEvents {
     subscriptions++;
@@ -83,13 +97,19 @@ class _EventAdapter implements PremiumPurchaseAdapter {
   @override
   Future<PremiumProductLoadResult> loadSubscriptionProducts(
           Set<String> productIds) async =>
-      const PremiumProductLoadResult(products: []);
+      PremiumProductLoadResult(products: products);
   @override
   Future<bool> launchSubscriptionOffer(PremiumStoreProduct product,
-          {String? obfuscatedAccountId}) async =>
-      false;
+      {String? obfuscatedAccountId}) async {
+    launchCalls++;
+    return launchResult;
+  }
+
   @override
-  Future<void> restorePurchases({String? obfuscatedAccountId}) async {}
+  Future<void> restorePurchases({String? obfuscatedAccountId}) async {
+    restoreCalls++;
+  }
+
   @override
   Future<void> dispose() async {
     disposeCalls++;
@@ -97,9 +117,16 @@ class _EventAdapter implements PremiumPurchaseAdapter {
   }
 }
 
-SubscriptionStatus _subscriptionStatus({required bool premiumActive}) =>
+SubscriptionStatus _subscriptionStatus({
+  required bool premiumActive,
+  String userId = 'backend-user',
+  bool? purchaseAllowed,
+  String? blockReasonCode,
+  String? blockingProvider,
+  DateTime? checkedAtUtc,
+}) =>
     SubscriptionStatus(
-      userId: 'backend-user',
+      userId: userId,
       planId: premiumActive ? 'premium' : null,
       planName: premiumActive ? 'Premium' : null,
       premiumActive: premiumActive,
@@ -108,11 +135,189 @@ SubscriptionStatus _subscriptionStatus({required bool premiumActive}) =>
       billingProvider: premiumActive ? 'google_play' : null,
       freeLessonUsedToday: 0,
       freeLessonRemainingToday: premiumActive ? 0 : 1,
-      checkedAtUtc: DateTime.utc(2026, 8, 7, 12),
+      checkedAtUtc: checkedAtUtc ?? DateTime.now().toUtc(),
+      googlePlayPurchaseAllowed: purchaseAllowed,
+      googlePlayPurchaseBlockReasonCode: blockReasonCode,
+      googlePlayPurchaseBlockingProvider: blockingProvider,
       enforcementEnabled: true,
     );
 
+const _product = PremiumStoreProduct(
+  productId: 'configured',
+  title: 'Premium',
+  description: 'Monthly Premium',
+  localizedPrice: r'$9.99',
+  rawPrice: 9.99,
+  currencyCode: 'USD',
+  basePlanId: 'monthly',
+);
+
 void main() {
+  test('fresh explicit backend allow is required immediately before launch',
+      () async {
+    final auth = _CoordinatorAuth(
+      (_) async => throw StateError('verification is not expected'),
+      subscriptionStatus: () async => _subscriptionStatus(
+        premiumActive: false,
+        purchaseAllowed: true,
+        blockReasonCode: 'none',
+      ),
+    );
+    final adapter =
+        _EventAdapter(products: const [_product], launchResult: true);
+    final coordinator = PremiumPurchaseCoordinator(
+      authService: auth,
+      purchaseAdapter: adapter,
+      productIds: {'configured'},
+    );
+
+    final result = await coordinator.startPurchase();
+
+    expect(auth.subscriptionStatusCalls, 1);
+    expect(adapter.launchCalls, 1);
+    expect(result.state, PremiumPurchaseCoordinatorState.launching);
+    await coordinator.close();
+  });
+
+  test('fresh blocked backend status prevents a stale UI launch', () async {
+    final auth = _CoordinatorAuth(
+      (_) async => throw StateError('verification is not expected'),
+      subscriptionStatus: () async => _subscriptionStatus(
+        premiumActive: false,
+        purchaseAllowed: false,
+        blockReasonCode: 'external_auto_renew_active',
+        blockingProvider: 'paddle',
+      ),
+    );
+    final adapter =
+        _EventAdapter(products: const [_product], launchResult: true);
+    final coordinator = PremiumPurchaseCoordinator(
+      authService: auth,
+      purchaseAdapter: adapter,
+      productIds: {'configured'},
+    );
+
+    final result = await coordinator.startPurchase();
+
+    expect(auth.subscriptionStatusCalls, 1);
+    expect(adapter.launchCalls, 0);
+    expect(result.state, PremiumPurchaseCoordinatorState.blocked);
+    expect(result.subscriptionStatus, isNull);
+    await coordinator.close();
+  });
+
+  test('fresh explicit allow for a different user never launches purchase',
+      () async {
+    final auth = _CoordinatorAuth(
+      (_) async => throw StateError('verification is not expected'),
+      subscriptionStatus: () async => _subscriptionStatus(
+        userId: 'different-backend-user',
+        premiumActive: false,
+        purchaseAllowed: true,
+        blockReasonCode: 'none',
+      ),
+    );
+    final adapter =
+        _EventAdapter(products: const [_product], launchResult: true);
+    final coordinator = PremiumPurchaseCoordinator(
+      authService: auth,
+      purchaseAdapter: adapter,
+      productIds: {'configured'},
+    );
+
+    final result = await coordinator.startPurchase();
+
+    expect(auth.subscriptionStatusCalls, 1);
+    expect(adapter.launchCalls, 0);
+    expect(result.state, PremiumPurchaseCoordinatorState.blocked);
+    await coordinator.close();
+  });
+
+  test('missing, stale, or incomplete allow gate never launches purchase',
+      () async {
+    final unsafeStatuses = [
+      _subscriptionStatus(premiumActive: false),
+      _subscriptionStatus(
+        premiumActive: false,
+        purchaseAllowed: true,
+        blockReasonCode: 'none',
+        checkedAtUtc: DateTime.now().toUtc().subtract(const Duration(hours: 1)),
+      ),
+      _subscriptionStatus(
+        premiumActive: false,
+        purchaseAllowed: true,
+        blockReasonCode: 'external_auto_renew_active',
+      ),
+    ];
+    for (final unsafeStatus in unsafeStatuses) {
+      final auth = _CoordinatorAuth(
+        (_) async => throw StateError('verification is not expected'),
+        subscriptionStatus: () async => unsafeStatus,
+      );
+      final adapter =
+          _EventAdapter(products: const [_product], launchResult: true);
+      final coordinator = PremiumPurchaseCoordinator(
+        authService: auth,
+        purchaseAdapter: adapter,
+        productIds: {'configured'},
+      );
+
+      final result = await coordinator.startPurchase();
+
+      expect(result.state, PremiumPurchaseCoordinatorState.blocked);
+      expect(adapter.launchCalls, 0);
+      await coordinator.close();
+    }
+  });
+
+  test('status fetch failure prevents launch', () async {
+    final auth = _CoordinatorAuth(
+      (_) async => throw StateError('verification is not expected'),
+      subscriptionStatus: () async => throw StateError('backend unavailable'),
+    );
+    final adapter =
+        _EventAdapter(products: const [_product], launchResult: true);
+    final coordinator = PremiumPurchaseCoordinator(
+      authService: auth,
+      purchaseAdapter: adapter,
+      productIds: {'configured'},
+    );
+
+    final result = await coordinator.startPurchase();
+
+    expect(result.state, PremiumPurchaseCoordinatorState.failed);
+    expect(adapter.launchCalls, 0);
+    await coordinator.close();
+  });
+
+  test('restore remains callable after a new purchase is blocked', () async {
+    final auth = _CoordinatorAuth(
+      (_) async => throw StateError('verification is not expected'),
+      subscriptionStatus: () async => _subscriptionStatus(
+        premiumActive: true,
+        purchaseAllowed: false,
+        blockReasonCode: 'external_auto_renew_active',
+        blockingProvider: 'google_play',
+      ),
+    );
+    final adapter =
+        _EventAdapter(products: const [_product], launchResult: true);
+    final coordinator = PremiumPurchaseCoordinator(
+      authService: auth,
+      purchaseAdapter: adapter,
+      productIds: {'configured'},
+    );
+
+    expect((await coordinator.startPurchase()).state,
+        PremiumPurchaseCoordinatorState.blocked);
+    final restoreResult = await coordinator.restorePurchases();
+
+    expect(adapter.launchCalls, 0);
+    expect(adapter.restoreCalls, 1);
+    expect(restoreResult.state, PremiumPurchaseCoordinatorState.restoring);
+    await coordinator.close();
+  });
+
   test('unavailable production-safe adapter initializes without store work',
       () async {
     final coordinator = PremiumPurchaseCoordinator(
