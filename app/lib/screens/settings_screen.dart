@@ -20,6 +20,7 @@ import '../services/tutor_options_service.dart';
 import '../services/practice_reminder_service.dart';
 import '../services/practice_reminder_preferences.dart';
 import '../theme/app_visuals.dart';
+import '../widgets/password_recovery_form.dart';
 import '../widgets/practice_reminders_card.dart';
 import 'achievements_screen.dart';
 import 'login_screen.dart';
@@ -72,18 +73,10 @@ class _SettingsScreenState extends State<SettingsScreen>
   String? _accountError;
   String? _settingsError;
   bool _isSaving = false;
-  final _resetEmailController = TextEditingController();
-  final _resetCodeController = TextEditingController();
-  final _resetNewPasswordController = TextEditingController();
-  final _resetConfirmPasswordController = TextEditingController();
   final _currentPasswordController = TextEditingController();
   final _changeNewPasswordController = TextEditingController();
   final _changeConfirmPasswordController = TextEditingController();
-  String? _resetRequestMessage;
-  String? _resetConfirmMessage;
   String? _changePasswordMessage;
-  bool _isRequestingReset = false;
-  bool _isConfirmingReset = false;
   bool _isChangingPassword = false;
   final _feedbackMessageController = TextEditingController();
   final _reportedAiTextController = TextEditingController();
@@ -154,10 +147,6 @@ class _SettingsScreenState extends State<SettingsScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _resetEmailController.dispose();
-    _resetCodeController.dispose();
-    _resetNewPasswordController.dispose();
-    _resetConfirmPasswordController.dispose();
     _currentPasswordController.dispose();
     _changeNewPasswordController.dispose();
     _changeConfirmPasswordController.dispose();
@@ -324,59 +313,6 @@ class _SettingsScreenState extends State<SettingsScreen>
         _reportedAiTextController.clear();
       }
     });
-  }
-
-  Future<void> _requestPasswordReset() async {
-    if (_resetEmailController.text.trim().isEmpty) {
-      setState(() => _resetRequestMessage = context.l10n.emailRequired);
-      return;
-    }
-    setState(() {
-      _isRequestingReset = true;
-      _resetRequestMessage = null;
-    });
-    try {
-      final message = await _authService
-          .requestPasswordReset(_resetEmailController.text.trim());
-      if (!mounted) return;
-      setState(() => _resetRequestMessage = message);
-    } on ApiException catch (error) {
-      if (!mounted) return;
-      setState(() => _resetRequestMessage = error.message);
-    } finally {
-      if (mounted) setState(() => _isRequestingReset = false);
-    }
-  }
-
-  Future<void> _confirmPasswordReset() async {
-    if (_resetCodeController.text.trim().isEmpty ||
-        _resetNewPasswordController.text.isEmpty) {
-      setState(
-          () => _resetConfirmMessage = context.l10n.resetCodePasswordRequired);
-      return;
-    }
-    if (_resetNewPasswordController.text !=
-        _resetConfirmPasswordController.text) {
-      setState(() => _resetConfirmMessage = context.l10n.passwordsMustMatch);
-      return;
-    }
-    setState(() {
-      _isConfirmingReset = true;
-      _resetConfirmMessage = null;
-    });
-    try {
-      final message = await _authService.confirmPasswordReset(
-        _resetCodeController.text.trim(),
-        _resetNewPasswordController.text,
-      );
-      if (!mounted) return;
-      setState(() => _resetConfirmMessage = message);
-    } on ApiException catch (error) {
-      if (!mounted) return;
-      setState(() => _resetConfirmMessage = error.message);
-    } finally {
-      if (mounted) setState(() => _isConfirmingReset = false);
-    }
   }
 
   Future<void> _changePassword() async {
@@ -584,21 +520,12 @@ class _SettingsScreenState extends State<SettingsScreen>
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
         children: [
           _PasswordRecoveryCard(
-            resetEmailController: _resetEmailController,
-            resetCodeController: _resetCodeController,
-            resetNewPasswordController: _resetNewPasswordController,
-            resetConfirmPasswordController: _resetConfirmPasswordController,
+            authService: _authService,
             currentPasswordController: _currentPasswordController,
             changeNewPasswordController: _changeNewPasswordController,
             changeConfirmPasswordController: _changeConfirmPasswordController,
-            resetRequestMessage: _resetRequestMessage,
-            resetConfirmMessage: _resetConfirmMessage,
             changePasswordMessage: _changePasswordMessage,
-            requestingReset: _isRequestingReset,
-            confirmingReset: _isConfirmingReset,
             changingPassword: _isChangingPassword,
-            onRequestReset: _requestPasswordReset,
-            onConfirmReset: _confirmPasswordReset,
             onChangePassword: _changePassword,
           ),
           const SizedBox(height: 12),
@@ -887,39 +814,21 @@ class _AccountDeletionRequestDialogState
 
 class _PasswordRecoveryCard extends StatelessWidget {
   const _PasswordRecoveryCard({
-    required this.resetEmailController,
-    required this.resetCodeController,
-    required this.resetNewPasswordController,
-    required this.resetConfirmPasswordController,
+    required this.authService,
     required this.currentPasswordController,
     required this.changeNewPasswordController,
     required this.changeConfirmPasswordController,
-    required this.resetRequestMessage,
-    required this.resetConfirmMessage,
     required this.changePasswordMessage,
-    required this.requestingReset,
-    required this.confirmingReset,
     required this.changingPassword,
-    required this.onRequestReset,
-    required this.onConfirmReset,
     required this.onChangePassword,
   });
 
-  final TextEditingController resetEmailController;
-  final TextEditingController resetCodeController;
-  final TextEditingController resetNewPasswordController;
-  final TextEditingController resetConfirmPasswordController;
+  final AuthService authService;
   final TextEditingController currentPasswordController;
   final TextEditingController changeNewPasswordController;
   final TextEditingController changeConfirmPasswordController;
-  final String? resetRequestMessage;
-  final String? resetConfirmMessage;
   final String? changePasswordMessage;
-  final bool requestingReset;
-  final bool confirmingReset;
   final bool changingPassword;
-  final VoidCallback onRequestReset;
-  final VoidCallback onConfirmReset;
   final VoidCallback onChangePassword;
 
   @override
@@ -930,61 +839,7 @@ class _PasswordRecoveryCard extends StatelessWidget {
               title: Text(context.l10n.passwordRecovery,
                   style: Theme.of(context).textTheme.titleMedium),
               children: [
-            TextField(
-              controller: resetEmailController,
-              decoration: InputDecoration(labelText: context.l10n.accountEmail),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: FilledButton.tonal(
-                onPressed: requestingReset ? null : onRequestReset,
-                child: Text(requestingReset
-                    ? context.l10n.sendingResetInstructions
-                    : context.l10n.forgotPassword),
-              ),
-            ),
-            if (resetRequestMessage != null) ...[
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(resetRequestMessage!),
-              ),
-            ],
-            const Divider(height: 28),
-            TextField(
-              controller: resetCodeController,
-              decoration: InputDecoration(labelText: context.l10n.resetCode),
-            ),
-            TextField(
-              controller: resetNewPasswordController,
-              decoration: InputDecoration(labelText: context.l10n.newPassword),
-              obscureText: true,
-            ),
-            TextField(
-              controller: resetConfirmPasswordController,
-              decoration:
-                  InputDecoration(labelText: context.l10n.confirmNewPassword),
-              obscureText: true,
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: FilledButton.tonal(
-                onPressed: confirmingReset ? null : onConfirmReset,
-                child: Text(confirmingReset
-                    ? context.l10n.updatingPassword
-                    : context.l10n.resetPassword),
-              ),
-            ),
-            if (resetConfirmMessage != null) ...[
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(resetConfirmMessage!),
-              ),
-            ],
+            PasswordRecoveryForm(authService: authService),
             const Divider(height: 28),
             TextField(
               controller: currentPasswordController,

@@ -350,6 +350,7 @@ Implemented automated foundation coverage includes:
 - the backend purchase gate remaining immediately before store launch after the fresh catalog selection;
 - temporary-unavailable purchase and restore wording replacing obsolete future-connection/build-disabled text in every supported ARB source;
 - VersionCode 4 is installed through the existing Internal testing path. Its `configuration_invalid` diagnostic identified the normal Premium screen's empty product/base-plan configuration before any Google Play call. Production wiring now uses the existing Google Play adapter with AppConfig-owned `premium` / `monthly`; the next device evidence is the release-visible, token-safe `LVT_BILLING_DIAG` catalog diagnostic sequence. This correction adds no backend, RTDN, dependency, flavor, runtime, or billing-architecture change.
+- Signed-out password recovery is reachable from Login and reuses the same shared Mobile recovery form as Settings; it uses the existing backend/API flow and requires no backend deployment. Dedicated Login recovery widget tests cover localized entry, email prefill, local validation, signed-out reset confirmation, and registration-mode hiding.
 - backend verification, ownership, acknowledgement, linked-purchase, RTDN/reconciliation, and lifecycle projection coverage.
 
 Still required in controlled closed-testing validation:

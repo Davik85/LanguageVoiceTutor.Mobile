@@ -5,6 +5,7 @@ import '../l10n/app_localizations_context.dart';
 import '../l10n/device_language_defaults.dart';
 import '../services/auth_service.dart';
 import '../services/service_factory.dart';
+import '../widgets/password_recovery_form.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -37,6 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _displayNameController = TextEditingController();
   late final AuthService _authService;
   bool _isRegistering = false;
+  bool _showPasswordRecovery = false;
   bool _isSubmitting = false;
   String? _error;
 
@@ -168,11 +170,42 @@ class _LoginScreenState extends State<LoginScreen> {
                       ? context.l10n.register
                       : context.l10n.login)),
             ),
+            if (!_isRegistering) ...[
+              TextButton(
+                key: const Key('login-forgot-password'),
+                onPressed: _isSubmitting
+                    ? null
+                    : () => setState(() => _showPasswordRecovery = true),
+                child: Text(context.l10n.forgotPassword),
+              ),
+              if (_showPasswordRecovery) ...[
+                const SizedBox(height: 8),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(context.l10n.passwordRecovery,
+                            style: Theme.of(context).textTheme.titleMedium),
+                        const SizedBox(height: 12),
+                        PasswordRecoveryForm(
+                          authService: _authService,
+                          initialEmail: _emailController.text,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
             TextButton(
+              key: const Key('login-mode-switch'),
               onPressed: _isSubmitting
                   ? null
                   : () => setState(() {
                         _isRegistering = !_isRegistering;
+                        _showPasswordRecovery = false;
                         _error = null;
                       }),
               child: Text(_isRegistering
