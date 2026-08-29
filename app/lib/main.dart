@@ -38,15 +38,19 @@ class LanguageVoiceTutorApp extends StatefulWidget {
     AuthService? authService,
     PracticeReminderService? practiceReminderService,
     PremiumPurchaseAdapter? premiumPurchaseAdapter,
-    Set<String> premiumProductIds = const {},
+    Set<String> premiumProductIds = const {
+      AppConfig.googlePlayPremiumProductId,
+    },
+    String premiumBasePlanId = AppConfig.googlePlayPremiumBasePlanId,
     DeviceLanguageDefaults? deviceLanguageDefaults,
     Iterable<Locale>? deviceLocales,
   })  : _authService = authService ?? createAuthService(),
         _practiceReminderService =
             practiceReminderService ?? LocalPracticeReminderService(),
         _premiumPurchaseAdapter =
-            premiumPurchaseAdapter ?? const UnavailablePremiumPurchaseAdapter(),
+            premiumPurchaseAdapter ?? GooglePlayPremiumPurchaseAdapter(),
         _premiumProductIds = Set.unmodifiable(premiumProductIds),
+        _premiumBasePlanId = premiumBasePlanId,
         _deviceLanguageDefaults = deviceLanguageDefaults ??
             resolveDeviceLanguageDefaults(
               deviceLocales ??
@@ -57,7 +61,18 @@ class LanguageVoiceTutorApp extends StatefulWidget {
   final PracticeReminderService _practiceReminderService;
   final PremiumPurchaseAdapter _premiumPurchaseAdapter;
   final Set<String> _premiumProductIds;
+  final String _premiumBasePlanId;
   final DeviceLanguageDefaults _deviceLanguageDefaults;
+
+  @visibleForTesting
+  PremiumPurchaseAdapter get configuredPremiumPurchaseAdapter =>
+      _premiumPurchaseAdapter;
+
+  @visibleForTesting
+  Set<String> get configuredPremiumProductIds => _premiumProductIds;
+
+  @visibleForTesting
+  String get configuredPremiumBasePlanId => _premiumBasePlanId;
 
   @override
   State<LanguageVoiceTutorApp> createState() => _LanguageVoiceTutorAppState();
@@ -77,6 +92,7 @@ class _LanguageVoiceTutorAppState extends State<LanguageVoiceTutorApp> {
       authService: widget._authService,
       purchaseAdapter: widget._premiumPurchaseAdapter,
       productIds: widget._premiumProductIds,
+      basePlanId: widget._premiumBasePlanId,
     );
     _premiumPurchaseCoordinator.initialize();
   }

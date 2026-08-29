@@ -37,19 +37,25 @@ class UnavailablePremiumPurchaseAdapter implements PremiumPurchaseAdapter {
   @override
   Future<void> restorePurchases({String? obfuscatedAccountId}) async {}
   @override
-  @override
   Future<void> dispose() async {}
 }
 
-/// Real adapter. It is intentionally not created by production composition yet.
 class GooglePlayPremiumPurchaseAdapter implements PremiumPurchaseAdapter {
-  GooglePlayPremiumPurchaseAdapter({InAppPurchase? store})
-      : _store = store ?? InAppPurchase.instance;
-  final InAppPurchase _store;
+  GooglePlayPremiumPurchaseAdapter({InAppPurchase? store}) : _store = store;
+  InAppPurchase? _store;
+  InAppPurchase get _purchaseStore => _store ??= InAppPurchase.instance;
   final _events = StreamController<PremiumPurchaseEvent>.broadcast();
   StreamSubscription<List<PurchaseDetails>>? _subscription;
   bool _initialized = false;
   bool _available = false;
+  final Map<
+      ({
+        String productId,
+        String basePlanId,
+        String? offerId,
+        String offerToken
+      }),
+      GooglePlayProductDetails> _loadedOffers = {};
 
   @override
   Stream<PremiumPurchaseEvent> get purchaseEvents => _events.stream;
@@ -60,10 +66,10 @@ class GooglePlayPremiumPurchaseAdapter implements PremiumPurchaseAdapter {
   Future<void> initialize() async {
     if (_initialized) return;
     _initialized = true;
-    _available = await _store.isAvailable();
+    _available = await _purchaseStore.isAvailable();
     if (!_available) return;
     _subscription =
-        _store.purchaseStream.listen(_onPurchases, onError: (_, __) {
+        _purchaseStore.purchaseStream.listen(_onPurchases, onError: (_, __) {
       _events.add(const PremiumPurchaseEvent(
           status: PremiumPurchaseEventStatus.failed,
           productId: '',
@@ -75,36 +81,51 @@ class GooglePlayPremiumPurchaseAdapter implements PremiumPurchaseAdapter {
   @override
   Future<PremiumProductLoadResult> loadSubscriptionProducts(
       Set<String> productIds) async {
+    _loadedOffers.clear();
     if (!_available) {
       return const PremiumProductLoadResult(
           failure: PremiumPurchaseFailure.unavailable);
     }
     try {
-      final result = await _store.queryProductDetails(productIds);
+      final result = await _purchaseStore.queryProductDetails(productIds);
       if (result.error != null) {
         return const PremiumProductLoadResult(
             failure: PremiumPurchaseFailure.storeError);
       }
+      final products = <PremiumStoreProduct>[];
+      for (final details in result.productDetails) {
+        final product = _mapProduct(details);
+        if (product == null) continue;
+        products.add(product);
+        _loadedOffers[(
+          productId: product.productId,
+          basePlanId: product.basePlanId!,
+          offerId: product.offerId,
+          offerToken: product.offerToken!,
+        )] = details as GooglePlayProductDetails;
+      }
       return PremiumProductLoadResult(
-          products: result.productDetails.map(_mapProduct).toList(),
-          missingProductIds: result.notFoundIDs.toList());
+          products: products, missingProductIds: result.notFoundIDs.toList());
     } catch (_) {
       return const PremiumProductLoadResult(
           failure: PremiumPurchaseFailure.disconnected);
     }
   }
 
-  PremiumStoreProduct _mapProduct(ProductDetails product) {
-    String? basePlanId;
-    String? offerId;
-    String? offerToken;
-    if (product is GooglePlayProductDetails &&
-        product.subscriptionIndex != null) {
-      final offer = product
-          .productDetails.subscriptionOfferDetails?[product.subscriptionIndex!];
-      basePlanId = offer?.basePlanId;
-      offerId = offer?.offerId;
-      offerToken = product.offerToken;
+  PremiumStoreProduct? _mapProduct(ProductDetails product) {
+    if (product is! GooglePlayProductDetails ||
+        product.subscriptionIndex == null) {
+      return null;
+    }
+    final offer = product
+        .productDetails.subscriptionOfferDetails?[product.subscriptionIndex!];
+    final basePlanId = offer?.basePlanId;
+    final offerToken = product.offerToken;
+    if (basePlanId == null ||
+        basePlanId.trim().isEmpty ||
+        offerToken == null ||
+        offerToken.trim().isEmpty) {
+      return null;
     }
     return PremiumStoreProduct(
         productId: product.id,
@@ -114,7 +135,7 @@ class GooglePlayPremiumPurchaseAdapter implements PremiumPurchaseAdapter {
         rawPrice: product.rawPrice,
         currencyCode: product.currencyCode,
         basePlanId: basePlanId,
-        offerId: offerId,
+        offerId: offer?.offerId,
         offerToken: offerToken);
   }
 
@@ -122,21 +143,27 @@ class GooglePlayPremiumPurchaseAdapter implements PremiumPurchaseAdapter {
   Future<bool> launchSubscriptionOffer(PremiumStoreProduct product,
       {String? obfuscatedAccountId}) async {
     if (!_available) return false;
+    final basePlanId = product.basePlanId;
+    final offerToken = product.offerToken;
+    if (basePlanId == null ||
+        basePlanId.trim().isEmpty ||
+        offerToken == null ||
+        offerToken.trim().isEmpty) {
+      return false;
+    }
+    final details = _loadedOffers[(
+      productId: product.productId,
+      basePlanId: basePlanId,
+      offerId: product.offerId,
+      offerToken: offerToken,
+    )];
+    if (details == null) return false;
     try {
-      final response = await _store.queryProductDetails({product.productId});
-      ProductDetails? details;
-      for (final item in response.productDetails) {
-        if (item.id == product.productId) {
-          details = item;
-          break;
-        }
-      }
-      if (details == null) return false;
-      return _store.buyNonConsumable(
+      return _purchaseStore.buyNonConsumable(
           purchaseParam: GooglePlayPurchaseParam(
               productDetails: details,
               applicationUserName: obfuscatedAccountId,
-              offerToken: product.offerToken));
+              offerToken: offerToken));
     } catch (_) {
       return false;
     }
@@ -145,7 +172,8 @@ class GooglePlayPremiumPurchaseAdapter implements PremiumPurchaseAdapter {
   @override
   Future<void> restorePurchases({String? obfuscatedAccountId}) async {
     if (_available) {
-      await _store.restorePurchases(applicationUserName: obfuscatedAccountId);
+      await _purchaseStore.restorePurchases(
+          applicationUserName: obfuscatedAccountId);
     }
   }
 

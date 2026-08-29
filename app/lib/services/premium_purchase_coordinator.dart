@@ -44,19 +44,24 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
     required AuthService authService,
     required PremiumPurchaseAdapter purchaseAdapter,
     Set<String> productIds = const {},
+    String basePlanId = '',
   })  : _authService = authService,
         _purchaseAdapter = purchaseAdapter,
-        _productIds = Set.unmodifiable(productIds);
+        _productIds = Set.unmodifiable(productIds),
+        _basePlanId = basePlanId;
 
   final AuthService _authService;
   final PremiumPurchaseAdapter _purchaseAdapter;
   final Set<String> _productIds;
+  final String _basePlanId;
   final Set<String> _processingTokens = <String>{};
   StreamSubscription<PremiumPurchaseEvent>? _events;
   PremiumPurchaseCoordinatorState _state = PremiumPurchaseCoordinatorState.idle;
   PremiumProductLoadResult _catalog = const PremiumProductLoadResult();
   PremiumPurchaseCoordinatorResult? _lastResult;
+  PremiumStoreProduct? _selectedProduct;
   bool _initialized = false;
+  bool _storeAvailable = false;
   bool _disposed = false;
   bool _closed = false;
 
@@ -71,8 +76,13 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
     // Listen first so a synchronous store event cannot be missed.
     _events = _purchaseAdapter.purchaseEvents.listen(_handlePurchaseEvent,
         onError: (_, __) => _setState(PremiumPurchaseCoordinatorState.failed));
-    await _purchaseAdapter.initialize();
-    if (!await _purchaseAdapter.isAvailable) {
+    try {
+      await _purchaseAdapter.initialize();
+      _storeAvailable = await _purchaseAdapter.isAvailable;
+    } catch (_) {
+      _storeAvailable = false;
+    }
+    if (!_storeAvailable) {
       _setState(PremiumPurchaseCoordinatorState.unavailable);
       return;
     }
@@ -81,8 +91,21 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
       return;
     }
     _setState(PremiumPurchaseCoordinatorState.loadingCatalog);
-    _catalog = await _purchaseAdapter.loadSubscriptionProducts(_productIds);
-    _setState(_catalog.products.isEmpty || _catalog.failure != null
+    try {
+      _catalog = await _purchaseAdapter.loadSubscriptionProducts(_productIds);
+    } catch (_) {
+      _catalog = const PremiumProductLoadResult(
+          failure: PremiumPurchaseFailure.storeError);
+    }
+    final matches = _catalog.products
+        .where((product) =>
+            _productIds.contains(product.productId) &&
+            product.basePlanId == _basePlanId &&
+            product.offerId == null &&
+            (product.offerToken?.trim().isNotEmpty ?? false))
+        .toList();
+    _selectedProduct = matches.length == 1 ? matches.single : null;
+    _setState(_selectedProduct == null || _catalog.failure != null
         ? PremiumPurchaseCoordinatorState.unavailable
         : PremiumPurchaseCoordinatorState.ready);
   }
@@ -90,7 +113,7 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
   Future<PremiumPurchaseCoordinatorResult> startPurchase() async {
     if (!_initialized) await initialize();
     if (_state == PremiumPurchaseCoordinatorState.unavailable ||
-        _catalog.products.isEmpty) {
+        _selectedProduct == null) {
       return _result(PremiumPurchaseCoordinatorState.unavailable);
     }
     final identity = await _purchaseIdentity();
@@ -109,7 +132,7 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
     }
     _setState(PremiumPurchaseCoordinatorState.launching);
     final launched = await _purchaseAdapter.launchSubscriptionOffer(
-        _catalog.products.first,
+        _selectedProduct!,
         obfuscatedAccountId: identity.obfuscatedAccountId);
     if (!launched) _setState(PremiumPurchaseCoordinatorState.failed);
     return _result(launched
@@ -119,7 +142,7 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
 
   Future<PremiumPurchaseCoordinatorResult> restorePurchases() async {
     if (!_initialized) await initialize();
-    if (_state == PremiumPurchaseCoordinatorState.unavailable) {
+    if (!_storeAvailable) {
       return _result(PremiumPurchaseCoordinatorState.unavailable);
     }
     final identity = await _purchaseIdentity();

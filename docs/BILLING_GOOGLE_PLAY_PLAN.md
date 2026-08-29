@@ -35,33 +35,31 @@ The Mobile foundation is also implemented:
 
 For `verified`, persistence and backend-owned acknowledgement succeeded. For `acknowledgement_pending`, verified entitlement persistence succeeded while backend acknowledgement retry remains pending. Mobile calls neither Google Play acknowledgement nor `completePurchase`; it refreshes and displays only backend-confirmed subscription state.
 
-## Intentionally disabled production/runtime state
+## Controlled closed-testing runtime state
 
-The implemented foundation is not an enabled Google Play sales channel:
+The single normal Mobile runtime now uses the implemented Google Play path:
 
-- production Mobile still composes `UnavailablePremiumPurchaseAdapter`;
-- no real Google Play product ID or base-plan ID is connected to Mobile runtime configuration;
-- backend Google Play processing remains disabled in production;
-- production Google service-account/Data Protection configuration is not enabled;
-- production RTDN/Pub/Sub configuration is not enabled;
+- normal application composition creates `GooglePlayPremiumPurchaseAdapter` without a build flag, flavor, or alternate entrypoint;
+- `AppConfig.googlePlayPremiumProductId` is `premium` and `AppConfig.googlePlayPremiumBasePlanId` is `monthly`;
+- Mobile queries only Product ID `premium`, requires exactly one no-offer catalog entry for Base Plan ID `monthly`, and launches it with the exact offer token supplied on that Google Play catalog entry;
+- missing products, missing or mismatched base plans, promotional offer entries, missing offer tokens, and ambiguous matching entries fail closed without launching the Play purchase UI;
+- backend Google Play processing is enabled separately for the controlled sandbox test, with test-purchase verification restricted on the backend to the approved test user;
+- RTDN is configured separately and remains backend infrastructure rather than Mobile configuration;
 - no real Google Play sandbox purchase has validated the end-to-end path;
-- no Google Play billing rollout has occurred.
+- no public production rollout has occurred.
 
-The presence of adapter, verification, acknowledgement, reconciliation, and lifecycle code must not be described as production enablement or sandbox validation.
+The runtime composition change must not be described as completed sandbox validation or public production rollout.
 
-The approved Google Play Product ID is `premium` and Base Plan ID is `monthly`. The base plan exists in Play Console only as a draft and is not activated. It has no Google Play free trial or introductory offer; the seven-day registration trial remains backend-owned. These identifiers and the draft record do not enable the real Mobile adapter or backend runtime.
+The approved Google Play Product ID is `premium` and Base Plan ID is `monthly`. Mobile does not activate or mutate Play Console products or base plans. No Google Play free trial, introductory offer, annual subscription, or second product is configured by Mobile; the seven-day registration trial remains backend-owned.
 
 New purchase and restore are intentionally separate. Mobile shows and starts a new Google purchase only when the additive backend gate explicitly allows it, and the coordinator re-fetches that authenticated gate immediately before `launchSubscriptionOffer`; missing, stale, invalid, blocked, or unavailable status prevents the store call. Restore and restored-token verification continue through their existing backend path without consulting the new-purchase gate.
 
-## Remaining prerequisites before a controlled sandbox purchase
+## Remaining controlled sandbox validation
 
-1. Review and activate the existing draft Base Plan ID `monthly` for Product ID `premium`; do not add a Play trial or introductory offer.
-2. Map the approved Product ID `premium` and Base Plan ID `monthly` into runtime configuration through a separately reviewed change.
-3. Provision the backend Google service-account credentials and required Google API/Data Protection access through approved production-secret handling.
-4. Configure and validate RTDN/Pub/Sub production resources without exposing topic, credential, or token values in Mobile.
-5. Enable the real Mobile Google Play adapter and backend Google Play runtime through a separately reviewed configuration change.
-6. Confirm the approved license tester, test track, pending-purchase, cancellation, restore, and lifecycle validation procedure.
-7. Run one controlled sandbox purchase and verify token submission, backend acknowledgement, entitlement/status refresh, restore, RTDN/reconciliation, and provider isolation before considering rollout.
+1. Confirm the approved license tester can see Product ID `premium` and its Base Plan ID `monthly` from the closed-testing install.
+2. Run one controlled sandbox purchase and verify token submission, backend acknowledgement, and backend-owned entitlement/status refresh.
+3. Validate pending purchase, cancellation, restore, RTDN/reconciliation, lifecycle handling, and provider isolation against sandbox state.
+4. Record the controlled evidence before considering any broader rollout.
 
 Production rollout remains a later, separately approved step after controlled sandbox evidence. Apart from approved Product ID `premium` and draft Base Plan ID `monthly`, no credential, Pub/Sub name, price, currency, or production value is defined by this document.
 

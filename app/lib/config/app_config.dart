@@ -8,6 +8,8 @@ class AppConfig {
   static const String homeWordmarkAsset =
       'assets/home/language voice tutor.png';
   static const String homeEmeraldAsset = 'assets/home/emerald.png';
+  static const String googlePlayPremiumProductId = 'premium';
+  static const String googlePlayPremiumBasePlanId = 'monthly';
   static const String productionApiBaseUrl =
       'https://api.languagevoicetutor.com';
 }

@@ -1,8 +1,7 @@
 name: language_voice_tutor_mobile
 description: Android-first Flutter client skeleton for Language Voice Tutor.
 publish_to: 'none'
-version: 0.1.0+1
-
+version: 0.1.0+2
 environment:
   sdk: '>=3.4.0 <4.0.0'
 

@@ -82,6 +82,8 @@ class _EventAdapter implements PremiumPurchaseAdapter {
   int disposeCalls = 0;
   int launchCalls = 0;
   int restoreCalls = 0;
+  Set<String>? loadedProductIds;
+  PremiumStoreProduct? launchedProduct;
   final List<PremiumStoreProduct> products;
   final bool launchResult;
   @override
@@ -96,12 +98,16 @@ class _EventAdapter implements PremiumPurchaseAdapter {
   Future<bool> get isAvailable async => true;
   @override
   Future<PremiumProductLoadResult> loadSubscriptionProducts(
-          Set<String> productIds) async =>
-      PremiumProductLoadResult(products: products);
+      Set<String> productIds) async {
+    loadedProductIds = productIds;
+    return PremiumProductLoadResult(products: products);
+  }
+
   @override
   Future<bool> launchSubscriptionOffer(PremiumStoreProduct product,
       {String? obfuscatedAccountId}) async {
     launchCalls++;
+    launchedProduct = product;
     return launchResult;
   }
 
@@ -150,6 +156,7 @@ const _product = PremiumStoreProduct(
   rawPrice: 9.99,
   currencyCode: 'USD',
   basePlanId: 'monthly',
+  offerToken: 'monthly-offer-token',
 );
 
 void main() {
@@ -169,12 +176,17 @@ void main() {
       authService: auth,
       purchaseAdapter: adapter,
       productIds: {'configured'},
+      basePlanId: 'monthly',
     );
 
     final result = await coordinator.startPurchase();
 
     expect(auth.subscriptionStatusCalls, 1);
     expect(adapter.launchCalls, 1);
+    expect(adapter.loadedProductIds, {'configured'});
+    expect(adapter.launchedProduct, same(_product));
+    expect(adapter.launchedProduct?.basePlanId, 'monthly');
+    expect(adapter.launchedProduct?.offerToken, 'monthly-offer-token');
     expect(result.state, PremiumPurchaseCoordinatorState.launching);
     await coordinator.close();
   });
@@ -195,6 +207,7 @@ void main() {
       authService: auth,
       purchaseAdapter: adapter,
       productIds: {'configured'},
+      basePlanId: 'monthly',
     );
 
     final result = await coordinator.startPurchase();
@@ -223,6 +236,7 @@ void main() {
       authService: auth,
       purchaseAdapter: adapter,
       productIds: {'configured'},
+      basePlanId: 'monthly',
     );
 
     final result = await coordinator.startPurchase();
@@ -260,6 +274,7 @@ void main() {
         authService: auth,
         purchaseAdapter: adapter,
         productIds: {'configured'},
+        basePlanId: 'monthly',
       );
 
       final result = await coordinator.startPurchase();
@@ -281,6 +296,7 @@ void main() {
       authService: auth,
       purchaseAdapter: adapter,
       productIds: {'configured'},
+      basePlanId: 'monthly',
     );
 
     final result = await coordinator.startPurchase();
@@ -306,10 +322,86 @@ void main() {
       authService: auth,
       purchaseAdapter: adapter,
       productIds: {'configured'},
+      basePlanId: 'monthly',
     );
 
     expect((await coordinator.startPurchase()).state,
         PremiumPurchaseCoordinatorState.blocked);
+    final restoreResult = await coordinator.restorePurchases();
+
+    expect(adapter.launchCalls, 0);
+    expect(adapter.restoreCalls, 1);
+    expect(restoreResult.state, PremiumPurchaseCoordinatorState.restoring);
+    await coordinator.close();
+  });
+
+  test('missing or mismatched monthly catalog entry fails closed', () async {
+    const wrongBasePlan = PremiumStoreProduct(
+      productId: 'configured',
+      title: 'Premium',
+      description: 'Annual Premium',
+      localizedPrice: r'$99.99',
+      rawPrice: 99.99,
+      currencyCode: 'USD',
+      basePlanId: 'annual',
+      offerToken: 'annual-offer-token',
+    );
+    const monthlyPromotion = PremiumStoreProduct(
+      productId: 'configured',
+      title: 'Premium',
+      description: 'Monthly promotion',
+      localizedPrice: r'$4.99',
+      rawPrice: 4.99,
+      currencyCode: 'USD',
+      basePlanId: 'monthly',
+      offerId: 'introductory',
+      offerToken: 'introductory-offer-token',
+    );
+    for (final products in const <List<PremiumStoreProduct>>[
+      [],
+      [wrongBasePlan],
+      [monthlyPromotion],
+    ]) {
+      final auth = _CoordinatorAuth(
+        (_) async => throw StateError('verification is not expected'),
+        subscriptionStatus: () async => _subscriptionStatus(
+          premiumActive: false,
+          purchaseAllowed: true,
+          blockReasonCode: 'none',
+        ),
+      );
+      final adapter = _EventAdapter(products: products, launchResult: true);
+      final coordinator = PremiumPurchaseCoordinator(
+        authService: auth,
+        purchaseAdapter: adapter,
+        productIds: {'configured'},
+        basePlanId: 'monthly',
+      );
+
+      final result = await coordinator.startPurchase();
+
+      expect(result.state, PremiumPurchaseCoordinatorState.unavailable);
+      expect(auth.subscriptionStatusCalls, 0);
+      expect(adapter.launchCalls, 0);
+      await coordinator.close();
+    }
+  });
+
+  test('restore remains available when the monthly catalog entry is missing',
+      () async {
+    final auth = _CoordinatorAuth(
+      (_) async => throw StateError('verification is not expected'),
+    );
+    final adapter = _EventAdapter();
+    final coordinator = PremiumPurchaseCoordinator(
+      authService: auth,
+      purchaseAdapter: adapter,
+      productIds: {'configured'},
+      basePlanId: 'monthly',
+    );
+
+    expect((await coordinator.startPurchase()).state,
+        PremiumPurchaseCoordinatorState.unavailable);
     final restoreResult = await coordinator.restorePurchases();
 
     expect(adapter.launchCalls, 0);

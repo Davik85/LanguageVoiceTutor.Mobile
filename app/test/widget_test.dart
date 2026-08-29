@@ -8,6 +8,7 @@ import 'package:language_voice_tutor_mobile/models/auth_models.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
 import 'package:language_voice_tutor_mobile/screens/login_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
+import 'package:language_voice_tutor_mobile/services/premium_purchase_adapter.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
 
 class FakeAuthService extends AuthService {
@@ -71,6 +72,15 @@ class _MemoryStorage implements SessionStorage {
 }
 
 void main() {
+  test('normal runtime composes approved Google Play billing identifiers', () {
+    final app = LanguageVoiceTutorApp(authService: FakeAuthService());
+
+    expect(app.configuredPremiumPurchaseAdapter,
+        isA<GooglePlayPremiumPurchaseAdapter>());
+    expect(app.configuredPremiumProductIds, {'premium'});
+    expect(app.configuredPremiumBasePlanId, 'monthly');
+  });
+
   testWidgets('splash screen shows only the app logo',
       (WidgetTester tester) async {
     final pendingUser = Completer<AuthUser>();
@@ -80,6 +90,7 @@ void main() {
         authService: FakeAuthService(
           loadCurrentUser: () => pendingUser.future,
         ),
+        premiumPurchaseAdapter: const UnavailablePremiumPurchaseAdapter(),
       ),
     );
     await tester.pump();
@@ -95,7 +106,10 @@ void main() {
 
   testWidgets('failed startup opens login', (WidgetTester tester) async {
     await tester.pumpWidget(
-      LanguageVoiceTutorApp(authService: FakeAuthService()),
+      LanguageVoiceTutorApp(
+        authService: FakeAuthService(),
+        premiumPurchaseAdapter: const UnavailablePremiumPurchaseAdapter(),
+      ),
     );
     await tester.pumpAndSettle();
 
