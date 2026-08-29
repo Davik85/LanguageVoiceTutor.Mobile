@@ -41,7 +41,6 @@ class PremiumScreen extends StatefulWidget {
 
 class _PremiumScreenState extends State<PremiumScreen> {
   late final AuthService _authService;
-  late final PremiumPurchaseAdapter _purchaseAdapter;
   late final PremiumPurchaseCoordinator _purchaseCoordinator;
   late final bool _ownsPurchaseCoordinator;
   SubscriptionStatus? _status;
@@ -54,13 +53,11 @@ class _PremiumScreenState extends State<PremiumScreen> {
   void initState() {
     super.initState();
     _authService = widget._authService ?? createAuthService();
-    _purchaseAdapter =
-        widget._purchaseAdapter ?? const UnavailablePremiumPurchaseAdapter();
     _ownsPurchaseCoordinator = widget._purchaseCoordinator == null;
     _purchaseCoordinator = widget._purchaseCoordinator ??
-        PremiumPurchaseCoordinator(
+        createPremiumPurchaseCoordinator(
           authService: _authService,
-          purchaseAdapter: _purchaseAdapter,
+          purchaseAdapter: widget._purchaseAdapter,
         );
     _purchaseCoordinator.addListener(_onPurchaseStateChanged);
     _purchaseCoordinator.initialize();

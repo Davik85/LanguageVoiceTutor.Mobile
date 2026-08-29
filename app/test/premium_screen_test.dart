@@ -102,6 +102,7 @@ Widget screen(FakeAuth auth,
         {Locale locale = const Locale('en'),
         PurchaseEntryAction? buy,
         PurchaseEntryAction? restore,
+        PremiumPurchaseAdapter? purchaseAdapter,
         PremiumPurchaseCoordinator? coordinator}) =>
     MaterialApp(
       locale: locale,
@@ -110,6 +111,8 @@ Widget screen(FakeAuth auth,
       routes: {'/login': (_) => const Scaffold(body: Text('Login'))},
       home: PremiumScreen(
           authService: auth,
+          purchaseAdapter:
+              purchaseAdapter ?? const UnavailablePremiumPurchaseAdapter(),
           purchaseCoordinator: coordinator,
           purchaseAction: buy,
           restoreAction: restore),
@@ -118,17 +121,21 @@ Widget screen(FakeAuth auth,
 class _RecoveringAdapter implements PremiumPurchaseAdapter {
   int loadCalls = 0;
   int launchCalls = 0;
+  final queriedProductIds = <Set<String>>[];
+  PremiumStoreProduct? launchedProduct;
+  final _events = StreamController<PremiumPurchaseEvent>.broadcast();
 
   @override
   Future<void> initialize() async {}
   @override
   Future<bool> get isAvailable async => true;
   @override
-  Stream<PremiumPurchaseEvent> get purchaseEvents => const Stream.empty();
+  Stream<PremiumPurchaseEvent> get purchaseEvents => _events.stream;
   @override
   Future<PremiumProductLoadResult> loadSubscriptionProducts(
       Set<String> productIds) async {
     loadCalls++;
+    queriedProductIds.add(Set<String>.of(productIds));
     if (loadCalls == 1) {
       return const PremiumProductLoadResult(
           failure: PremiumPurchaseFailure.storeError);
@@ -151,13 +158,14 @@ class _RecoveringAdapter implements PremiumPurchaseAdapter {
   Future<bool> launchSubscriptionOffer(PremiumStoreProduct product,
       {String? obfuscatedAccountId}) async {
     launchCalls++;
+    launchedProduct = product;
     return true;
   }
 
   @override
   Future<void> restorePurchases({String? obfuscatedAccountId}) async {}
   @override
-  Future<void> dispose() async {}
+  Future<void> dispose() => _events.close();
 }
 
 Future<void> tapVisible(WidgetTester tester, Finder finder) async {
@@ -379,6 +387,27 @@ void main() {
     expect(adapter.launchCalls, 1);
     expect(find.text('Google Play purchasing is temporarily unavailable'),
         findsNothing);
+  });
+
+  testWidgets('production coordinator wiring queries premium monthly',
+      (tester) async {
+    final now = DateTime.now().toUtc();
+    final auth = FakeAuth([
+      status(checkedAtUtc: now),
+      status(checkedAtUtc: now),
+    ]);
+    final adapter = _RecoveringAdapter();
+
+    await tester.pumpWidget(screen(auth, purchaseAdapter: adapter));
+    await tester.pump();
+    await tester.pump();
+    await tester.tap(find.text('Get Premium'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 10));
+
+    expect(adapter.queriedProductIds, everyElement(equals({'premium'})));
+    expect(adapter.launchedProduct?.basePlanId, 'monthly');
+    expect(adapter.launchCalls, 1);
   });
 
   test('supported localization sources use temporary-unavailable wording', () {

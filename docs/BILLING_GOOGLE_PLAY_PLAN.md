@@ -49,7 +49,7 @@ The single normal Mobile runtime now uses the implemented Google Play path:
 - no real Google Play sandbox purchase has validated the end-to-end path;
 - no public production rollout has occurred.
 
-VersionCode 3 is confirmed installed through the existing Internal testing path. Commit `c5ebe6e` still reproduces the localized temporary-unavailable result instead of opening the purchase sheet. The next controlled evidence is the temporary `LVT_BILLING_DIAG` catalog diagnostic sequence emitted through release-visible Flutter/Android logs. It records only product/base-plan/offer metadata and offer-token presence, never an offer-token or purchase-token value. No backend, RTDN, dependency, flavor, runtime, or billing-architecture change was made for this diagnostic work.
+VersionCode 4 is confirmed installed through the existing Internal testing path. Its `configuration_invalid` diagnostic proved that the normal Premium screen was incorrectly constructing an unavailable adapter with an empty product/base-plan configuration before reaching Google Play. The production factory now constructs the existing Google Play adapter with the AppConfig-owned `premium` Product ID and `monthly` Base Plan ID. The next controlled evidence is the temporary `LVT_BILLING_DIAG` catalog diagnostic sequence emitted through release-visible Flutter/Android logs. It records only product/base-plan/offer metadata and offer-token presence, never an offer-token or purchase-token value. No backend, RTDN, dependency, flavor, runtime, or billing-architecture change was made for this correction.
 
 The runtime composition change must not be described as completed sandbox validation or public production rollout.
 
