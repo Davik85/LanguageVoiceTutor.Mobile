@@ -1045,19 +1045,19 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get googlePlayPurchasesUnavailableTitle =>
-      'Покупки Google Play пока недоступны';
+      'Покупки Google Play временно недоступны';
 
   @override
   String get restorePurchasesUnavailableTitle =>
-      'Восстановление покупок пока недоступно';
+      'Восстановление покупок Google Play временно недоступно';
 
   @override
   String get googlePlayPurchasesUnavailableDescription =>
-      'Покупки будут подключены на следующем этапе. Эта сборка не может списывать оплату или активировать Premium.';
+      'Покупки Google Play временно недоступны. Попробуйте позже.';
 
   @override
   String get restorePurchasesUnavailableDescription =>
-      'Восстановление через Google Play будет подключено к платёжному потоку. Текущий статус аккаунта по-прежнему загружается из Language Voice Tutor.';
+      'Восстановление покупок Google Play временно недоступно. Попробуйте позже.';
 
   @override
   String get purchasePendingConfirmation =>

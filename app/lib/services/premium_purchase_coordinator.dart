@@ -40,6 +40,9 @@ class PremiumPurchaseCoordinatorResult {
 }
 
 class PremiumPurchaseCoordinator extends ChangeNotifier {
+  static const int _userCatalogAttemptCount = 2;
+  static const Duration _userCatalogRetryDelay = Duration(milliseconds: 250);
+
   PremiumPurchaseCoordinator({
     required AuthService authService,
     required PremiumPurchaseAdapter purchaseAdapter,
@@ -60,7 +63,7 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
   PremiumProductLoadResult _catalog = const PremiumProductLoadResult();
   PremiumPurchaseCoordinatorResult? _lastResult;
   PremiumStoreProduct? _selectedProduct;
-  bool _initialized = false;
+  Future<void>? _initialization;
   bool _storeAvailable = false;
   bool _disposed = false;
   bool _closed = false;
@@ -70,50 +73,21 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
   PremiumPurchaseCoordinatorResult? get lastResult => _lastResult;
   bool get isAvailable => _state != PremiumPurchaseCoordinatorState.unavailable;
 
-  Future<void> initialize() async {
-    if (_initialized || _disposed) return;
-    _initialized = true;
+  Future<void> initialize() {
+    if (_disposed) return Future<void>.value();
+    return _initialization ??= _initialize();
+  }
+
+  Future<void> _initialize() async {
     // Listen first so a synchronous store event cannot be missed.
     _events = _purchaseAdapter.purchaseEvents.listen(_handlePurchaseEvent,
         onError: (_, __) => _setState(PremiumPurchaseCoordinatorState.failed));
-    try {
-      await _purchaseAdapter.initialize();
-      _storeAvailable = await _purchaseAdapter.isAvailable;
-    } catch (_) {
-      _storeAvailable = false;
-    }
-    if (!_storeAvailable) {
-      _setState(PremiumPurchaseCoordinatorState.unavailable);
-      return;
-    }
-    if (_productIds.isEmpty) {
-      _setState(PremiumPurchaseCoordinatorState.unavailable);
-      return;
-    }
-    _setState(PremiumPurchaseCoordinatorState.loadingCatalog);
-    try {
-      _catalog = await _purchaseAdapter.loadSubscriptionProducts(_productIds);
-    } catch (_) {
-      _catalog = const PremiumProductLoadResult(
-          failure: PremiumPurchaseFailure.storeError);
-    }
-    final matches = _catalog.products
-        .where((product) =>
-            _productIds.contains(product.productId) &&
-            product.basePlanId == _basePlanId &&
-            product.offerId == null &&
-            (product.offerToken?.trim().isNotEmpty ?? false))
-        .toList();
-    _selectedProduct = matches.length == 1 ? matches.single : null;
-    _setState(_selectedProduct == null || _catalog.failure != null
-        ? PremiumPurchaseCoordinatorState.unavailable
-        : PremiumPurchaseCoordinatorState.ready);
+    await _refreshCatalog(maxAttempts: 1);
   }
 
   Future<PremiumPurchaseCoordinatorResult> startPurchase() async {
-    if (!_initialized) await initialize();
-    if (_state == PremiumPurchaseCoordinatorState.unavailable ||
-        _selectedProduct == null) {
+    await initialize();
+    if (!await _refreshCatalog(maxAttempts: _userCatalogAttemptCount)) {
       return _result(PremiumPurchaseCoordinatorState.unavailable);
     }
     final identity = await _purchaseIdentity();
@@ -141,7 +115,13 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
   }
 
   Future<PremiumPurchaseCoordinatorResult> restorePurchases() async {
-    if (!_initialized) await initialize();
+    await initialize();
+    try {
+      await _purchaseAdapter.initialize();
+      _storeAvailable = await _purchaseAdapter.isAvailable;
+    } catch (_) {
+      _storeAvailable = false;
+    }
     if (!_storeAvailable) {
       return _result(PremiumPurchaseCoordinatorState.unavailable);
     }
@@ -158,6 +138,56 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
       _setState(PremiumPurchaseCoordinatorState.failed);
       return _result(PremiumPurchaseCoordinatorState.failed);
     }
+  }
+
+  Future<bool> _refreshCatalog({required int maxAttempts}) async {
+    _selectedProduct = null;
+    if (_productIds.isEmpty || _basePlanId.trim().isEmpty) {
+      _catalog = const PremiumProductLoadResult(
+          failure: PremiumPurchaseFailure.productNotFound);
+      _setState(PremiumPurchaseCoordinatorState.unavailable);
+      return false;
+    }
+
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        await _purchaseAdapter.initialize();
+        _storeAvailable = await _purchaseAdapter.isAvailable;
+      } catch (_) {
+        _storeAvailable = false;
+      }
+      if (_storeAvailable) {
+        _setState(PremiumPurchaseCoordinatorState.loadingCatalog);
+        try {
+          _catalog =
+              await _purchaseAdapter.loadSubscriptionProducts(_productIds);
+        } catch (_) {
+          _catalog = const PremiumProductLoadResult(
+              failure: PremiumPurchaseFailure.storeError);
+        }
+        final matches = _catalog.products
+            .where((product) =>
+                _productIds.contains(product.productId) &&
+                product.basePlanId == _basePlanId &&
+                product.offerId == null &&
+                (product.offerToken?.trim().isNotEmpty ?? false))
+            .toList();
+        _selectedProduct = matches.length == 1 ? matches.single : null;
+        if (_selectedProduct != null && _catalog.failure == null) {
+          _setState(PremiumPurchaseCoordinatorState.ready);
+          return true;
+        }
+      } else {
+        _catalog = const PremiumProductLoadResult(
+            failure: PremiumPurchaseFailure.unavailable);
+      }
+      if (attempt + 1 < maxAttempts) {
+        await Future<void>.delayed(_userCatalogRetryDelay);
+      }
+    }
+
+    _setState(PremiumPurchaseCoordinatorState.unavailable);
+    return false;
   }
 
   Future<({String userId, String obfuscatedAccountId})?>

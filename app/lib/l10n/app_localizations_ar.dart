@@ -1017,19 +1017,19 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get googlePlayPurchasesUnavailableTitle =>
-      'مشتريات Google Play غير متاحة بعد';
+      'شراء Google Play غير متاح مؤقتًا';
 
   @override
   String get restorePurchasesUnavailableTitle =>
-      'استعادة المشتريات غير متاحة بعد';
+      'استعادة مشتريات Google Play غير متاحة مؤقتًا';
 
   @override
   String get googlePlayPurchasesUnavailableDescription =>
-      'ستُربط المشتريات في الخطوة التالية. لا يمكن لهذا الإصدار تحصيل رسوم منك أو تفعيل Premium.';
+      'شراء Google Play غير متاح مؤقتًا. يُرجى المحاولة مرة أخرى لاحقًا.';
 
   @override
   String get restorePurchasesUnavailableDescription =>
-      'ستُربط استعادة Google Play بتدفق الفوترة. لا تزال حالة حسابك الحالية تُحمّل من Language Voice Tutor.';
+      'استعادة مشتريات Google Play غير متاحة مؤقتًا. يُرجى المحاولة مرة أخرى لاحقًا.';
 
   @override
   String get purchasePendingConfirmation =>

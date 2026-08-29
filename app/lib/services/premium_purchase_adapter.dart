@@ -60,22 +60,32 @@ class GooglePlayPremiumPurchaseAdapter implements PremiumPurchaseAdapter {
   @override
   Stream<PremiumPurchaseEvent> get purchaseEvents => _events.stream;
   @override
-  Future<bool> get isAvailable async => _available;
+  Future<bool> get isAvailable async {
+    try {
+      _available = await _purchaseStore.isAvailable();
+    } catch (_) {
+      _available = false;
+    }
+    return _available;
+  }
 
   @override
   Future<void> initialize() async {
     if (_initialized) return;
     _initialized = true;
-    _available = await _purchaseStore.isAvailable();
-    if (!_available) return;
-    _subscription =
-        _purchaseStore.purchaseStream.listen(_onPurchases, onError: (_, __) {
-      _events.add(const PremiumPurchaseEvent(
-          status: PremiumPurchaseEventStatus.failed,
-          productId: '',
-          requiresCompletion: false,
-          failure: PremiumPurchaseFailure.storeError));
-    });
+    try {
+      _subscription =
+          _purchaseStore.purchaseStream.listen(_onPurchases, onError: (_, __) {
+        _events.add(const PremiumPurchaseEvent(
+            status: PremiumPurchaseEventStatus.failed,
+            productId: '',
+            requiresCompletion: false,
+            failure: PremiumPurchaseFailure.storeError));
+      });
+    } catch (_) {
+      _initialized = false;
+      rethrow;
+    }
   }
 
   @override

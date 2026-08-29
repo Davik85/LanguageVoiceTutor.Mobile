@@ -1,12 +1,18 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/l10n/app_localizations.dart';
+import 'package:language_voice_tutor_mobile/models/auth_models.dart';
+import 'package:language_voice_tutor_mobile/models/premium_purchase.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
 import 'package:language_voice_tutor_mobile/screens/premium_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
+import 'package:language_voice_tutor_mobile/services/premium_purchase_adapter.dart';
+import 'package:language_voice_tutor_mobile/services/premium_purchase_coordinator.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
 
 class _Storage implements SessionStorage {
@@ -40,6 +46,13 @@ class FakeAuth extends AuthService {
   final List<Object> responses;
   int calls = 0;
   @override
+  Future<AuthUser> loadCurrentUser() async => AuthUser(
+        userId: 'u',
+        email: 'user@example.test',
+        createdAt: DateTime.utc(2026, 8, 1),
+      );
+
+  @override
   Future<SubscriptionStatus> fetchSubscriptionStatus() async {
     final item =
         responses[calls < responses.length ? calls++ : responses.length - 1];
@@ -61,14 +74,15 @@ SubscriptionStatus status(
         bool includePurchaseGate = true,
         bool? purchaseAllowed,
         String? purchaseBlockReasonCode,
-        String? purchaseBlockingProvider}) =>
+        String? purchaseBlockingProvider,
+        DateTime? checkedAtUtc}) =>
     SubscriptionStatus(
       userId: 'u',
       premiumActive: premium,
       trialActive: trial,
       freeLessonUsedToday: 0,
       freeLessonRemainingToday: left,
-      checkedAtUtc: DateTime.utc(2026, 7, 23),
+      checkedAtUtc: checkedAtUtc ?? DateTime.utc(2026, 7, 23),
       enforcementEnabled: enforcement,
       currentTariffName: tariff,
       planName: plan,
@@ -87,15 +101,64 @@ SubscriptionStatus status(
 Widget screen(FakeAuth auth,
         {Locale locale = const Locale('en'),
         PurchaseEntryAction? buy,
-        PurchaseEntryAction? restore}) =>
+        PurchaseEntryAction? restore,
+        PremiumPurchaseCoordinator? coordinator}) =>
     MaterialApp(
       locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       routes: {'/login': (_) => const Scaffold(body: Text('Login'))},
       home: PremiumScreen(
-          authService: auth, purchaseAction: buy, restoreAction: restore),
+          authService: auth,
+          purchaseCoordinator: coordinator,
+          purchaseAction: buy,
+          restoreAction: restore),
     );
+
+class _RecoveringAdapter implements PremiumPurchaseAdapter {
+  int loadCalls = 0;
+  int launchCalls = 0;
+
+  @override
+  Future<void> initialize() async {}
+  @override
+  Future<bool> get isAvailable async => true;
+  @override
+  Stream<PremiumPurchaseEvent> get purchaseEvents => const Stream.empty();
+  @override
+  Future<PremiumProductLoadResult> loadSubscriptionProducts(
+      Set<String> productIds) async {
+    loadCalls++;
+    if (loadCalls == 1) {
+      return const PremiumProductLoadResult(
+          failure: PremiumPurchaseFailure.storeError);
+    }
+    return const PremiumProductLoadResult(products: [
+      PremiumStoreProduct(
+        productId: 'premium',
+        title: 'Premium',
+        description: 'Monthly Premium',
+        localizedPrice: r'$9.99',
+        rawPrice: 9.99,
+        currencyCode: 'USD',
+        basePlanId: 'monthly',
+        offerToken: 'fresh-monthly-token',
+      )
+    ]);
+  }
+
+  @override
+  Future<bool> launchSubscriptionOffer(PremiumStoreProduct product,
+      {String? obfuscatedAccountId}) async {
+    launchCalls++;
+    return true;
+  }
+
+  @override
+  Future<void> restorePurchases({String? obfuscatedAccountId}) async {}
+  @override
+  Future<void> dispose() async {}
+}
 
 Future<void> tapVisible(WidgetTester tester, Finder finder) async {
   await tester.scrollUntilVisible(finder, 300,
@@ -181,8 +244,9 @@ void main() {
 
     await tester.tap(find.text('Получить Premium'));
     await tester.pumpAndSettle();
-    expect(find.text('Покупки Google Play пока недоступны'), findsOneWidget);
-    expect(find.textContaining('Эта сборка не может'), findsOneWidget);
+    expect(
+        find.text('Покупки Google Play временно недоступны'), findsOneWidget);
+    expect(find.textContaining('Попробуйте позже'), findsOneWidget);
     await tester.tap(find.text('ОК'));
     await tester.pumpAndSettle();
     expect(find.text('Бесплатный план'), findsOneWidget);
@@ -276,15 +340,91 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Get Premium'));
     await tester.pumpAndSettle();
-    expect(find.text('Google Play purchases are not available yet'),
+    expect(find.text('Google Play purchasing is temporarily unavailable'),
         findsOneWidget);
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Restore purchases'));
     await tester.pumpAndSettle();
-    expect(find.text('Restore purchases is not available yet'), findsOneWidget);
+    expect(find.text('Google Play restore is temporarily unavailable'),
+        findsOneWidget);
     expect(find.text('Free plan'), findsOneWidget);
     expect(auth.calls, 1);
+  });
+
+  testWidgets('purchase tap retries a recoverable unavailable coordinator',
+      (tester) async {
+    final now = DateTime.now().toUtc();
+    final auth = FakeAuth([
+      status(checkedAtUtc: now),
+      status(checkedAtUtc: now),
+    ]);
+    final adapter = _RecoveringAdapter();
+    final coordinator = PremiumPurchaseCoordinator(
+      authService: auth,
+      purchaseAdapter: adapter,
+      productIds: {'premium'},
+      basePlanId: 'monthly',
+    );
+    await tester.pumpWidget(screen(auth, coordinator: coordinator));
+    await tester.pump();
+    await tester.pump();
+    expect(coordinator.state, PremiumPurchaseCoordinatorState.unavailable);
+
+    await tester.tap(find.text('Get Premium'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 10));
+
+    expect(adapter.loadCalls, 2);
+    expect(adapter.launchCalls, 1);
+    expect(find.text('Google Play purchasing is temporarily unavailable'),
+        findsNothing);
+  });
+
+  test('supported localization sources use temporary-unavailable wording', () {
+    const expectedDescriptions = <String, String>{
+      'app_ar.arb':
+          'شراء Google Play غير متاح مؤقتًا. يُرجى المحاولة مرة أخرى لاحقًا.',
+      'app_bg.arb':
+          'Покупките в Google Play временно не са налични. Опитайте отново по-късно.',
+      'app_de.arb':
+          'Google Play-Käufe sind vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut.',
+      'app_en.arb':
+          'Google Play purchasing is temporarily unavailable. Please try again later.',
+      'app_es.arb':
+          'Las compras de Google Play no están disponibles temporalmente. Inténtalo de nuevo más tarde.',
+      'app_fr.arb':
+          'Les achats Google Play sont temporairement indisponibles. Réessayez plus tard.',
+      'app_hr.arb':
+          'Kupnja putem Google Playa privremeno nije dostupna. Pokušajte ponovno poslije.',
+      'app_it.arb':
+          'Gli acquisti Google Play sono temporaneamente non disponibili. Riprova più tardi.',
+      'app_ja.arb': 'Google Play での購入は一時的に利用できません。後でもう一度お試しください。',
+      'app_ko.arb': 'Google Play 구매를 일시적으로 사용할 수 없습니다. 나중에 다시 시도해 주세요.',
+      'app_pl.arb':
+          'Zakupy w Google Play są tymczasowo niedostępne. Spróbuj ponownie później.',
+      'app_pt.arb':
+          'As compras Google Play estão temporariamente indisponíveis. Tente novamente mais tarde.',
+      'app_pt_PT.arb':
+          'As compras Google Play estão temporariamente indisponíveis. Tente novamente mais tarde.',
+      'app_ru.arb':
+          'Покупки Google Play временно недоступны. Попробуйте позже.',
+      'app_sr.arb':
+          'Google Play kupovine su privremeno nedostupne. Pokušajte ponovo kasnije.',
+      'app_sr_Latn.arb':
+          'Google Play kupovine su privremeno nedostupne. Pokušajte ponovo kasnije.',
+    };
+
+    for (final entry in expectedDescriptions.entries) {
+      final json = jsonDecode(
+        File('lib/l10n/${entry.key}').readAsStringSync(),
+      ) as Map<String, dynamic>;
+      expect(json['googlePlayPurchasesUnavailableDescription'], entry.value,
+          reason: entry.key);
+      expect(json.values.join('\n').toLowerCase(),
+          isNot(contains('connected in the next step')),
+          reason: entry.key);
+    }
   });
 
   testWidgets('completed action reloads backend and requires confirmed status',

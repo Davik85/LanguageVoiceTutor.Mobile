@@ -1039,19 +1039,19 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get googlePlayPurchasesUnavailableTitle =>
-      'Zakupy w Google Play nie są jeszcze dostępne';
+      'Zakupy w Google Play są tymczasowo niedostępne';
 
   @override
   String get restorePurchasesUnavailableTitle =>
-      'Przywracanie zakupów nie jest jeszcze dostępne';
+      'Przywracanie zakupów z Google Play jest tymczasowo niedostępne';
 
   @override
   String get googlePlayPurchasesUnavailableDescription =>
-      'Zakupy zostaną połączone w kolejnym kroku. Ta wersja nie może obciążyć Cię opłatą ani aktywować Premium.';
+      'Zakupy w Google Play są tymczasowo niedostępne. Spróbuj ponownie później.';
 
   @override
   String get restorePurchasesUnavailableDescription =>
-      'Przywracanie zakupów przez Google Play zostanie połączone z procesem rozliczeniowym. Bieżący stan konta nadal jest ładowany z Language Voice Tutor.';
+      'Przywracanie zakupów z Google Play jest tymczasowo niedostępne. Spróbuj ponownie później.';
 
   @override
   String get purchasePendingConfirmation =>

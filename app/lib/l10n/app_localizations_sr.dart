@@ -1040,19 +1040,19 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get googlePlayPurchasesUnavailableTitle =>
-      'Google Play kupovine još nisu dostupne';
+      'Google Play kupovine su privremeno nedostupne';
 
   @override
   String get restorePurchasesUnavailableTitle =>
-      'Vraćanje kupovina još nije dostupno';
+      'Vraćanje Google Play kupovina je privremeno nedostupno';
 
   @override
   String get googlePlayPurchasesUnavailableDescription =>
-      'Kupovine će biti povezane u sledećem koraku. Ova verzija ne može da vam naplati niti aktivira Premium.';
+      'Google Play kupovine su privremeno nedostupne. Pokušajte ponovo kasnije.';
 
   @override
   String get restorePurchasesUnavailableDescription =>
-      'Vraćanje kupovina preko Google Playa biće povezano sa procesom naplate. Trenutni status naloga se i dalje učitava iz aplikacije Language Voice Tutor.';
+      'Vraćanje Google Play kupovina je privremeno nedostupno. Pokušajte ponovo kasnije.';
 
   @override
   String get purchasePendingConfirmation =>
@@ -2641,19 +2641,19 @@ class AppLocalizationsSrLatn extends AppLocalizationsSr {
 
   @override
   String get googlePlayPurchasesUnavailableTitle =>
-      'Google Play kupovine još nisu dostupne';
+      'Google Play kupovine su privremeno nedostupne';
 
   @override
   String get restorePurchasesUnavailableTitle =>
-      'Vraćanje kupovina još nije dostupno';
+      'Vraćanje Google Play kupovina je privremeno nedostupno';
 
   @override
   String get googlePlayPurchasesUnavailableDescription =>
-      'Kupovine će biti povezane u sledećem koraku. Ova verzija ne može da vam naplati niti aktivira Premium.';
+      'Google Play kupovine su privremeno nedostupne. Pokušajte ponovo kasnije.';
 
   @override
   String get restorePurchasesUnavailableDescription =>
-      'Vraćanje kupovina preko Google Playa biće povezano sa procesom naplate. Trenutni status naloga se i dalje učitava iz aplikacije Language Voice Tutor.';
+      'Vraćanje Google Play kupovina je privremeno nedostupno. Pokušajte ponovo kasnije.';
 
   @override
   String get purchasePendingConfirmation =>

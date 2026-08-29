@@ -1047,19 +1047,19 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get googlePlayPurchasesUnavailableTitle =>
-      'As compras Google Play ainda não estão disponíveis';
+      'As compras Google Play estão temporariamente indisponíveis';
 
   @override
   String get restorePurchasesUnavailableTitle =>
-      'Restaurar compras ainda não está disponível';
+      'O restauro de compras Google Play está temporariamente indisponível';
 
   @override
   String get googlePlayPurchasesUnavailableDescription =>
-      'As compras serão associadas no passo seguinte. Esta versão não pode cobrar-lhe nem ativar o Premium.';
+      'As compras Google Play estão temporariamente indisponíveis. Tente novamente mais tarde.';
 
   @override
   String get restorePurchasesUnavailableDescription =>
-      'O restauro Google Play será associado ao fluxo de faturação. O estado atual da sua conta continua a ser carregado do Language Voice Tutor.';
+      'O restauro de compras Google Play está temporariamente indisponível. Tente novamente mais tarde.';
 
   @override
   String get purchasePendingConfirmation =>
@@ -2656,19 +2656,19 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
 
   @override
   String get googlePlayPurchasesUnavailableTitle =>
-      'As compras Google Play ainda não estão disponíveis';
+      'As compras Google Play estão temporariamente indisponíveis';
 
   @override
   String get restorePurchasesUnavailableTitle =>
-      'Restaurar compras ainda não está disponível';
+      'O restauro de compras Google Play está temporariamente indisponível';
 
   @override
   String get googlePlayPurchasesUnavailableDescription =>
-      'As compras serão associadas no passo seguinte. Esta versão não pode cobrar-lhe nem ativar o Premium.';
+      'As compras Google Play estão temporariamente indisponíveis. Tente novamente mais tarde.';
 
   @override
   String get restorePurchasesUnavailableDescription =>
-      'O restauro Google Play será associado ao fluxo de faturação. O estado atual da sua conta continua a ser carregado do Language Voice Tutor.';
+      'O restauro de compras Google Play está temporariamente indisponível. Tente novamente mais tarde.';
 
   @override
   String get purchasePendingConfirmation =>

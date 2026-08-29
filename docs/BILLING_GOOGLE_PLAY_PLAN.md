@@ -41,7 +41,8 @@ The single normal Mobile runtime now uses the implemented Google Play path:
 
 - normal application composition creates `GooglePlayPremiumPurchaseAdapter` without a build flag, flavor, or alternate entrypoint;
 - `AppConfig.googlePlayPremiumProductId` is `premium` and `AppConfig.googlePlayPremiumBasePlanId` is `monthly`;
-- Mobile queries only Product ID `premium`, requires exactly one no-offer catalog entry for Base Plan ID `monthly`, and launches it with the exact offer token supplied on that Google Play catalog entry;
+- startup catalog availability is advisory rather than permanently sticky: every user-initiated new purchase performs a fresh Product ID `premium` query and retries that catalog operation once after a short bounded delay;
+- Mobile requires exactly one no-offer catalog entry for Base Plan ID `monthly` and launches the fresh `GooglePlayProductDetails` with the exact offer token supplied on that query;
 - missing products, missing or mismatched base plans, promotional offer entries, missing offer tokens, and ambiguous matching entries fail closed without launching the Play purchase UI;
 - backend Google Play processing is enabled separately for the controlled sandbox test, with test-purchase verification restricted on the backend to the approved test user;
 - RTDN is configured separately and remains backend infrastructure rather than Mobile configuration;
@@ -52,7 +53,7 @@ The runtime composition change must not be described as completed sandbox valida
 
 The approved Google Play Product ID is `premium` and Base Plan ID is `monthly`. Mobile does not activate or mutate Play Console products or base plans. No Google Play free trial, introductory offer, annual subscription, or second product is configured by Mobile; the seven-day registration trial remains backend-owned.
 
-New purchase and restore are intentionally separate. Mobile shows and starts a new Google purchase only when the additive backend gate explicitly allows it, and the coordinator re-fetches that authenticated gate immediately before `launchSubscriptionOffer`; missing, stale, invalid, blocked, or unavailable status prevents the store call. Restore and restored-token verification continue through their existing backend path without consulting the new-purchase gate.
+New purchase and restore are intentionally separate. A startup store/catalog failure does not suppress a later user-initiated refresh attempt. After a fresh valid catalog entry is selected, the coordinator re-fetches the authenticated additive backend gate immediately before `launchSubscriptionOffer`; missing, stale, invalid, blocked, or unavailable status prevents the store call. Persistent catalog failure after the two bounded user attempts shows a temporary-unavailable message. Restore rechecks store availability and restored-token verification continues through its existing backend path without consulting new-purchase catalog eligibility or the new-purchase gate.
 
 ## Remaining controlled sandbox validation
 

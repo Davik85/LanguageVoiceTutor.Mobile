@@ -1039,19 +1039,19 @@ class AppLocalizationsHr extends AppLocalizations {
 
   @override
   String get googlePlayPurchasesUnavailableTitle =>
-      'Kupnje na Google Playu još nisu dostupne';
+      'Kupnja putem Google Playa privremeno nije dostupna';
 
   @override
   String get restorePurchasesUnavailableTitle =>
-      'Vraćanje kupnji još nije dostupno';
+      'Vraćanje kupnji putem Google Playa privremeno nije dostupno';
 
   @override
   String get googlePlayPurchasesUnavailableDescription =>
-      'Kupnje će se povezati u sljedećem koraku. Ova verzija ne može vam naplatiti ni aktivirati Premium.';
+      'Kupnja putem Google Playa privremeno nije dostupna. Pokušajte ponovno poslije.';
 
   @override
   String get restorePurchasesUnavailableDescription =>
-      'Vraćanje kupnji putem Google Playa povezat će se s postupkom naplate. Trenutačni status računa i dalje se učitava iz aplikacije Language Voice Tutor.';
+      'Vraćanje kupnji putem Google Playa privremeno nije dostupno. Pokušajte ponovno poslije.';
 
   @override
   String get purchasePendingConfirmation =>

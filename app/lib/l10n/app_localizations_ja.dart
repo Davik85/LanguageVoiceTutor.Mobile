@@ -974,18 +974,20 @@ class AppLocalizationsJa extends AppLocalizations {
       '請求の変更は、Premium を購入した提供元で処理する必要があります。';
 
   @override
-  String get googlePlayPurchasesUnavailableTitle => 'Google Play の購入はまだ利用できません';
+  String get googlePlayPurchasesUnavailableTitle =>
+      'Google Play での購入は一時的に利用できません';
 
   @override
-  String get restorePurchasesUnavailableTitle => '購入の復元はまだ利用できません';
+  String get restorePurchasesUnavailableTitle =>
+      'Google Play の購入の復元は一時的に利用できません';
 
   @override
   String get googlePlayPurchasesUnavailableDescription =>
-      '購入は次の手順で接続されます。このビルドでは請求や Premium の有効化はできません。';
+      'Google Play での購入は一時的に利用できません。後でもう一度お試しください。';
 
   @override
   String get restorePurchasesUnavailableDescription =>
-      'Google Play での購入復元は請求フローに接続されます。現在のアカウント状態は引き続き Language Voice Tutor から読み込まれます。';
+      'Google Play の購入の復元は一時的に利用できません。後でもう一度お試しください。';
 
   @override
   String get purchasePendingConfirmation =>

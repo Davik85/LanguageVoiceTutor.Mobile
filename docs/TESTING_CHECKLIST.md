@@ -344,8 +344,11 @@ Implemented automated foundation coverage includes:
 - restore events routed through backend verification;
 - normal application composition using `GooglePlayPremiumPurchaseAdapter` with no billing build flag, flavor, or alternate entrypoint;
 - the normal runtime querying only Product ID `premium` and selecting exactly the no-offer Base Plan ID `monthly` entry with its Play-issued offer token;
+- every user-initiated new purchase performing a fresh catalog query, with one short bounded retry, so startup catalog failure is recoverable without background polling;
 - missing, mismatched, promotional, tokenless, or ambiguous catalog entries failing closed without a store launch;
 - restore remaining independently callable when a new purchase cannot be launched;
+- the backend purchase gate remaining immediately before store launch after the fresh catalog selection;
+- temporary-unavailable purchase and restore wording replacing obsolete future-connection/build-disabled text in every supported ARB source;
 - backend verification, ownership, acknowledgement, linked-purchase, RTDN/reconciliation, and lifecycle projection coverage.
 
 Still required in controlled closed-testing validation:

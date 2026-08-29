@@ -986,18 +986,19 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get googlePlayPurchasesUnavailableTitle =>
-      'Google Play 구매는 아직 사용할 수 없습니다';
+      'Google Play 구매를 일시적으로 사용할 수 없습니다';
 
   @override
-  String get restorePurchasesUnavailableTitle => '구매 복원은 아직 사용할 수 없습니다';
+  String get restorePurchasesUnavailableTitle =>
+      'Google Play 구매 복원을 일시적으로 사용할 수 없습니다';
 
   @override
   String get googlePlayPurchasesUnavailableDescription =>
-      '구매는 다음 단계에서 연결됩니다. 이 빌드에서는 요금을 청구하거나 Premium을 활성화할 수 없습니다.';
+      'Google Play 구매를 일시적으로 사용할 수 없습니다. 나중에 다시 시도해 주세요.';
 
   @override
   String get restorePurchasesUnavailableDescription =>
-      'Google Play 구매 복원은 결제 흐름과 연결됩니다. 현재 계정 상태는 계속 Language Voice Tutor에서 불러옵니다.';
+      'Google Play 구매 복원을 일시적으로 사용할 수 없습니다. 나중에 다시 시도해 주세요.';
 
   @override
   String get purchasePendingConfirmation =>

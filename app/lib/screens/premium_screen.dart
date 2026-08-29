@@ -147,11 +147,6 @@ class _PremiumScreenState extends State<PremiumScreen> {
       }
       return;
     }
-    if (_purchaseCoordinator.state ==
-        PremiumPurchaseCoordinatorState.unavailable) {
-      await _showUnavailable(restore: restore);
-      return;
-    }
     setState(() => _runningAction = true);
     try {
       if (restore) {

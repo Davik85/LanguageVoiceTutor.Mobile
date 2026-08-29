@@ -1855,25 +1855,25 @@ abstract class AppLocalizations {
   /// No description provided for @googlePlayPurchasesUnavailableTitle.
   ///
   /// In en, this message translates to:
-  /// **'Google Play purchases are not available yet'**
+  /// **'Google Play purchasing is temporarily unavailable'**
   String get googlePlayPurchasesUnavailableTitle;
 
   /// No description provided for @restorePurchasesUnavailableTitle.
   ///
   /// In en, this message translates to:
-  /// **'Restore purchases is not available yet'**
+  /// **'Google Play restore is temporarily unavailable'**
   String get restorePurchasesUnavailableTitle;
 
   /// No description provided for @googlePlayPurchasesUnavailableDescription.
   ///
   /// In en, this message translates to:
-  /// **'Purchases will be connected in the next step. This build cannot charge you or activate Premium.'**
+  /// **'Google Play purchasing is temporarily unavailable. Please try again later.'**
   String get googlePlayPurchasesUnavailableDescription;
 
   /// No description provided for @restorePurchasesUnavailableDescription.
   ///
   /// In en, this message translates to:
-  /// **'Google Play restoration will be connected with the billing flow. Your current account status is still loaded from Language Voice Tutor.'**
+  /// **'Google Play restore is temporarily unavailable. Please try again later.'**
   String get restorePurchasesUnavailableDescription;
 
   /// No description provided for @purchasePendingConfirmation.
