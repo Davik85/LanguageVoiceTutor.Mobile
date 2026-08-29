@@ -49,6 +49,8 @@ The single normal Mobile runtime now uses the implemented Google Play path:
 - no real Google Play sandbox purchase has validated the end-to-end path;
 - no public production rollout has occurred.
 
+VersionCode 3 is confirmed installed through the existing Internal testing path. Commit `c5ebe6e` still reproduces the localized temporary-unavailable result instead of opening the purchase sheet. The next controlled evidence is the temporary `LVT_BILLING_DIAG` catalog diagnostic sequence emitted through release-visible Flutter/Android logs. It records only product/base-plan/offer metadata and offer-token presence, never an offer-token or purchase-token value. No backend, RTDN, dependency, flavor, runtime, or billing-architecture change was made for this diagnostic work.
+
 The runtime composition change must not be described as completed sandbox validation or public production rollout.
 
 The approved Google Play Product ID is `premium` and Base Plan ID is `monthly`. Mobile does not activate or mutate Play Console products or base plans. No Google Play free trial, introductory offer, annual subscription, or second product is configured by Mobile; the seven-day registration trial remains backend-owned.

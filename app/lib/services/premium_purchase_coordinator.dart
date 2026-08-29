@@ -8,6 +8,7 @@ import '../models/google_play_purchase_verification.dart';
 import '../models/premium_purchase.dart';
 import '../models/subscription_status.dart';
 import 'auth_service.dart';
+import 'google_play_billing_diagnostics.dart';
 import 'premium_purchase_adapter.dart';
 
 enum PremiumPurchaseCoordinatorState {
@@ -87,27 +88,37 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
 
   Future<PremiumPurchaseCoordinatorResult> startPurchase() async {
     await initialize();
-    if (!await _refreshCatalog(maxAttempts: _userCatalogAttemptCount)) {
+    GooglePlayBillingDiagnostics.log('purchase_attempt_started '
+        'product_id=${_productIds.join(',')} base_plan_id=$_basePlanId');
+    if (!await _refreshCatalog(
+        maxAttempts: _userCatalogAttemptCount,
+        diagnosticPurchaseAttempt: true)) {
       return _result(PremiumPurchaseCoordinatorState.unavailable);
     }
     final identity = await _purchaseIdentity();
     if (identity == null) {
+      GooglePlayBillingDiagnostics.log(
+          'exit_stage=purchase_identity_unavailable');
       return _setResult(PremiumPurchaseCoordinatorState.failed);
     }
     SubscriptionStatus status;
     try {
       status = await _authService.fetchSubscriptionStatus();
     } catch (_) {
+      GooglePlayBillingDiagnostics.log('exit_stage=backend_gate_error');
       return _setResult(PremiumPurchaseCoordinatorState.failed);
     }
     if (status.userId.trim() != identity.userId ||
         !status.hasFreshGooglePlayPurchaseGate()) {
+      GooglePlayBillingDiagnostics.log('exit_stage=backend_gate_blocked');
       return _setResult(PremiumPurchaseCoordinatorState.blocked);
     }
     _setState(PremiumPurchaseCoordinatorState.launching);
     final launched = await _purchaseAdapter.launchSubscriptionOffer(
         _selectedProduct!,
         obfuscatedAccountId: identity.obfuscatedAccountId);
+    GooglePlayBillingDiagnostics.log(
+        'exit_stage=${launched ? 'launch_purchase_started' : 'launch_purchase_failed'}');
     if (!launched) _setState(PremiumPurchaseCoordinatorState.failed);
     return _result(launched
         ? PremiumPurchaseCoordinatorState.launching
@@ -140,11 +151,17 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
     }
   }
 
-  Future<bool> _refreshCatalog({required int maxAttempts}) async {
+  Future<bool> _refreshCatalog({
+    required int maxAttempts,
+    bool diagnosticPurchaseAttempt = false,
+  }) async {
     _selectedProduct = null;
     if (_productIds.isEmpty || _basePlanId.trim().isEmpty) {
       _catalog = const PremiumProductLoadResult(
           failure: PremiumPurchaseFailure.productNotFound);
+      if (diagnosticPurchaseAttempt) {
+        GooglePlayBillingDiagnostics.log('exit_stage=configuration_invalid');
+      }
       _setState(PremiumPurchaseCoordinatorState.unavailable);
       return false;
     }
@@ -156,8 +173,17 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
       } catch (_) {
         _storeAvailable = false;
       }
+      if (diagnosticPurchaseAttempt) {
+        GooglePlayBillingDiagnostics.log(
+            'store_availability attempt=${attempt + 1} '
+            'is_available=$_storeAvailable');
+      }
       if (_storeAvailable) {
         _setState(PremiumPurchaseCoordinatorState.loadingCatalog);
+        if (diagnosticPurchaseAttempt) {
+          GooglePlayBillingDiagnostics.log(
+              'query_product_details attempt=${attempt + 1}');
+        }
         try {
           _catalog =
               await _purchaseAdapter.loadSubscriptionProducts(_productIds);
@@ -173,6 +199,15 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
                 (product.offerToken?.trim().isNotEmpty ?? false))
             .toList();
         _selectedProduct = matches.length == 1 ? matches.single : null;
+        if (diagnosticPurchaseAttempt) {
+          GooglePlayBillingDiagnostics.logSelection(
+              GooglePlayBillingDiagnostics.classifySelection(
+            productIds: _productIds,
+            basePlanId: _basePlanId,
+            catalog: _catalog,
+            selectedCandidate: _selectedProduct != null,
+          ));
+        }
         if (_selectedProduct != null && _catalog.failure == null) {
           _setState(PremiumPurchaseCoordinatorState.ready);
           return true;
@@ -180,6 +215,9 @@ class PremiumPurchaseCoordinator extends ChangeNotifier {
       } else {
         _catalog = const PremiumProductLoadResult(
             failure: PremiumPurchaseFailure.unavailable);
+        if (diagnosticPurchaseAttempt) {
+          GooglePlayBillingDiagnostics.log('exit_stage=store_unavailable');
+        }
       }
       if (attempt + 1 < maxAttempts) {
         await Future<void>.delayed(_userCatalogRetryDelay);

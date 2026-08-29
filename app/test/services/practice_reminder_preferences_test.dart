@@ -5,9 +5,24 @@ import 'package:language_voice_tutor_mobile/services/practice_reminder_preferenc
 class _MemorySecureStorage extends FlutterSecureStorage {
   final values = <String, String>{};
   @override
-  Future<Map<String, String>> readAll({dynamic iOptions, dynamic aOptions, dynamic lOptions, dynamic webOptions, dynamic mOptions, dynamic wOptions}) async => Map.of(values);
+  Future<Map<String, String>> readAll(
+          {dynamic iOptions,
+          dynamic aOptions,
+          dynamic lOptions,
+          dynamic webOptions,
+          dynamic mOptions,
+          dynamic wOptions}) async =>
+      Map.of(values);
   @override
-  Future<void> write({required String key, required String? value, dynamic iOptions, dynamic aOptions, dynamic lOptions, dynamic webOptions, dynamic mOptions, dynamic wOptions}) async {
+  Future<void> write(
+      {required String key,
+      required String? value,
+      dynamic iOptions,
+      dynamic aOptions,
+      dynamic lOptions,
+      dynamic webOptions,
+      dynamic mOptions,
+      dynamic wOptions}) async {
     if (value == null) {
       values.remove(key);
     } else {
@@ -52,14 +67,19 @@ void main() {
   test('normalized language ID survives secure preference storage', () async {
     final storage = _MemorySecureStorage();
     final store = SecurePracticeReminderPreferenceStore(storage: storage);
-    await store.write(const PracticeReminderPreferences(interfaceLanguageId: 'sr_Latn'));
+    await store.write(
+        const PracticeReminderPreferences(interfaceLanguageId: 'sr_Latn'));
     expect((await store.read()).interfaceLanguageId, 'sr');
-    expect(storage.values[SecurePracticeReminderPreferenceStore.interfaceLanguageIdKey], 'sr');
+    expect(
+        storage.values[
+            SecurePracticeReminderPreferenceStore.interfaceLanguageIdKey],
+        'sr');
   });
   test('old preferences without a language key use English', () async {
     final storage = _MemorySecureStorage()
       ..values[SecurePracticeReminderPreferenceStore.enabledKey] = 'false';
-    final preferences = await SecurePracticeReminderPreferenceStore(storage: storage).read();
+    final preferences =
+        await SecurePracticeReminderPreferenceStore(storage: storage).read();
     expect(preferences.enabled, isFalse);
     expect(preferences.interfaceLanguageId, 'en');
   });

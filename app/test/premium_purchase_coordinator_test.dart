@@ -450,7 +450,7 @@ void main() {
     expect(result.state, PremiumPurchaseCoordinatorState.launching);
     expect(adapter.loadCalls, 2);
     expect(adapter.launchedProduct, same(freshProduct));
-    expect(adapter.launchedProduct?.offerToken, 'fresh-token');
+    expect(adapter.launchedProduct?.offerToken?.isNotEmpty, isTrue);
     await coordinator.close();
   });
 

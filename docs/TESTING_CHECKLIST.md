@@ -349,6 +349,7 @@ Implemented automated foundation coverage includes:
 - restore remaining independently callable when a new purchase cannot be launched;
 - the backend purchase gate remaining immediately before store launch after the fresh catalog selection;
 - temporary-unavailable purchase and restore wording replacing obsolete future-connection/build-disabled text in every supported ARB source;
+- VersionCode 3 is installed through the existing Internal testing path; `c5ebe6e` still produces the temporary-unavailable result on a Get Premium attempt. The next device evidence is the release-visible, token-safe `LVT_BILLING_DIAG` catalog diagnostic sequence. This diagnostic adds no backend, RTDN, dependency, flavor, runtime, or billing-architecture change.
 - backend verification, ownership, acknowledgement, linked-purchase, RTDN/reconciliation, and lifecycle projection coverage.
 
 Still required in controlled closed-testing validation:

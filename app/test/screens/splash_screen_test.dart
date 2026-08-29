@@ -56,11 +56,19 @@ class _SplashStorage implements SessionStorage {
   }
 }
 
+const _testAssetPaths = <String>{
+  AppConfig.logoAsset,
+  AppConfig.homeOrralenAsset,
+  AppConfig.homeWordmarkAsset,
+  AppConfig.homeEmeraldAsset,
+};
+
 final _testAssetManifest = const StandardMessageCodec().encodeMessage(
   <String, List<Map<String, Object?>>>{
-    AppConfig.logoAsset: [
-      {'asset': AppConfig.logoAsset},
-    ],
+    for (final assetPath in _testAssetPaths)
+      assetPath: [
+        {'asset': assetPath},
+      ],
   },
 )!;
 
@@ -70,8 +78,8 @@ class _SplashAssetBundle extends CachingAssetBundle {
     if (key == 'AssetManifest.bin') {
       return _testAssetManifest;
     }
-    if (key == AppConfig.logoAsset) {
-      final bytes = await File(AppConfig.logoAsset).readAsBytes();
+    if (_testAssetPaths.contains(key)) {
+      final bytes = await File(key).readAsBytes();
       return ByteData.sublistView(bytes);
     }
     throw FlutterError('Unexpected asset request: $key');

@@ -56,8 +56,40 @@ class PremiumProductLoadResult {
   const PremiumProductLoadResult(
       {this.products = const [],
       this.missingProductIds = const [],
+      this.diagnostics = const PremiumCatalogDiagnostics(),
       this.failure});
   final List<PremiumStoreProduct> products;
   final List<String> missingProductIds;
+  final PremiumCatalogDiagnostics diagnostics;
   final PremiumPurchaseFailure? failure;
+}
+
+/// Safe, non-secret catalog metadata collected from a Google Play response.
+/// It intentionally contains no offer-token or purchase-token values.
+class PremiumCatalogDiagnostics {
+  const PremiumCatalogDiagnostics({
+    this.productDetails = const [],
+    this.errorCode,
+    this.errorMessagePresent = false,
+  });
+
+  final List<PremiumCatalogProductDiagnostic> productDetails;
+  final String? errorCode;
+  final bool errorMessagePresent;
+}
+
+class PremiumCatalogProductDiagnostic {
+  const PremiumCatalogProductDiagnostic({
+    required this.productId,
+    required this.productType,
+    this.basePlanId,
+    this.offerId,
+    required this.offerTokenPresent,
+  });
+
+  final String productId;
+  final String productType;
+  final String? basePlanId;
+  final String? offerId;
+  final bool offerTokenPresent;
 }

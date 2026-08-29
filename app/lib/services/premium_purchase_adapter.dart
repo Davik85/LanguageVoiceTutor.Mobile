@@ -4,6 +4,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 
 import '../models/premium_purchase.dart';
+import 'google_play_billing_diagnostics.dart';
 
 abstract class PremiumPurchaseAdapter {
   Future<void> initialize();
@@ -63,8 +64,10 @@ class GooglePlayPremiumPurchaseAdapter implements PremiumPurchaseAdapter {
   Future<bool> get isAvailable async {
     try {
       _available = await _purchaseStore.isAvailable();
-    } catch (_) {
+    } catch (error) {
       _available = false;
+      GooglePlayBillingDiagnostics.log(
+          'availability_exception exception_type=${error.runtimeType}');
     }
     return _available;
   }
@@ -98,9 +101,20 @@ class GooglePlayPremiumPurchaseAdapter implements PremiumPurchaseAdapter {
     }
     try {
       final result = await _purchaseStore.queryProductDetails(productIds);
+      final diagnostics =
+          result.productDetails.map(_diagnosticProduct).toList(growable: false);
       if (result.error != null) {
-        return const PremiumProductLoadResult(
-            failure: PremiumPurchaseFailure.storeError);
+        final loadResult = PremiumProductLoadResult(
+          missingProductIds: result.notFoundIDs.toList(),
+          diagnostics: PremiumCatalogDiagnostics(
+            productDetails: diagnostics,
+            errorCode: result.error!.code,
+            errorMessagePresent: result.error!.message.trim().isNotEmpty,
+          ),
+          failure: PremiumPurchaseFailure.storeError,
+        );
+        GooglePlayBillingDiagnostics.logCatalogResponse(loadResult);
+        return loadResult;
       }
       final products = <PremiumStoreProduct>[];
       for (final details in result.productDetails) {
@@ -114,12 +128,42 @@ class GooglePlayPremiumPurchaseAdapter implements PremiumPurchaseAdapter {
           offerToken: product.offerToken!,
         )] = details as GooglePlayProductDetails;
       }
-      return PremiumProductLoadResult(
-          products: products, missingProductIds: result.notFoundIDs.toList());
-    } catch (_) {
-      return const PremiumProductLoadResult(
+      final loadResult = PremiumProductLoadResult(
+        products: products,
+        missingProductIds: result.notFoundIDs.toList(),
+        diagnostics: PremiumCatalogDiagnostics(productDetails: diagnostics),
+      );
+      GooglePlayBillingDiagnostics.logCatalogResponse(loadResult);
+      return loadResult;
+    } catch (error) {
+      const loadResult = PremiumProductLoadResult(
           failure: PremiumPurchaseFailure.disconnected);
+      GooglePlayBillingDiagnostics.log(
+          'query_exception exception_type=${error.runtimeType}');
+      GooglePlayBillingDiagnostics.logCatalogResponse(loadResult);
+      return loadResult;
     }
+  }
+
+  PremiumCatalogProductDiagnostic _diagnosticProduct(ProductDetails product) {
+    if (product is! GooglePlayProductDetails) {
+      return PremiumCatalogProductDiagnostic(
+        productId: product.id,
+        productType: 'non_android',
+        offerTokenPresent: false,
+      );
+    }
+    final index = product.subscriptionIndex;
+    final offer = index != null
+        ? (product.productDetails.subscriptionOfferDetails?[index])
+        : null;
+    return PremiumCatalogProductDiagnostic(
+      productId: product.id,
+      productType: product.productDetails.productType.name,
+      basePlanId: offer?.basePlanId,
+      offerId: offer?.offerId,
+      offerTokenPresent: product.offerToken?.trim().isNotEmpty ?? false,
+    );
   }
 
   PremiumStoreProduct? _mapProduct(ProductDetails product) {
