@@ -163,15 +163,20 @@ Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow
 
 ### Phase 5: Approved next implementation sequence
 
-1. Update and align documentation.
-2. Implement local Android practice reminders.
-3. Add complete learner-facing Premium UI and purchase entry points.
-4. Configure and enable the implemented Google Play billing bridge for a controlled sandbox purchase, then validate it before rollout.
-5. Maintain the implemented fourteen-locale interface behavior and complete only the remaining expanded locale-specific clean-install cases in the testing checklist; general Google Play installation and system-language first-run behavior are physically verified.
+Google Play controlled Internal-testing E2E is now complete: versionCode 5 proved purchase-sheet launch, backend verification, backend-owned Premium, renewal reconciliation, and final expiry/new-purchase eligibility. The next Play work is legal/Data Safety review, controlled-configuration review, a new versionCode upload that includes signed-out password recovery, and a Play-installed smoke; this is not a public rollout decision.
+
+1. Finish documentation synchronization.
+2. Synchronize public Privacy, Terms, seller/company, refund, cancellation, Google Play subscription, and applicable AI/speech/transcription wording.
+3. Re-review Google Play Data Safety against current app behavior and updated public policies.
+4. Review controlled Google Play configuration before public rollout, including test-only controls, `TestPurchasesEnabled`, allowlist, pending-refund-review decision, monitoring, and rollback readiness.
+5. Prepare the next Mobile Internal-testing release with a new versionCode so signed-out password recovery is distributed.
+6. Build, sign, verify, and manually upload that AAB separately to the existing Internal testing track.
+7. Run a Play-installed physical smoke.
+8. Make a separate production-rollout decision.
 
 Notifications V1 is local-only: no Firebase, remote/server push, backend endpoint, push-token registration, remote provider, backend notification state, or background microphone behavior. Product settings enable reminders by default at device-local 09:00 and 20:00; learners can edit both times or disable all reminders. Android notification permission is still required. Explain the benefit and ask only after the learner sees the product experience, do not reprompt on every launch after denial, and offer Android settings recovery where practical. Do not request exact-alarm permission unless later investigation proves it necessary. Preserve device-local schedule semantics across timezone changes and restore reminders after reboot when Android requires it; local reminders are not synchronized backend account state and cannot always be suppressed after a lesson on another device.
 
-The Premium UI and Google Play billing bridge foundation are implemented, while production runtime remains disabled. A local button, purchase callback, or verified Play result never grants Premium; Mobile displays backend `SubscriptionStatus`. Google Play maps to the same provider-neutral Premium as Paddle, trial, and manual-admin. Remaining work is Play Console/product mapping, approved backend/RTDN configuration, controlled enablement, and sandbox validation.
+The Premium UI and Google Play billing bridge foundation are implemented, and controlled Internal-testing runtime is enabled for the approved license-test context. A local button, purchase callback, or verified Play result never grants Premium; Mobile displays backend `SubscriptionStatus`. Google Play maps to the same provider-neutral Premium as Paddle, trial, and manual-admin. Controlled purchase, reconciliation, and expiry are complete; broader lifecycle and public-rollout validation remain separate work.
 
 Interface localization remains separate from the six study languages. The long-term approved interface languages are `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `pl`, `ar`, `ja`, `ko`, `sr`, `hr`, and `bg`; the current Stage 1 implementation covers `en`, `ru`, `es`, `fr`, and `de`. Localization applies only to interface presentation and never to AI replies, learner messages, backend-generated content, CMS identifiers, canonical scenario keys, internal IDs, or backend data. Remaining languages, remaining screens, and Arabic right-to-left verification are later work.
 

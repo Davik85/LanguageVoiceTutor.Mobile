@@ -152,13 +152,16 @@ Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow
 
 Account deletion is completed by the shared backend/Admin workflow. Mobile submission remains a support request rather than immediate local deletion. After anonymization, new login and refresh fail; an already-issued access token may continue until normal expiry, and Mobile must clear the session when refresh proves invalid. This accepted boundary does not request a Mobile change.
 
-The approved implementation order is:
+The current release/compliance order is:
 
-1. Update and align documentation.
-2. Implement local Android practice reminders.
-3. Add complete learner-facing Premium UI and purchase entry points.
-4. Configure and enable the implemented Google Play billing bridge for a controlled sandbox purchase, then validate it before rollout.
-5. Maintain the implemented fourteen-locale interface behavior. General Google Play installation and system-language first-run defaults are physically verified; retain the expanded locale-specific clean-install matrix as separate follow-up validation.
+1. Finish documentation synchronization.
+2. Synchronize public Privacy, Terms, seller/company, refund, cancellation, Google Play subscription, and applicable AI/speech/transcription wording.
+3. Re-review Google Play Data Safety against current app behavior and updated public policies.
+4. Review controlled Google Play configuration before public rollout, including test-only controls, `TestPurchasesEnabled`, allowlist, pending-refund-review decision, monitoring, and rollback readiness.
+5. Prepare the next Mobile Internal-testing release with a new versionCode so signed-out password recovery is distributed.
+6. Build, sign, verify, and manually upload that AAB separately to the existing Internal testing track.
+7. Run a Play-installed physical smoke.
+8. Make a separate production-rollout decision.
 
 Notifications V1 is local device scheduling only: no Firebase, remote/server push, backend endpoint, push-token registration, remote provider, backend notification state, or background microphone behavior. Product settings enable reminders by default, using device-local 09:00 morning and 20:00 evening reminders with cheerful daily-practice and streak-preservation wording. Learners can change either time or disable all reminders. Android permission is still required before delivery; ask only after the learner has seen the product benefit, do not reprompt every launch after denial, and provide an Android-settings route where practical. Do not request exact-alarm permission unless later investigation proves it necessary. Future implementation must keep 09:00/20:00 device-local semantics across timezone changes and restore schedules after reboot when Android requires it. These local schedules are not official backend account state and cannot always be suppressed after lessons completed on another device.
 
@@ -268,7 +271,7 @@ Completed and remaining Mobile V1 or later phases:
 - Automatic tutor playback.
 - Animated tutor GIF loading and state binding.
 - Fullscreen Conversation mode. **Complete** for current Mobile voice flow; further realtime/continuous conversation remains future work.
-- Google Play billing production configuration, runtime enablement, controlled sandbox validation, and rollout. The repository foundation is implemented but disabled.
+- Google Play public-rollout readiness: controlled Internal-testing purchase, renewal reconciliation, and final expiry are verified, but broader lifecycle and real-money validation remain pending.
 - Apple billing.
 - Analytics, crash reporting, and store release work.
 

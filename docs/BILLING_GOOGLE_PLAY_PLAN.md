@@ -35,36 +35,33 @@ The Mobile foundation is also implemented:
 
 For `verified`, persistence and backend-owned acknowledgement succeeded. For `acknowledgement_pending`, verified entitlement persistence succeeded while backend acknowledgement retry remains pending. Mobile calls neither Google Play acknowledgement nor `completePurchase`; it refreshes and displays only backend-confirmed subscription state.
 
-## Controlled closed-testing runtime state
+## Controlled Internal-testing runtime state (2026-08-30)
 
-The single normal Mobile runtime now uses the implemented Google Play path:
+The single normal Mobile runtime uses the implemented Google Play path, with no billing flavor, duplicate runtime, or local Premium authority. Controlled production configuration has `GooglePlayBilling.Enabled=true`, `GooglePlayRtdn.Enabled=true`, and `GooglePlayReconciliation.Enabled=true`; pending-refund review remains disabled unless separately verified. Product ID is `premium`, Base Plan ID is `monthly`, `monthly` is active, and there is no Google Play free trial or introductory offer.
 
 - normal application composition creates `GooglePlayPremiumPurchaseAdapter` without a build flag, flavor, or alternate entrypoint;
 - `AppConfig.googlePlayPremiumProductId` is `premium` and `AppConfig.googlePlayPremiumBasePlanId` is `monthly`;
 - startup catalog availability is advisory rather than permanently sticky: every user-initiated new purchase performs a fresh Product ID `premium` query and retries that catalog operation once after a short bounded delay;
 - Mobile requires exactly one no-offer catalog entry for Base Plan ID `monthly` and launches the fresh `GooglePlayProductDetails` with the exact offer token supplied on that query;
 - missing products, missing or mismatched base plans, promotional offer entries, missing offer tokens, and ambiguous matching entries fail closed without launching the Play purchase UI;
-- backend Google Play processing is enabled separately for the controlled sandbox test, with test-purchase verification restricted on the backend to the approved test user;
-- RTDN is configured separately and remains backend infrastructure rather than Mobile configuration;
-- no real Google Play sandbox purchase has validated the end-to-end path;
+- backend Google Play processing is enabled for the approved controlled license-test context;
+- RTDN and reconciliation remain backend infrastructure rather than Mobile configuration;
+- the real Play-distributed Internal-testing versionCode 5 completed a controlled license-test purchase: the purchase sheet opened, backend verification succeeded, backend-owned Premium became active, and Admin CMS showed `billingProvider=google_play` and `renewalStatus=renewal_active`;
 - no public production rollout has occurred.
 
-VersionCode 4 is confirmed installed through the existing Internal testing path. Its `configuration_invalid` diagnostic proved that the normal Premium screen was incorrectly constructing an unavailable adapter with an empty product/base-plan configuration before reaching Google Play. The production factory now constructs the existing Google Play adapter with the AppConfig-owned `premium` Product ID and `monthly` Base Plan ID. The next controlled evidence is the temporary `LVT_BILLING_DIAG` catalog diagnostic sequence emitted through release-visible Flutter/Android logs. It records only product/base-plan/offer metadata and offer-token presence, never an offer-token or purchase-token value. No backend, RTDN, dependency, flavor, runtime, or billing-architecture change was made for this correction.
-
-The runtime composition change must not be described as completed sandbox validation or public production rollout.
+The earlier catalog-visibility / `configuration_invalid` blocker is closed. The initial controlled purchase, subsequent accelerated license-test renewals, and final expiry proved the core path: new purchase -> backend Premium -> backend reconciliation refreshes Google Play subscriptions-v2 authoritative state across renewals -> final expiry -> backend Free -> new-purchase eligibility restored. A few-second transient Free window was observed at accelerated renewal boundaries before reconciliation refreshed state. It is a known non-blocking controlled-test observation, not a production outage or a defect reproduced under a normal monthly billing period; no backend redesign was chosen solely for that observation.
 
 The approved Google Play Product ID is `premium` and Base Plan ID is `monthly`. Mobile does not activate or mutate Play Console products or base plans. No Google Play free trial, introductory offer, annual subscription, or second product is configured by Mobile; the seven-day registration trial remains backend-owned.
 
 New purchase and restore are intentionally separate. A startup store/catalog failure does not suppress a later user-initiated refresh attempt. After a fresh valid catalog entry is selected, the coordinator re-fetches the authenticated additive backend gate immediately before `launchSubscriptionOffer`; missing, stale, invalid, blocked, or unavailable status prevents the store call. Persistent catalog failure after the two bounded user attempts shows a temporary-unavailable message. Restore rechecks store availability and restored-token verification continues through its existing backend path without consulting new-purchase catalog eligibility or the new-purchase gate.
 
-## Remaining controlled sandbox validation
+## Remaining validation before broader rollout
 
-1. Confirm the approved license tester can see Product ID `premium` and its Base Plan ID `monthly` from the closed-testing install.
-2. Run one controlled sandbox purchase and verify token submission, backend acknowledgement, and backend-owned entitlement/status refresh.
-3. Validate pending purchase, cancellation, restore, RTDN/reconciliation, lifecycle handling, and provider isolation against sandbox state.
-4. Record the controlled evidence before considering any broader rollout.
+Core controlled purchase, renewal, and final expiry are proven. They do not prove pending-payment handling, explicit cancellation before natural expiry, restore on a fresh installation, a production real-money purchase, refund/voided-purchase lifecycle, chargeback lifecycle, broad public rollout, or provider-isolation edge cases beyond existing automated/backend coverage.
 
-Production rollout remains a later, separately approved step after controlled sandbox evidence. Apart from approved Product ID `premium` and draft Base Plan ID `monthly`, no credential, Pub/Sub name, price, currency, or production value is defined by this document.
+Before public rollout, re-review legal/public-policy wording and Google Play Data Safety, review test-only production controls (including `TestPurchasesEnabled`), the pending-refund-review decision, monitoring, and rollback readiness. Then prepare a new Internal-testing upload with a new versionCode to distribute signed-out password recovery, manually upload it to the existing Internal testing track, and run a Play-installed smoke covering Login, registration, Forgot password, reset completion, normal sign-in, Premium status, basic billing sanity, and key lesson/voice flows. Only after legal, Data Safety, and that smoke is a separate production-rollout decision appropriate.
+
+Production rollout remains a later, separately approved step after controlled Internal-testing evidence. Product ID `premium` and active Base Plan ID `monthly` are recorded here; no credential, Pub/Sub name, price, currency, or other sensitive production value is defined by this document.
 
 ## Commercial mapping rule
 
