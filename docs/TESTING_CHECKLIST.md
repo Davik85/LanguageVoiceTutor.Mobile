@@ -335,9 +335,9 @@ Current automated verification: `flutter gen-l10n` passed; `flutter analyze` rep
 
 ## Google Play billing checks
 
-### Verified controlled Google Play E2E (2026-08-30)
+### Historical controlled Google Play billing E2E (2026-08-30)
 
-- [x] The real Internal-testing versionCode 5 completed a controlled license-test purchase: Play sheet -> backend verification -> backend-owned Premium -> Admin CMS Google Play provider and active renewal state.
+- [x] The historical Internal-testing versionCode 5 completed a controlled license-test purchase: Play sheet -> backend verification -> backend-owned Premium -> Admin CMS Google Play provider and active renewal state.
 - [x] After reconciliation was enabled, accelerated license-test renewal refreshed the same entitlement through subsequent periods; final test expiry returned backend and Mobile to Free and restored new-purchase eligibility.
 - [x] Record the few-second transient Free window around accelerated renewal boundaries as non-blocking controlled-test evidence only; it is not a production-monthly reproduction.
 - [ ] Pending-payment state, explicit cancellation before natural expiry, fresh-install restore, real-money purchase, refund/voided-purchase, chargeback, broader provider-isolation edges, and public rollout remain separate validation.
@@ -356,9 +356,16 @@ Implemented automated foundation coverage includes:
 - restore remaining independently callable when a new purchase cannot be launched;
 - the backend purchase gate remaining immediately before store launch after the fresh catalog selection;
 - temporary-unavailable purchase and restore wording replacing obsolete future-connection/build-disabled text in every supported ARB source;
-- The earlier `configuration_invalid` diagnostic is historical: current Play-distributed Internal-testing versionCode 5 completed the controlled Google Play E2E and must not be described as catalog-blocked.
+- The earlier `configuration_invalid` diagnostic is historical: the 2026-08-30 Play-distributed Internal-testing versionCode 5 completed the controlled Google Play E2E and must not be described as catalog-blocked.
 - Signed-out password recovery is reachable from Login and reuses the same shared Mobile recovery form as Settings; it uses the existing backend/API flow and requires no backend deployment. Dedicated Login recovery widget tests cover localized entry, email prefill, local validation, signed-out reset confirmation, and registration-mode hiding.
 - backend verification, ownership, acknowledgement, linked-purchase, RTDN/reconciliation, and lifecycle projection coverage.
+
+### Verified Restore Credentials cross-device E2E (2026-08-31)
+
+- [x] Google Play Internal-testing `0.1.0+8` / versionCode 8 was installed on a source device with a registered restore credential.
+- [x] A clean target Android device completed the normal Android device-transfer/restore flow, automatically authenticated into Orralen/Language Voice Tutor without login/password entry, and launched working lessons.
+- [x] FlutterSecureStorage session preferences are excluded from Android 12+ cloud backup/device transfer and legacy full backup, so ordinary app-data restore does not move device-bound encrypted session state; the backend verifies Restore Credentials and issues a new normal session.
+- [ ] This evidence does not cover Google Play Billing purchase restoration, pending purchases, refunds, other billing lifecycles, public rollout, or general public Android availability.
 
 Still required before broader rollout:
 

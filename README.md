@@ -2,7 +2,7 @@
 
 ## ORRALEN branding and continuity boundary
 
-Documentation checkpoint: 2026-08-30. Repository `HEAD` and `origin/main` resolve to `8d0b025824155599df41adfc412d6f48779997c6` (`Expose shared password recovery on Login`). The source version remains `0.1.0+5`.
+Documentation checkpoint: 2026-08-31. Repository `HEAD` and `origin/main` resolve to `befe8b2f4f759223f293e6f36852b5a4687c836e` (`Exclude secure storage from Android backup`). The current Internal-testing source version is `0.1.0+8`.
 
 ORRALEN is the operating/company/master brand presented on the public website and legal/company surfaces, and the operating company is ORRALEN TECHNOLOGIES LTD. Language Voice Tutor remains the current product/application name. This Mobile client has not yet completed a product-facing ORRALEN rebrand; its current visible branding, launcher/in-app assets, and user-facing strings remain in place until a separate audit and approved implementation pass.
 
@@ -22,7 +22,7 @@ Physical testing also confirmed lesson start and expected scenario completion, C
 
 One bounded non-blocking pre-release polish item remains: after microphone permission is denied, Lesson Chat keeps a persistent microphone-denied/open-settings message visible. Before final public release, show that warning only when the learner attempts to use the microphone while permission remains denied. This does not block current release functionality.
 
-An older upload-key reset request may remain in Google Play Console history, but it is not a current blocker: the working upload key matches the existing AAB certificate. The Play-distributed Internal testing build is versionCode 5, from the billing lineage ending at `2dea9a84559e5b2f13fca57e3e032cc828124058`. It predates the current signed-out password-recovery source change. Although current source remains `0.1.0+5`, the next Play upload must use a new versionCode (expected `+6` if no other version decision intervenes); do not represent `8d0b025` as already uploaded.
+An older upload-key reset request may remain in Google Play Console history, but it is not a current blocker: the working upload key matches the existing AAB certificate. The current Play-distributed Internal-testing build is `0.1.0+8` / versionCode 8. It includes signed-out password recovery and Android Restore Credentials support. VersionCode 5 remains historical billing-lineage evidence only.
 
 ## Interface localization and Android first-run defaults
 
@@ -46,9 +46,15 @@ Mobile has a dedicated learner-facing Progress screen, opened from **Settings ->
 
 ## Current mobile navigation and visual system
 
-Mobile now includes a learner-facing Premium screen with backend-confirmed Free, Trial, and Premium status. The single normal Mobile runtime composes the Google Play purchase adapter for Product ID `premium` and Base Plan ID `monthly`. A controlled Google Play E2E on the real Internal-testing versionCode 5 proved purchase-sheet launch, backend verification, backend-owned Premium, and Admin CMS visibility (`billingProvider=google_play`, `renewalStatus=renewal_active`). Mobile never grants Premium locally or owns acknowledgement. Controlled license-test renewal reconciliation and final expiry were also observed; this is not public rollout or real-money purchase validation.
+Mobile now includes a learner-facing Premium screen with backend-confirmed Free, Trial, and Premium status. The single normal Mobile runtime composes the Google Play purchase adapter for Product ID `premium` and Base Plan ID `monthly`. The 2026-08-30 Internal-testing versionCode 5 billing E2E proved purchase-sheet launch, backend verification, backend-owned Premium, and Admin CMS visibility (`billingProvider=google_play`, `renewalStatus=renewal_active`). Mobile never grants Premium locally or owns acknowledgement. Controlled license-test renewal reconciliation and final expiry were also observed; this is not public rollout or real-money purchase validation.
 
-Signed-out password recovery is implemented on `LoginScreen` and reuses the shared Settings recovery form and existing AuthService request/confirm behavior; authenticated password change remains Settings-only. The source change is verified by 6/6 Login recovery tests, 46/46 Settings tests, 564/564 full Flutter tests, clean analysis, zero formatting changes, and localization-key coverage. It requires no backend endpoint or deployment, and is not in the Play-distributed versionCode 5 build.
+Signed-out password recovery is implemented on `LoginScreen` and reuses the shared Settings recovery form and existing AuthService request/confirm behavior; authenticated password change remains Settings-only. The source change is verified by 6/6 Login recovery tests, 46/46 Settings tests, 564/564 full Flutter tests, clean analysis, zero formatting changes, and localization-key coverage. It requires no backend endpoint or deployment and is included in the Play-distributed Internal-testing versionCode 8 build.
+
+## Restore Credentials Internal-testing v8 state
+
+Restore Credentials is an additive Android convenience path, not a replacement for password authentication. After manual authenticated use, Mobile best-effort registers a restore credential; it never transfers an existing refresh token as the restore credential. When a device needs authentication, Mobile attempts Restore Credentials and stores only the normal new backend-issued session after server verification. Explicit logout suppresses/clears automatic restoration. FlutterSecureStorage session state is device-bound and excluded from Android cloud backup, device transfer, and legacy full backup, so ordinary Android app-data restore does not carry stale encrypted session state to another device.
+
+On 2026-08-31, a production-like cross-device test passed using the Google Play Internal-testing v8 build: a source device with a registered restore credential was transferred through the normal Android device-transfer flow to a clean target device; the target automatically authenticated without login/password entry and successfully launched and used lessons. This proves the tested Android/Google Play account-session restoration path only. It does not prove Google Play Billing purchase restoration, refunds, pending purchases, other billing lifecycle scenarios, a Production rollout, or general public Android availability.
 
 Home is a compact, vertically scrollable learner dashboard: current backend-owned streak, existing logo with the three-part Language Voice Tutor wordmark, **Start lesson**, account/plan summary, the final seven backend activity entries, and **Open Settings**. The wordmark uses blue, orange/red, and green vertical gradients; Home action buttons use the blue/white brand gradient. Account and activity surfaces are matte translucent cards over the shared light-blue-to-golden background.
 

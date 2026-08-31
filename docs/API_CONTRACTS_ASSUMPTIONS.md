@@ -40,6 +40,21 @@ Open contract questions:
 
 Account deletion is completed by the shared backend/Admin workflow; Mobile only submits a support request and must not perform local deletion. After backend anonymization, original-email login and refresh fail because refresh tokens are removed. An already-issued access token may remain usable until its normal configured expiry. This is accepted for the current product scale, not an active backend defect: when refresh proves the session invalid, Mobile must clear its stored session. No additional Mobile or backend authentication change is requested for this boundary.
 
+## Restore Credentials contract
+
+Restore Credentials is additive to normal password authentication, which remains available and authoritative. After manual authentication, registration is best effort and uses server-provided WebAuthn options; the restore credential never carries an existing refresh token. When automatic restore succeeds, the backend verifies the assertion and returns the existing normal `AuthResponse` session shape with a newly issued normal refresh token. Explicit logout suppresses/clears automatic Restore Credentials restoration. Account anonymization removes the related public-credential and ceremony state.
+
+Confirmed routes are:
+
+```http
+POST /api/auth/restore-credentials/registration/options  # authenticated
+POST /api/auth/restore-credentials/registration/verify   # authenticated
+POST /api/auth/restore-credentials/assertion/options     # anonymous, discoverable
+POST /api/auth/restore-credentials/assertion/verify      # anonymous; returns normal AuthResponse after verified assertion
+```
+
+The registration routes exchange high-level WebAuthn ceremony options and public credential responses. The assertion routes exchange discovery/assertion ceremony data; Mobile persists a session only after the backend verifies the assertion. The contract does not expose or transfer private credential material, existing refresh tokens, provider secrets, or backend configuration.
+
 ## `/api/me` and settings expectations
 
 Expected `/api/me` behavior:
