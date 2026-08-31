@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Orralen</string>
+    <string name="asset_statements" translatable="false">[{&quot;include&quot;:&quot;https://languagevoicetutor.com/.well-known/assetlinks.json&quot;}]</string>
 </resources>

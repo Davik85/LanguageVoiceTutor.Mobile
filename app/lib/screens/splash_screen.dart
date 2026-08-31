@@ -4,6 +4,7 @@ import '../config/app_config.dart';
 import '../l10n/app_localizations_context.dart';
 import '../services/auth_service.dart';
 import '../services/service_factory.dart';
+import '../services/restore_credentials_service.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 
@@ -47,6 +48,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final result = await _authService.checkSession();
     switch (result) {
       case SessionCheckResult.authenticated:
+        await _authService.syncRestoreCredentialsForCurrentSession();
         if (!mounted) return;
         try {
           final settings = await _authService.fetchUserSettings();
@@ -60,7 +62,15 @@ class _SplashScreenState extends State<SplashScreen> {
         Navigator.pushReplacementNamed(context, HomeScreen.routeName);
       case SessionCheckResult.authenticationRequired:
         if (!mounted) return;
-        Navigator.pushReplacementNamed(context, LoginScreen.routeName);
+        final restored = await _authService.tryAutomaticRestore();
+        if (!mounted) return;
+        if (restored == RestoreAuthenticationResult.restored) {
+          await precacheImage(const AssetImage(AppConfig.logoAsset), context);
+          if (!mounted) return;
+          Navigator.pushReplacementNamed(context, HomeScreen.routeName);
+        } else {
+          Navigator.pushReplacementNamed(context, LoginScreen.routeName);
+        }
       case SessionCheckResult.temporaryFailure:
         if (!mounted) return;
         setState(() => _temporaryFailure = true);

@@ -20,6 +20,7 @@ import '../models/translation.dart';
 import '../models/user_settings.dart';
 import '../models/voice_scenario_resolution.dart';
 import 'session_storage.dart';
+import 'restore_credentials_service.dart';
 
 enum SessionCheckResult {
   authenticated,
@@ -28,12 +29,17 @@ enum SessionCheckResult {
 }
 
 class AuthService {
-  AuthService({required ApiClient apiClient, required SessionStorage storage})
-      : _apiClient = apiClient,
-        _storage = storage;
+  AuthService({
+    required ApiClient apiClient,
+    required SessionStorage storage,
+    RestoreCredentialsService? restoreCredentialsService,
+  })  : _apiClient = apiClient,
+        _storage = storage,
+        _restoreCredentialsService = restoreCredentialsService;
 
   final ApiClient _apiClient;
   final SessionStorage _storage;
+  final RestoreCredentialsService? _restoreCredentialsService;
   bool _lastMultipartRefreshRetry = false;
   Future<_RefreshResult>? _activeRefresh;
 
@@ -997,6 +1003,10 @@ class AuthService {
   }
 
   Future<void> logout() async {
+    final restoreCredentialsService = _restoreCredentialsService;
+    if (restoreCredentialsService != null) {
+      await restoreCredentialsService.prepareForExplicitLogout();
+    }
     final refreshToken = await _storage.readRefreshToken();
     if (refreshToken != null && refreshToken.isNotEmpty) {
       try {
@@ -1019,7 +1029,29 @@ class AuthService {
     final auth = AuthResponse.fromJson(_decodeObject(response.body));
     await _storage.saveTokens(
         accessToken: auth.accessToken, refreshToken: auth.refreshToken);
+    final restoreCredentialsService = _restoreCredentialsService;
+    if (restoreCredentialsService != null) {
+      await restoreCredentialsService.onManualAuthenticationSucceeded(auth);
+    }
     return auth;
+  }
+
+  Future<RestoreAuthenticationResult> tryAutomaticRestore() async =>
+      _restoreCredentialsService?.tryAutomaticRestore() ??
+      RestoreAuthenticationResult.noCredential;
+
+  Future<void> syncRestoreCredentialsForCurrentSession() async {
+    final service = _restoreCredentialsService;
+    if (service == null) return;
+    try {
+      final user = await loadCurrentUser();
+      final token = await _storage.readAccessToken();
+      if (token != null && token.isNotEmpty) {
+        await service.syncForAuthenticatedUser(user, token);
+      }
+    } catch (_) {
+      // Existing authenticated session is never affected by sync failure.
+    }
   }
 
   Future<ApiResponse> _authenticatedGet(
