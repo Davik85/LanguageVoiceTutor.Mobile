@@ -166,8 +166,8 @@ The current release/compliance order is:
 2. Synchronize public Privacy, Terms, seller/company, refund, cancellation, Google Play subscription, and applicable AI/speech/transcription wording.
 3. Re-review Google Play Data Safety against current app behavior and updated public policies.
 4. Review controlled Google Play configuration before public rollout, including test-only controls, `TestPurchasesEnabled`, allowlist, pending-refund-review decision, monitoring, and rollback readiness.
-5. Prepare the next Mobile Internal-testing release with a new versionCode so signed-out password recovery is distributed.
-6. Build, sign, verify, and manually upload that AAB separately to the existing Internal testing track.
+5. Signed-out password recovery is already distributed in the current Play Internal-testing `0.1.0+8` / versionCode 8 build. Do not require a new versionCode solely for the 2026-09-01 purchase-gate legacy-data cleanup or License-testing correction.
+6. Build, sign, verify, and manually upload a new AAB only when a separately approved Mobile artifact change requires it.
 7. Run a Play-installed physical smoke.
 8. Make a separate production-rollout decision.
 
@@ -279,7 +279,7 @@ Completed and remaining Mobile V1 or later phases:
 - Automatic tutor playback.
 - Animated tutor GIF loading and state binding.
 - Fullscreen Conversation mode. **Complete** for current Mobile voice flow; further realtime/continuous conversation remains future work.
-- Google Play public-rollout readiness: controlled Internal-testing purchase, renewal reconciliation, and final expiry are verified, but broader lifecycle and real-money validation remain pending.
+- Google Play public-rollout readiness: controlled Internal-testing purchase, renewal reconciliation, and final expiry, plus the 2026-09-01 real-money first purchase and backend-owned initial Premium/trial deferral, are verified. The actual real-money renewal charge and broader lifecycle validation remain pending.
 - Apple billing.
 - Analytics, crash reporting, and store release work.
 

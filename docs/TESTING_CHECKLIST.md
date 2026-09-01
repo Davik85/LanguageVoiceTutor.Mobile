@@ -340,7 +340,16 @@ Current automated verification: `flutter gen-l10n` passed; `flutter analyze` rep
 - [x] The historical Internal-testing versionCode 5 completed a controlled license-test purchase: Play sheet -> backend verification -> backend-owned Premium -> Admin CMS Google Play provider and active renewal state.
 - [x] After reconciliation was enabled, accelerated license-test renewal refreshed the same entitlement through subsequent periods; final test expiry returned backend and Mobile to Free and restored new-purchase eligibility.
 - [x] Record the few-second transient Free window around accelerated renewal boundaries as non-blocking controlled-test evidence only; it is not a production-monthly reproduction.
-- [ ] Pending-payment state, explicit cancellation before natural expiry, fresh-install restore, real-money purchase, refund/voided-purchase, chargeback, broader provider-isolation edges, and public rollout remain separate validation.
+- [ ] Pending-payment state, explicit cancellation before natural expiry, fresh-install restore, refund/voided-purchase, chargeback, broader provider-isolation edges, and public rollout remain separate validation.
+
+### Purchase-gate and License-testing configuration checkpoint (2026-09-01)
+
+- [x] The backend purchase gate correctly hid **Get Premium** while legacy pre-Live local Paddle rows remained incorrectly `active` after their known end dates; after the guarded status cleanup, affected accounts received purchase eligibility and the button was visible.
+- [x] The cleanup was a one-time legacy-data repair, not a relaxation of the fail-closed ownership gate. Ambiguous live external renewal ownership continues to block a new Google Play purchase to avoid double billing.
+- [x] Google Play License testing is isolated to the dedicated `pay` list rather than the broad Internal Testers list; non-license testers see normal payment methods in the purchase sheet.
+- [x] A non-license-test account completed the real-money Google Play first purchase from Play-installed v8 using normal payment methods; backend-confirmed Premium was active in Mobile and Admin CMS.
+- [x] The existing backend-owned registration trial and continuous Premium tail were applied through the initial Google Play deferral mechanism; fresh provider-management state showed active auto-renew with next payment on 2026-10-08. This is not a Google Play trial or introductory offer.
+- [ ] The actual real-money renewal charge scheduled for 2026-10-08 remains unverified, along with pending payment, explicit pre-expiry cancellation, fresh-install billing restore, refund/voided-purchase, chargeback, and public rollout.
 
 Implemented automated foundation coverage includes:
 
@@ -372,7 +381,7 @@ Still required before broader rollout:
 - capture explicit terminal backend acknowledgement-success evidence if required for final production evidence;
 - pending-payment state and explicit cancellation before natural expiry;
 - restore on a fresh installation;
-- real-money production purchase;
+- actual real-money renewal charge after the verified first purchase and initial deferral;
 - refund / voided-purchase and chargeback lifecycles;
 - broader provider-isolation edge cases;
 - public production rollout.
