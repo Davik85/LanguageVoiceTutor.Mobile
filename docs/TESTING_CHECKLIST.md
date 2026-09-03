@@ -216,7 +216,7 @@ Expected boundary checks:
 - Network/backend abandon failures keep the learner on the lesson screen and allow retry; authentication failures use the existing authentication-required behavior.
 - The backend stale active-session interval remains two minutes, with no backend timeout change and no mobile heartbeat. Confirmed Back releases the session immediately; force-close or termination without confirmed leave falls back to the existing backend timeout.
 - No temporary mobile-only backend endpoints, new safe/catalog endpoints, duplicate mobile prompt/runtime system, or backend changes are introduced without an approved final shared lesson-runtime design.
-- Per-message Translation, real per-message learner Feedback, manual tutor-message TTS playback, learner microphone recording plus speech-to-text, and mobile voice lesson and Conversation mode flows are complete. Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Learner microphone recording plus speech-to-text is complete in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Mobile voice lesson and Conversation mode flows are complete in functional commit `f195dc2` (`feat: add mobile voice lesson and conversation flows`); see `docs/MOBILE_VOICE_LESSON_STATE.md` for the authoritative voice scenario flow. History and Progress are complete; Progress uses its separate backend-owned aggregate contract and must not be calculated from the recent History list. The Google Play billing path has completed controlled Internal-testing purchase, renewal-reconciliation, and expiry validation; remaining broader lifecycle and rollout work is documented below. Analytics, crash reporting, and final store release remain future work. Heartbeat or timeout reduction is optional future reliability work only if real user feedback requires it.
+- Per-message Translation, real per-message learner Feedback, manual tutor-message TTS playback, learner microphone recording plus speech-to-text, and mobile voice lesson and Conversation mode flows are complete. Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Learner microphone recording plus speech-to-text is complete in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Mobile voice lesson and Conversation mode flows are complete in functional commit `f195dc2` (`feat: add mobile voice lesson and conversation flows`); see `docs/MOBILE_VOICE_LESSON_STATE.md` for the authoritative voice scenario flow. History and Progress are complete; Progress uses its separate backend-owned aggregate contract and must not be calculated from the recent History list. The Google Play billing path has completed controlled Internal-testing purchase, renewal-reconciliation, and expiry validation; remaining post-release billing lifecycle evidence is documented below. Analytics and crash reporting remain future work. Heartbeat or timeout reduction is optional future reliability work only if real user feedback requires it.
 
 Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
 
@@ -335,12 +335,20 @@ Current automated verification: `flutter gen-l10n` passed; `flutter analyze` rep
 
 ## Google Play billing checks
 
+### Production publication and release-gate record (2026-09-03)
+
+- [x] Existing Android `0.1.0+8` / versionCode 8 was selected as the Production candidate, submitted after explicit owner approval, and confirmed publicly installable as **Orralen - Language Voice Tutor**; no new AAB or versionCode 9 is claimed.
+- [x] Package registration/signing continuity, Android developer/package verification, target SDK 36, App content/content rating, Data Safety preparation, final Policy-center review, public legal/support pages, and the established Samsung/Huawei Internal-testing coverage were completed before publication.
+- [x] Play-installed v8 Restore Credentials cross-device account/session verification, controlled purchase -> backend Premium -> reconciliation/renewal -> expiry evidence, real-money first purchase, and `.148` initial-deferral provider-precision validation were completed release-gate evidence.
+- [x] Production backend `.151` with `.150` rollback passed health/database checks; Google Play Billing, RTDN, and reconciliation remain enabled. Public availability is distinct from a claim that every billing lifecycle has been observed.
+- [ ] Post-release monitoring: actual normal renewal scheduled for 2026-10-08, pending payment, explicit cancellation, fresh-install billing restore, refund/voided purchase, and chargeback remain unobserved.
+
 ### Historical controlled Google Play billing E2E (2026-08-30)
 
 - [x] The historical Internal-testing versionCode 5 completed a controlled license-test purchase: Play sheet -> backend verification -> backend-owned Premium -> Admin CMS Google Play provider and active renewal state.
 - [x] After reconciliation was enabled, accelerated license-test renewal refreshed the same entitlement through subsequent periods; final test expiry returned backend and Mobile to Free and restored new-purchase eligibility.
 - [x] Record the few-second transient Free window around accelerated renewal boundaries as non-blocking controlled-test evidence only; it is not a production-monthly reproduction.
-- [ ] Pending-payment state, explicit cancellation before natural expiry, fresh-install restore, refund/voided-purchase, chargeback, broader provider-isolation edges, and public rollout remain separate validation.
+- [ ] Pending-payment state, explicit cancellation before natural expiry, fresh-install restore, refund/voided-purchase, chargeback, and broader provider-isolation edges remain post-release validation.
 
 ### Purchase-gate and License-testing configuration checkpoint (2026-09-01)
 
@@ -349,7 +357,7 @@ Current automated verification: `flutter gen-l10n` passed; `flutter analyze` rep
 - [x] Google Play License testing is isolated to the dedicated `pay` list rather than the broad Internal Testers list; non-license testers see normal payment methods in the purchase sheet.
 - [x] A non-license-test account completed the real-money Google Play first purchase from Play-installed v8 using normal payment methods; backend-confirmed Premium was active in Mobile and Admin CMS.
 - [x] The existing backend-owned registration trial and continuous Premium tail were applied through the initial Google Play deferral mechanism; fresh provider-management state showed active auto-renew with next payment on 2026-10-08. This is not a Google Play trial or introductory offer.
-- [ ] The actual real-money renewal charge scheduled for 2026-10-08 remains unverified, along with pending payment, explicit pre-expiry cancellation, fresh-install billing restore, refund/voided-purchase, chargeback, and public rollout.
+- [ ] The actual real-money renewal charge scheduled for 2026-10-08 remains unverified, along with pending payment, explicit pre-expiry cancellation, fresh-install billing restore, refund/voided-purchase, and chargeback.
 
 Implemented automated foundation coverage includes:
 
@@ -374,9 +382,9 @@ Implemented automated foundation coverage includes:
 - [x] Google Play Internal-testing `0.1.0+8` / versionCode 8 was installed on a source device with a registered restore credential.
 - [x] A clean target Android device completed the normal Android device-transfer/restore flow, automatically authenticated into Orralen/Language Voice Tutor without login/password entry, and launched working lessons.
 - [x] FlutterSecureStorage session preferences are excluded from Android 12+ cloud backup/device transfer and legacy full backup, so ordinary app-data restore does not move device-bound encrypted session state; the backend verifies Restore Credentials and issues a new normal session.
-- [ ] This evidence does not cover Google Play Billing purchase restoration, pending purchases, refunds, other billing lifecycles, public rollout, or general public Android availability.
+- [ ] This evidence does not cover Google Play Billing purchase restoration, pending purchases, refunds, or other billing lifecycles. Public Android availability is established separately by the 2026-09-03 Production record.
 
-Still required before broader rollout:
+Post-release lifecycle evidence still to observe:
 
 - capture explicit terminal backend acknowledgement-success evidence if required for final production evidence;
 - pending-payment state and explicit cancellation before natural expiry;
@@ -384,7 +392,6 @@ Still required before broader rollout:
 - actual real-money renewal charge after the verified first purchase and initial deferral;
 - refund / voided-purchase and chargeback lifecycles;
 - broader provider-isolation edge cases;
-- public production rollout.
 
 Local buttons, purchase callbacks, and verified store results never unlock Premium. Mobile must continue to display only backend `SubscriptionStatus`, and full-refund void notifications must remain refund/reconciliation signals rather than automatic revocation.
 
