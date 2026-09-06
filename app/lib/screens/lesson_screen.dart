@@ -573,7 +573,8 @@ class _LessonScreenState extends State<LessonScreen>
         StudyLanguageDefinitions.resolve(settings.studyLanguage);
     var contextInput = text;
     VoiceScenarioDeterministicResult? voiceIntent;
-    if (source == 'voice_transcript' && !hadSelectedContextBeforeResolution) {
+    if (source == 'voice_transcript' &&
+        _isInitialScenarioSelectionTurn) {
       voiceIntent = VoiceScenarioIntentResolver.resolve(
         transcript: text,
         variants: scenario.controlledVariation.contextVariants,
@@ -1163,7 +1164,7 @@ class _LessonScreenState extends State<LessonScreen>
       return;
     }
 
-    if (!_hasSelectedContext) {
+    if (_isInitialScenarioSelectionTurn) {
       setState(() {
         _hintError = null;
         _hintText = LocalizedLessonTextService.buildSetupContextHint(
@@ -1303,6 +1304,10 @@ class _LessonScreenState extends State<LessonScreen>
   bool get _isFirstActiveRoleplayStep =>
       _activeLessonState.phase == LessonLivePhase.activeRoleplay &&
       _activeLessonState.activeRoleplayLearnerTurnCount == 0;
+
+  bool get _isInitialScenarioSelectionTurn =>
+      _activeLessonState.phase == LessonLivePhase.setupContextSelection &&
+      !_hasSelectedContext;
 
   bool get _hasSelectedContext =>
       (_selectedContextId?.isNotEmpty ?? false) ||
@@ -1964,7 +1969,7 @@ class _LessonScreenState extends State<LessonScreen>
         );
       }
       if (normalizedTranscript.unsafeMixedScript) {
-        if (!_hasSelectedContext) {
+        if (_isInitialScenarioSelectionTurn) {
           _debugVoiceScenarioResolution(
             stage: 'deterministic',
             decision: 'unsafe',

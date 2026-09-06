@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/l10n/app_localizations.dart';
+import 'package:language_voice_tutor_mobile/models/audio_transcription.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_runtime.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_session.dart';
 import 'package:language_voice_tutor_mobile/models/user_settings.dart';
@@ -42,6 +43,19 @@ class _Storage implements SessionStorage {
       {required String accessToken, required String refreshToken}) async {}
 }
 
+class _TranscribingAuthService extends AuthService {
+  _TranscribingAuthService(this.transcript)
+      : super(apiClient: _Api(), storage: _Storage());
+
+  final String transcript;
+
+  @override
+  Future<AudioTranscriptionResult> transcribeLearnerAudio({
+    required AudioTranscriptionRequest request,
+  }) async =>
+      AudioTranscriptionResult.success(transcript);
+}
+
 class _Playback implements TutorAudioPlaybackService {
   final _completed = StreamController<Object?>.broadcast();
   @override
@@ -76,6 +90,12 @@ class _Recording extends LearnerAudioRecordingService {
   Future<void> cancel() async => recording = false;
   @override
   Future<bool> get isRecording async => recording;
+  @override
+  Future<LearnerWavValidationResult> validateWavFile(String path) async =>
+      const LearnerWavValidationResult(
+        isValid: true,
+        duration: Duration(seconds: 1),
+      );
   @override
   Future<void> deleteFile(String? path) async {}
   @override
@@ -157,10 +177,13 @@ final _scenario = LessonRuntimeScenario.fromJson({
 Widget _screen({
   _Recording? recording,
   _Permission? permission,
+  AuthService? authService,
+  Future<String?> Function(String text)? onSubmitTranscript,
   String tutorDisplayName = 'Tutor',
 }) =>
     ConversationModeScreen(
-      authService: AuthService(apiClient: _Api(), storage: _Storage()),
+      authService: authService ??
+          AuthService(apiClient: _Api(), storage: _Storage()),
       audioPlaybackService: _Playback(),
       recordingService: recording ?? _Recording(),
       microphonePermissionService: permission ?? _Permission(),
@@ -181,7 +204,7 @@ Widget _screen({
       selectedContextTitle: '',
       tutorDisplayName: tutorDisplayName,
       initialTranscript: const ['Hello'],
-      onSubmitTranscript: (text) async => 'Reply',
+      onSubmitTranscript: onSubmitTranscript ?? (text) async => 'Reply',
       onHint: () async => 'Try saying hello.',
       onFinish: () async {},
       ownsAudioPlaybackService: false,
@@ -190,6 +213,8 @@ Widget _screen({
 Widget _conversation({
   _Recording? recording,
   _Permission? permission,
+  AuthService? authService,
+  Future<String?> Function(String text)? onSubmitTranscript,
   Locale locale = const Locale('en'),
   String tutorDisplayName = 'Tutor',
 }) =>
@@ -200,6 +225,8 @@ Widget _conversation({
       home: _screen(
         recording: recording,
         permission: permission,
+        authService: authService,
+        onSubmitTranscript: onSubmitTranscript,
         tutorDisplayName: tutorDisplayName,
       ),
     );
@@ -265,6 +292,33 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('conversation-hint-card')), findsNothing);
     expect(recording.recording, isTrue);
+  });
+
+  testWidgets('recognized speech submits through the supplied normal reply path',
+      (tester) async {
+    final recording = _Recording();
+    var normalReplyCallCount = 0;
+    await tester.pumpWidget(_conversation(
+      recording: recording,
+      authService: _TranscribingAuthService('Let us talk about travel.'),
+      onSubmitTranscript: (text) async {
+        normalReplyCallCount++;
+        expect(text, 'Let us talk about travel.');
+        return 'That sounds great.';
+      },
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('conversation-mode-record-button')));
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 550)));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('conversation-mode-record-button')));
+    await tester.pumpAndSettle();
+
+    expect(normalReplyCallCount, 1);
+    expect(find.text('Let us talk about travel.'), findsOneWidget);
+    expect(find.text('That sounds great.'), findsOneWidget);
   });
 
   testWidgets('temporary microphone denial stays retryable without settings',

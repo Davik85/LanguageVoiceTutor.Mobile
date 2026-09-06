@@ -1421,6 +1421,8 @@ void main() {
     expect(request.lessonPhase, 'active_roleplay');
     expect(request.learnerTurnCount, 1);
     expect(request.isContextSelectionTurn, isFalse);
+    expect(request.selectedContextVariantId, isEmpty);
+    expect(request.selectedContextTitle, isEmpty);
   });
 
   testWidgets('custom context starts locally and next reply is turn one',
@@ -1943,6 +1945,38 @@ void main() {
     expect(find.byKey(const Key('lesson-hint-card')), findsNothing);
   });
 
+  testWidgets('Free Conversation Hint uses the active-roleplay backend path',
+      (tester) async {
+    final auth = FakeAuthService(
+      scenario: _runtimeScenario(
+        lessonType: 'free_conversation',
+        exampleHint: '',
+      ),
+    );
+    const selection = LessonStartSelection(
+      level: 'A1 Beginner',
+      topicId: 'not-a-free-conversation-id',
+      topicTitle: 'Free Conversation',
+      subtopicId: '601',
+      subtopicTitle: 'Open conversation',
+      situation: 'Open conversation',
+      lessonContentId: 'free_conversation_open_conversation',
+    );
+    await tester.pumpWidget(_lessonScreen(auth, selection: selection));
+    await tester.pumpAndSettle();
+
+    final hint = find.byKey(const Key('lesson-action-hint'));
+    await _showWidget(tester, hint);
+    await tester.tap(hint);
+    await tester.pumpAndSettle();
+
+    expect(auth.requestLessonChatHintCallCount, 1);
+    expect(auth.lastHintRequest?.lessonPhase, 'active_roleplay');
+    expect(auth.lastHintRequest?.selectedContextVariantId, isEmpty);
+    expect(auth.lastHintRequest?.selectedContextTitle, isEmpty);
+    expect(find.textContaining('You can choose:'), findsNothing);
+  });
+
   testWidgets('Hint reports committed wrap-up state after the soft boundary',
       (tester) async {
     final auth = FakeAuthService(
@@ -2378,6 +2412,44 @@ void main() {
     expect(auth.persistedMessages.where((message) => message.role == 'user'),
         hasLength(1));
     expect(auth.persistedMessages, hasLength(2));
+  });
+
+  testWidgets(
+      'Free Conversation Auto-send voice submits one normal active-roleplay reply',
+      (tester) async {
+    final auth = FakeAuthService(
+      studyLanguage: 'en',
+      transcriptionText: 'Let us talk about travel.',
+      scenario: _runtimeScenario(lessonType: 'free_conversation'),
+      voiceScenarioFailure: true,
+    );
+    const selection = LessonStartSelection(
+      level: 'A1 Beginner',
+      topicId: 'not-a-free-conversation-id',
+      topicTitle: 'Free Conversation',
+      subtopicId: '601',
+      subtopicTitle: 'Open conversation',
+      situation: 'Open conversation',
+      lessonContentId: 'free_conversation_open_conversation',
+    );
+    await tester.pumpWidget(_lessonScreen(
+      auth,
+      selection: selection,
+      recordingService: FakeSuccessfulRecordingService(),
+      microphonePermissionService: FakeLearnerMicrophonePermissionService(
+        statuses: [LearnerMicrophonePermissionStatus.granted],
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('lesson-auto-send-voice-switch')));
+    await _autoSendOneRecording(tester);
+
+    expect(auth.resolveVoiceScenarioCallCount, 0);
+    expect(auth.sendLessonChatReplyCallCount, 1);
+    expect(auth.lastLessonChatRequest?.isContextSelectionTurn, isFalse);
+    expect(auth.lastLessonChatRequest?.lessonPhase, 'active_roleplay');
+    expect(find.textContaining('Scenario matching is temporarily unavailable'),
+        findsNothing);
   });
 
   testWidgets('voice intent starts canonical CMS scenario without reply call',
