@@ -1,12 +1,18 @@
 # Language Voice Tutor Mobile
 
+## 2026-09-06 Android Production v9 review checkpoint
+
+Current Mobile source is `0af802958a6a42116ecc1d8084ebdecc12e11406` (`Bump Android version to 0.1.0+9`) with Android `0.1.0+9` / versionCode `9`. The signed release artifact is `app/build/app/outputs/bundle/release/app-release.aab` (196311466 bytes, SHA-256 `C301B36333FB8B70AB8A7372D5E74BA62AC9810AD6704730234BCBBE951B703C`); `jarsigner` reported `jar verified`. Google Play Console accepted v9 into the Production release workflow and, as of 2026-09-06, shows it under review / changes under review for the full Production rollout. Managed publishing is shown as disabled. This is not approval, rollout, or public availability: Android `0.1.0+8` / versionCode 8 remains the last confirmed public Production release.
+
+The production Free Conversation regression was corrected in `fefbac3f366920b980f831ddd55c18e2734471a0` (`Fix Free Conversation voice scenario handling`). The actual lesson phase is authoritative: scenario resolution and setup-context Hint behavior run only during the initial `setupContextSelection` phase. Free Conversation remains in active roleplay without a selected context, so its voice turns use normal lesson replies and its Hint uses the active-roleplay path. Automated checks and physical Android verification covered Free Conversation Hint, voice Auto-send, Conversation mode, and ordinary scenario selection. No backend, API-contract, billing, subscription, CMS, dependency, Flutter-version, or production-backend change was required.
+
 ## 2026-09-03 public Android Production checkpoint
 
-Android `0.1.0+8` / Google Play versionCode `8` is publicly available in Production as **Orralen - Language Voice Tutor**, published by **ORRALEN TECHNOLOGIES LTD**. The existing v8 Play artifact was selected as the Production candidate, submitted for review after owner approval, and public install availability was confirmed on 2026-09-03; no new AAB or versionCode 9 is claimed. Package `com.languagevoicetutor.mobile`, the Language Voice Tutor product/account/backend identity, and existing entitlement/billing model remain unchanged. Production backend is `0.1.35-backend.151` with `.150` rollback.
+Android `0.1.0+8` / Google Play versionCode `8` was publicly available in Production as **Orralen - Language Voice Tutor**, published by **ORRALEN TECHNOLOGIES LTD**. The existing v8 Play artifact was selected as the Production candidate, submitted for review after owner approval, and public install availability was confirmed on 2026-09-03. Package `com.languagevoicetutor.mobile`, the Language Voice Tutor product/account/backend identity, and existing entitlement/billing model remain unchanged. Production backend is `0.1.35-backend.151` with `.150` rollback.
 
 ## ORRALEN branding and continuity boundary
 
-Documentation checkpoint: 2026-09-03. Repository main source resolves to `4a3637a34a47344d292cac41400367185116c7ac` (`Document Google Play real-money billing validation`). Version `0.1.0+8` is publicly available in Google Play Production.
+Documentation checkpoint: 2026-09-06. Repository main source resolves to `0af802958a6a42116ecc1d8084ebdecc12e11406` (`Bump Android version to 0.1.0+9`), which is under Google Play Production review. Version `0.1.0+8` remains the last confirmed public release.
 
 ORRALEN is the operating/company/master brand presented on the public website and legal/company surfaces, and the operating company is ORRALEN TECHNOLOGIES LTD. Language Voice Tutor remains the current product/application name. This Mobile client has not yet completed a product-facing ORRALEN rebrand; its current visible branding, launcher/in-app assets, and user-facing strings remain in place until a separate audit and approved implementation pass.
 

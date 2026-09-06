@@ -12,6 +12,10 @@ At startup a valid existing local session always wins. If normal authentication 
 
 The Android manifest declares the app-side Digital Asset Links `asset_statements` include for `https://languagevoicetutor.com/.well-known/assetlinks.json`; the website-hosted `assetlinks.json` is published and live with the required relations and verified Play App Signing certificate fingerprints. Production backend Restore Credentials is enabled with the reviewed/applied foundation migration and the verified Play application-signing origins. FlutterSecureStorage shared preferences are excluded from Android 12+ cloud backup and device transfer and legacy full backup because ordinary session state is device-bound. A 2026-08-31 cross-device test using Play-installed v8 passed: the target device automatically authenticated after normal Android device transfer and lessons worked. This verifies account/session restoration only, not Google Play billing restoration. Android v8 is separately publicly available in Google Play Production as of 2026-09-03.
 
+## Android v9 Production review checkpoint (2026-09-06)
+
+Current source is `0af802958a6a42116ecc1d8084ebdecc12e11406` with `0.1.0+9` / versionCode 9. Its signed AAB was verified and accepted into the Google Play Production workflow, where it is currently under review / changes under review for the full rollout; it is not yet approved or publicly available. Version 8 remains the last confirmed public Production release. This checkpoint does not retest or relabel the historical v8 Restore Credentials account/session validation as v9 evidence.
+
 ## Interface localization and language ownership
 
 Mobile selects fourteen interface locales: `en`, `ru`, `es`, `fr`, `de`, `it`, `pt-PT`, `bg`, `hr`, `sr-Latn`, `pl`, `ja`, `ko`, and `ar`. The selectable catalogs contain 453 messages each. Generated `pt` and `sr` are internal `gen-l10n` fallbacks, producing 16 generated variants but not more selectable locales.
@@ -166,8 +170,8 @@ The current release/compliance order is:
 2. Synchronize public Privacy, Terms, seller/company, refund, cancellation, Google Play subscription, and applicable AI/speech/transcription wording.
 3. Re-review Google Play Data Safety against current app behavior and updated public policies.
 4. Monitor Google Play post-release configuration, lifecycle evidence, and rollback readiness without reopening closed publication gates.
-5. Signed-out password recovery is distributed in the public Google Play `0.1.0+8` / versionCode 8 release. No versionCode 9 was required for the 2026-09-01 purchase-gate legacy-data cleanup or License-testing correction.
-6. Build, sign, verify, and manually upload a new AAB only when a separately approved Mobile artifact change requires it.
+5. Signed-out password recovery is distributed in the public Google Play `0.1.0+8` / versionCode 8 release. Current source `0.1.0+9` / versionCode 9 is under Production review, not yet publicly available.
+6. Do not build or upload another AAB while v9 is under review; a future artifact requires separate approval.
 7. Run a Play-installed physical smoke.
 8. Observe the remaining post-release lifecycle evidence.
 

@@ -217,7 +217,7 @@ Expected boundary checks:
 - The backend stale active-session interval remains two minutes, with no backend timeout change and no mobile heartbeat. Confirmed Back releases the session immediately; force-close or termination without confirmed leave falls back to the existing backend timeout.
 - No temporary mobile-only backend endpoints, new safe/catalog endpoints, duplicate mobile prompt/runtime system, or backend changes are introduced without an approved final shared lesson-runtime design.
 - Per-message Translation, real per-message learner Feedback, manual tutor-message TTS playback, learner microphone recording plus speech-to-text, and mobile voice lesson and Conversation mode flows are complete. Manual tutor-message TTS playback is complete in functional commit `28356ff` (`Add mobile tutor voice playback`). Learner microphone recording plus speech-to-text is complete in functional commit `e2ec9d0cdb88b6eab8b1100d46188963e05f723b` (`Add mobile speech recording and transcription`). Mobile voice lesson and Conversation mode flows are complete in functional commit `f195dc2` (`feat: add mobile voice lesson and conversation flows`); see `docs/MOBILE_VOICE_LESSON_STATE.md` for the authoritative voice scenario flow. History and Progress are complete; Progress uses its separate backend-owned aggregate contract and must not be calculated from the recent History list. The Google Play billing path has completed controlled Internal-testing purchase, renewal-reconciliation, and expiry validation; remaining post-release billing lifecycle evidence is documented below. Analytics and crash reporting remain future work. Heartbeat or timeout reduction is optional future reliability work only if real user feedback requires it.
-- Post-release v8 regression check: Free Conversation enters active roleplay without a selected context. Its Lesson Chat Auto-send and Conversation mode voice transcripts use the normal reply path without scenario resolution; Hint uses the active-roleplay example or backend Hint path, never the setup-context hint.
+- Post-release v8 regression check: Free Conversation enters active roleplay without a selected context. Its Lesson Chat Auto-send and Conversation mode voice transcripts use the normal reply path without scenario resolution; Hint uses the active-roleplay example or backend Hint path, never the setup-context hint. The corrective commit is `fefbac3f366920b980f831ddd55c18e2734471a0`; `flutter analyze`, both focused voice/lesson suites, the full Flutter suite, and `git diff --check` passed before commit, followed by physical Android verification of Free Conversation Hint, Auto-send, Conversation mode, and ordinary scenario selection.
 
 Before changing mobile lesson behavior, read the desktop/CMS/backend lesson flow docs and inspect the existing desktop flow. Do not create new backend endpoints just because the mobile client does not yet mirror the existing contract.
 
@@ -338,11 +338,18 @@ Current automated verification: `flutter gen-l10n` passed; `flutter analyze` rep
 
 ### Production publication and release-gate record (2026-09-03)
 
-- [x] Existing Android `0.1.0+8` / versionCode 8 was selected as the Production candidate, submitted after explicit owner approval, and confirmed publicly installable as **Orralen - Language Voice Tutor**; no new AAB or versionCode 9 is claimed.
+- [x] Existing Android `0.1.0+8` / versionCode 8 was selected as the Production candidate, submitted after explicit owner approval, and confirmed publicly installable as **Orralen - Language Voice Tutor**. Its later v9 successor is recorded separately as under review below.
 - [x] Package registration/signing continuity, Android developer/package verification, target SDK 36, App content/content rating, Data Safety preparation, final Policy-center review, public legal/support pages, and the established Samsung/Huawei Internal-testing coverage were completed before publication.
 - [x] Play-installed v8 Restore Credentials cross-device account/session verification, controlled purchase -> backend Premium -> reconciliation/renewal -> expiry evidence, real-money first purchase, and `.148` initial-deferral provider-precision validation were completed release-gate evidence.
 - [x] Production backend `.151` with `.150` rollback passed health/database checks; Google Play Billing, RTDN, and reconciliation remain enabled. Public availability is distinct from a claim that every billing lifecycle has been observed.
 - [ ] Post-release monitoring: actual normal renewal scheduled for 2026-10-08, pending payment, explicit cancellation, fresh-install billing restore, refund/voided purchase, and chargeback remain unobserved.
+
+### Production v9 review checkpoint (2026-09-06)
+
+- [x] Source `0af802958a6a42116ecc1d8084ebdecc12e11406` is `0.1.0+9` / versionCode 9. The signed `app/build/app/outputs/bundle/release/app-release.aab` is 196311466 bytes with SHA-256 `C301B36333FB8B70AB8A7372D5E74BA62AC9810AD6704730234BCBBE951B703C`; `jarsigner` reported `jar verified`.
+- [x] Google Play Console accepted v9 into the Production release workflow. As of 2026-09-06 it is under review / changes under review for the full rollout, with managed publishing shown as disabled.
+- [ ] v9 is not yet approved, rolled out, or publicly available. Version 8 remains the last confirmed public Production release.
+- [x] `fefbac3f366920b980f831ddd55c18e2734471a0` corrected the Free Conversation phase boundary: the resolver and setup Hint run only during initial `setupContextSelection`. Automated verification and physical Android checks passed for Free Conversation Hint, Auto-send, Conversation mode, and ordinary scenario selection.
 
 ### Historical controlled Google Play billing E2E (2026-08-30)
 
