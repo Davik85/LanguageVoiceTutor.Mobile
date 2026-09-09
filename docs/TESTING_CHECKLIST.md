@@ -313,7 +313,7 @@ Before any Mobile account-deletion UX change, verify that submission remains a b
 
 ## Stage 1 interface localization checks
 
-Local Android practice reminders are implemented with `flutter_local_notifications`, `flutter_timezone`, and `timezone`. Automated verification runs `flutter test test/services/practice_reminder_service_test.dart test/services/practice_reminder_preferences_test.dart`, `flutter test test/home_screen_test.dart test/settings_screen_test.dart`, `flutter test`, and `flutter build apk --debug`. Physical Android checks remain: Android 13+ permission timing and denial/settings recovery, notification delivery at device-local times across timezone changes, and receiver-based restoration after reboot.
+Local Android practice reminders are implemented with `flutter_local_notifications`, `flutter_timezone`, and `timezone`. Automated verification runs `flutter test test/services/practice_reminder_service_test.dart test/services/practice_reminder_preferences_test.dart`, `flutter test test/home_screen_test.dart test/settings_screen_test.dart`, `flutter test`, and `flutter build apk --debug`. This implementation coverage does not make reminders an entirely green public-v9 baseline; the current production regression and required v10 re-verification are recorded below. Physical Android checks include Android 13+ permission timing and denial/settings recovery, notification delivery at device-local times across timezone changes, and receiver-based restoration after reboot.
 
 The current localization implementation uses Flutter `gen-l10n` with fourteen selectable locales: `en`, `ru`, `es`, `fr`, `de`, `it`, `pt-PT`, `bg`, `hr`, `sr-Latn`, `pl`, `ja`, `ko`, and `ar`. Each selectable catalog has 453 messages. Generated generic `pt` and `sr` are internal fallbacks, producing 16 generated variants rather than additional application selections. Physical geometry remains fixed LTR, including Arabic localized text.
 
@@ -334,21 +334,31 @@ The current localization implementation uses Flutter `gen-l10n` with fourteen se
 
 Current automated verification: `flutter gen-l10n` passed; `flutter analyze` reported no issues; the complete Flutter suite passed 479 tests; and `flutter build apk --debug` succeeded. The only build notice was the non-blocking `flutter_timezone` future Kotlin Gradle migration warning. Focused resolver, locale-controller, Splash, Login/registration, localization-resource, and fixed-LTR directionality tests are present. Historical counts elsewhere in this checklist remain historical feature evidence, not the current full-suite baseline.
 
+## Current Android v9 post-release verification (2026-09-09)
+
+- [x] Android `0.1.0+9` / versionCode 9 is publicly available in Google Play Production.
+- [x] Against production backend `0.1.35-backend.156`, multilingual Lesson Hint smoke passed on several non-English study languages, and repeated Hint requests remained in the selected study language. English remains the compatibility/default path for missing or unknown study-language ids.
+- [x] The Hint correction was backend-owned; the existing Mobile request/API contract was unchanged, and no Mobile rebuild was required.
+- [ ] Practice reminders are a known non-critical public-v9 regression deferred to Mobile v10. Settings can show reminders enabled and notification permission/channel allowed, but an update can show `Unable to update reminders right now. Please try again.` and leave no scheduled Orralen reminder alarms.
+- [ ] V10 reminder verification must cover successful rescheduling; preservation or recovery when replacement scheduling fails; actual Android alarms and notification delivery; reboot and timezone behavior where appropriate; and actionable failure diagnostics.
+
+Current reminder reconciliation cancels existing schedules before creating replacements, so a later scheduling failure can leave no reminders. The client currently hides the underlying scheduling exception behind a generic failure result. The exact Android/plugin exception and root cause remain unconfirmed; do not claim an exact-alarm permission problem or another speculative cause.
+
 ## Google Play billing checks
 
 ### Production publication and release-gate record (2026-09-03)
 
-- [x] Existing Android `0.1.0+8` / versionCode 8 was selected as the Production candidate, submitted after explicit owner approval, and confirmed publicly installable as **Orralen - Language Voice Tutor**. Its later v9 successor is recorded separately as under review below.
+- [x] Existing Android `0.1.0+8` / versionCode 8 was selected as the Production candidate, submitted after explicit owner approval, and confirmed publicly installable as **Orralen - Language Voice Tutor**. Its later public-v9 successor is recorded separately below.
 - [x] Package registration/signing continuity, Android developer/package verification, target SDK 36, App content/content rating, Data Safety preparation, final Policy-center review, public legal/support pages, and the established Samsung/Huawei Internal-testing coverage were completed before publication.
 - [x] Play-installed v8 Restore Credentials cross-device account/session verification, controlled purchase -> backend Premium -> reconciliation/renewal -> expiry evidence, real-money first purchase, and `.148` initial-deferral provider-precision validation were completed release-gate evidence.
 - [x] Production backend `.151` with `.150` rollback passed health/database checks; Google Play Billing, RTDN, and reconciliation remain enabled. Public availability is distinct from a claim that every billing lifecycle has been observed.
 - [ ] Post-release monitoring: actual normal renewal scheduled for 2026-10-08, pending payment, explicit cancellation, fresh-install billing restore, refund/voided purchase, and chargeback remain unobserved.
 
-### Production v9 review checkpoint (2026-09-06)
+### Production v9 public-release checkpoint (2026-09-09)
 
 - [x] Source `0af802958a6a42116ecc1d8084ebdecc12e11406` is `0.1.0+9` / versionCode 9. The signed `app/build/app/outputs/bundle/release/app-release.aab` is 196311466 bytes with SHA-256 `C301B36333FB8B70AB8A7372D5E74BA62AC9810AD6704730234BCBBE951B703C`; `jarsigner` reported `jar verified`.
-- [x] Google Play Console accepted v9 into the Production release workflow. As of 2026-09-06 it is under review / changes under review for the full rollout, with managed publishing shown as disabled.
-- [ ] v9 is not yet approved, rolled out, or publicly available. Version 8 remains the last confirmed public Production release.
+- [x] Google Play Console accepted v9 into the Production release workflow, and v9 is publicly available in Production as of 2026-09-09.
+- [x] Version 8 remains a historical public release; its dated Restore Credentials and other validation evidence is not relabeled as v9 evidence.
 - [x] `fefbac3f366920b980f831ddd55c18e2734471a0` corrected the Free Conversation phase boundary: the resolver and setup Hint run only during initial `setupContextSelection`. Automated verification and physical Android checks passed for Free Conversation Hint, Auto-send, Conversation mode, and ordinary scenario selection.
 
 ### Historical controlled Google Play billing E2E (2026-08-30)
@@ -695,7 +705,7 @@ flutter test test/services/auth_service_test.dart
 flutter test
 ```
 
-Expected current result for the completed Hint flow: `flutter analyze` passes with zero issues, focused lesson screen tests pass, focused AuthService tests pass, and the full Flutter suite passes with 101 tests. Android debug APK build passed. Manual Android Emulator verification passed for context selection, contextual Hint, Finish, and backend-owned Summary. Functional Hint commit: `f9dbc06` (`Add mobile lesson hint flow`). Production backend remains `0.1.35-backend.112`.
+Historical completed-Hint-flow checkpoint: `flutter analyze` passed with zero issues, focused lesson screen tests passed, focused AuthService tests passed, and the full Flutter suite passed with 101 tests. Android debug APK build passed. Manual Android Emulator verification passed for context selection, contextual Hint, Finish, and backend-owned Summary. Functional Hint commit: `f9dbc06` (`Add mobile lesson hint flow`). Production backend was `0.1.35-backend.112` at that checkpoint.
 
 
 ## Production Android Hint flow check
