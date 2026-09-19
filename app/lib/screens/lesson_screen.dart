@@ -760,13 +760,20 @@ class _LessonScreenState extends State<LessonScreen>
         action: 'normal_reply',
       );
     }
-    final resolved = LessonContextSelectionResolver.resolve(
-      scenario: scenario,
-      currentSelectedContextId: _selectedContextId,
-      currentSelectedContextTitle: _selectedContextTitle,
-      learnerInput: contextInput,
-      studyLanguage: studyLanguage,
-    );
+    final resolved =
+        _isInitialScenarioSelectionTurn || hadSelectedContextBeforeResolution
+            ? LessonContextSelectionResolver.resolve(
+                scenario: scenario,
+                currentSelectedContextId: _selectedContextId,
+                currentSelectedContextTitle: _selectedContextTitle,
+                learnerInput: contextInput,
+                studyLanguage: studyLanguage,
+              )
+            : const LessonContextSelection(
+                isContextSelectionTurn: false,
+                isKnownCmsContext: false,
+                isCustomContext: false,
+              );
     _voiceClarificationChoices = const [];
 
     final useLocalCmsContextStart =

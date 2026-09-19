@@ -2448,6 +2448,8 @@ void main() {
     expect(auth.sendLessonChatReplyCallCount, 1);
     expect(auth.lastLessonChatRequest?.isContextSelectionTurn, isFalse);
     expect(auth.lastLessonChatRequest?.lessonPhase, 'active_roleplay');
+    expect(auth.lastLessonChatRequest?.selectedContextVariantId, isEmpty);
+    expect(auth.lastLessonChatRequest?.selectedContextTitle, isEmpty);
     expect(find.textContaining('Scenario matching is temporarily unavailable'),
         findsNothing);
   });

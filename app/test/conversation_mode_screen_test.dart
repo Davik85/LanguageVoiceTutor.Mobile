@@ -317,8 +317,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(normalReplyCallCount, 1);
-    expect(find.text('Let us talk about travel.'), findsOneWidget);
-    expect(find.text('That sounds great.'), findsOneWidget);
+    final dialogue = tester.widget<Text>(
+      find.byKey(const Key('conversation-mode-dialogue')),
+    );
+    expect(
+      dialogue.data,
+      'Let us talk about travel.\n\nThat sounds great.',
+    );
   });
 
   testWidgets('temporary microphone denial stays retryable without settings',
