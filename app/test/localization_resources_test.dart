@@ -96,6 +96,30 @@ void main() {
     }
   });
 
+  test('English auth welcome has exactly three logical lines', () {
+    expect(
+      arb('en')['authWelcomeMessage'],
+      'Welcome to Orralen.\n'
+      'Create an account to start engaging language practice with our '
+      'tutors.\n'
+      'A 7-day trial is included.',
+    );
+  });
+
+  test('every auth welcome has exactly three non-empty logical lines', () {
+    for (final language in languages) {
+      final welcome = arb(language)['authWelcomeMessage'] as String;
+      final lines = welcome.split('\n');
+
+      expect('\n'.allMatches(welcome), hasLength(2),
+          reason: '$language.authWelcomeMessage must contain two newlines');
+      expect(lines, hasLength(3),
+          reason: '$language.authWelcomeMessage must contain three lines');
+      expect(lines.every((line) => line.trim().isNotEmpty), isTrue,
+          reason: '$language.authWelcomeMessage lines must not be blank');
+    }
+  });
+
   test('translations only retain documented intentional English values', () {
     final english = arb('en');
     final englishKeys = messageKeys(english);

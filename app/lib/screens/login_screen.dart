@@ -5,6 +5,7 @@ import '../l10n/app_localizations_context.dart';
 import '../l10n/device_language_defaults.dart';
 import '../services/auth_service.dart';
 import '../services/service_factory.dart';
+import '../theme/app_visuals.dart';
 import '../widgets/password_recovery_form.dart';
 import 'home_screen.dart';
 
@@ -115,104 +116,154 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-          title: Text(
-              _isRegistering ? context.l10n.register : context.l10n.login)),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            Text(context.l10n.signInToApp,
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              autofillHints: const [AutofillHints.email],
-              decoration: InputDecoration(labelText: context.l10n.email),
-              validator: (value) => value == null || !value.contains('@')
-                  ? context.l10n.invalidEmail
-                  : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _passwordController,
-              obscureText: true,
-              autofillHints: const [AutofillHints.password],
-              decoration: InputDecoration(labelText: context.l10n.password),
-              validator: (value) => value == null || value.length < 6
-                  ? context.l10n.enterPassword
-                  : null,
-            ),
-            if (_isRegistering) ...[
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _displayNameController,
-                decoration: InputDecoration(
-                    labelText: context.l10n.displayNameOptional),
-              ),
-            ],
-            if (_error != null) ...[
-              const SizedBox(height: 12),
-              Text(_error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
-            ],
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _isSubmitting
-                  ? null
-                  : () => _submit(register: _isRegistering),
-              child: Text(_isSubmitting
-                  ? context.l10n.pleaseWait
-                  : (_isRegistering
-                      ? context.l10n.register
-                      : context.l10n.login)),
-            ),
-            if (!_isRegistering) ...[
-              TextButton(
-                key: const Key('login-forgot-password'),
-                onPressed: _isSubmitting
-                    ? null
-                    : () => setState(() => _showPasswordRecovery = true),
-                child: Text(context.l10n.forgotPassword),
-              ),
-              if (_showPasswordRecovery) ...[
-                const SizedBox(height: 8),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(context.l10n.passwordRecovery,
-                            style: Theme.of(context).textTheme.titleMedium),
-                        const SizedBox(height: 12),
-                        PasswordRecoveryForm(
-                          authService: _authService,
-                          initialEmail: _emailController.text,
+    return AppVisuals.screenBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 24),
+            children: [
+              const _LoginHero(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      context.l10n.authWelcomeMessage,
+                      key: const Key('login-welcome-message'),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: AppVisuals.textBlue,
+                            height: 1.35,
+                          ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      autofillHints: const [AutofillHints.email],
+                      decoration:
+                          InputDecoration(labelText: context.l10n.email),
+                      validator: (value) =>
+                          value == null || !value.contains('@')
+                              ? context.l10n.invalidEmail
+                              : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      autofillHints: const [AutofillHints.password],
+                      decoration:
+                          InputDecoration(labelText: context.l10n.password),
+                      validator: (value) => value == null || value.length < 6
+                          ? context.l10n.enterPassword
+                          : null,
+                    ),
+                    if (_isRegistering) ...[
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _displayNameController,
+                        decoration: InputDecoration(
+                            labelText: context.l10n.displayNameOptional),
+                      ),
+                    ],
+                    if (_error != null) ...[
+                      const SizedBox(height: 12),
+                      Text(_error!,
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.error)),
+                    ],
+                    const SizedBox(height: 24),
+                    FilledButton(
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => _submit(register: _isRegistering),
+                      child: Text(_isSubmitting
+                          ? context.l10n.pleaseWait
+                          : (_isRegistering
+                              ? context.l10n.register
+                              : context.l10n.login)),
+                    ),
+                    if (!_isRegistering) ...[
+                      TextButton(
+                        key: const Key('login-forgot-password'),
+                        onPressed: _isSubmitting
+                            ? null
+                            : () =>
+                                setState(() => _showPasswordRecovery = true),
+                        child: Text(context.l10n.forgotPassword),
+                      ),
+                      if (_showPasswordRecovery) ...[
+                        const SizedBox(height: 8),
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(context.l10n.passwordRecovery,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium),
+                                const SizedBox(height: 12),
+                                PasswordRecoveryForm(
+                                  authService: _authService,
+                                  initialEmail: _emailController.text,
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
+                    ],
+                    TextButton(
+                      key: const Key('login-mode-switch'),
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => setState(() {
+                                _isRegistering = !_isRegistering;
+                                _showPasswordRecovery = false;
+                                _error = null;
+                              }),
+                      child: Text(_isRegistering
+                          ? context.l10n.alreadyHaveAccount
+                          : context.l10n.createAccount),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ],
-            TextButton(
-              key: const Key('login-mode-switch'),
-              onPressed: _isSubmitting
-                  ? null
-                  : () => setState(() {
-                        _isRegistering = !_isRegistering;
-                        _showPasswordRecovery = false;
-                        _error = null;
-                      }),
-              child: Text(_isRegistering
-                  ? context.l10n.alreadyHaveAccount
-                  : context.l10n.createAccount),
-            ),
-          ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LoginHero extends StatelessWidget {
+  const _LoginHero();
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 3 / 2,
+      child: ShaderMask(
+        key: const Key('login-hero-fade'),
+        blendMode: BlendMode.dstIn,
+        shaderCallback: (bounds) => const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.white, Colors.white, Colors.transparent],
+          stops: [0, 0.72, 1],
+        ).createShader(bounds),
+        child: Image.asset(
+          'assets/brand/login_screen.webp',
+          key: const Key('login-hero-image'),
+          width: double.infinity,
+          fit: BoxFit.cover,
         ),
       ),
     );

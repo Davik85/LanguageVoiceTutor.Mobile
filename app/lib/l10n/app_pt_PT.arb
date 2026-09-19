@@ -53,6 +53,7 @@
   "languageNameFrench": "Francês",
   "languageNameGerman": "Alemão",
   "signInToApp": "Inicie sessão no Language Voice Tutor",
+  "authWelcomeMessage": "Bem-vindo ao Orralen.\nCrie uma conta para começar a praticar línguas de forma envolvente com os nossos tutores.\nEstá incluído um período experimental de 7 dias.",
   "pleaseWait": "Aguarde...",
   "alreadyHaveAccount": "Já tenho uma conta",
   "invalidEmail": "Introduza um endereço de e-mail válido.",

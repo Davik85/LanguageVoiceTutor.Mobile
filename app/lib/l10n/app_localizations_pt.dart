@@ -173,6 +173,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get signInToApp => 'Inicie sessão no Language Voice Tutor';
 
   @override
+  String get authWelcomeMessage =>
+      'Bem-vindo ao Orralen.\nCrie uma conta para começar a praticar línguas de forma envolvente com os nossos tutores.\nEstá incluído um período experimental de 7 dias.';
+
+  @override
   String get pleaseWait => 'Aguarde...';
 
   @override
@@ -1780,6 +1784,10 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
 
   @override
   String get signInToApp => 'Inicie sessão no Language Voice Tutor';
+
+  @override
+  String get authWelcomeMessage =>
+      'Bem-vindo ao Orralen.\nCrie uma conta para começar a praticar línguas de forma envolvente com os nossos tutores.\nEstá incluído um período experimental de 7 dias.';
 
   @override
   String get pleaseWait => 'Aguarde...';

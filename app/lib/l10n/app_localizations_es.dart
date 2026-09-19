@@ -171,6 +171,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get signInToApp => 'Inicia sesión en Language Voice Tutor';
 
   @override
+  String get authWelcomeMessage =>
+      'Te damos la bienvenida a Orralen.\nCrea una cuenta para empezar a practicar idiomas de forma amena con nuestros tutores.\nSe incluye una prueba de 7 días.';
+
+  @override
   String get pleaseWait => 'Espera...';
 
   @override

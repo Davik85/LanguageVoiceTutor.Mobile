@@ -109,10 +109,16 @@ Future<void> _submit(WidgetTester tester, {required bool register}) async {
       find.byType(TextFormField).at(0), 'learner@example.com');
   await tester.enterText(find.byType(TextFormField).at(1), 'password');
   if (register) {
-    await tester.tap(find.text('Create account'));
-    await tester.pump();
+    final modeSwitch = find.byKey(const Key('login-mode-switch'));
+    await tester.ensureVisible(modeSwitch);
+    await tester.pumpAndSettle();
+    await tester.tap(modeSwitch);
+    await tester.pumpAndSettle();
   }
-  await tester.tap(find.byType(FilledButton));
+  final submit = find.byType(FilledButton);
+  await tester.ensureVisible(submit);
+  await tester.pumpAndSettle();
+  await tester.tap(submit);
   await tester.pumpAndSettle();
 }
 

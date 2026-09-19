@@ -172,6 +172,10 @@ class AppLocalizationsSr extends AppLocalizations {
   String get signInToApp => 'Prijavite se u Language Voice Tutor';
 
   @override
+  String get authWelcomeMessage =>
+      'Dobro došli u Orralen.\nNapravite nalog i započnite zanimljivo vežbanje jezika sa našim predavačima.\nUključen je probni period od 7 dana.';
+
+  @override
   String get pleaseWait => 'Sačekajte...';
 
   @override
@@ -1771,6 +1775,10 @@ class AppLocalizationsSrLatn extends AppLocalizationsSr {
 
   @override
   String get signInToApp => 'Prijavite se u Language Voice Tutor';
+
+  @override
+  String get authWelcomeMessage =>
+      'Dobro došli u Orralen.\nNapravite nalog i započnite zanimljivo vežbanje jezika sa našim predavačima.\nUključen je probni period od 7 dana.';
 
   @override
   String get pleaseWait => 'Sačekajte...';

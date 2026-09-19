@@ -53,6 +53,7 @@
   "languageNameFrench": "Français",
   "languageNameGerman": "Deutsch",
   "signInToApp": "Sign in to Language Voice Tutor",
+  "authWelcomeMessage": "Welcome to Orralen.\nCreate an account to start engaging language practice with our tutors.\nA 7-day trial is included.",
   "pleaseWait": "Please wait...",
   "alreadyHaveAccount": "I already have an account",
   "invalidEmail": "Enter a valid email address.",

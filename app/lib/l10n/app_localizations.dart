@@ -442,6 +442,12 @@ abstract class AppLocalizations {
   /// **'Sign in to Language Voice Tutor'**
   String get signInToApp;
 
+  /// No description provided for @authWelcomeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Orralen.\nCreate an account to start engaging language practice with our tutors.\nA 7-day trial is included.'**
+  String get authWelcomeMessage;
+
   /// No description provided for @pleaseWait.
   ///
   /// In en, this message translates to:

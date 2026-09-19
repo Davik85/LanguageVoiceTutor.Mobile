@@ -170,6 +170,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get signInToApp => 'Войдите в Language Voice Tutor';
 
   @override
+  String get authWelcomeMessage =>
+      'Добро пожаловать в Orralen.\nСоздайте аккаунт, чтобы начать увлекательную языковую практику с нашими преподавателями.\nВключён 7-дневный пробный период.';
+
+  @override
   String get pleaseWait => 'Подождите...';
 
   @override

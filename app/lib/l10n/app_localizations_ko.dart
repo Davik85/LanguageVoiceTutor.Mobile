@@ -168,6 +168,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get signInToApp => 'Language Voice Tutor에 로그인';
 
   @override
+  String get authWelcomeMessage =>
+      'Orralen에 오신 것을 환영합니다.\n계정을 만들고 튜터들과 함께 흥미로운 언어 연습을 시작해 보세요.\n7일 체험이 포함됩니다.';
+
+  @override
   String get pleaseWait => '잠시만 기다려 주세요...';
 
   @override
