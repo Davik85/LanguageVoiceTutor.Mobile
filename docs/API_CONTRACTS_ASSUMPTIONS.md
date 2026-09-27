@@ -71,12 +71,14 @@ Expected settings behavior:
 
 Confirmed current settings contract:
 
-- `GET /api/me/settings` and `PUT /api/me/settings` support backend-owned settings fields: `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `speechVoice`, `speechSpeed`, `conversationModeEnabled`, and `selectedTutorId`.
+- `GET /api/me/settings` and `PUT /api/me/settings` support these nine backend-owned settings fields: `displayName`, `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `currentLevel`, `selectedTutorId`, `speechVoice`, `speechSpeed`, and `conversationModeEnabled`.
 - Mobile keeps stable internal dropdown IDs such as `en`, `tr`, and `ru`.
 - `PUT /api/me/settings` serializes `studyLanguage` using the backend-required English study-language name: `English`, `French`, `German`, `Portuguese`, `Spanish`, or `Italian`.
 - `nativeLanguage` and `explanationLanguage` remain in their supported backend ID form.
 - `GET /api/me/settings` parsing accepts both IDs and English names and normalizes them to internal dropdown IDs.
-- Mobile continues to send the complete seven-field settings payload.
+- Mobile sends the current nine-field settings payload through the existing `/api/me/settings` route; `currentLevel` remains the backend-owned learner level.
+- `GET /api/me/settings` returns the learner's saved `displayName`. On `PUT`, omitted or null `displayName` preserves the saved name, empty or whitespace-only clears it, and a non-empty value requires Unicode letters only. Mobile's optional registration name and **Settings -> Profile** editor apply shared letters-only validation, rejecting digits, spaces within a non-empty name, punctuation, emoji, and leading/trailing whitespace with localized learner-safe feedback. A blank Settings value is sent as empty to clear the name.
+- The learner `displayName` is account/profile state, separate from email and account identity; editing it does not change either. It is also separate from tutor display names and personas.
 - `studyLanguage`, `nativeLanguage`, and `explanationLanguage` remain separate backend fields and must not be collapsed into one language preference.
 - Mobile may send `selectedTutorId` to `/api/me/settings` when the user chooses a valid tutor from `GET /api/tutor-options`.
 - Mobile must not document fake local selected-tutor persistence as the source of truth.

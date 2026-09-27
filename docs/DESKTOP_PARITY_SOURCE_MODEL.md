@@ -58,6 +58,8 @@ Current backend-supported mobile settings fields from `GET /api/me/settings` and
 - `nativeLanguage`
 - `studyLanguage`
 - `explanationLanguage`
+- `displayName`
+- `currentLevel`
 - `speechVoice`
 - `speechSpeed`
 - `conversationModeEnabled`
@@ -65,11 +67,13 @@ Current backend-supported mobile settings fields from `GET /api/me/settings` and
 
 Current visible mobile Settings navigation is:
 
-- **Profile**: Account, Learning, Audio, and Save settings.
+- **Profile**: Account with editable learner display name, Learning, Audio, and Save settings.
 - **Lessons**: Lesson history, Progress, and Rewards.
 - **App**: Password & recovery, Feedback & reports, and Practice reminders.
 
 `selectedTutorId` is part of the current settings contract. `GET /api/tutor-options` provides available tutors, and `PUT /api/me/settings` persists a valid selected tutor ID. Tutor voice remains a separate `speechVoice` setting and must not be overwritten automatically when the selected tutor changes.
+
+The learner's optional `displayName` is backend-owned account/profile state exposed in **Settings -> Profile** through the existing `/api/me/settings` route. Mobile accepts Unicode letters only for a non-empty name; blank clears it, successful saves show the backend-confirmed value, and failed saves restore the last confirmed value. Editing it does not change the account email or identity. This learner name is distinct from the selected tutor's display name and persona.
 
 ## Language catalogs
 

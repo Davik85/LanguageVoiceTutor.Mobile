@@ -68,9 +68,9 @@ Before creating the Flutter skeleton, verify:
 - Android minimum SDK and target SDK are confirmed.
 - Flutter version/channel is confirmed.
 
-## Verified Android skeleton checks
+## Historical verified Android skeleton checks
 
-The Android skeleton baseline has been verified locally on Android Emulator. Run these commands from `app/`:
+The initial Android skeleton baseline was verified locally on Android Emulator. Commands recorded from `app/` for that checkpoint:
 
 ```bash
 flutter clean
@@ -80,9 +80,9 @@ flutter test
 flutter run -d emulator-5554
 ```
 
-Expected result: the placeholder Flutter app builds, installs, and runs on the emulator using package/application id `com.languagevoicetutor.mobile`. If the active emulator has a different id, replace `emulator-5554` with the id shown by `flutter devices`.
+Expected result at that checkpoint: the placeholder Flutter app built, installed, and ran on the emulator using package/application id `com.languagevoicetutor.mobile`. If the active emulator had a different id, `emulator-5554` was replaced with the id shown by `flutter devices`.
 
-Current verified Android build stack:
+Android build stack verified at that checkpoint:
 
 - Gradle 8.14
 - Android Gradle Plugin 8.11.1
@@ -90,9 +90,9 @@ Current verified Android build stack:
 - Android NDK 28.2.13676358 for debug builds and Flutter plugin native builds
 - Java/Kotlin target 17
 
-## Current skeleton checks
+## Historical skeleton checks
 
-For the current placeholder skeleton, keep verifying:
+For the initial placeholder skeleton, the checks were:
 
 - Flutter package resolution.
 - Static analysis.
@@ -136,11 +136,11 @@ flutter analyze
 flutter test
 ```
 
-## Current verified lesson-session placeholder baseline
+## Historical lesson-session placeholder baseline
 
-The current mobile baseline includes backend lesson session start from the lesson placeholder screen and service/model-only support for the session-owned reply placeholder endpoint. Real mobile AI chat is not implemented, and the reply support is not UI-wired.
+At this earlier implementation checkpoint, Mobile had backend lesson session start from the lesson placeholder screen and service/model-only support for the session-owned reply placeholder endpoint. Real mobile AI chat was not yet implemented, and the reply support was not UI-wired. The production text lesson runtime recorded later in this checklist supersedes this placeholder state.
 
-Run these commands from `app/` for the restored baseline:
+Commands recorded from `app/` for that baseline:
 
 ```bash
 dart format --set-exit-if-changed lib test
@@ -148,17 +148,17 @@ flutter analyze
 flutter test
 ```
 
-Expected current results:
+Recorded results at that checkpoint:
 
 - `git diff --check` passes.
 - `dart format --set-exit-if-changed lib test` reports 39 files and 0 changes.
 - `flutter analyze` reports `No issues found`.
 - `flutter test` reports 90 passing tests.
 - Settings/password recovery remains part of the verified baseline.
-- Lesson session start is integrated from the placeholder screen, but manual emulator verification currently shows it can fail with `Could not start the lesson. Please try again.`
-- Lesson runtime remains placeholder-only; real mobile AI chat is not implemented.
+- Lesson session start was integrated from the placeholder screen, but manual emulator verification then showed it could fail with `Could not start the lesson. Please try again.`
+- Lesson runtime was then placeholder-only; real mobile AI chat was not yet implemented.
 
-Future lesson runtime implementation rule:
+Lesson runtime implementation rule recorded at that checkpoint:
 
 - Do not combine service, models, navigation, UI, and widget tests in one large PR.
 - The first PR should be read-only investigation or service-only.
@@ -314,7 +314,7 @@ Before any Mobile account-deletion UX change, verify that submission remains a b
 
 ## Stage 1 interface localization checks
 
-Local Android practice reminders are implemented with `flutter_local_notifications`, `flutter_timezone`, and `timezone`. Automated verification runs `flutter test test/services/practice_reminder_service_test.dart test/services/practice_reminder_preferences_test.dart`, `flutter test test/home_screen_test.dart test/settings_screen_test.dart`, `flutter test`, and `flutter build apk --debug`. This implementation coverage does not make reminders an entirely green current baseline; v10 shipped without a reminder implementation change, and the open production issue plus future maintenance verification scope are recorded below. Physical Android checks include Android 13+ permission timing and denial/settings recovery, notification delivery at device-local times across timezone changes, and receiver-based restoration after reboot.
+Local Android practice reminders are implemented with `flutter_local_notifications`, `flutter_timezone`, and `timezone`. The v11 fix has focused reminder-service, reminder-card, and Settings regression tests plus the release preparation and two-device release-APK delivery evidence recorded below. The public-v10 scheduling issue is CLOSED in v11. Android 13+ permission timing and denial/settings recovery remain relevant checks; physical timezone-change and reboot-restoration testing was not part of the verified two-device v11 pass.
 
 The current localization implementation uses Flutter `gen-l10n` with fourteen selectable locales: `en`, `ru`, `es`, `fr`, `de`, `it`, `pt-PT`, `bg`, `hr`, `sr-Latn`, `pl`, `ja`, `ko`, and `ar`. Each selectable catalog has 454 messages, including the localized authentication welcome message. Generated generic `pt` and `sr` are internal fallbacks, producing 16 generated variants rather than additional application selections. Physical geometry remains fixed LTR, including Arabic localized text.
 
@@ -333,17 +333,17 @@ The current localization implementation uses Flutter `gen-l10n` with fourteen se
 - Verify the obsolete voice-transcription disclosure is absent.
 - Verify localization never translates AI replies, learner messages, backend-generated content, CMS identifiers, canonical scenario keys, internal IDs, or backend data.
 
-Current release-gate verification: `flutter gen-l10n`, `flutter analyze`, and the complete Flutter suite with concurrency 1 passed before the signed v10 release AAB was built and verified. No unverified total test count is asserted for the final v10 gate. The non-blocking `flutter_timezone` future Kotlin Gradle migration warning remains recorded. Focused resolver, locale-controller, Splash, Login/registration, localization-resource, and fixed-LTR directionality tests are present. Historical counts elsewhere in this checklist remain historical feature evidence, not the current full-suite baseline.
+Historical v10 release-gate verification: `flutter gen-l10n`, `flutter analyze`, and the complete Flutter suite with concurrency 1 passed before the signed v10 release AAB was built and verified. No unverified total test count is asserted for the final v10 gate. The non-blocking `flutter_timezone` future Kotlin Gradle migration warning remains recorded. Focused resolver, locale-controller, Splash, Login/registration, localization-resource, and fixed-LTR directionality tests are present. Historical counts elsewhere in this checklist remain historical feature evidence, not the v11 targeted-test count.
 
 ## Historical Android v9 post-release verification (2026-09-09)
 
 - [x] Android `0.1.0+9` / versionCode 9 is publicly available in Google Play Production.
 - [x] Against production backend `0.1.35-backend.156`, multilingual Lesson Hint smoke passed on several non-English study languages, and repeated Hint requests remained in the selected study language. English remains the compatibility/default path for missing or unknown study-language ids.
 - [x] The Hint correction was backend-owned; the existing Mobile request/API contract was unchanged, and no Mobile rebuild was required.
-- [ ] Practice reminders were recorded as a known non-critical public-v9 regression and remain open after public v10. Settings can show reminders enabled and notification permission/channel allowed, but an update can show `Unable to update reminders right now. Please try again.` and leave no scheduled Orralen reminder alarms. V10 made no reminder implementation change and did not close this item.
-- [ ] A separately approved future Mobile maintenance release must verify successful rescheduling; preservation or recovery when replacement scheduling fails; actual Android alarms and notification delivery; reboot and timezone behavior where appropriate; and actionable failure diagnostics.
+- [ ] At the v9/v10 checkpoints, practice reminders were a known non-critical regression. Settings could show reminders enabled and notification permission/channel allowed, but an update could show `Unable to update reminders right now. Please try again.` and leave no scheduled Orralen reminder alarms. V10 made no reminder implementation change; v11 later closed this item as recorded below.
+- [ ] At that historical checkpoint, a future Mobile maintenance release still needed to verify successful rescheduling; preservation or recovery when replacement scheduling failed; actual Android alarms and notification delivery; reboot and timezone behavior where appropriate; and actionable failure diagnostics.
 
-Current reminder reconciliation cancels existing schedules before creating replacements, so a later scheduling failure can leave no reminders. The client currently hides the underlying scheduling exception behind a generic failure result. The exact Android/plugin exception and root cause remain unconfirmed; do not claim an exact-alarm permission problem or another speculative cause.
+At the v10 checkpoint, reminder reconciliation cancelled existing schedules before creating replacements, so a later scheduling failure could leave no reminders. The client then hid the underlying scheduling exception behind a generic failure result. The exact Android/plugin exception and old root cause remain unconfirmed; do not claim an exact-alarm permission problem or another speculative cause.
 
 ## Google Play billing checks
 
@@ -362,7 +362,7 @@ Current reminder reconciliation cancels existing schedules before creating repla
 - [x] Version 8 remains a historical public release; its dated Restore Credentials and other validation evidence is not relabeled as v9 evidence.
 - [x] `fefbac3f366920b980f831ddd55c18e2734471a0` corrected the Free Conversation phase boundary: the resolver and setup Hint run only during initial `setupContextSelection`. Automated verification and physical Android checks passed for Free Conversation Hint, Auto-send, Conversation mode, and ordinary scenario selection.
 
-### Production v10 public-release checkpoint (2026-09-20)
+### Historical Production v10 public-release checkpoint (2026-09-20)
 
 - [x] Source `3389786c16d676dae2a66a9cdf73367780babcad` is `0.1.0+10` / versionCode 10 for package `com.languagevoicetutor.mobile`; target SDK remains 36.
 - [x] The signed `app/build/app/outputs/bundle/release/app-release.aab` is 196468474 bytes with SHA-256 `45B2552ACE707A94772AC0739BF7B6E8632A8C994A54D33C3759DDF79B842C0C`; `jarsigner` reported `jar verified`, and the embedded upload-certificate SHA-256 is `36:40:5D:B4:56:47:B2:3C:68:EE:2D:AB:12:21:70:CA:DE:06:11:38:28:D9:9D:02:AB:62:54:33:E2:F5:0B:F7`.
@@ -371,9 +371,19 @@ Current reminder reconciliation cancels existing schedules before creating repla
 - [x] `2457f25f2928b95edba5179aa26e4131db60de56` updated only the authentication onboarding presentation: new Orralen hero artwork, the existing app gradient and a soft fade, removal of the redundant auth AppBar title and old separate Login Orralen logo/wordmark block, and preservation of the localized three-sentence welcome copy, authentication, registration, password recovery, scrolling, and keyboard behavior. No authentication backend-contract change is claimed.
 - [x] `fefbac3f366920b980f831ddd55c18e2734471a0` remains the phase-boundary fix. `3389786c16d676dae2a66a9cdf73367780babcad` is the additional request-boundary correction that prevents normal Free Conversation text from leaking into `selectedContextTitle` when no real context is committed. Real CMS scenario selection and real custom-context flows remain unchanged; Conversation Mode production rendering was not changed.
 - [x] Focused affected suites passed. Physical Android smoke passed for Free Conversation normal conversation and for an ordinary guided lesson with a selected situation; the full v10 release gate subsequently passed. No backend, API, or CMS change was required.
-- [ ] Practice-reminder scheduling/reconciliation remains open and non-critical after v10. Do not mark it complete or claim v10 reverified it; retain the future maintenance verification scope above and do not assign an unproven exact-alarm or other root cause.
+- [ ] At the v10 checkpoint, practice-reminder scheduling/reconciliation remained open and non-critical. V10 did not reverify it; v11 closed it without proving the old exact Android/plugin root cause.
 - [ ] Google Play shows edge-to-edge compatibility and R8 memory/performance optimization as non-blocking post-release quality recommendations, not policy errors or release failures. No edge-to-edge or R8 implementation was made for v10.
 - [x] Existing physical-device evidence found no visible edge-to-edge boundary problem on the tested Android 15/16 Samsung S25, Samsung A56, and Honor devices. This is bounded evidence for those tested devices, not a universal compatibility claim.
+
+### Current Production v11 public-release checkpoint (2026-09-27)
+
+- [x] Source/HEAD `1113a4c09ee75021a435f67dceee8b7b55ba1160` is Android `0.1.0+11` / versionCode 11 for package `com.languagevoicetutor.mobile`; target SDK remains 36.
+- [x] The release `app/build/app/outputs/bundle/release/app-release.aab` is 196486143 bytes with SHA-256 `A47ED1DD989D1AF87B166C73103B508227698533675625F06FA736EF94E9FA98`. Release preparation passed `flutter analyze` with no issues, 145 targeted tests, `flutter build appbundle --release`, and `git diff --check`; the final source repository was clean with `HEAD == origin/main` before publication. No separate v11 `jarsigner` or `keytool` command is claimed.
+- [x] Google Play accepted and approved versionCode 11 in Production as **Orralen - Language Voice Tutor**. Historical v8/v9/v10 release, signing, and test counts remain tied to their own checkpoints.
+- [x] Registration display name is optional and Unicode-letters-only when non-empty. **Settings -> Profile** edits the backend-owned learner name through `/api/me/settings`; blank clears it, success uses backend-confirmed settings, and a failed save restores the prior confirmed settings without changing email or account identity.
+- [x] The public-v10 reminder issue is CLOSED by `0b1cecd21dde3c11bf25c7421007a4ce76baad10`: stable IDs `41001` and `41002` are replaced without proactive cancellation, disabled or permission-unavailable reminders are cancelled, and the first successful permission grant reconciles immediately. Safe stage diagnostics cover preference read/write, initialization, permission, cancellation, and morning/evening scheduling; a bounded safe `PlatformException` code may be logged, but no message, details, stack trace, or private data. The brand-derived small notification icon is explicitly retained in release builds. `AndroidScheduleMode.inexactAllowWhileIdle` remains in use, with no exact-alarm permission.
+- [x] Two-device physical release-APK checks confirmed scheduling/rescheduling, expected Orralen alarm state, notification delivery, no recurrence of the reminder-update error, and accepted icon presentation. A reminder scheduled for 13:19 arrived around 13:22 on one device; exact-time or second-level delivery is not guaranteed. Physical reboot/timezone tests were not recorded, and no single root cause of the old Play-v10 failure is claimed.
+- [x] V11 did not change or newly validate Google Play Billing architecture. Product ID `premium`, Base Plan ID `monthly`, backend-owned Premium authority, purchase verification, acknowledgement ownership, RTDN, reconciliation, trial behavior, and fail-closed purchase rules remain unchanged. Normal real-money renewal on 2026-10-08 remains pending monitoring. Edge-to-edge and R8 remain separate non-blocking quality recommendations. The next uploaded Mobile artifact must use versionCode at least 12.
 
 ### Historical controlled Google Play billing E2E (2026-08-30)
 
@@ -440,7 +450,7 @@ Before any store release:
 - Confirm no secrets are present in the app bundle or repository.
 - Keep the upload keystore, its passwords, and its private filesystem location outside Git. Create ignored local `app/android/key.properties` from `app/android/key.properties.example` with only `storeFile`, `storePassword`, `keyAlias`, and `keyPassword`; passwords belong only in that ignored file.
 - Signing audit complete: real `key.properties` and `local.properties` are ignored and untracked, private keystore files are not tracked, release tasks fail closed when configuration is missing or invalid, release builds explicitly use `signingConfigs.release`, and no debug-signing fallback was found.
-- The current Flutter version is `0.1.0+1`. Before producing the next upload candidate with `flutter build appbundle --release`, increment its build number/Android `versionCode`; `versionCode` 1 must not be uploaded again. Release tasks must fail before building if local signing configuration is missing, incomplete, or points to a missing keystore; debug/non-release Gradle tasks must still configure without it.
+- The current Flutter version is `0.1.0+11` / versionCode 11. Before producing the next upload candidate with `flutter build appbundle --release`, use versionCode at least 12. Release tasks must fail before building if local signing configuration is missing, incomplete, or points to a missing keystore; debug/non-release Gradle tasks must still configure without it.
 - Verify signature integrity with `jarsigner -verify -verbose:summary build/app/outputs/bundle/release/app-release.aab`. Success requires `jar verified` and must not contain `jar is unsigned` or `Not a signed jar file`. `jarsigner -strict` can report PKIX/self-signed-certificate errors for a valid self-signed Google Play upload certificate, so strict trust-chain output is not the project acceptance criterion.
 - Verify upload-certificate identity separately with `keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab`. The embedded certificate SHA-256 must equal `36:40:5D:B4:56:47:B2:3C:68:EE:2D:AB:12:21:70:CA:DE:06:11:38:28:D9:9D:02:AB:62:54:33:E2:F5:0B:F7`.
 - Existing verified signing result: exactly `app/build/app/outputs/bundle/release/app-release.aab`, 191983753 bytes, AAB SHA-256 `8C633D4689066BF0BE17B7B7AA266B4049750965092D5642C589DF5F6865A7ED`, passing `jarsigner` verification, embedded upload SHA-1 `60:A8:13:5D:A6:B1:72:00:F2:6A:80:D2:F9:91:A9:01:CC:EB:F8:9B`, and embedded upload SHA-256 exactly matching the Google Play Console Upload key certificate. No new AAB was built during the signing audit.
@@ -552,9 +562,9 @@ flutter test
 flutter analyze
 ```
 
-## PR 5 settings parity foundation
+## Historical PR 5 settings parity foundation
 
-This slice verifies mobile Settings parity foundation with the current desktop settings model, using existing backend APIs only:
+This historical PR 5 slice verified the then-current mobile Settings parity foundation using existing backend APIs only. Later saved-level and v11 display-name work supersedes its field and navigation scope:
 
 ```text
 GET /api/me/settings
@@ -562,7 +572,7 @@ PUT /api/me/settings
 GET /api/tutor-options
 ```
 
-Expected behavior:
+Expected behavior at that PR 5 checkpoint:
 
 - The obsolete Choose Level screen, `/choose-level` route, and import are deleted; `ChooseLevelScreen` and `choose_level_screen.dart` no longer exist.
 
@@ -570,19 +580,19 @@ Expected behavior:
 - Settings saves backend-supported fields through `PUT /api/me/settings`.
 - Supported settings fields are `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `speechVoice`, `speechSpeed`, `conversationModeEnabled`, and `selectedTutorId`.
 - Extra backend fields are tolerated.
-- Account email/display name and subscription status continue to come from the existing authenticated account/subscription flow.
+- At this PR 5 checkpoint, account email/display name and subscription status came from the existing authenticated account/subscription flow.
 - Tutor options come from `GET /api/tutor-options`.
 - Selected tutor is persisted through `/api/me/settings` when a valid `selectedTutorId` is supplied.
 - Selected tutor persists after app/emulator restart because Settings reloads `selectedTutorId` from `GET /api/me/settings`.
 - Study, native, and interface/explanation language dropdowns show user-friendly labels and save/send backend IDs rather than display labels.
 - Study language choices remain limited to English, French, German, Portuguese, Spanish, and Italian.
 - Native language and interface/explanation language remain separate settings with separate option catalogs.
-- Level is not shown in Settings. Level selection belongs after **Start lesson** in the lesson-start skeleton.
+- At this PR 5 checkpoint, level was not shown in Settings; level selection belonged after **Start lesson** in the lesson-start skeleton. Current learner level is in **Settings -> Learning**.
 - Friendly success/error messages are shown; raw backend exceptions, stack traces, and tokens are not displayed.
 
-Still out of scope: backend changes, database migrations, lesson start, lesson chat, lesson runtime, topic/scenario selection, voice recording, voice runtime, TTS runtime/playback, billing, Google Play Billing, Apple billing, Paddle runtime, history/progress, analytics, crash reporting, and store release setup.
+Out of scope for that PR 5 slice: backend changes, database migrations, lesson start, lesson chat, lesson runtime, topic/scenario selection, voice recording, voice runtime, TTS runtime/playback, billing, Google Play Billing, Apple billing, Paddle runtime, history/progress, analytics, crash reporting, and store release setup.
 
-Run these commands from `app/`:
+Commands recorded for that PR 5 slice from `app/`:
 
 ```bash
 dart format --set-exit-if-changed lib test
@@ -592,7 +602,7 @@ flutter test
 
 ## Current green Settings parity baseline
 
-Latest known commit: `fcecef5` (`Fix mobile settings parity foundation`). This baseline was verified from `app/` with:
+The original Settings parity foundation commit was `fcecef5` (`Fix mobile settings parity foundation`). That baseline was verified from `app/` with:
 
 ```bash
 dart format --set-exit-if-changed lib test
@@ -625,7 +635,7 @@ Desktop parity checks:
 
 - Mobile preserves desktop product flow and behavior without copying the Windows layout directly.
 - Learner level changes are made in **Settings -> Learning**; Choose Level is removed from the normal Home flow.
-- Settings uses backend-supported `/api/me/settings` fields only: `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `speechVoice`, `speechSpeed`, `conversationModeEnabled`, `selectedTutorId`, and `currentLevel`.
+- Current Settings uses the nine backend-supported `/api/me/settings` fields: `displayName`, `nativeLanguage`, `studyLanguage`, `explanationLanguage`, `currentLevel`, `selectedTutorId`, `speechVoice`, `speechSpeed`, and `conversationModeEnabled`.
 - Selected tutor persistence remains backend-owned, and tutor voice remains separate from selected tutor.
 - `lessonLevels` remains the centralized Mobile level display list, while CMS-published level profiles remain authoritative for lesson behavior and timing.
 - Physical Android validation of the saved-level Settings control and normal lesson-start flow is complete for this learner-level/start-flow slice.
@@ -661,9 +671,9 @@ flutter analyze
 flutter test
 ```
 
-## Home polish checks
+## Historical Home polish checks
 
-This mobile slice keeps Home and Settings learner-facing while backend account/access decisions remain backend-owned; real lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, backend changes, desktop changes, and store release work remain out of scope.
+At this earlier Home-polish checkpoint, the slice kept Home and Settings learner-facing while backend account/access decisions remained backend-owned; real lesson runtime, voice recording, TTS playback, billing, analytics, crash reporting, backend changes, desktop changes, and store release work were out of scope. The production lesson runtime recorded below supersedes its placeholder boundary.
 
 Expected behavior:
 
@@ -682,10 +692,10 @@ Expected behavior:
 - **Start lesson** loads the saved backend level and opens **Choose Topic** directly; Choose Level is not shown in the normal flow.
 - **Open Settings** opens Settings.
 - Settings uses bottom navigation for **Profile**, **Lessons**, and **App**. Lesson History and Progress open from **Lessons**, while Feedback & reports live in **App**.
-- Lesson still ends at the placeholder screen; real lesson runtime remains out of scope.
+- At that Home-polish checkpoint, the lesson still ended at the placeholder screen; real lesson runtime was out of scope for this slice.
 - No backend, desktop, website, billing, voice, TTS, AI runtime, analytics, store metadata, signing, or package id changes are included in this branding slice.
 
-Verification commands are the standard current baseline commands from `app/`: `dart format --set-exit-if-changed lib test`, `flutter analyze`, and `flutter test`.
+Verification commands recorded for this slice from `app/` were `dart format --set-exit-if-changed lib test`, `flutter analyze`, and `flutter test`.
 
 ## Production Android text lesson completion check
 
