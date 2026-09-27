@@ -87,6 +87,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get displayNameOptional => 'Показвано име (незадължително)';
 
   @override
+  String get displayNameLettersOnly => 'Използвайте само букви.';
+
+  @override
   String get signIn => 'Вход';
 
   @override

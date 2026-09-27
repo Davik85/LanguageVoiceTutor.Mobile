@@ -274,6 +274,12 @@ abstract class AppLocalizations {
   /// **'Display name (optional)'**
   String get displayNameOptional;
 
+  /// No description provided for @displayNameLettersOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Use letters only.'**
+  String get displayNameLettersOnly;
+
   /// No description provided for @signIn.
   ///
   /// In en, this message translates to:

@@ -25,6 +25,7 @@
   "email": "E-Mail",
   "password": "Passwort",
   "displayNameOptional": "Anzeigename (optional)",
+  "displayNameLettersOnly": "Verwende nur Buchstaben.",
   "signIn": "Anmelden",
   "createAccount": "Konto erstellen",
   "unableToCheckSession": "Ihre Sitzung konnte nicht überprüft werden. Bitte versuchen Sie es erneut.",

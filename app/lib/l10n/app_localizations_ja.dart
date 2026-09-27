@@ -84,6 +84,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get displayNameOptional => '表示名（任意）';
 
   @override
+  String get displayNameLettersOnly => '文字のみを使用してください。';
+
+  @override
   String get signIn => 'ログイン';
 
   @override

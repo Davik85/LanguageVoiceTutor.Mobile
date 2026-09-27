@@ -84,6 +84,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get displayNameOptional => 'اسم العرض (اختياري)';
 
   @override
+  String get displayNameLettersOnly => 'استخدم الحروف فقط.';
+
+  @override
   String get signIn => 'تسجيل الدخول';
 
   @override

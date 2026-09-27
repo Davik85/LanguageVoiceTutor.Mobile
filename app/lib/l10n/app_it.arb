@@ -25,6 +25,7 @@
   "email": "E-mail",
   "password": "Parola d'accesso",
   "displayNameOptional": "Nome visualizzato (facoltativo)",
+  "displayNameLettersOnly": "Usa solo lettere.",
   "signIn": "Accedi",
   "createAccount": "Crea account",
   "unableToCheckSession": "Impossibile verificare la sessione. Riprova.",

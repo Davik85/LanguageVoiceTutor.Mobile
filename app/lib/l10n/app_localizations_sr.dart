@@ -87,6 +87,9 @@ class AppLocalizationsSr extends AppLocalizations {
   String get displayNameOptional => 'Prikazano ime (opciono)';
 
   @override
+  String get displayNameLettersOnly => 'Koristite samo slova.';
+
+  @override
   String get signIn => 'Prijavite se';
 
   @override
@@ -1690,6 +1693,9 @@ class AppLocalizationsSrLatn extends AppLocalizationsSr {
 
   @override
   String get displayNameOptional => 'Prikazano ime (opciono)';
+
+  @override
+  String get displayNameLettersOnly => 'Koristite samo slova.';
 
   @override
   String get signIn => 'Prijavite se';

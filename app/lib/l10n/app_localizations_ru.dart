@@ -85,6 +85,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get displayNameOptional => 'Отображаемое имя (необязательно)';
 
   @override
+  String get displayNameLettersOnly => 'Используйте только буквы.';
+
+  @override
   String get signIn => 'Войти';
 
   @override

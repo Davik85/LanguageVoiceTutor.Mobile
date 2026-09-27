@@ -86,6 +86,9 @@ class AppLocalizationsHr extends AppLocalizations {
   String get displayNameOptional => 'Prikazano ime (neobavezno)';
 
   @override
+  String get displayNameLettersOnly => 'Koristite samo slova.';
+
+  @override
   String get signIn => 'Prijavi se';
 
   @override

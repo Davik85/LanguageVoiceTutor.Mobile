@@ -86,6 +86,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get displayNameOptional => 'Nom affiché (facultatif)';
 
   @override
+  String get displayNameLettersOnly => 'Utilisez uniquement des lettres.';
+
+  @override
   String get signIn => 'Se connecter';
 
   @override

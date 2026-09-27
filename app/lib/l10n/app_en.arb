@@ -25,6 +25,7 @@
   "email": "Email",
   "password": "Password",
   "displayNameOptional": "Display name (optional)",
+  "displayNameLettersOnly": "Use letters only.",
   "signIn": "Sign in",
   "createAccount": "Create account",
   "unableToCheckSession": "Unable to check your session. Please try again.",

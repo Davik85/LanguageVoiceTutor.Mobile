@@ -12,6 +12,7 @@ class _LoginApi implements ApiClient {
 
   final Map<String, List<ApiResponse>> responses;
   final calls = <String>[];
+  final postBodies = <Map<String, dynamic>>[];
   final putBodies = <Map<String, dynamic>>[];
 
   ApiResponse _take(String method, String path) {
@@ -28,8 +29,10 @@ class _LoginApi implements ApiClient {
     String path, {
     Map<String, dynamic>? body,
     String? accessToken,
-  }) async =>
-      _take('POST', path);
+  }) async {
+    if (body != null) postBodies.add(body);
+    return _take('POST', path);
+  }
 
   @override
   Future<ApiResponse> put(
@@ -122,7 +125,81 @@ Future<void> _submit(WidgetTester tester, {required bool register}) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _registerWithDisplayName(WidgetTester tester, String name) async {
+  await tester.enterText(
+      find.byType(TextFormField).at(0), 'learner@example.com');
+  await tester.enterText(find.byType(TextFormField).at(1), 'password');
+  final modeSwitch = find.byKey(const Key('login-mode-switch'));
+  await tester.ensureVisible(modeSwitch);
+  await tester.pumpAndSettle();
+  await tester.tap(modeSwitch);
+  await tester.pumpAndSettle();
+  await tester.enterText(find.byType(TextFormField).at(2), name);
+  final submit = find.byType(FilledButton);
+  await tester.ensureVisible(submit);
+  await tester.pumpAndSettle();
+  await tester.tap(submit);
+  await tester.pumpAndSettle();
+}
+
 void main() {
+  for (final name in <String>[
+    '',
+    '   ',
+    'David',
+    'José',
+    'Łukasz',
+    'Давид',
+    'Марко',
+    'محمد',
+    '山田',
+    '민수',
+  ]) {
+    testWidgets('registration accepts optional Unicode display name: $name',
+        (tester) async {
+      final api = _LoginApi({
+        '/api/auth/register': [_authResponse],
+        '/api/me/settings': [_settingsResponse, _settingsResponse],
+      });
+      await tester.pumpWidget(
+          _app(AuthService(apiClient: api, storage: _LoginStorage())));
+
+      await _registerWithDisplayName(tester, name);
+
+      expect(api.calls.first, 'POST /api/auth/register');
+      expect(api.postBodies.single['displayName'],
+          name.trim().isEmpty ? null : name);
+      expect(find.text('home'), findsOneWidget);
+    });
+  }
+
+  for (final name in <String>[
+    'David123',
+    'David Smith',
+    'David-Smith',
+    "O'Connor",
+    'David_',
+    'David!',
+    '@David',
+    '😀',
+    'David😀',
+    '123',
+    ' David',
+    'David ',
+  ]) {
+    testWidgets('registration rejects invalid display name: $name',
+        (tester) async {
+      final api = _LoginApi({});
+      await tester.pumpWidget(
+          _app(AuthService(apiClient: api, storage: _LoginStorage())));
+
+      await _registerWithDisplayName(tester, name);
+
+      expect(find.text('Use letters only.'), findsOneWidget);
+      expect(api.calls, isEmpty);
+    });
+  }
+
   testWidgets(
       'existing-account login loads the backend interface language only',
       (tester) async {

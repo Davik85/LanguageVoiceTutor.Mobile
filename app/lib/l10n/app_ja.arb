@@ -25,6 +25,7 @@
   "email": "メールアドレス",
   "password": "パスワード",
   "displayNameOptional": "表示名（任意）",
+  "displayNameLettersOnly": "文字のみを使用してください。",
   "signIn": "ログイン",
   "createAccount": "アカウントを作成",
   "unableToCheckSession": "セッションを確認できません。もう一度お試しください。",

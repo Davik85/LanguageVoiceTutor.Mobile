@@ -25,6 +25,7 @@
   "email": "E-pošta",
   "password": "Lozinka",
   "displayNameOptional": "Prikazano ime (opciono)",
+  "displayNameLettersOnly": "Koristite samo slova.",
   "signIn": "Prijavite se",
   "createAccount": "Napravite nalog",
   "unableToCheckSession": "Trenutno nije moguće proveriti sesiju. Pokušajte ponovo.",

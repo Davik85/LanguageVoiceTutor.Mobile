@@ -84,6 +84,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get displayNameOptional => '표시 이름(선택 사항)';
 
   @override
+  String get displayNameLettersOnly => '글자만 사용하세요.';
+
+  @override
   String get signIn => '로그인';
 
   @override

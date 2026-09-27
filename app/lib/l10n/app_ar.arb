@@ -25,6 +25,7 @@
   "email": "البريد الإلكتروني",
   "password": "كلمة المرور",
   "displayNameOptional": "اسم العرض (اختياري)",
+  "displayNameLettersOnly": "استخدم الحروف فقط.",
   "signIn": "تسجيل الدخول",
   "createAccount": "إنشاء حساب",
   "unableToCheckSession": "يتعذر التحقق من جلستك. يرجى المحاولة مرة أخرى.",

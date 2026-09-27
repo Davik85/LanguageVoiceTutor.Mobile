@@ -25,6 +25,7 @@
   "email": "Correo electrónico",
   "password": "Contraseña",
   "displayNameOptional": "Nombre visible (opcional)",
+  "displayNameLettersOnly": "Usa solo letras.",
   "signIn": "Iniciar sesión",
   "createAccount": "Crear cuenta",
   "unableToCheckSession": "No se pudo comprobar la sesión. Inténtalo de nuevo.",

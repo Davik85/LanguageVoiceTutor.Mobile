@@ -86,6 +86,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get displayNameOptional => 'Nombre visible (opcional)';
 
   @override
+  String get displayNameLettersOnly => 'Usa solo letras.';
+
+  @override
   String get signIn => 'Iniciar sesión';
 
   @override

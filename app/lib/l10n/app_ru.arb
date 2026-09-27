@@ -25,6 +25,7 @@
   "email": "Эл. почта",
   "password": "Пароль",
   "displayNameOptional": "Отображаемое имя (необязательно)",
+  "displayNameLettersOnly": "Используйте только буквы.",
   "signIn": "Войти",
   "createAccount": "Создать аккаунт",
   "unableToCheckSession": "Не удалось проверить сессию. Попробуйте снова.",

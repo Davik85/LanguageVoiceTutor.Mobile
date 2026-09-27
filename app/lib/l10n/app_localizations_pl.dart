@@ -85,6 +85,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get displayNameOptional => 'Nazwa wyświetlana (opcjonalnie)';
 
   @override
+  String get displayNameLettersOnly => 'Używaj tylko liter.';
+
+  @override
   String get signIn => 'Zaloguj się';
 
   @override

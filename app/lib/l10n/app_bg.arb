@@ -25,6 +25,7 @@
   "email": "Имейл",
   "password": "Парола",
   "displayNameOptional": "Показвано име (незадължително)",
+  "displayNameLettersOnly": "Използвайте само букви.",
   "signIn": "Вход",
   "createAccount": "Създаване на акаунт",
   "unableToCheckSession": "Сесията не може да бъде проверена. Опитайте отново.",

@@ -88,6 +88,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get displayNameOptional => 'Nome de apresentação (opcional)';
 
   @override
+  String get displayNameLettersOnly => 'Use apenas letras.';
+
+  @override
   String get signIn => 'Iniciar sessão';
 
   @override
@@ -1699,6 +1702,9 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
 
   @override
   String get displayNameOptional => 'Nome de apresentação (opcional)';
+
+  @override
+  String get displayNameLettersOnly => 'Use apenas letras.';
 
   @override
   String get signIn => 'Iniciar sessão';
