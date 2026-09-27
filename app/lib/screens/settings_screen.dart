@@ -596,10 +596,13 @@ class _SettingsScreenState extends State<SettingsScreen>
             error: _reminderError,
             onEnabled: (value) => _updateReminder(() async {
               final ok = await _practiceReminderService.setEnabled(value);
+              if (!ok) return false;
               if (value &&
                   await _practiceReminderService.permissionState() !=
                       ReminderPermissionState.granted) {
-                await _practiceReminderService.requestPermission();
+                final granted =
+                    await _practiceReminderService.requestPermission();
+                if (granted) return _practiceReminderService.reconcile();
               }
               return ok;
             }),

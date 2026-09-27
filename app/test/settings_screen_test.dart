@@ -181,20 +181,35 @@ class _MemoryStorage implements SessionStorage {
 class FakePracticeReminderService implements PracticeReminderService {
   final synchronizedLanguageIds = <String?>[];
   bool failLanguageSynchronization = false;
+  PracticeReminderPreferences currentPreferences =
+      const PracticeReminderPreferences();
+  ReminderPermissionState currentPermission = ReminderPermissionState.granted;
+  bool requestGrantsPermission = true;
+  bool failEnable = false;
+  int reconcileCalls = 0;
   @override
   Future<void> initialize() async {}
   @override
-  Future<PracticeReminderPreferences> preferences() async =>
-      const PracticeReminderPreferences();
+  Future<PracticeReminderPreferences> preferences() async => currentPreferences;
   @override
-  Future<ReminderPermissionState> permissionState() async =>
-      ReminderPermissionState.granted;
+  Future<ReminderPermissionState> permissionState() async => currentPermission;
   @override
-  Future<bool> requestPermission() async => true;
+  Future<bool> requestPermission() async {
+    if (requestGrantsPermission) {
+      currentPermission = ReminderPermissionState.granted;
+    }
+    return requestGrantsPermission;
+  }
+
   @override
   Future<bool> openAndroidSettings() async => true;
   @override
-  Future<bool> setEnabled(bool enabled) async => true;
+  Future<bool> setEnabled(bool enabled) async {
+    if (failEnable) return false;
+    currentPreferences = currentPreferences.copyWith(enabled: enabled);
+    return true;
+  }
+
   @override
   Future<bool> setMorningTime(int hour, int minute) async => true;
   @override
@@ -209,7 +224,10 @@ class FakePracticeReminderService implements PracticeReminderService {
   }
 
   @override
-  Future<bool> reconcile() async => true;
+  Future<bool> reconcile() async {
+    reconcileCalls++;
+    return true;
+  }
 }
 
 Widget _screen(FakeAuthService auth,
@@ -302,6 +320,49 @@ Future<void> _openAccountDeletion(WidgetTester tester) async {
 
 void main() {
   group('localized practice reminder messages', () {
+    testWidgets('failed reminder update keeps the localized learner message',
+        (tester) async {
+      final reminders = FakePracticeReminderService()..failEnable = true;
+      await tester.pumpWidget(
+          _screen(FakeAuthService(), practiceReminderService: reminders));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('settings-app-tab')));
+      await tester.pumpAndSettle();
+      await _scrollToFinder(tester, find.text('Daily practice reminders'));
+
+      await tester
+          .tap(find.widgetWithText(SwitchListTile, 'Daily practice reminders'));
+      await tester.pumpAndSettle();
+
+      expect(
+          find.text('Unable to update reminders right now. Please try again.'),
+          findsOneWidget);
+    });
+
+    testWidgets('first enable reconciles after notification permission grant',
+        (tester) async {
+      final reminders = FakePracticeReminderService()
+        ..currentPreferences = const PracticeReminderPreferences(enabled: false)
+        ..currentPermission = ReminderPermissionState.blocked;
+      await tester.pumpWidget(
+          _screen(FakeAuthService(), practiceReminderService: reminders));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('settings-app-tab')));
+      await tester.pumpAndSettle();
+      await _scrollToFinder(tester, find.text('Daily practice reminders'));
+
+      await tester
+          .tap(find.widgetWithText(SwitchListTile, 'Daily practice reminders'));
+      await tester.pumpAndSettle();
+
+      expect(reminders.currentPreferences.enabled, isTrue);
+      expect(reminders.currentPermission, ReminderPermissionState.granted);
+      expect(reminders.reconcileCalls, 1);
+      expect(
+          find.text('Unable to update reminders right now. Please try again.'),
+          findsNothing);
+    });
+
     testWidgets('settings load synchronizes explanationLanguage only',
         (tester) async {
       final reminders = FakePracticeReminderService();

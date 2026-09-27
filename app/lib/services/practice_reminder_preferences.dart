@@ -83,7 +83,7 @@ class SecurePracticeReminderPreferenceStore
             values[interfaceLanguageIdKey]),
       );
     } catch (_) {
-      return const PracticeReminderPreferences();
+      rethrow;
     }
   }
 

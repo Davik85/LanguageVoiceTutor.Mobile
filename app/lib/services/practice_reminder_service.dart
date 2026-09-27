@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -109,17 +111,20 @@ class LocalPracticeReminderService implements PracticeReminderService {
       {PracticeReminderPreferenceStore? store,
       ReminderNotificationAdapter? notifications,
       ReminderPlatformAdapter? platform,
-      tz.TZDateTime Function()? now})
+      tz.TZDateTime Function()? now,
+      void Function(String)? diagnosticLog})
       : _store = store ?? SecurePracticeReminderPreferenceStore(),
         _notifications = notifications ?? FlutterReminderNotificationAdapter(),
         _platform = platform ?? PermissionHandlerReminderPlatformAdapter(),
-        _now = now ?? (() => tz.TZDateTime.now(tz.local));
+        _now = now ?? (() => tz.TZDateTime.now(tz.local)),
+        _diagnosticLog = diagnosticLog ?? debugPrint;
   static const morningId = 41001;
   static const eveningId = 41002;
   final PracticeReminderPreferenceStore _store;
   final ReminderNotificationAdapter _notifications;
   final ReminderPlatformAdapter _platform;
   final tz.TZDateTime Function() _now;
+  final void Function(String) _diagnosticLog;
   bool _initialized = false;
   bool _timezoneReady = false;
   @override
@@ -130,14 +135,15 @@ class LocalPracticeReminderService implements PracticeReminderService {
       try {
         tz.setLocalLocation(
             tz.getLocation(await _platform.timezoneIdentifier()));
-      } catch (_) {
+      } catch (error) {
+        _logFailure('timezone', error);
         tz.setLocalLocation(tz.UTC);
       }
       _timezoneReady = true;
       await _notifications.initialize();
-    } catch (_) {
-    } finally {
       _initialized = true;
+    } catch (error) {
+      _logFailure('initialize', error);
     }
   }
 
@@ -164,57 +170,122 @@ class LocalPracticeReminderService implements PracticeReminderService {
       _save((p) => p.copyWith(eveningHour: h, eveningMinute: m));
   @override
   Future<bool> setInterfaceLanguage(String? languageId) async {
+    final PracticeReminderPreferences preferences;
     try {
-      final preferences = await _store.read();
-      final normalized =
-          PracticeReminderMessages.normalizeLanguageId(languageId);
-      final stored = PracticeReminderMessages.normalizeLanguageId(
-          preferences.interfaceLanguageId);
-      if (stored == normalized) return true;
-      await _store.write(preferences.copyWith(interfaceLanguageId: normalized));
-      return reconcile();
-    } catch (_) {
+      preferences = await _store.read();
+    } catch (error) {
+      _logFailure('preference_read', error);
       return false;
     }
+    final normalized = PracticeReminderMessages.normalizeLanguageId(languageId);
+    final stored = PracticeReminderMessages.normalizeLanguageId(
+        preferences.interfaceLanguageId);
+    if (stored == normalized) return true;
+    try {
+      await _store.write(preferences.copyWith(interfaceLanguageId: normalized));
+    } catch (error) {
+      _logFailure('preference_write', error);
+      return false;
+    }
+    return reconcile();
   }
 
   Future<bool> _save(
       PracticeReminderPreferences Function(PracticeReminderPreferences)
           change) async {
+    final PracticeReminderPreferences preferences;
     try {
-      await _store.write(change(await _store.read()));
-      return reconcile();
-    } catch (_) {
+      preferences = await _store.read();
+    } catch (error) {
+      _logFailure('preference_read', error);
       return false;
     }
+    try {
+      await _store.write(change(preferences));
+    } catch (error) {
+      _logFailure('preference_write', error);
+      return false;
+    }
+    return reconcile();
   }
 
   @override
   Future<bool> reconcile() async {
+    await initialize();
+    if (!_initialized || !_timezoneReady) return false;
+    final PracticeReminderPreferences preferences;
     try {
-      await initialize();
-      final p = await _store.read();
-      if (!p.enabled ||
-          await permissionState() != ReminderPermissionState.granted ||
-          !_timezoneReady) {
-        await _cancel();
-        return _timezoneReady;
-      }
-      await _cancel();
-      final messages = PracticeReminderMessages.resolve(p.interfaceLanguageId);
-      await _schedule(morningId, p.morningHour, p.morningMinute,
-          messages.morningTitle, messages.morningBody);
-      await _schedule(eveningId, p.eveningHour, p.eveningMinute,
-          messages.eveningTitle, messages.eveningBody);
-      return true;
-    } catch (_) {
+      preferences = await _store.read();
+    } catch (error) {
+      _logFailure('preference_read', error);
       return false;
     }
+    if (!preferences.enabled) return _cancel();
+    final ReminderPermissionState permission;
+    try {
+      permission = await permissionState();
+    } catch (error) {
+      _logFailure('permission', error);
+      return false;
+    }
+    if (permission != ReminderPermissionState.granted) {
+      return _cancel();
+    }
+    final messages =
+        PracticeReminderMessages.resolve(preferences.interfaceLanguageId);
+    try {
+      await _schedule(
+          morningId,
+          preferences.morningHour,
+          preferences.morningMinute,
+          messages.morningTitle,
+          messages.morningBody);
+    } catch (error) {
+      _logFailure('schedule_morning', error);
+      return false;
+    }
+    try {
+      await _schedule(
+          eveningId,
+          preferences.eveningHour,
+          preferences.eveningMinute,
+          messages.eveningTitle,
+          messages.eveningBody);
+    } catch (error) {
+      _logFailure('schedule_evening', error);
+      return false;
+    }
+    return true;
   }
 
-  Future<void> _cancel() async {
-    await _notifications.cancel(morningId);
-    await _notifications.cancel(eveningId);
+  Future<bool> _cancel() async {
+    var success = true;
+    try {
+      await _notifications.cancel(morningId);
+    } catch (error) {
+      _logFailure('cancel_morning', error);
+      success = false;
+    }
+    try {
+      await _notifications.cancel(eveningId);
+    } catch (error) {
+      _logFailure('cancel_evening', error);
+      success = false;
+    }
+    return success;
+  }
+
+  void _logFailure(String stage, Object error) {
+    var line =
+        'reminder_reconcile stage=$stage result=failure type=${error.runtimeType}';
+    if (error is PlatformException) {
+      final code = error.code;
+      final safeCode = RegExp(r'^[A-Za-z][A-Za-z0-9_.-]{0,63}$').hasMatch(code)
+          ? code
+          : 'redacted';
+      line += ' code=$safeCode';
+    }
+    _diagnosticLog(line);
   }
 
   Future<void> _schedule(

@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/services/practice_reminder_preferences.dart';
 import 'package:language_voice_tutor_mobile/services/practice_reminder_messages.dart';
@@ -9,6 +10,7 @@ class _Store implements PracticeReminderPreferenceStore {
   _Store([this.value = const PracticeReminderPreferences()]);
   PracticeReminderPreferences value;
   bool fail = false;
+  bool failWrite = false;
   @override
   Future<PracticeReminderPreferences> read() async {
     if (fail) throw StateError('storage');
@@ -17,7 +19,7 @@ class _Store implements PracticeReminderPreferenceStore {
 
   @override
   Future<void> write(PracticeReminderPreferences p) async {
-    if (fail) throw StateError('storage');
+    if (fail || failWrite) throw StateError('private storage detail');
     value = p;
   }
 }
@@ -25,6 +27,10 @@ class _Store implements PracticeReminderPreferenceStore {
 class _Notifications implements ReminderNotificationAdapter {
   final scheduled = <ReminderScheduleRequest>[];
   final cancelled = <int>[];
+  final active = <int, ReminderScheduleRequest>{};
+  final failScheduleIds = <int>{};
+  final failCancelIds = <int>{};
+  Object? scheduleError;
   bool fail = false;
   @override
   Future<void> initialize() async {
@@ -32,11 +38,20 @@ class _Notifications implements ReminderNotificationAdapter {
   }
 
   @override
-  Future<void> cancel(int id) async => cancelled.add(id);
+  Future<void> cancel(int id) async {
+    if (failCancelIds.contains(id)) throw StateError('private cancel detail');
+    cancelled.add(id);
+    active.remove(id);
+  }
+
   @override
   Future<void> schedule(ReminderScheduleRequest r) async {
-    if (fail) throw StateError('schedule');
+    if (scheduleError != null) throw scheduleError!;
+    if (fail || failScheduleIds.contains(r.id)) {
+      throw StateError('private schedule detail');
+    }
     scheduled.add(r);
+    active[r.id] = r;
   }
 }
 
@@ -45,6 +60,7 @@ class _Platform implements ReminderPlatformAdapter {
   ReminderPermissionState permission;
   String zone = 'Europe/Budapest';
   bool failZone = false;
+  bool failPermission = false;
   @override
   Future<String> timezoneIdentifier() async {
     if (failZone) throw StateError('zone');
@@ -52,7 +68,11 @@ class _Platform implements ReminderPlatformAdapter {
   }
 
   @override
-  Future<ReminderPermissionState> permissionState() async => permission;
+  Future<ReminderPermissionState> permissionState() async {
+    if (failPermission) throw StateError('private permission detail');
+    return permission;
+  }
+
   @override
   Future<bool> requestPermission() async =>
       permission == ReminderPermissionState.granted;
@@ -62,16 +82,15 @@ class _Platform implements ReminderPlatformAdapter {
 
 void main() {
   setUp(tz_data.initializeTimeZones);
-  LocalPracticeReminderService service(
-          _Store store,
-          _Notifications notifications,
-          _Platform platform,
-          tz.TZDateTime now) =>
+  LocalPracticeReminderService service(_Store store,
+          _Notifications notifications, _Platform platform, tz.TZDateTime now,
+          {void Function(String)? diagnosticLog}) =>
       LocalPracticeReminderService(
           store: store,
           notifications: notifications,
           platform: platform,
-          now: () => now);
+          now: () => now,
+          diagnosticLog: diagnosticLog);
   test(
       'enabled permitted reminders schedule the two stable IDs in the device timezone',
       () async {
@@ -97,7 +116,7 @@ void main() {
     await service(
             _Store(const PracticeReminderPreferences(enabled: false)),
             notifications,
-            _Platform(ReminderPermissionState.granted),
+            _Platform(ReminderPermissionState.granted)..failPermission = true,
             tz.TZDateTime.utc(2026))
         .reconcile();
     expect(notifications.scheduled, isEmpty);
@@ -131,6 +150,166 @@ void main() {
     await s.setMorningTime(10, 30);
     expect(notifications.scheduled.map((r) => r.id).toSet().length, 2);
     expect(notifications.scheduled.first.at.hour, 10);
+    expect(notifications.cancelled, isEmpty);
+    expect(notifications.active.keys.toSet(), {
+      LocalPracticeReminderService.morningId,
+      LocalPracticeReminderService.eveningId
+    });
+  });
+  test('failed morning replacement preserves both existing reminders',
+      () async {
+    final store = _Store();
+    final notifications = _Notifications();
+    final logs = <String>[];
+    final reminderService = service(
+        store,
+        notifications,
+        _Platform(ReminderPermissionState.granted),
+        tz.TZDateTime(tz.getLocation('Europe/Budapest'), 2026, 7, 23, 8),
+        diagnosticLog: logs.add);
+    expect(await reminderService.reconcile(), isTrue);
+    notifications.failScheduleIds.add(LocalPracticeReminderService.morningId);
+
+    expect(await reminderService.setMorningTime(10, 30), isFalse);
+    expect(store.value.morningHour, 10);
+    expect(store.value.morningMinute, 30);
+    expect(
+        notifications.active[LocalPracticeReminderService.morningId]!.at.hour,
+        9);
+    expect(
+        notifications.active[LocalPracticeReminderService.eveningId]!.at.hour,
+        20);
+    expect(notifications.cancelled, isEmpty);
+    expect(logs, [
+      'reminder_reconcile stage=schedule_morning result=failure type=StateError'
+    ]);
+    expect(logs.single, isNot(contains('private schedule detail')));
+  });
+  test('platform scheduling failure logs only its safe code', () async {
+    final notifications = _Notifications()
+      ..scheduleError = PlatformException(
+          code: 'invalid_icon',
+          message: 'private plugin message',
+          details: {'token': 'private detail'});
+    final logs = <String>[];
+    final reminderService = service(
+        _Store(),
+        notifications,
+        _Platform(ReminderPermissionState.granted),
+        tz.TZDateTime.utc(2026),
+        diagnosticLog: logs.add);
+
+    expect(await reminderService.reconcile(), isFalse);
+    expect(logs, [
+      'reminder_reconcile stage=schedule_morning result=failure type=PlatformException code=invalid_icon'
+    ]);
+    expect(logs.single, isNot(contains('private plugin message')));
+    expect(logs.single, isNot(contains('private detail')));
+    expect(logs.single, isNot(contains('token')));
+
+    logs.clear();
+    notifications.scheduleError =
+        PlatformException(code: 'invalid_icon\nprivate detail');
+    expect(await reminderService.reconcile(), isFalse);
+    expect(logs.single, endsWith('code=redacted'));
+    expect(logs.single, isNot(contains('private detail')));
+  });
+  test('failed evening replacement retains its old alarm and stable IDs',
+      () async {
+    final store = _Store();
+    final notifications = _Notifications();
+    final logs = <String>[];
+    final reminderService = service(
+        store,
+        notifications,
+        _Platform(ReminderPermissionState.granted),
+        tz.TZDateTime(tz.getLocation('Europe/Budapest'), 2026, 7, 23, 8),
+        diagnosticLog: logs.add);
+    expect(await reminderService.reconcile(), isTrue);
+    notifications.failScheduleIds.add(LocalPracticeReminderService.eveningId);
+
+    expect(await reminderService.setMorningTime(10, 30), isFalse);
+    expect(notifications.active.keys.toSet(), {
+      LocalPracticeReminderService.morningId,
+      LocalPracticeReminderService.eveningId
+    });
+    expect(
+        notifications.active[LocalPracticeReminderService.morningId]!.at.hour,
+        10);
+    expect(
+        notifications.active[LocalPracticeReminderService.eveningId]!.at.hour,
+        20);
+    expect(notifications.cancelled, isEmpty);
+    expect(logs.single, contains('stage=schedule_evening result=failure'));
+  });
+  test('blocked permission cancels existing IDs without scheduling', () async {
+    final notifications = _Notifications();
+    final platform = _Platform(ReminderPermissionState.granted);
+    final reminderService =
+        service(_Store(), notifications, platform, tz.TZDateTime.utc(2026));
+    expect(await reminderService.reconcile(), isTrue);
+    platform.permission = ReminderPermissionState.blocked;
+
+    expect(await reminderService.reconcile(), isTrue);
+    expect(notifications.active, isEmpty);
+    expect(notifications.cancelled, [
+      LocalPracticeReminderService.morningId,
+      LocalPracticeReminderService.eveningId
+    ]);
+    expect(notifications.scheduled.length, 2);
+  });
+  test('diagnostics identify read, write, init and permission failures safely',
+      () async {
+    final now = tz.TZDateTime.utc(2026);
+    final logs = <String>[];
+    final failingRead = service(_Store()..fail = true, _Notifications(),
+        _Platform(ReminderPermissionState.granted), now,
+        diagnosticLog: logs.add);
+    expect(await failingRead.reconcile(), isFalse);
+    expect(logs.single, contains('stage=preference_read result=failure'));
+
+    logs.clear();
+    final failingWrite = service(_Store()..failWrite = true, _Notifications(),
+        _Platform(ReminderPermissionState.granted), now,
+        diagnosticLog: logs.add);
+    expect(await failingWrite.setMorningTime(11, 0), isFalse);
+    expect(logs.single, contains('stage=preference_write result=failure'));
+
+    logs.clear();
+    final failingInit = service(_Store(), _Notifications()..fail = true,
+        _Platform(ReminderPermissionState.granted), now,
+        diagnosticLog: logs.add);
+    expect(await failingInit.reconcile(), isFalse);
+    expect(logs.single, contains('stage=initialize result=failure'));
+
+    logs.clear();
+    final failingPermission = service(_Store(), _Notifications(),
+        _Platform(ReminderPermissionState.granted)..failPermission = true, now,
+        diagnosticLog: logs.add);
+    expect(await failingPermission.reconcile(), isFalse);
+    expect(logs.single, contains('stage=permission result=failure'));
+    expect(logs.join(' '), isNot(contains('private')));
+  });
+  test('cancel failures are logged by reminder ID stage and both are tried',
+      () async {
+    final notifications = _Notifications()
+      ..failCancelIds.addAll([
+        LocalPracticeReminderService.morningId,
+        LocalPracticeReminderService.eveningId
+      ]);
+    final logs = <String>[];
+    final reminderService = service(
+        _Store(const PracticeReminderPreferences(enabled: false)),
+        notifications,
+        _Platform(ReminderPermissionState.granted),
+        tz.TZDateTime.utc(2026),
+        diagnosticLog: logs.add);
+
+    expect(await reminderService.reconcile(), isFalse);
+    expect(logs, [
+      'reminder_reconcile stage=cancel_morning result=failure type=StateError',
+      'reminder_reconcile stage=cancel_evening result=failure type=StateError'
+    ]);
   });
   test('storage and scheduling failures are returned safely', () async {
     final store = _Store()..fail = true;
