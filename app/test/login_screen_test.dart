@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/l10n/app_localizations.dart';
+import 'package:language_voice_tutor_mobile/models/user_display_name.dart';
 import 'package:language_voice_tutor_mobile/screens/login_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
@@ -78,6 +79,45 @@ Future<void> _tapVisible(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
+  test('shared display-name validator keeps registration policy', () {
+    for (final name in <String?>[
+      null,
+      '',
+      '   ',
+      'David',
+      'José',
+      'Давид',
+      'محمد',
+      '山田',
+      '민수'
+    ]) {
+      expect(isValidUserDisplayName(name), isTrue, reason: '$name');
+    }
+    for (final name in [
+      'David123',
+      'David Smith',
+      'David!',
+      '😀',
+      ' David',
+      'David '
+    ]) {
+      expect(isValidUserDisplayName(name), isFalse, reason: name);
+    }
+  });
+
+  testWidgets('registration shows the localized display-name error on submit',
+      (tester) async {
+    await tester.pumpWidget(_screen(_RecoveryAuth()));
+    await tester.pumpAndSettle();
+    await _tapVisible(tester, find.byKey(const Key('login-mode-switch')));
+    await tester.enterText(
+        find.byType(TextFormField).at(0), 'user@example.com');
+    await tester.enterText(find.byType(TextFormField).at(1), 'password');
+    await tester.enterText(find.byType(TextFormField).at(2), 'David123');
+    await _tapVisible(tester, find.widgetWithText(FilledButton, 'Register'));
+    expect(find.text('Use letters only.'), findsOneWidget);
+  });
+
   testWidgets('sign-in shows Forgot password and registration hides it',
       (tester) async {
     await tester.pumpWidget(_screen(_RecoveryAuth()));

@@ -64,6 +64,7 @@ class UserSettings {
     required this.conversationModeEnabled,
     required this.selectedTutorId,
     required this.currentLevel,
+    this.displayName = '',
   });
 
   final String nativeLanguage;
@@ -74,6 +75,7 @@ class UserSettings {
   final bool conversationModeEnabled;
   final String selectedTutorId;
   final String currentLevel;
+  final String displayName;
 
   factory UserSettings.fromJson(Map<String, dynamic> json) => UserSettings(
         nativeLanguage:
@@ -87,6 +89,7 @@ class UserSettings {
         conversationModeEnabled: _bool(json['conversationModeEnabled']),
         selectedTutorId: _selectedTutorId(json['selectedTutorId']),
         currentLevel: canonicalLessonLevel(json['currentLevel']),
+        displayName: _string(json['displayName']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -99,6 +102,7 @@ class UserSettings {
         'conversationModeEnabled': conversationModeEnabled,
         'selectedTutorId': selectedTutorId,
         'currentLevel': canonicalLessonLevel(currentLevel),
+        'displayName': displayName,
       };
 
   UserSettings copyWith({
@@ -110,6 +114,7 @@ class UserSettings {
     bool? conversationModeEnabled,
     String? selectedTutorId,
     String? currentLevel,
+    String? displayName,
   }) =>
       UserSettings(
         nativeLanguage: nativeLanguage ?? this.nativeLanguage,
@@ -121,6 +126,7 @@ class UserSettings {
             conversationModeEnabled ?? this.conversationModeEnabled,
         selectedTutorId: selectedTutorId ?? this.selectedTutorId,
         currentLevel: canonicalLessonLevel(currentLevel ?? this.currentLevel),
+        displayName: displayName ?? this.displayName,
       );
 
   static const defaultTutorId = 'lana';

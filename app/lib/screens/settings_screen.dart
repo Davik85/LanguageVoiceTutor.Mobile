@@ -12,6 +12,7 @@ import '../models/lesson_start_selection.dart';
 import '../models/subscription_status.dart';
 import '../models/tutor_options.dart';
 import '../models/user_settings.dart';
+import '../models/user_display_name.dart';
 import '../l10n/app_localizations_context.dart';
 import '../l10n/lesson_selection_localization.dart';
 import '../services/auth_service.dart';
@@ -73,6 +74,8 @@ class _SettingsScreenState extends State<SettingsScreen>
   String? _accountError;
   String? _settingsError;
   bool _isSaving = false;
+  final _displayNameController = TextEditingController();
+  String? _displayNameError;
   final _currentPasswordController = TextEditingController();
   final _changeNewPasswordController = TextEditingController();
   final _changeConfirmPasswordController = TextEditingController();
@@ -148,6 +151,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _currentPasswordController.dispose();
+    _displayNameController.dispose();
     _changeNewPasswordController.dispose();
     _changeConfirmPasswordController.dispose();
     _feedbackMessageController.dispose();
@@ -203,6 +207,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       setState(() {
         _settings = settings;
         _confirmedSettings = settings;
+        _displayNameController.text = settings.displayName;
+        _displayNameError = null;
         _tutorOptions = tutorOptions;
         _tutorOptionsError = tutorOptionsUnavailable
             ? context.l10n.tutorChoicesUnavailable
@@ -223,10 +229,21 @@ class _SettingsScreenState extends State<SettingsScreen>
   Future<void> _saveSettings() async {
     final settings = _settings;
     if (settings == null) return;
-    setState(() => _isSaving = true);
+    final enteredDisplayName = _displayNameController.text;
+    if (!isValidUserDisplayName(enteredDisplayName)) {
+      setState(() => _displayNameError = context.l10n.displayNameLettersOnly);
+      return;
+    }
+    final displayName =
+        enteredDisplayName.trim().isEmpty ? '' : enteredDisplayName;
+    setState(() {
+      _displayNameError = null;
+      _isSaving = true;
+    });
     try {
       final result = await _authService.updateUserSettings(
-        _settingsWithSupportedTutor(settings),
+        _settingsWithSupportedTutor(
+            settings.copyWith(displayName: displayName)),
       );
       if (!mounted) return;
       if (result.isSuccess && result.settings != null) {
@@ -234,6 +251,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         setState(() {
           _settings = saved;
           _confirmedSettings = saved;
+          _displayNameController.text = saved.displayName;
           _settingsError = null;
         });
         _syncReminderLanguage(saved.explanationLanguage);
@@ -243,7 +261,10 @@ class _SettingsScreenState extends State<SettingsScreen>
         );
         return;
       }
-      setState(() => _settings = _confirmedSettings);
+      setState(() {
+        _settings = _confirmedSettings;
+        _displayNameController.text = _confirmedSettings?.displayName ?? '';
+      });
       if (result.status == UserSettingsUpdateStatus.authenticationRequired) {
         return _goToLogin();
       }
@@ -257,7 +278,10 @@ class _SettingsScreenState extends State<SettingsScreen>
           .showSnackBar(SnackBar(content: Text(message)));
     } catch (_) {
       if (!mounted) return;
-      setState(() => _settings = _confirmedSettings);
+      setState(() {
+        _settings = _confirmedSettings;
+        _displayNameController.text = _confirmedSettings?.displayName ?? '';
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.unableToSaveSettings)),
       );
@@ -450,6 +474,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         children: [
           _AccountCard(
             user: _user,
+            displayNameController: _displayNameController,
+            displayNameError: _displayNameError,
+            displayNameEnabled: _settings != null && !_isSaving,
             subscription: _subscription,
             error: _accountError,
             onOpenPremium: _openPremium,
@@ -633,11 +660,17 @@ class _SettingsActionButton extends StatelessWidget {
 class _AccountCard extends StatelessWidget {
   const _AccountCard(
       {this.user,
+      required this.displayNameController,
+      this.displayNameError,
+      required this.displayNameEnabled,
       this.subscription,
       this.error,
       required this.onOpenPremium,
       required this.onLogout});
   final AuthUser? user;
+  final TextEditingController displayNameController;
+  final String? displayNameError;
+  final bool displayNameEnabled;
   final SubscriptionStatus? subscription;
   final String? error;
   final VoidCallback onOpenPremium;
@@ -654,9 +687,15 @@ class _AccountCard extends StatelessWidget {
             if (user == null && error == null)
               Text(context.l10n.loadingAccount)
             else if (user != null) ...[
-              Text(user!.displayName?.isNotEmpty == true
-                  ? user!.displayName!
-                  : context.l10n.noDisplayName),
+              TextField(
+                key: const Key('settings-display-name'),
+                controller: displayNameController,
+                enabled: displayNameEnabled,
+                decoration: InputDecoration(
+                  labelText: context.l10n.displayNameOptional,
+                  errorText: displayNameError,
+                ),
+              ),
               Text(user!.email),
               const SizedBox(height: 8),
               Text(subscription == null

@@ -66,6 +66,7 @@ void main() {
       'conversationModeEnabled': true,
       'selectedTutorId': 'david',
       'currentLevel': 'B1',
+      'displayName': 'José',
       'extra': 'ignored'
     });
     expect(settings.nativeLanguage, 'ru');
@@ -75,6 +76,12 @@ void main() {
     expect(settings.conversationModeEnabled, isTrue);
     expect(settings.selectedTutorId, 'david');
     expect(settings.currentLevel, 'B1');
+    expect(settings.displayName, 'José');
+  });
+  test('missing or non-string display name safely becomes empty', () {
+    expect(UserSettings.fromJson({}).displayName, '');
+    expect(UserSettings.fromJson({'displayName': null}).displayName, '');
+    expect(UserSettings.fromJson({'displayName': 123}).displayName, '');
   });
   test('user settings response tolerates missing selected tutor', () {
     final settings = UserSettings.fromJson({
@@ -117,7 +124,8 @@ void main() {
             speechSpeed: 1.0,
             conversationModeEnabled: false,
             selectedTutorId: 'lana',
-            currentLevel: 'B2')
+            currentLevel: 'B2',
+            displayName: 'Давид')
         .toJson();
     expect(
         json.keys,
@@ -129,11 +137,13 @@ void main() {
           'speechSpeed',
           'conversationModeEnabled',
           'selectedTutorId',
-          'currentLevel'
+          'currentLevel',
+          'displayName'
         ]));
     expect(json['nativeLanguage'], 'ru');
     expect(json['studyLanguage'], 'Spanish');
     expect(json['currentLevel'], 'B2');
+    expect(json['displayName'], 'Давид');
 
     const studyLanguageNames = {
       'en': 'English',
@@ -174,6 +184,7 @@ void main() {
       conversationModeEnabled: true,
       selectedTutorId: 'lana',
       currentLevel: 'A1',
+      displayName: 'محمد',
     );
 
     final changed = original.copyWith(currentLevel: 'b2');
@@ -186,6 +197,8 @@ void main() {
     expect(changed.speechSpeed, original.speechSpeed);
     expect(changed.conversationModeEnabled, original.conversationModeEnabled);
     expect(changed.selectedTutorId, original.selectedTutorId);
+    expect(changed.displayName, 'محمد');
+    expect(original.copyWith(displayName: '山田').displayName, '山田');
   });
   test('settings service GET and PUT success with fakes', () async {
     final api = RecordingApiClient(

@@ -102,7 +102,8 @@ class FakeAuthService extends AuthService {
             speechSpeed: 1.0,
             conversationModeEnabled: true,
             selectedTutorId: 'nelli',
-            currentLevel: 'A1');
+            currentLevel: 'A1',
+            displayName: 'User');
   }
 
   @override
@@ -230,6 +231,11 @@ Widget _screen(FakeAuthService auth,
 
 Finder get _settingsScrollable => find.byType(Scrollable).first;
 
+String _displayNameText(WidgetTester tester) => tester
+    .widget<TextField>(find.byKey(const Key('settings-display-name')))
+    .controller!
+    .text;
+
 Future<void> _showSectionForText(WidgetTester tester, String text) async {
   const appTexts = {
     'Password & recovery',
@@ -258,6 +264,14 @@ Future<void> _scrollToFinder(WidgetTester tester, Finder finder) async {
     scrollable: _settingsScrollable,
   );
   await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _scrollToDisplayName(WidgetTester tester) async {
+  final field = find.byKey(const Key('settings-display-name'));
+  await tester.dragUntilVisible(
+      field, _settingsScrollable, const Offset(0, 400));
+  await tester.ensureVisible(field);
   await tester.pumpAndSettle();
 }
 
@@ -471,6 +485,8 @@ void main() {
     expect(find.text('Premium & subscription'), findsOneWidget);
     expect(find.text('Request account deletion'), findsNothing);
     expect(find.text('User'), findsOneWidget);
+    expect(_displayNameText(tester), 'User');
+    expect(find.text('user@example.com'), findsOneWidget);
     expect(find.text('Premium Monthly'), findsOneWidget);
     await _scrollToText(tester, 'Learning');
     expect(find.text('Learning'), findsOneWidget);
@@ -985,6 +1001,138 @@ void main() {
     await tester.pumpAndSettle();
     expect(auth.saved, isTrue);
     expect(find.text('Settings saved.'), findsOneWidget);
+  });
+
+  testWidgets('display name initializes from backend settings, not AuthUser',
+      (tester) async {
+    final auth = FakeAuthService(
+      initialSettings: const UserSettings(
+        nativeLanguage: 'en',
+        studyLanguage: 'es',
+        explanationLanguage: 'en',
+        speechVoice: 'nova',
+        speechSpeed: 1.0,
+        conversationModeEnabled: true,
+        selectedTutorId: 'nelli',
+        currentLevel: 'A1',
+        displayName: 'José',
+      ),
+    );
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+
+    expect(_displayNameText(tester), 'José');
+    expect(find.text('user@example.com'), findsOneWidget);
+  });
+
+  testWidgets('Unicode display names save through existing settings flow',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+
+    for (final name in ['José', 'Давид', 'محمد', '山田', '민수']) {
+      await _scrollToDisplayName(tester);
+      await tester.enterText(
+          find.byKey(const Key('settings-display-name')), name);
+      await _scrollToText(tester, 'Save settings');
+      await tester.tap(find.text('Save settings'));
+      await tester.pumpAndSettle();
+
+      expect(auth.savedSettings?.displayName, name);
+      await _scrollToDisplayName(tester);
+      expect(_displayNameText(tester), name);
+    }
+    expect(auth.saveCalls, 5);
+  });
+
+  testWidgets('invalid display names show field error and never save',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+
+    for (final name in [
+      'David123',
+      'David Smith',
+      'David!',
+      '😀',
+      ' David',
+      'David '
+    ]) {
+      await _scrollToDisplayName(tester);
+      await tester.enterText(
+          find.byKey(const Key('settings-display-name')), name);
+      await _scrollToText(tester, 'Save settings');
+      await tester.tap(find.text('Save settings'));
+      await tester.pumpAndSettle();
+
+      expect(auth.saveCalls, 0);
+      await _scrollToDisplayName(tester);
+      expect(find.text('Use letters only.'), findsOneWidget);
+    }
+  });
+
+  testWidgets('whitespace-only display name clears on save', (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('settings-display-name')), '   ');
+    await _scrollToText(tester, 'Save settings');
+    await tester.tap(find.text('Save settings'));
+    await tester.pumpAndSettle();
+
+    expect(auth.savedSettings?.displayName, '');
+    await _scrollToDisplayName(tester);
+    expect(_displayNameText(tester), '');
+  });
+
+  testWidgets('successful save uses backend-confirmed display name',
+      (tester) async {
+    final auth = FakeAuthService(
+      confirmedSave: const UserSettings(
+        nativeLanguage: 'en',
+        studyLanguage: 'es',
+        explanationLanguage: 'en',
+        speechVoice: 'nova',
+        speechSpeed: 1.0,
+        conversationModeEnabled: true,
+        selectedTutorId: 'nelli',
+        currentLevel: 'A1',
+        displayName: 'Backend',
+      ),
+    );
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('settings-display-name')), 'Daniel');
+    await _scrollToText(tester, 'Save settings');
+    await tester.tap(find.text('Save settings'));
+    await tester.pumpAndSettle();
+
+    expect(auth.savedSettings?.displayName, 'Daniel');
+    await _scrollToDisplayName(tester);
+    expect(_displayNameText(tester), 'Backend');
+    expect(find.text('Settings saved.'), findsOneWidget);
+  });
+
+  testWidgets('failed save restores the last confirmed display name',
+      (tester) async {
+    final auth = FakeAuthService(
+      saveResult: UserSettingsUpdateResult.ordinaryFailure(),
+    );
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('settings-display-name')), 'Daniel');
+    await _scrollToText(tester, 'Save settings');
+    await tester.tap(find.text('Save settings'));
+    await tester.pumpAndSettle();
+
+    expect(auth.savedSettings?.displayName, 'Daniel');
+    await _scrollToDisplayName(tester);
+    expect(_displayNameText(tester), 'User');
   });
 
   testWidgets('settings save uses backend-confirmed values', (tester) async {

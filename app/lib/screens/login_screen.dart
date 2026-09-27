@@ -3,18 +3,12 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../l10n/app_localizations_context.dart';
 import '../l10n/device_language_defaults.dart';
+import '../models/user_display_name.dart';
 import '../services/auth_service.dart';
 import '../services/service_factory.dart';
 import '../theme/app_visuals.dart';
 import '../widgets/password_recovery_form.dart';
 import 'home_screen.dart';
-
-final _displayNameNonLetters = RegExp(r'\P{L}', unicode: true);
-
-bool _isValidRegistrationDisplayName(String? value) =>
-    value == null ||
-    value.trim().isEmpty ||
-    (value == value.trim() && !_displayNameNonLetters.hasMatch(value));
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
@@ -175,10 +169,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _displayNameController,
                         decoration: InputDecoration(
                             labelText: context.l10n.displayNameOptional),
-                        validator: (value) =>
-                            _isValidRegistrationDisplayName(value)
-                                ? null
-                                : context.l10n.displayNameLettersOnly,
+                        validator: (value) => isValidUserDisplayName(value)
+                            ? null
+                            : context.l10n.displayNameLettersOnly,
                       ),
                     ],
                     if (_error != null) ...[

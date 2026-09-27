@@ -315,10 +315,11 @@ const userSettingsRequest = UserSettings(
   conversationModeEnabled: true,
   selectedTutorId: 'lana',
   currentLevel: 'A1',
+  displayName: 'David',
 );
 
 const userSettingsResponseBody =
-    '{"nativeLanguage":"tr","studyLanguage":"en","explanationLanguage":"ru","speechVoice":"coral","speechSpeed":1.1,"conversationModeEnabled":true,"selectedTutorId":"lana","currentLevel":"A1"}';
+    '{"nativeLanguage":"tr","studyLanguage":"en","explanationLanguage":"ru","speechVoice":"coral","speechSpeed":1.1,"conversationModeEnabled":true,"selectedTutorId":"lana","currentLevel":"A1","displayName":"Daniel"}';
 
 void main() {
   test('Google Play verification posts the exact token contract', () async {
@@ -756,6 +757,7 @@ void main() {
 
     expect(result.status, UserSettingsUpdateStatus.success);
     expect(result.settings?.nativeLanguage, 'tr');
+    expect(result.settings?.displayName, 'Daniel');
     expect(api.calls, ['PUT /api/me/settings']);
     expect(api.bodies.single, {
       'nativeLanguage': 'tr',
@@ -766,6 +768,7 @@ void main() {
       'conversationModeEnabled': true,
       'selectedTutorId': 'lana',
       'currentLevel': 'A1',
+      'displayName': 'David',
     });
   });
 
