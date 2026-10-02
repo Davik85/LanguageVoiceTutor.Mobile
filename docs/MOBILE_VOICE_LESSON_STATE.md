@@ -1,10 +1,16 @@
 # Mobile lesson, voice, Conversation mode, and voice scenario state
 
-Authoritative source commit: `f195dc2` (`feat: add mobile voice lesson and conversation flows`). This document records the completed Mobile lesson, voice, Conversation mode, voice scenario-resolution state from that source commit, and the later documented Desktop-parity transcription behavior.
+Current source checkpoint (2026-10-02): `a75f8b308c400b895a2a708bc9320f208ae033f7` / `0.1.0+12` / versionCode 12; v12 is submitted to the Google Play Production path and under Google review, with v11 the last confirmed publicly active release. Historical foundation commit: `f195dc2` (`feat: add mobile voice lesson and conversation flows`); its original verification and later Desktop-parity transcription evidence remain recorded below.
 
 ## Product boundary
 
 Mobile is another client of the same Language Voice Tutor product. Backend and CMS remain the source of truth for lesson runtime content, topics and scenarios, tutor behavior, session ownership, AI calls, and subscription/account state. Mobile contains no OpenAI API key, provider prompt, or provider model ID. Mobile does not invent CMS scenario IDs or variants.
+
+## Current canonical voices and Android audio settings (2026-10-02)
+
+The canonical selectable Android speech voices are exactly `alloy`, `ash`, `ballad`, `coral`, `echo`, `sage`, `shimmer`, `verse`, `marin`, and `cedar`. Supported IDs normalize to lowercase. Legacy `nova`, `onyx`, and `fable`, blank values, and unknown `speechVoice` values normalize using the effective tutor: David -> `cedar`; other tutors -> `coral`. Unsupported stale values are never exposed as temporary dropdown choices.
+
+Android product `speechSpeed` is fixed at `1.0`: the learner speed control is removed, parsing and serialization normalize the retained `UserSettings`/API JSON compatibility field to `1.0`, and tutor speech requests always use `1.0`. `ConversationModeEnabled` is fixed `true` and remains an API/UserSettings compatibility field; its learner enable/disable toggle is removed. The entire **Audio** card is removed from **Settings -> Profile**, which now presents **Account -> Learning -> Save settings**. Conversation Mode remains available from the lesson UI and is not gated by the removed settings flag.
 
 ## Study language through voice and lesson surfaces
 
@@ -28,7 +34,7 @@ Normal learner turns are committed only after a successful normal reply. The fir
 
 Prior eligible messages remain oldest-to-newest and use the selected level's effective final learner turn: `min((effectiveFinalLearnerTurn * 2) + 3, 70)`, with fallback `10` for a missing or non-positive final turn. This retains the setup/context overhead without changing lesson length. The accepted B2 regression retains the learner name from turn 1 and origin from turn 2 through the turn-31 normal request, then completes learner turn 32 locally.
 
-Normal lesson replies remain stateless at provider level: Mobile does not use provider conversation state, and the backend does not hydrate normal reply prompts from persisted lesson-session messages. Persisted messages remain for history, summary, feedback, and session records. Production Mobile receives the expanded history window only after the matching backend deployment; the currently deployed older backend may still truncate it.
+Normal lesson replies remain stateless at provider level: Mobile does not use provider conversation state, and the backend does not hydrate normal reply prompts from persisted lesson-session messages. Persisted messages remain for history, summary, feedback, and session records. At the expanded-history implementation checkpoint, availability of the expanded window in production depended on the matching backend deployment.
 
 ## Tutor avatar display and state synchronization
 
@@ -105,6 +111,8 @@ Semantic scenario resolution remains unchanged: deterministic numeric and exact-
 ## Backend dependency
 
 The existing backend semantic voice scenario resolver remains in use for unresolved first voice choices. The Desktop-parity transcription update did not add a backend endpoint, provider integration, backend deployment requirement, or API contract change.
+
+Production backend is `0.1.35-backend.164`; server-side Lesson Chat TTS and Conversation Mode TTS use `gpt-realtime-2.1-mini`. Rendering and model selection remain backend-owned and required no further Mobile client/model contract change. Mobile sends final speech requests through backend endpoints and stores no OpenAI credentials or model selection. This backend TTS change does not restore full product Realtime mode.
 
 ## Verification recorded for `f195dc2`
 
