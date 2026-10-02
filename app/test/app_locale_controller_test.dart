@@ -13,7 +13,7 @@ void main() {
       nativeLanguage: 'en',
       studyLanguage: 'es',
       explanationLanguage: 'ru',
-      speechVoice: 'nova',
+      speechVoice: 'coral',
       speechSpeed: 1,
       conversationModeEnabled: true,
       selectedTutorId: 'nelli',

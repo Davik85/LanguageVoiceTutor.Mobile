@@ -98,7 +98,7 @@ class FakeAuthService extends AuthService {
             nativeLanguage: 'en',
             studyLanguage: 'es',
             explanationLanguage: 'en',
-            speechVoice: 'nova',
+            speechVoice: 'coral',
             speechSpeed: 1.0,
             conversationModeEnabled: true,
             selectedTutorId: 'nelli',
@@ -319,6 +319,95 @@ Future<void> _openAccountDeletion(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets('voice selector exposes exactly ten friendly canonical choices',
+      (tester) async {
+    await tester.pumpWidget(_screen(FakeAuthService()));
+    await tester.pumpAndSettle();
+    final field = find.byKey(const Key('settings-tutor-voice'));
+    await _scrollToFinder(tester, field);
+    final dropdown = tester.widget<DropdownButton<String>>(find.descendant(
+        of: field, matching: find.byType(DropdownButton<String>)));
+    expect(dropdown.items!.map((item) => item.value), [
+      'alloy',
+      'ash',
+      'ballad',
+      'coral',
+      'echo',
+      'sage',
+      'shimmer',
+      'verse',
+      'marin',
+      'cedar'
+    ]);
+    expect(dropdown.items!.map((item) => (item.child as Text).data), [
+      'Alloy',
+      'Ash',
+      'Ballad',
+      'Coral',
+      'Echo',
+      'Sage',
+      'Shimmer',
+      'Verse',
+      'Marin',
+      'Cedar'
+    ]);
+    await tester.tap(field);
+    await tester.pumpAndSettle();
+    for (final label in ['Nova', 'Onyx', 'Fable', 'nova', 'onyx', 'fable']) {
+      expect(find.text(label), findsNothing);
+    }
+    expect(tester.takeException(), isNull);
+  });
+  for (final voice in ['ballad', 'verse', 'marin', 'cedar']) {
+    testWidgets('selecting $voice saves its canonical lowercase ID',
+        (tester) async {
+      final auth = FakeAuthService();
+      await tester.pumpWidget(_screen(auth));
+      await tester.pumpAndSettle();
+      final field = find.byKey(const Key('settings-tutor-voice'));
+      await _scrollToFinder(tester, field);
+      await tester.tap(field);
+      await tester.pumpAndSettle();
+      final label = '${voice[0].toUpperCase()}${voice.substring(1)}';
+      final item = find.text(label).last;
+      await tester.ensureVisible(item);
+      await tester.tap(item);
+      await tester.pumpAndSettle();
+      await _scrollToAndTap(tester, 'Save settings');
+      expect(auth.savedSettings?.speechVoice, voice);
+    });
+  }
+  for (final stale in ['nova', 'onyx', 'fable', 'unknown']) {
+    for (final tutor in ['david', 'nelli']) {
+      testWidgets(
+          'direct $stale settings for $tutor normalize before binding and saving',
+          (tester) async {
+        final auth = FakeAuthService(
+            initialSettings: UserSettings(
+                nativeLanguage: 'en',
+                studyLanguage: 'es',
+                explanationLanguage: 'en',
+                speechVoice: stale,
+                speechSpeed: 1.0,
+                conversationModeEnabled: true,
+                selectedTutorId: tutor,
+                currentLevel: 'A1',
+                displayName: 'User'));
+        await tester.pumpWidget(_screen(auth));
+        await tester.pumpAndSettle();
+        final field = find.byKey(const Key('settings-tutor-voice'));
+        await _scrollToFinder(tester, field);
+        final expected = tutor == 'david' ? 'Cedar' : 'Coral';
+        expect(find.descendant(of: field, matching: find.text(expected)),
+            findsOneWidget);
+        expect(find.text(stale), findsNothing);
+        expect(tester.takeException(), isNull);
+        await _scrollToAndTap(tester, 'Save settings');
+        expect(auth.savedSettings?.speechVoice, expected.toLowerCase());
+      });
+    }
+  }
+
   group('localized practice reminder messages', () {
     testWidgets('failed reminder update keeps the localized learner message',
         (tester) async {
@@ -371,7 +460,7 @@ void main() {
           nativeLanguage: 'ru',
           studyLanguage: 'ja',
           explanationLanguage: 'ko',
-          speechVoice: 'nova',
+          speechVoice: 'coral',
           speechSpeed: 1.0,
           conversationModeEnabled: true,
           selectedTutorId: 'nelli',
@@ -393,7 +482,7 @@ void main() {
           nativeLanguage: 'en',
           studyLanguage: 'es',
           explanationLanguage: 'pt',
-          speechVoice: 'nova',
+          speechVoice: 'coral',
           speechSpeed: 1.0,
           conversationModeEnabled: true,
           selectedTutorId: 'nelli',
@@ -432,7 +521,7 @@ void main() {
         nativeLanguage: 'en',
         studyLanguage: 'es',
         explanationLanguage: 'ru',
-        speechVoice: 'nova',
+        speechVoice: 'coral',
         speechSpeed: 1,
         conversationModeEnabled: true,
         selectedTutorId: 'nelli',
@@ -883,7 +972,7 @@ void main() {
         nativeLanguage: 'en',
         studyLanguage: 'es',
         explanationLanguage: 'en',
-        speechVoice: 'nova',
+        speechVoice: 'coral',
         speechSpeed: 1.0,
         conversationModeEnabled: true,
         selectedTutorId: 'nelli',
@@ -906,7 +995,7 @@ void main() {
         nativeLanguage: 'en',
         studyLanguage: 'es',
         explanationLanguage: 'pl',
-        speechVoice: 'nova',
+        speechVoice: 'coral',
         speechSpeed: 1.0,
         conversationModeEnabled: true,
         selectedTutorId: 'nelli',
@@ -978,7 +1067,7 @@ void main() {
       nativeLanguage: 'tr',
       studyLanguage: 'es',
       explanationLanguage: 'en',
-      speechVoice: 'nova',
+      speechVoice: 'coral',
       speechSpeed: 1.0,
       conversationModeEnabled: true,
       selectedTutorId: 'nelli',
@@ -994,7 +1083,7 @@ void main() {
     expect(auth.savedSettings?.nativeLanguage, 'tr');
     expect(auth.savedSettings?.studyLanguage, 'es');
     expect(auth.savedSettings?.explanationLanguage, 'en');
-    expect(auth.savedSettings?.speechVoice, 'nova');
+    expect(auth.savedSettings?.speechVoice, 'coral');
     expect(auth.savedSettings?.speechSpeed, 1.0);
     expect(auth.savedSettings?.conversationModeEnabled, isTrue);
     expect(auth.savedSettings?.selectedTutorId, 'nelli');
@@ -1037,7 +1126,7 @@ void main() {
     await tester.tap(find.text('Save settings'));
     await tester.pumpAndSettle();
     expect(auth.savedSettings?.selectedTutorId, 'lana');
-    expect(auth.savedSettings?.speechVoice, 'nova');
+    expect(auth.savedSettings?.speechVoice, 'coral');
   });
 
   testWidgets('connection-status controls are absent from App settings',
@@ -1071,7 +1160,7 @@ void main() {
         nativeLanguage: 'en',
         studyLanguage: 'es',
         explanationLanguage: 'en',
-        speechVoice: 'nova',
+        speechVoice: 'coral',
         speechSpeed: 1.0,
         conversationModeEnabled: true,
         selectedTutorId: 'nelli',
@@ -1156,7 +1245,7 @@ void main() {
         nativeLanguage: 'en',
         studyLanguage: 'es',
         explanationLanguage: 'en',
-        speechVoice: 'nova',
+        speechVoice: 'coral',
         speechSpeed: 1.0,
         conversationModeEnabled: true,
         selectedTutorId: 'nelli',
@@ -1201,7 +1290,7 @@ void main() {
       nativeLanguage: 'ru',
       studyLanguage: 'es',
       explanationLanguage: 'en',
-      speechVoice: 'nova',
+      speechVoice: 'coral',
       speechSpeed: 1.0,
       conversationModeEnabled: true,
       selectedTutorId: 'nelli',

@@ -290,7 +290,7 @@ class FakeAuthService extends AuthService {
       nativeLanguage: nativeLanguage,
       studyLanguage: studyLanguage,
       explanationLanguage: explanationLanguage,
-      speechVoice: 'nova',
+      speechVoice: 'coral',
       speechSpeed: 1.0,
       conversationModeEnabled: true,
       selectedTutorId: UserSettings.defaultTutorId,

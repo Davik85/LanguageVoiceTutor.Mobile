@@ -83,7 +83,7 @@ const _authResponse = ApiResponse(
 const _settingsResponse = ApiResponse(
   statusCode: 200,
   body: '{"nativeLanguage":"uk","studyLanguage":"French",'
-      '"explanationLanguage":"ru","speechVoice":"nova",'
+      '"explanationLanguage":"ru","speechVoice":"coral",'
       '"speechSpeed":1.3,"conversationModeEnabled":true,'
       '"selectedTutorId":"nelli","currentLevel":"B2"}',
 );
@@ -251,7 +251,7 @@ void main() {
       'nativeLanguage': 'uk',
       'studyLanguage': 'French',
       'explanationLanguage': 'ru',
-      'speechVoice': 'nova',
+      'speechVoice': 'coral',
       'speechSpeed': 1.3,
       'conversationModeEnabled': true,
       'selectedTutorId': 'nelli',

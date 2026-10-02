@@ -54,14 +54,61 @@ class MemoryStorage implements SessionStorage {
 }
 
 const settingsJson =
-    '{"nativeLanguage":"en","studyLanguage":"es","explanationLanguage":"en","speechVoice":"nova","speechSpeed":1.1,"conversationModeEnabled":true,"selectedTutorId":"nelli","currentLevel":"B2","extra":"ignored"}';
+    '{"nativeLanguage":"en","studyLanguage":"es","explanationLanguage":"en","speechVoice":"coral","speechSpeed":1.1,"conversationModeEnabled":true,"selectedTutorId":"nelli","currentLevel":"B2","extra":"ignored"}';
 void main() {
+  for (final voice in ['nova', 'onyx', 'fable', 'unknown', '', ' ', null, 42]) {
+    for (final tutor in ['david', 'nelli', 'lana', null]) {
+      test('settings parsing normalizes $voice for $tutor', () {
+        final settings = UserSettings.fromJson(
+            {'speechVoice': voice, 'selectedTutorId': tutor});
+        expect(settings.speechVoice, tutor == 'david' ? 'cedar' : 'coral');
+        expect(settings.toJson()['speechVoice'], settings.speechVoice);
+      });
+    }
+  }
+  for (final voice in [
+    'alloy',
+    'ash',
+    'ballad',
+    'coral',
+    'echo',
+    'sage',
+    'shimmer',
+    'verse',
+    'marin',
+    'cedar'
+  ]) {
+    test('settings parsing canonicalizes supported $voice', () {
+      expect(
+          UserSettings.fromJson({
+            'speechVoice': ' ${voice.toUpperCase()} ',
+            'selectedTutorId': 'david'
+          }).speechVoice,
+          voice);
+    });
+  }
+  test('direct stale settings serialize only a supported tutor-aware voice',
+      () {
+    const settings = UserSettings(
+        nativeLanguage: 'en',
+        studyLanguage: 'es',
+        explanationLanguage: 'en',
+        speechVoice: 'onyx',
+        speechSpeed: 1,
+        conversationModeEnabled: true,
+        selectedTutorId: 'david',
+        currentLevel: 'B2');
+    expect(settings.toJson()['speechVoice'], 'cedar');
+    expect(settings.withNormalizedSpeechVoice().speechVoice, 'cedar');
+    expect(settings.withNormalizedSpeechVoice().speechSpeed, 1);
+  });
+
   test('user settings response parsing tolerates extra fields', () {
     final settings = UserSettings.fromJson({
       'nativeLanguage': 'Russian',
       'studyLanguage': 'Spanish',
       'explanationLanguage': 'German',
-      'speechVoice': 'nova',
+      'speechVoice': 'coral',
       'speechSpeed': 1.2,
       'conversationModeEnabled': true,
       'selectedTutorId': 'david',
@@ -88,7 +135,7 @@ void main() {
       'nativeLanguage': 'en',
       'studyLanguage': 'es',
       'explanationLanguage': 'en',
-      'speechVoice': 'nova',
+      'speechVoice': 'coral',
       'speechSpeed': 1.2,
       'conversationModeEnabled': true,
     });
@@ -120,7 +167,7 @@ void main() {
             nativeLanguage: 'ru',
             studyLanguage: 'es',
             explanationLanguage: 'pl',
-            speechVoice: 'nova',
+            speechVoice: 'coral',
             speechSpeed: 1.0,
             conversationModeEnabled: false,
             selectedTutorId: 'lana',
@@ -158,7 +205,7 @@ void main() {
         nativeLanguage: 'tr',
         studyLanguage: 'en',
         explanationLanguage: 'ru',
-        speechVoice: 'nova',
+        speechVoice: 'coral',
         speechSpeed: 1.0,
         conversationModeEnabled: true,
         selectedTutorId: 'lana',
@@ -213,7 +260,7 @@ void main() {
         nativeLanguage: 'en',
         studyLanguage: 'es',
         explanationLanguage: 'en',
-        speechVoice: 'nova',
+        speechVoice: 'coral',
         speechSpeed: 1.0,
         conversationModeEnabled: false,
         selectedTutorId: 'lana',

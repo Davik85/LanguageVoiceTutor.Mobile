@@ -1,4 +1,5 @@
 import '../models/audio_speech.dart';
+import '../models/speech_voice_options.dart';
 import '../models/study_language_definition.dart';
 import '../models/user_settings.dart';
 
@@ -14,7 +15,8 @@ class TutorSpeechRequestBuilder {
     final language = StudyLanguageDefinitions.resolve(settings.studyLanguage);
     return AudioSpeechRequest(
       text: text,
-      speechVoice: settings.speechVoice,
+      speechVoice: SpeechVoiceOptions.resolve(settings.speechVoice,
+          selectedTutorId: settings.selectedTutorId),
       speechSpeed: settings.speechSpeed,
       targetLanguageId: language.id,
       targetLanguageName: language.englishName,

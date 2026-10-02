@@ -10,6 +10,11 @@ import 'package:language_voice_tutor_mobile/models/achievements.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_access_decision.dart';
 import 'package:language_voice_tutor_mobile/models/progress.dart';
 import 'package:language_voice_tutor_mobile/models/user_settings.dart';
+import 'package:language_voice_tutor_mobile/models/tutor_options.dart';
+import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
+import 'package:language_voice_tutor_mobile/services/tutor_options_service.dart';
+import 'package:language_voice_tutor_mobile/l10n/lesson_selection_localization.dart';
+import 'package:language_voice_tutor_mobile/models/lesson_start_selection.dart';
 import 'package:language_voice_tutor_mobile/screens/home_screen.dart';
 import 'package:language_voice_tutor_mobile/screens/choose_topic_screen.dart';
 import 'package:language_voice_tutor_mobile/screens/settings_screen.dart';
@@ -44,6 +49,7 @@ class FakeAuthService extends AuthService {
     AuthUser? user,
     this.loadFailure,
     this.currentLevel = 'A1',
+    this.studyLanguage = 'es',
     this.settingsFailure,
     this.settingsCompleter,
     this.progressResult,
@@ -59,8 +65,9 @@ class FakeAuthService extends AuthService {
 
   final AuthUser? user;
   final ApiException? loadFailure;
-  final String currentLevel;
-  final ApiException? settingsFailure;
+  String currentLevel;
+  String studyLanguage;
+  ApiException? settingsFailure;
   final Completer<UserSettings>? settingsCompleter;
   final ProgressResult? progressResult;
   final AchievementsResult? achievementsResult;
@@ -90,8 +97,28 @@ class FakeAuthService extends AuthService {
     fetchUserSettingsCallCount += 1;
     if (settingsFailure != null) throw settingsFailure!;
     if (settingsCompleter != null) return settingsCompleter!.future;
-    return _settings(currentLevel);
+    return _settings(currentLevel).copyWith(studyLanguage: studyLanguage);
   }
+
+  @override
+  Future<UserSettingsUpdateResult> updateUserSettings(
+      UserSettings settings) async {
+    currentLevel = settings.currentLevel;
+    studyLanguage = settings.studyLanguage;
+    return UserSettingsUpdateResult.success(settings);
+  }
+
+  @override
+  Future<SubscriptionStatus> fetchSubscriptionStatus() async =>
+      SubscriptionStatus(
+          userId: 'user-1',
+          planName: 'Free',
+          premiumActive: false,
+          trialActive: false,
+          freeLessonUsedToday: 0,
+          freeLessonRemainingToday: 1,
+          checkedAtUtc: DateTime.utc(2026),
+          enforcementEnabled: true);
 
   @override
   Future<ProgressResult> fetchProgress() async {
@@ -161,7 +188,7 @@ UserSettings _settings(String currentLevel) => UserSettings(
       nativeLanguage: 'en',
       studyLanguage: 'es',
       explanationLanguage: 'en',
-      speechVoice: 'nova',
+      speechVoice: 'coral',
       speechSpeed: 1.0,
       conversationModeEnabled: true,
       selectedTutorId: UserSettings.defaultTutorId,
@@ -201,10 +228,21 @@ class MemoryAchievementPresentationStore
   Future<Set<String>> readPresentedIds(String userId) async => {...presented};
 }
 
+class HomeTutorOptionsService extends TutorOptionsService {
+  HomeTutorOptionsService() : super(apiClient: FakeApiClient());
+  @override
+  Future<TutorOptions> fetchTutorOptions() async => const TutorOptions(tutors: [
+        TutorOption(tutorId: 'lana', displayName: 'Lana', isActive: true),
+        TutorOption(tutorId: 'david', displayName: 'David', isActive: true),
+        TutorOption(tutorId: 'nelli', displayName: 'Nelli', isActive: true),
+      ]);
+}
+
 Widget _home({
   FakeAuthService? authService,
   AchievementPresentationStore? presentationStore,
   Locale locale = const Locale('en'),
+  WidgetBuilder? settingsBuilder,
 }) =>
     MaterialApp(
       locale: locale,
@@ -217,12 +255,208 @@ Widget _home({
       ),
       routes: {
         '/login': (_) => const Scaffold(body: Text('Login route')),
-        SettingsScreen.routeName: (_) =>
-            const Scaffold(body: Center(child: Text('Settings route'))),
+        SettingsScreen.routeName: settingsBuilder ??
+            (_) => const Scaffold(body: Center(child: Text('Settings route'))),
       },
     );
 
 void main() {
+  testWidgets(
+      'Home learning settings use localized level and language in the account card',
+      (tester) async {
+    final auth = FakeAuthService(currentLevel: 'B2');
+    await tester
+        .pumpWidget(_home(authService: auth, locale: const Locale('ru')));
+    await tester.pumpAndSettle();
+    final level = find.byKey(const Key('home-current-level'));
+    final language = find.byKey(const Key('home-study-language'));
+    final l10n = AppLocalizations.of(tester.element(level));
+    expect(find.descendant(of: level, matching: find.text(l10n.currentLevel)),
+        findsOneWidget);
+    expect(
+        find.descendant(
+            of: level,
+            matching:
+                find.text(l10n.localizedLevel(lessonLevelFor('B2')).label)),
+        findsOneWidget);
+    expect(
+        find.descendant(of: language, matching: find.text('Spanish / Español')),
+        findsOneWidget);
+    expect(
+        find
+            .ancestor(of: level, matching: find.byType(Card))
+            .evaluate()
+            .single
+            .widget,
+        same(find
+            .ancestor(
+                of: find.text('Вы вошли как David'),
+                matching: find.byType(Card))
+            .evaluate()
+            .single
+            .widget));
+    expect(tester.getTopLeft(level).dy,
+        greaterThan(tester.getTopLeft(find.text('Бесплатный план')).dy));
+    expect(tester.getTopLeft(level).dy,
+        lessThan(tester.getTopLeft(find.text('Достижения')).dy));
+    expect(auth.fetchUserSettingsCallCount, 1);
+  });
+  for (final locale in ['en', 'pl', 'ru', 'de']) {
+    testWidgets(
+        '$locale Home learning fields fit equally at 360dp without overflow',
+        (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(_home(
+          authService: FakeAuthService(currentLevel: 'B2', studyLanguage: 'pt'),
+          locale: Locale(locale)));
+      await tester.pumpAndSettle();
+      final level = find.byKey(const Key('home-current-level'));
+      final language = find.byKey(const Key('home-study-language'));
+      expect(tester.getSize(level).width, tester.getSize(language).width);
+      expect(tester.getRect(level).overlaps(tester.getRect(language)), isFalse);
+      for (final field in [level, language]) {
+        final texts = tester.widgetList<Text>(
+            find.descendant(of: field, matching: find.byType(Text)));
+        expect(
+            texts.every((text) =>
+                text.maxLines == 1 && text.overflow == TextOverflow.ellipsis),
+            isTrue);
+        expect(
+            tester.getSemantics(field),
+            matchesSemantics(
+                isButton: true,
+                hasEnabledState: true,
+                isEnabled: true,
+                hasTapAction: true,
+                label: field == level
+                    ? '${AppLocalizations.of(tester.element(field)).currentLevel}: ${AppLocalizations.of(tester.element(field)).localizedLevel(lessonLevelFor('B2')).label}'
+                    : '${AppLocalizations.of(tester.element(field)).studyLanguage}: Portuguese / Português'));
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
+  for (final key in ['home-current-level', 'home-study-language']) {
+    testWidgets(
+        '$key opens existing Settings on Profile and reloads saved values on return',
+        (tester) async {
+      final auth = FakeAuthService();
+      await tester.pumpWidget(_home(
+          authService: auth,
+          settingsBuilder: (_) => SettingsScreen(
+              authService: auth,
+              tutorOptionsService: HomeTutorOptionsService())));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(Key(key)));
+      await tester.pumpAndSettle();
+      expect(find.byType(SettingsScreen), findsOneWidget);
+      expect(
+          tester
+              .widget<NavigationBar>(find.byType(NavigationBar))
+              .selectedIndex,
+          0);
+      final scrollable = find.byType(Scrollable).first;
+      final levelDropdown = find.byType(DropdownButtonFormField<String>).first;
+      await tester.scrollUntilVisible(levelDropdown, 200,
+          scrollable: scrollable);
+      await tester.tap(levelDropdown);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('B2 Upper-Intermediate').last);
+      await tester.pumpAndSettle();
+      final languageDropdown =
+          find.byType(DropdownButtonFormField<String>).at(1);
+      await tester.ensureVisible(languageDropdown);
+      await tester.tap(languageDropdown);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('French / Français').last);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text('Save settings'), 300,
+          scrollable: scrollable);
+      await tester.tap(find.text('Save settings'));
+      await tester.pumpAndSettle();
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(
+          find.descendant(
+              of: find.byKey(const Key('home-current-level')),
+              matching: find.text('B2 Upper-Intermediate')),
+          findsOneWidget);
+      expect(
+          find.descendant(
+              of: find.byKey(const Key('home-study-language')),
+              matching: find.text('French / Français')),
+          findsOneWidget);
+      expect(auth.fetchUserSettingsCallCount, 3);
+    });
+  }
+  testWidgets(
+      'ordinary Home settings failure leaves account progress achievements and Settings usable',
+      (tester) async {
+    final auth = FakeAuthService(
+        settingsFailure: const ApiException('private settings failure'));
+    await tester.pumpWidget(_home(authService: auth));
+    await tester.pumpAndSettle();
+    expect(find.text('Signed in as David'), findsOneWidget);
+    expect(find.bySemanticsLabel('6 day learning streak'), findsOneWidget);
+    expect(
+        find.byKey(const Key('home-achievement-lessons-1-v1')), findsOneWidget);
+    for (final key in ['home-current-level', 'home-study-language']) {
+      expect(
+          find.descendant(of: find.byKey(Key(key)), matching: find.text('—')),
+          findsOneWidget);
+    }
+    expect(find.text('private settings failure'), findsNothing);
+    await tester.dragUntilVisible(find.text('Open Settings'),
+        find.byType(ListView), const Offset(0, -200));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open Settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Settings route'), findsOneWidget);
+  });
+  testWidgets(
+      'Home settings auth requirement preserves sign-in-again navigation',
+      (tester) async {
+    await tester.pumpWidget(_home(
+        authService: FakeAuthService(
+            settingsFailure: const ApiException('Please sign in again.'))));
+    await tester.pumpAndSettle();
+    expect(find.text('Login route'), findsOneWidget);
+    expect(find.byType(HomeScreen), findsNothing);
+  });
+  testWidgets(
+      'Start lesson fetches authoritative settings instead of cached Home level',
+      (tester) async {
+    final auth = FakeAuthService(currentLevel: 'A1');
+    await tester.pumpWidget(_home(authService: auth));
+    await tester.pumpAndSettle();
+    expect(auth.fetchUserSettingsCallCount, 1);
+    auth.currentLevel = 'B2';
+    await tester.tap(find.text('Start lesson'));
+    await tester.pumpAndSettle();
+    expect(auth.fetchUserSettingsCallCount, 2);
+    expect(
+        tester
+            .widget<ChooseTopicScreen>(find.byType(ChooseTopicScreen))
+            .selectedLevel
+            .id,
+        'b2');
+  });
+  testWidgets('pending Home settings do not block account or progress loading',
+      (tester) async {
+    final pending = Completer<UserSettings>();
+    final auth = FakeAuthService(settingsCompleter: pending);
+    await tester.pumpWidget(_home(authService: auth));
+    await tester.pumpAndSettle();
+    expect(find.text('Signed in as David'), findsOneWidget);
+    expect(find.bySemanticsLabel('6 day learning streak'), findsOneWidget);
+    expect(find.text('Start lesson'), findsOneWidget);
+    pending.complete(_settings('B2'));
+    await tester.pumpAndSettle();
+    expect(find.text('B2 Upper-Intermediate'), findsOneWidget);
+  });
+
   testWidgets('Russian Home localizes primary learner-facing sections',
       (tester) async {
     await tester.pumpWidget(_home(locale: const Locale('ru')));
@@ -233,6 +467,8 @@ void main() {
     expect(find.text('Бесплатный план'), findsOneWidget);
     expect(find.text('Достижения'), findsOneWidget);
     expect(find.text('Все'), findsOneWidget);
+    await tester.dragUntilVisible(
+        find.text('Ваша неделя'), find.byType(ListView), const Offset(0, -200));
     expect(find.text('Ваша неделя'), findsOneWidget);
     await tester.dragUntilVisible(
       find.text('Открыть настройки'),
@@ -343,6 +579,8 @@ void main() {
     expect(auth.fetchProgressCallCount, 1);
     expect(auth.fetchAchievementsCallCount, 1);
     expect(find.bySemanticsLabel('6 day learning streak'), findsOneWidget);
+    await tester.dragUntilVisible(find.text('4 lessons in the last 7 days'),
+        find.byType(ListView), const Offset(0, -200));
     expect(find.text('4 lessons in the last 7 days'), findsOneWidget);
     expect(find.byKey(const Key('home-activity-2026-07-11')), findsNothing);
     expect(find.byKey(const Key('home-activity-2026-07-12')), findsOneWidget);
@@ -369,6 +607,10 @@ void main() {
   testWidgets(
       'home preserves backend achievement Home order and opens view all',
       (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(_home());
     await tester.pumpAndSettle();
 
@@ -587,6 +829,8 @@ void main() {
     expect(
         find.text('Achievements are temporarily unavailable'), findsOneWidget);
     expect(find.text('Start lesson'), findsOneWidget);
+    await tester.dragUntilVisible(find.text('Open Settings'),
+        find.byType(ListView), const Offset(0, -200));
     expect(find.text('Open Settings'), findsOneWidget);
   });
 
@@ -626,6 +870,8 @@ void main() {
       const Offset(0, -200),
     );
     expect(find.text('Activity is unavailable right now.'), findsOneWidget);
+    await tester.dragUntilVisible(
+        find.text('Start lesson'), find.byType(ListView), const Offset(0, 200));
     expect(find.text('Start lesson'), findsOneWidget);
     await tester.dragUntilVisible(
       find.text('Open Settings'),
@@ -655,7 +901,7 @@ void main() {
     await tester.tap(find.text('Начать урок'));
     await tester.pumpAndSettle();
 
-    expect(auth.fetchUserSettingsCallCount, 1);
+    expect(auth.fetchUserSettingsCallCount, 2);
     expect(find.text('Выбор темы'), findsOneWidget);
     expect(find.text('Уровень: A2 Базовый'), findsOneWidget);
     expect(find.text('Выбор уровня'), findsNothing);
@@ -676,7 +922,7 @@ void main() {
     await tester.tap(find.text('Start lesson'));
     await tester.pumpAndSettle();
 
-    expect(auth.fetchUserSettingsCallCount, 1);
+    expect(auth.fetchUserSettingsCallCount, 2);
     expect(find.text('Choose Topic'), findsOneWidget);
     expect(find.text('Level: B2 Upper-Intermediate'), findsOneWidget);
   });
@@ -692,7 +938,7 @@ void main() {
     await tester.tap(find.text('Start lesson'));
     await tester.pump();
 
-    expect(auth.fetchUserSettingsCallCount, 1);
+    expect(auth.fetchUserSettingsCallCount, 2);
     expect(find.text('Loading settings...'), findsOneWidget);
     final button = tester.widget<FilledButton>(find.byType(FilledButton).first);
     expect(button.onPressed, isNull);
@@ -705,16 +951,15 @@ void main() {
 
   testWidgets('settings authentication failure routes to Login',
       (tester) async {
-    final auth = FakeAuthService(
-      settingsFailure: const ApiException('Please sign in again.'),
-    );
+    final auth = FakeAuthService();
     await tester.pumpWidget(_home(authService: auth));
     await tester.pumpAndSettle();
 
+    auth.settingsFailure = const ApiException('Please sign in again.');
     await tester.tap(find.text('Start lesson'));
     await tester.pumpAndSettle();
 
-    expect(auth.fetchUserSettingsCallCount, 1);
+    expect(auth.fetchUserSettingsCallCount, 2);
     expect(find.text('Login route'), findsOneWidget);
   });
 
@@ -729,7 +974,7 @@ void main() {
     await tester.tap(find.text('Start lesson'));
     await tester.pumpAndSettle();
 
-    expect(auth.fetchUserSettingsCallCount, 1);
+    expect(auth.fetchUserSettingsCallCount, 2);
     expect(find.byType(HomeScreen), findsOneWidget);
     expect(find.text('Start lesson'), findsOneWidget);
     expect(

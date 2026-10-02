@@ -6,6 +6,7 @@ import 'package:language_voice_tutor_mobile/models/achievements.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_access_decision.dart';
 import 'package:language_voice_tutor_mobile/models/subscription_status.dart';
 import 'package:language_voice_tutor_mobile/models/progress.dart';
+import 'package:language_voice_tutor_mobile/models/user_settings.dart';
 import 'package:language_voice_tutor_mobile/screens/home_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
@@ -118,6 +119,17 @@ class FakeAuthService extends AuthService {
 
   @override
   Future<ProgressResult> fetchProgress() async => ProgressResult.unavailable();
+
+  @override
+  Future<UserSettings> fetchUserSettings() async => const UserSettings(
+      nativeLanguage: 'en',
+      studyLanguage: 'en',
+      explanationLanguage: 'en',
+      speechVoice: 'coral',
+      speechSpeed: 1.0,
+      conversationModeEnabled: true,
+      selectedTutorId: 'lana',
+      currentLevel: 'A1');
 }
 
 String lessonAccessJson({required bool canStartNewLesson}) => '''

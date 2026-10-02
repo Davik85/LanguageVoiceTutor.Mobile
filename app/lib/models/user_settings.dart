@@ -1,5 +1,6 @@
 import 'language_options.dart';
 import 'lesson_start_selection.dart';
+import 'speech_voice_options.dart';
 
 enum UserSettingsUpdateStatus {
   success,
@@ -77,27 +78,31 @@ class UserSettings {
   final String currentLevel;
   final String displayName;
 
-  factory UserSettings.fromJson(Map<String, dynamic> json) => UserSettings(
-        nativeLanguage:
-            LanguageOptions.nativeLanguageIdFor(json['nativeLanguage']),
-        studyLanguage:
-            LanguageOptions.studyLanguageIdFor(json['studyLanguage']),
-        explanationLanguage:
-            LanguageOptions.interfaceLanguageIdFor(json['explanationLanguage']),
-        speechVoice: _string(json['speechVoice']),
-        speechSpeed: _double(json['speechSpeed'], fallback: 1.0),
-        conversationModeEnabled: _bool(json['conversationModeEnabled']),
-        selectedTutorId: _selectedTutorId(json['selectedTutorId']),
-        currentLevel: canonicalLessonLevel(json['currentLevel']),
-        displayName: _string(json['displayName']),
-      );
+  factory UserSettings.fromJson(Map<String, dynamic> json) {
+    final selectedTutorId = _selectedTutorId(json['selectedTutorId']);
+    return UserSettings(
+      nativeLanguage:
+          LanguageOptions.nativeLanguageIdFor(json['nativeLanguage']),
+      studyLanguage: LanguageOptions.studyLanguageIdFor(json['studyLanguage']),
+      explanationLanguage:
+          LanguageOptions.interfaceLanguageIdFor(json['explanationLanguage']),
+      speechVoice: SpeechVoiceOptions.resolve(json['speechVoice'],
+          selectedTutorId: selectedTutorId),
+      speechSpeed: _double(json['speechSpeed'], fallback: 1.0),
+      conversationModeEnabled: _bool(json['conversationModeEnabled']),
+      selectedTutorId: selectedTutorId,
+      currentLevel: canonicalLessonLevel(json['currentLevel']),
+      displayName: _string(json['displayName']),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'nativeLanguage': nativeLanguage,
         'studyLanguage':
             LanguageOptions.backendStudyLanguageNameFor(studyLanguage),
         'explanationLanguage': explanationLanguage,
-        'speechVoice': speechVoice,
+        'speechVoice': SpeechVoiceOptions.resolve(speechVoice,
+            selectedTutorId: selectedTutorId),
         'speechSpeed': speechSpeed,
         'conversationModeEnabled': conversationModeEnabled,
         'selectedTutorId': selectedTutorId,
@@ -127,6 +132,11 @@ class UserSettings {
         selectedTutorId: selectedTutorId ?? this.selectedTutorId,
         currentLevel: canonicalLessonLevel(currentLevel ?? this.currentLevel),
         displayName: displayName ?? this.displayName,
+      );
+
+  UserSettings withNormalizedSpeechVoice() => copyWith(
+        speechVoice: SpeechVoiceOptions.resolve(speechVoice,
+            selectedTutorId: selectedTutorId),
       );
 
   static const defaultTutorId = 'lana';

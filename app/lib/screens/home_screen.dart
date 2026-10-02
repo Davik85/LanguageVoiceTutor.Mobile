@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -5,12 +6,15 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../config/app_config.dart';
 import '../l10n/app_localizations_context.dart';
+import '../l10n/lesson_selection_localization.dart';
 import '../models/auth_models.dart';
 import '../models/achievements.dart';
 import '../models/lesson_access_decision.dart';
 import '../models/lesson_start_selection.dart';
 import '../models/lesson_session.dart';
 import '../models/progress.dart';
+import '../models/study_language_definition.dart';
+import '../models/user_settings.dart';
 import '../services/auth_service.dart';
 import '../services/achievement_presentation_store.dart';
 import '../services/service_factory.dart';
@@ -53,6 +57,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late final PracticeReminderService _practiceReminderService;
   AuthUser? _currentUser;
   LessonAccessDecision? _lessonAccess;
+  UserSettings? _userSettings;
+  int _settingsLoadGeneration = 0;
   ProgressResponse? _progress;
   AchievementsResponse? _achievements;
   _HomeProgressState _progressState = _HomeProgressState.loading;
@@ -259,6 +265,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _loadHomeSummary() async {
     if (_isLoadingSummary) return;
     _isLoadingSummary = true;
+    unawaited(_loadLearningSettings());
     if (mounted) setState(() => _progressState = _HomeProgressState.loading);
 
     AuthUser? user;
@@ -304,6 +311,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _queueNewAchievementPresentations();
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _maybeShowReminderExplanation());
+  }
+
+  Future<void> _loadLearningSettings() async {
+    final generation = ++_settingsLoadGeneration;
+    try {
+      final settings = await _authService.fetchUserSettings();
+      if (!mounted || generation != _settingsLoadGeneration) return;
+      setState(() => _userSettings = settings);
+    } on ApiException catch (error) {
+      if (!mounted || generation != _settingsLoadGeneration) return;
+      if (error.message == 'Please sign in again.') {
+        Navigator.pushNamedAndRemoveUntil(
+            context, LoginScreen.routeName, (_) => false);
+        return;
+      }
+      setState(() => _userSettings = null);
+    } catch (_) {
+      if (!mounted || generation != _settingsLoadGeneration) return;
+      setState(() => _userSettings = null);
+    }
   }
 
   Future<void> _startLesson() async {
@@ -366,6 +393,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _refreshHomeSummaryAfterCompletion() async {
     if (_isLoadingSummary) return;
     _isLoadingSummary = true;
+    unawaited(_loadLearningSettings());
     var shouldSignInAgain = false;
     AuthUser? user;
     LessonAccessDecision? lessonAccess;
@@ -456,7 +484,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 _AccountSummary(
                     user: _currentUser,
                     lessonAccess: _lessonAccess,
-                    onOpenPremium: _openPremium),
+                    onOpenPremium: _openPremium,
+                    settings: _userSettings,
+                    onOpenSettings: _isOpeningSettings ? null : _openSettings),
                 const SizedBox(height: 12),
                 _HomeAchievements(
                   state: _achievementsState,
@@ -806,10 +836,14 @@ class _AccountSummary extends StatelessWidget {
   const _AccountSummary(
       {required this.user,
       required this.lessonAccess,
-      required this.onOpenPremium});
+      required this.onOpenPremium,
+      required this.settings,
+      required this.onOpenSettings});
   final AuthUser? user;
   final LessonAccessDecision? lessonAccess;
   final VoidCallback onOpenPremium;
+  final UserSettings? settings;
+  final VoidCallback? onOpenSettings;
 
   String _name(BuildContext context) {
     final value = user?.displayName?.trim() ?? '';
@@ -869,7 +903,82 @@ class _AccountSummary extends StatelessWidget {
               const SizedBox(height: 3),
               Text(_freeLessonsLabel(context)!),
             ],
+            const SizedBox(height: 10),
+            Row(children: [
+              Expanded(
+                child: _HomeLearningSetting(
+                  key: const Key('home-current-level'),
+                  label: context.l10n.currentLevel,
+                  value: settings == null
+                      ? '—'
+                      : context.l10n
+                          .localizedLevel(
+                              lessonLevelFor(settings!.currentLevel))
+                          .label,
+                  onTap: onOpenSettings,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _HomeLearningSetting(
+                  key: const Key('home-study-language'),
+                  label: context.l10n.studyLanguage,
+                  value: settings == null
+                      ? '—'
+                      : StudyLanguageDefinitions.resolve(
+                              settings!.studyLanguage)
+                          .displayName,
+                  onTap: onOpenSettings,
+                ),
+              ),
+            ]),
           ]),
+        ),
+      );
+}
+
+class _HomeLearningSetting extends StatelessWidget {
+  const _HomeLearningSetting(
+      {super.key,
+      required this.label,
+      required this.value,
+      required this.onTap});
+
+  final String label;
+  final String value;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        enabled: onTap != null,
+        label: '$label: $value',
+        excludeSemantics: true,
+        onTap: onTap,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context)
+                      .textTheme
+                      .labelSmall
+                      ?.copyWith(color: AppVisuals.textBlue)),
+              const SizedBox(height: 2),
+              Text(value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: AppVisuals.textBlue)),
+            ]),
+          ),
         ),
       );
 }

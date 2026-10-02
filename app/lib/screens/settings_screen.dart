@@ -10,6 +10,7 @@ import '../models/language_option.dart';
 import '../models/language_options.dart';
 import '../models/lesson_start_selection.dart';
 import '../models/subscription_status.dart';
+import '../models/speech_voice_options.dart';
 import '../models/tutor_options.dart';
 import '../models/user_settings.dart';
 import '../models/user_display_name.dart';
@@ -56,8 +57,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen>
     with WidgetsBindingObserver {
-  static const _voices = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
-
   late final AuthService _authService;
   late final TutorOptionsService _tutorOptionsService;
   late final PracticeReminderService _practiceReminderService;
@@ -195,7 +194,8 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   Future<void> _loadSettings() async {
     try {
-      final settings = await _authService.fetchUserSettings();
+      final settings =
+          (await _authService.fetchUserSettings()).withNormalizedSpeechVoice();
       TutorOptions? tutorOptions;
       var tutorOptionsUnavailable = false;
       try {
@@ -247,7 +247,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       );
       if (!mounted) return;
       if (result.isSuccess && result.settings != null) {
-        final saved = result.settings!;
+        final saved = result.settings!.withNormalizedSpeechVoice();
         setState(() {
           _settings = saved;
           _confirmedSettings = saved;
@@ -491,7 +491,6 @@ class _SettingsScreenState extends State<SettingsScreen>
             studyLanguageOptions: LanguageOptions.studyLanguages,
             nativeLanguageOptions: LanguageOptions.nativeLanguages,
             interfaceLanguageOptions: LanguageOptions.interfaceLanguages,
-            voices: _voices,
             onChanged: _updateSettings,
           ),
           const SizedBox(height: 12),
@@ -930,7 +929,6 @@ class _LearningCard extends StatelessWidget {
       required this.studyLanguageOptions,
       required this.nativeLanguageOptions,
       required this.interfaceLanguageOptions,
-      required this.voices,
       required this.onChanged});
   final UserSettings? settings;
   final TutorOptions? tutorOptions;
@@ -939,7 +937,6 @@ class _LearningCard extends StatelessWidget {
   final List<LanguageOption> studyLanguageOptions;
   final List<LanguageOption> nativeLanguageOptions;
   final List<LanguageOption> interfaceLanguageOptions;
-  final List<String> voices;
   final ValueChanged<UserSettings> onChanged;
   @override
   Widget build(BuildContext context) => Card(
@@ -989,10 +986,9 @@ class _LearningCard extends StatelessWidget {
                     onChanged(settings!.copyWith(selectedTutorId: v)),
               ),
               const SizedBox(height: 10),
-              _Dropdown(
-                  label: context.l10n.tutorVoice,
-                  value: settings!.speechVoice,
-                  values: voices,
+              _SpeechVoiceDropdown(
+                  value: SpeechVoiceOptions.resolve(settings!.speechVoice,
+                      selectedTutorId: settings!.selectedTutorId),
                   onChanged: (v) =>
                       onChanged(settings!.copyWith(speechVoice: v))),
             ],
@@ -1311,27 +1307,22 @@ String _nativeLanguageName(String id, String fallback) =>
     }[id] ??
     fallback;
 
-class _Dropdown extends StatelessWidget {
-  const _Dropdown(
-      {required this.label,
-      required this.value,
-      required this.values,
-      required this.onChanged});
-  final String label;
+class _SpeechVoiceDropdown extends StatelessWidget {
+  const _SpeechVoiceDropdown({required this.value, required this.onChanged});
   final String value;
-  final List<String> values;
   final ValueChanged<String> onChanged;
+
   @override
-  Widget build(BuildContext context) {
-    final items = {...values, if (value.isNotEmpty) value}.toList();
-    return DropdownButtonFormField<String>(
-      decoration: InputDecoration(labelText: label),
-      initialValue: value.isEmpty ? null : value,
-      items:
-          items.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-      onChanged: (v) {
-        if (v != null) onChanged(v);
-      },
-    );
-  }
+  Widget build(BuildContext context) => DropdownButtonFormField<String>(
+        key: const Key('settings-tutor-voice'),
+        decoration: InputDecoration(labelText: context.l10n.tutorVoice),
+        initialValue: value,
+        items: SpeechVoiceOptions.all
+            .map((voice) =>
+                DropdownMenuItem(value: voice.id, child: Text(voice.label)))
+            .toList(growable: false),
+        onChanged: (voice) {
+          if (voice != null) onChanged(voice);
+        },
+      );
 }

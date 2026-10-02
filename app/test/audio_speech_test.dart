@@ -4,7 +4,7 @@ import 'package:language_voice_tutor_mobile/models/audio_speech.dart';
 AudioSpeechRequest _request({AudioSpeechPurpose? purpose}) =>
     AudioSpeechRequest(
       text: 'Visible tutor reply',
-      speechVoice: 'nova',
+      speechVoice: 'coral',
       speechSpeed: 1.1,
       targetLanguageId: 'en',
       targetLanguageName: 'English',

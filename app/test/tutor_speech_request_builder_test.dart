@@ -4,6 +4,33 @@ import 'package:language_voice_tutor_mobile/models/user_settings.dart';
 import 'package:language_voice_tutor_mobile/services/tutor_speech_request_builder.dart';
 
 void main() {
+  test(
+      'speech requests normalize stale direct settings without changing speed or purpose',
+      () {
+    const settings = UserSettings(
+        nativeLanguage: 'en',
+        studyLanguage: 'es',
+        explanationLanguage: 'en',
+        speechVoice: 'onyx',
+        speechSpeed: 0.9,
+        conversationModeEnabled: true,
+        selectedTutorId: 'david',
+        currentLevel: 'B2');
+    for (final purpose in [
+      AudioSpeechPurpose.lessonChatTts,
+      AudioSpeechPurpose.conversationModeTts
+    ]) {
+      final request = const TutorSpeechRequestBuilder().build(
+          text: 'Reply',
+          settings: settings,
+          backendSessionId: 'session',
+          purpose: purpose);
+      expect(request.speechVoice, 'cedar');
+      expect(request.speechSpeed, 0.9);
+      expect(request.purpose, purpose);
+    }
+  });
+
   const builder = TutorSpeechRequestBuilder();
 
   AudioSpeechRequest build(String language, AudioSpeechPurpose purpose) =>
@@ -13,7 +40,7 @@ void main() {
           nativeLanguage: 'hu',
           studyLanguage: language,
           explanationLanguage: 'de',
-          speechVoice: 'nova',
+          speechVoice: 'coral',
           speechSpeed: 0.9,
           conversationModeEnabled: true,
           selectedTutorId: 'lana',
