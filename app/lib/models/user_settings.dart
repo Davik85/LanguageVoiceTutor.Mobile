@@ -56,6 +56,9 @@ class UserSettingsUpdateResult {
 }
 
 class UserSettings {
+  static const double defaultSpeechSpeed = 1.0;
+  static const bool defaultConversationModeEnabled = true;
+
   const UserSettings({
     required this.nativeLanguage,
     required this.studyLanguage,
@@ -88,8 +91,8 @@ class UserSettings {
           LanguageOptions.interfaceLanguageIdFor(json['explanationLanguage']),
       speechVoice: SpeechVoiceOptions.resolve(json['speechVoice'],
           selectedTutorId: selectedTutorId),
-      speechSpeed: _double(json['speechSpeed'], fallback: 1.0),
-      conversationModeEnabled: _bool(json['conversationModeEnabled']),
+      speechSpeed: defaultSpeechSpeed,
+      conversationModeEnabled: defaultConversationModeEnabled,
       selectedTutorId: selectedTutorId,
       currentLevel: canonicalLessonLevel(json['currentLevel']),
       displayName: _string(json['displayName']),
@@ -103,8 +106,8 @@ class UserSettings {
         'explanationLanguage': explanationLanguage,
         'speechVoice': SpeechVoiceOptions.resolve(speechVoice,
             selectedTutorId: selectedTutorId),
-        'speechSpeed': speechSpeed,
-        'conversationModeEnabled': conversationModeEnabled,
+        'speechSpeed': defaultSpeechSpeed,
+        'conversationModeEnabled': defaultConversationModeEnabled,
         'selectedTutorId': selectedTutorId,
         'currentLevel': canonicalLessonLevel(currentLevel),
         'displayName': displayName,
@@ -126,9 +129,8 @@ class UserSettings {
         studyLanguage: studyLanguage ?? this.studyLanguage,
         explanationLanguage: explanationLanguage ?? this.explanationLanguage,
         speechVoice: speechVoice ?? this.speechVoice,
-        speechSpeed: speechSpeed ?? this.speechSpeed,
-        conversationModeEnabled:
-            conversationModeEnabled ?? this.conversationModeEnabled,
+        speechSpeed: defaultSpeechSpeed,
+        conversationModeEnabled: defaultConversationModeEnabled,
         selectedTutorId: selectedTutorId ?? this.selectedTutorId,
         currentLevel: canonicalLessonLevel(currentLevel ?? this.currentLevel),
         displayName: displayName ?? this.displayName,
@@ -148,13 +150,4 @@ class UserSettings {
     final trimmed = value.trim();
     return trimmed.isEmpty ? defaultTutorId : trimmed;
   }
-
-  static bool _bool(Object? value) => value is bool ? value : false;
-
-  static double _double(Object? value, {required double fallback}) =>
-      value is num
-          ? value.toDouble()
-          : value is String
-              ? double.tryParse(value) ?? fallback
-              : fallback;
 }

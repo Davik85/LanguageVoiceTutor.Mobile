@@ -252,10 +252,11 @@ void main() {
       'studyLanguage': 'French',
       'explanationLanguage': 'ru',
       'speechVoice': 'coral',
-      'speechSpeed': 1.3,
+      'speechSpeed': 1.0,
       'conversationModeEnabled': true,
       'selectedTutorId': 'nelli',
       'currentLevel': 'B2',
+      'displayName': '',
     });
     expect(languages, ['ru']);
   });

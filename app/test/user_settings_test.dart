@@ -56,6 +56,106 @@ class MemoryStorage implements SessionStorage {
 const settingsJson =
     '{"nativeLanguage":"en","studyLanguage":"es","explanationLanguage":"en","speechVoice":"coral","speechSpeed":1.1,"conversationModeEnabled":true,"selectedTutorId":"nelli","currentLevel":"B2","extra":"ignored"}';
 void main() {
+  for (final value in [true, false, null, 'false', 0, 1, <String, dynamic>{}]) {
+    test('backend Conversation Mode value $value always normalizes to true',
+        () {
+      final settings = UserSettings.fromJson({
+        'conversationModeEnabled': value,
+        'speechSpeed': 0.5,
+        'speechVoice': 'cedar',
+        'selectedTutorId': 'david',
+        'currentLevel': 'B2'
+      });
+      expect(settings.conversationModeEnabled, isTrue);
+      expect(settings.speechSpeed, 1.0);
+      expect(settings.speechVoice, 'cedar');
+      expect(settings.currentLevel, 'B2');
+    });
+  }
+  test('missing Conversation Mode flag defaults to true', () {
+    expect(UserSettings.fromJson({}).conversationModeEnabled, isTrue);
+  });
+  for (final value in [true, false]) {
+    test('direct Conversation Mode value $value always serializes true', () {
+      final settings = UserSettings(
+          nativeLanguage: 'en',
+          studyLanguage: 'es',
+          explanationLanguage: 'en',
+          speechVoice: 'cedar',
+          speechSpeed: 2.0,
+          conversationModeEnabled: value,
+          selectedTutorId: 'david',
+          currentLevel: 'B2');
+      expect(settings.toJson()['conversationModeEnabled'], isTrue);
+      expect(settings.toJson()['speechSpeed'], 1.0);
+      expect(
+          settings.withNormalizedSpeechVoice().conversationModeEnabled, isTrue);
+      expect(
+          settings
+              .copyWith(conversationModeEnabled: false)
+              .conversationModeEnabled,
+          isTrue);
+      expect(settings.toJson().keys,
+          containsAll(['conversationModeEnabled', 'speechSpeed']));
+    });
+  }
+
+  for (final speed in [
+    0.5,
+    0.9,
+    1.0,
+    1.3,
+    2.0,
+    null,
+    '1.3',
+    'malformed',
+    true,
+    <String, dynamic>{}
+  ]) {
+    test('backend speech speed $speed normalizes to fixed 1.0', () {
+      final settings = UserSettings.fromJson({
+        'speechSpeed': speed,
+        'speechVoice': 'cedar',
+        'selectedTutorId': 'david',
+        'currentLevel': 'B2',
+        'studyLanguage': 'Spanish'
+      });
+      expect(settings.speechSpeed, 1.0);
+      expect(settings.speechVoice, 'cedar');
+      expect(settings.currentLevel, 'B2');
+      expect(settings.studyLanguage, 'es');
+    });
+  }
+  test('missing backend speech speed normalizes to fixed 1.0', () {
+    expect(UserSettings.fromJson({}).speechSpeed, 1.0);
+  });
+  for (final speed in [0.5, 0.9, 1.0, 1.3, 2.0, double.nan, double.infinity]) {
+    test('direct stale speech speed $speed serializes as 1.0', () {
+      final settings = UserSettings(
+          nativeLanguage: 'en',
+          studyLanguage: 'es',
+          explanationLanguage: 'en',
+          speechVoice: 'cedar',
+          speechSpeed: speed,
+          conversationModeEnabled: true,
+          selectedTutorId: 'david',
+          currentLevel: 'B2',
+          displayName: 'User');
+      expect(settings.toJson(), {
+        'nativeLanguage': 'en',
+        'studyLanguage': 'Spanish',
+        'explanationLanguage': 'en',
+        'speechVoice': 'cedar',
+        'speechSpeed': 1.0,
+        'conversationModeEnabled': true,
+        'selectedTutorId': 'david',
+        'currentLevel': 'B2',
+        'displayName': 'User'
+      });
+      expect(settings.withNormalizedSpeechVoice().speechSpeed, 1.0);
+    });
+  }
+
   for (final voice in ['nova', 'onyx', 'fable', 'unknown', '', ' ', null, 42]) {
     for (final tutor in ['david', 'nelli', 'lana', null]) {
       test('settings parsing normalizes $voice for $tutor', () {
@@ -119,7 +219,7 @@ void main() {
     expect(settings.nativeLanguage, 'ru');
     expect(settings.studyLanguage, 'es');
     expect(settings.explanationLanguage, 'de');
-    expect(settings.speechSpeed, 1.2);
+    expect(settings.speechSpeed, 1.0);
     expect(settings.conversationModeEnabled, isTrue);
     expect(settings.selectedTutorId, 'david');
     expect(settings.currentLevel, 'B1');
@@ -187,6 +287,7 @@ void main() {
           'currentLevel',
           'displayName'
         ]));
+    expect(json['conversationModeEnabled'], isTrue);
     expect(json['nativeLanguage'], 'ru');
     expect(json['studyLanguage'], 'Spanish');
     expect(json['currentLevel'], 'B2');
@@ -221,7 +322,7 @@ void main() {
     expect(json['selectedTutorId'], 'lana');
   });
 
-  test('copyWith changes current level and preserves all other fields', () {
+  test('copyWith changes level, fixes speed, and preserves other fields', () {
     const original = UserSettings(
       nativeLanguage: 'tr',
       studyLanguage: 'es',
@@ -241,7 +342,8 @@ void main() {
     expect(changed.studyLanguage, original.studyLanguage);
     expect(changed.explanationLanguage, original.explanationLanguage);
     expect(changed.speechVoice, original.speechVoice);
-    expect(changed.speechSpeed, original.speechSpeed);
+    expect(changed.speechSpeed, 1.0);
+    expect(original.copyWith(speechSpeed: 2.0).speechSpeed, 1.0);
     expect(changed.conversationModeEnabled, original.conversationModeEnabled);
     expect(changed.selectedTutorId, original.selectedTutorId);
     expect(changed.displayName, 'محمد');

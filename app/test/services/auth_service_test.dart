@@ -764,7 +764,7 @@ void main() {
       'studyLanguage': 'English',
       'explanationLanguage': 'ru',
       'speechVoice': 'coral',
-      'speechSpeed': 1.1,
+      'speechSpeed': 1.0,
       'conversationModeEnabled': true,
       'selectedTutorId': 'lana',
       'currentLevel': 'A1',

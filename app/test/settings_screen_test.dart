@@ -319,6 +319,61 @@ Future<void> _openAccountDeletion(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets(
+      'Profile has only Account and Learning cards with a usable Save button',
+      (tester) async {
+    final auth = FakeAuthService();
+    await tester.pumpWidget(_screen(auth));
+    await tester.pumpAndSettle();
+    final profile = tester
+        .widget<ListView>(find.byKey(const Key('settings-profile-content')));
+    expect((profile.childrenDelegate as SliverChildListDelegate).children,
+        hasLength(5));
+    expect(find.byType(Card), findsNWidgets(2));
+    expect(find.text('Audio'), findsNothing);
+    expect(find.text('Conversation mode enabled'), findsNothing);
+    expect(find.textContaining('Speech speed'), findsNothing);
+    expect(find.byType(Slider), findsNothing);
+    await _scrollToAndTap(tester, 'Save settings');
+    expect(auth.saved, isTrue);
+    expect(find.text('Settings saved.'), findsOneWidget);
+  });
+  for (final speed in [0.5, 0.9, 1.3, 2.0]) {
+    testWidgets(
+        'Settings saves canonical product values from stale speed $speed and disabled mode',
+        (tester) async {
+      final stale = UserSettings(
+          nativeLanguage: 'en',
+          studyLanguage: 'es',
+          explanationLanguage: 'en',
+          speechVoice: 'cedar',
+          speechSpeed: speed,
+          conversationModeEnabled: false,
+          selectedTutorId: 'david',
+          currentLevel: 'B2',
+          displayName: 'User');
+      final auth =
+          FakeAuthService(initialSettings: stale, confirmedSave: stale);
+      await tester.pumpWidget(_screen(auth));
+      await tester.pumpAndSettle();
+      await _scrollToAndTap(tester, 'Save settings');
+      expect(auth.savedSettings?.speechSpeed, 1.0);
+      expect(auth.savedSettings?.conversationModeEnabled, isTrue);
+      expect(auth.savedSettings?.toJson()['speechSpeed'], 1.0);
+      expect(auth.savedSettings?.toJson()['conversationModeEnabled'], isTrue);
+      expect(auth.savedSettings?.speechVoice, 'cedar');
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      await _scrollToAndTap(tester, 'Save settings');
+      expect(auth.saveCalls, 2);
+      expect(auth.savedSettings?.speechSpeed, 1.0);
+      expect(auth.savedSettings?.conversationModeEnabled, isTrue);
+      expect(find.byType(Slider), findsNothing);
+      expect(find.text('Audio'), findsNothing);
+      expect(find.text('Conversation mode enabled'), findsNothing);
+    });
+  }
+
   testWidgets('voice selector exposes exactly ten friendly canonical choices',
       (tester) async {
     await tester.pumpWidget(_screen(FakeAuthService()));
@@ -627,7 +682,8 @@ void main() {
     expect(find.text('Privacy Policy'), findsNothing);
   });
 
-  testWidgets('settings screen loaded state shows account, learning, audio',
+  testWidgets(
+      'settings screen loaded state shows account and learning without Audio',
       (tester) async {
     await tester.pumpWidget(_screen(FakeAuthService()));
     await tester.pumpAndSettle();
@@ -652,9 +708,9 @@ void main() {
         find.text(
             'Selected tutor persistence is not available in the current settings API yet.'),
         findsNothing);
-    await _scrollToText(tester, 'Audio');
-    expect(find.text('Audio'), findsOneWidget);
-    expect(find.text('Conversation mode enabled'), findsOneWidget);
+    expect(find.text('Audio'), findsNothing);
+    expect(find.text('Conversation mode enabled'), findsNothing);
+    expect(find.byType(Slider), findsNothing);
     await _scrollToText(tester, 'Save settings');
     expect(find.text('Save settings'), findsOneWidget);
   });

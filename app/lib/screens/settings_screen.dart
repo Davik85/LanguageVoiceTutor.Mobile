@@ -494,8 +494,6 @@ class _SettingsScreenState extends State<SettingsScreen>
             onChanged: _updateSettings,
           ),
           const SizedBox(height: 12),
-          _AudioCard(settings: _settings, onChanged: _updateSettings),
-          const SizedBox(height: 12),
           _SettingsActionButton(
             onPressed: _settings == null || _isSaving ? null : _saveSettings,
             label: _isSaving ? context.l10n.saving : context.l10n.saveSettings,
@@ -1078,42 +1076,6 @@ class _TutorDropdown extends StatelessWidget {
       },
     );
   }
-}
-
-class _AudioCard extends StatelessWidget {
-  const _AudioCard({required this.settings, required this.onChanged});
-  final UserSettings? settings;
-  final ValueChanged<UserSettings> onChanged;
-  @override
-  Widget build(BuildContext context) => Card(
-      child: Padding(
-          padding: const EdgeInsets.all(16),
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(context.l10n.audio,
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            if (settings == null)
-              Text(context.l10n.loadingAudioSettings)
-            else ...[
-              Text(context.l10n
-                  .speechSpeed(settings!.speechSpeed.toStringAsFixed(1))),
-              Slider(
-                  value: settings!.speechSpeed.clamp(0.5, 2.0),
-                  min: 0.5,
-                  max: 2.0,
-                  divisions: 15,
-                  label: settings!.speechSpeed.toStringAsFixed(1),
-                  onChanged: (v) => onChanged(settings!.copyWith(
-                      speechSpeed: double.parse(v.toStringAsFixed(1))))),
-              SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(context.l10n.conversationModeEnabled),
-                  value: settings!.conversationModeEnabled,
-                  onChanged: (v) => onChanged(
-                      settings!.copyWith(conversationModeEnabled: v))),
-            ],
-          ])));
 }
 
 class _FeedbackReportCard extends StatelessWidget {

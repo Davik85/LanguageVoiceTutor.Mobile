@@ -4,8 +4,43 @@ import 'package:language_voice_tutor_mobile/models/user_settings.dart';
 import 'package:language_voice_tutor_mobile/services/tutor_speech_request_builder.dart';
 
 void main() {
+  for (final speed in [0.5, 0.9, 1.0, 1.3, 2.0]) {
+    for (final purpose in AudioSpeechPurpose.values) {
+      test(
+          '${purpose.value} fixes stale speed $speed without changing request fields',
+          () {
+        final settings = UserSettings(
+            nativeLanguage: 'en',
+            studyLanguage: 'es',
+            explanationLanguage: 'en',
+            speechVoice: 'cedar',
+            speechSpeed: speed,
+            conversationModeEnabled: true,
+            selectedTutorId: 'david',
+            currentLevel: 'B2');
+        final request = const TutorSpeechRequestBuilder().build(
+            text: 'Reply',
+            settings: settings,
+            backendSessionId: 'session',
+            purpose: purpose);
+        expect(request.speechSpeed, 1.0);
+        expect(request.toJson(), {
+          'text': 'Reply',
+          'purpose': purpose.value,
+          'speechVoice': 'cedar',
+          'speechSpeed': 1.0,
+          'targetLanguageId': 'es',
+          'targetLanguageName': 'Spanish',
+          'targetLanguageNativeName': 'Español',
+          'targetLanguageCode': 'es',
+          'backendSessionId': 'session'
+        });
+      });
+    }
+  }
+
   test(
-      'speech requests normalize stale direct settings without changing speed or purpose',
+      'speech requests normalize stale voice and speed without changing purpose',
       () {
     const settings = UserSettings(
         nativeLanguage: 'en',
@@ -26,7 +61,7 @@ void main() {
           backendSessionId: 'session',
           purpose: purpose);
       expect(request.speechVoice, 'cedar');
-      expect(request.speechSpeed, 0.9);
+      expect(request.speechSpeed, 1.0);
       expect(request.purpose, purpose);
     }
   });

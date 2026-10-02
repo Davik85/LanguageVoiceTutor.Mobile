@@ -17,7 +17,7 @@ class TutorSpeechRequestBuilder {
       text: text,
       speechVoice: SpeechVoiceOptions.resolve(settings.speechVoice,
           selectedTutorId: settings.selectedTutorId),
-      speechSpeed: settings.speechSpeed,
+      speechSpeed: UserSettings.defaultSpeechSpeed,
       targetLanguageId: language.id,
       targetLanguageName: language.englishName,
       targetLanguageNativeName: language.nativeName,
