@@ -1,16 +1,24 @@
 # Mobile lesson, voice, Conversation mode, and voice scenario state
 
-Current source checkpoint (2026-10-02): `a75f8b308c400b895a2a708bc9320f208ae033f7` / `0.1.0+12` / versionCode 12; v12 is submitted to the Google Play Production path and under Google review, with v11 the last confirmed publicly active release. Historical foundation commit: `f195dc2` (`feat: add mobile voice lesson and conversation flows`); its original verification and later Desktop-parity transcription evidence remain recorded below.
+Current source checkpoint (2026-10-05): `bbd9702d626a99f760dbf2484f827e9ddac5c73e` / `0.1.0+13` / versionCode 13; v13 is the current Google Play Production release at 100% rollout, with no unpublished changes at the verified checkpoint. The next future uploaded artifact must use versionCode at least 14. Historical foundation commit: `f195dc2` (`feat: add mobile voice lesson and conversation flows`); its original verification and later Desktop-parity transcription evidence remain recorded below.
 
 ## Product boundary
 
 Mobile is another client of the same Language Voice Tutor product. Backend and CMS remain the source of truth for lesson runtime content, topics and scenarios, tutor behavior, session ownership, AI calls, and subscription/account state. Mobile contains no OpenAI API key, provider prompt, or provider model ID. Mobile does not invent CMS scenario IDs or variants.
 
-## Current canonical voices and Android audio settings (2026-10-02)
+## Current canonical voices and Android audio settings (2026-10-05)
 
 The canonical selectable Android speech voices are exactly `alloy`, `ash`, `ballad`, `coral`, `echo`, `sage`, `shimmer`, `verse`, `marin`, and `cedar`. Supported IDs normalize to lowercase. Legacy `nova`, `onyx`, and `fable`, blank values, and unknown `speechVoice` values normalize using the effective tutor: David -> `cedar`; other tutors -> `coral`. Unsupported stale values are never exposed as temporary dropdown choices.
 
 Android product `speechSpeed` is fixed at `1.0`: the learner speed control is removed, parsing and serialization normalize the retained `UserSettings`/API JSON compatibility field to `1.0`, and tutor speech requests always use `1.0`. `ConversationModeEnabled` is fixed `true` and remains an API/UserSettings compatibility field; its learner enable/disable toggle is removed. The entire **Audio** card is removed from **Settings -> Profile**, which now presents **Account -> Learning -> Save settings**. Conversation Mode remains available from the lesson UI and is not gated by the removed settings flag.
+
+## Current tutor-audio reliability (2026-10-05)
+
+Functional commit `43743f45adc6408b8e74270b16cde937da70e776` (`Improve lesson tutor speech reliability`) gives `POST /api/audio/speech` one 25-second Mobile client budget, including response headers and WAV bytes. Ordinary JSON, other binary requests, and learner transcription retain the existing 10-second default timeout; no Mobile speech retry is added. The initial tutor setup message is silently preloaded into the normal temporary WAV cache, without autoplay or background-preload loading/error state. Manual Play reuses completed preload audio or awaits the same in-flight request without duplicating it; failed silent preload permits a fresh manual request. Known and custom scenario openings honor Lesson Chat Auto-play, with Conversation Mode caller suppression preventing duplicate automatic playback. Exact visible tutor text and `lesson_chat_tts` purpose are preserved.
+
+After backend `.166` deployment, physical-device testing of the affected Android lesson/TTS flow confirmed the previously failing first-message playback and subsequent lesson/topic openings working. That check was not a Play-installed v13 smoke. One Play-installed v13 physical smoke remains pending after store propagation; post-release billing lifecycle monitoring remains separate.
+
+Historical v12 Production source was `a75f8b308c400b895a2a708bc9320f208ae033f7` / `0.1.0+12` / versionCode 12; it was confirmed active before v13 was created.
 
 ## Study language through voice and lesson surfaces
 
@@ -112,7 +120,7 @@ Semantic scenario resolution remains unchanged: deterministic numeric and exact-
 
 The existing backend semantic voice scenario resolver remains in use for unresolved first voice choices. The Desktop-parity transcription update did not add a backend endpoint, provider integration, backend deployment requirement, or API contract change.
 
-Production backend is `0.1.35-backend.164`; server-side Lesson Chat TTS and Conversation Mode TTS use `gpt-realtime-2.1-mini`. Rendering and model selection remain backend-owned and required no further Mobile client/model contract change. Mobile sends final speech requests through backend endpoints and stores no OpenAI credentials or model selection. This backend TTS change does not restore full product Realtime mode.
+Production backend is separately deployed as `0.1.35-backend.166`, with `0.1.35-backend.165` as rollback; backend `.166` source commit is `d49a8eb039f3ec556057226d957853bda77daf2f`. `.165` added bounded recovery from an Attempt-1 first-audio startup stall; `.166` added bounded recovery from a transient pre-audio `WebSocketException`. Non-streaming rendering allows at most 3 attempts sharing the same original 20-second overall speech budget, never reset; only Attempt 1 has the 8-second startup deadline. No server retry follows audio/PCM, client cancellation, or overall timeout, and streaming remains single-attempt. Server-side Lesson Chat TTS and Conversation Mode TTS remain `gpt-realtime-2.1-mini`. Provider/model/rendering behavior, configuration, and OpenAI credentials remain backend-owned and are not part of the Mobile artifact. Mobile adds no client-side provider retry, provider credentials, or model configuration. Full product Realtime mode is not restored.
 
 ## Verification recorded for `f195dc2`
 
