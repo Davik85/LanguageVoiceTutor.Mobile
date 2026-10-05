@@ -436,6 +436,7 @@ The mobile TTS request does not send tutor profile, persisted tutor-message ID, 
 Binary response boundaries:
 
 - Mobile uses a separate binary response path; existing JSON API methods remain unchanged.
+- Tutor speech at `/api/audio/speech` has a 25-second client budget; ordinary JSON, other binary requests, and learner transcription retain their existing 10-second default timeouts. The client adds no speech retry.
 - Successful WAV data is retained as bytes and is not decoded as UTF-8.
 - Empty audio and unsupported response content types are rejected safely.
 
@@ -446,7 +447,8 @@ Playback and UI boundaries:
 - Only one `AudioPlayer` is active for the lesson screen.
 - Play voice is available only for tutor messages, including opening and older tutor messages.
 - Learner messages, Translation text, and Feedback sections do not receive TTS controls.
-- First playback downloads WAV bytes and caches a temporary WAV file for the current lesson screen; replay uses the cached file without another backend request.
+- Lesson startup silently preloads only the initial tutor setup message into the normal temporary WAV cache without playing it or showing a loading/error state. Manual Play reuses successful preload audio or awaits its in-flight request; a failed preload permits a fresh manual request. Other tutor messages download WAV bytes on first playback, and replay uses the cache without another backend request.
+- Known and custom scenario openings honor Lesson Chat Auto-play, including caller suppression from Conversation Mode; speech uses the exact visible opening text with `lesson_chat_tts` purpose.
 - Tapping the same playing message stops it, starting another tutor message stops previous playback, and duplicate generation requests for the same loading message are prevented.
 - Loading is shown only for the selected tutor message, the control changes to Stop while playback is active, playback errors are learner-safe and retryable, and `LessonTutorStatus.speaking` is driven by actual audio playback.
 - No GIF asset switching was added.

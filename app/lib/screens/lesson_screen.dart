@@ -168,6 +168,7 @@ class _LessonScreenState extends State<LessonScreen>
   final Set<Future<void>> _pendingMessagePersistence = {};
   int? _activePlayingMessageId;
   int _playbackOperationGeneration = 0;
+  int _tutorAudioCacheGeneration = 0;
   static const _turnRequestBuilder = LessonTurnRequestBuilder();
   static const _transcriptionRequestBuilder =
       MobileTranscriptionRequestBuilder();
@@ -289,6 +290,12 @@ class _LessonScreenState extends State<LessonScreen>
     LessonSessionResponse session,
   ) async {
     if (!mounted) return;
+    if (_messages.isNotEmpty) {
+      await _stopAndClearTutorAudio();
+    } else {
+      _tutorAudioCacheGeneration++;
+    }
+    if (!mounted) return;
     setState(() {
       _isLoadingScenario = true;
       _lessonLoadError = null;
@@ -337,6 +344,7 @@ class _LessonScreenState extends State<LessonScreen>
         _isLoadingScenario = false;
       });
       _warmTutorAvatars(settings);
+      unawaited(_preloadTutorAudio(openingMessage, settings, session));
       _scrollTranscriptToBottom();
     } catch (error) {
       if (!mounted) return;
@@ -806,6 +814,7 @@ class _LessonScreenState extends State<LessonScreen>
         context: resolved,
         learnerText: contextInput,
         source: source,
+        suppressAutomaticPlayback: suppressAutomaticPlayback,
       );
     }
     if (useLocalCustomContextStart) {
@@ -816,6 +825,7 @@ class _LessonScreenState extends State<LessonScreen>
         context: resolved,
         learnerText: contextInput,
         source: source,
+        suppressAutomaticPlayback: suppressAutomaticPlayback,
       );
     }
 
@@ -1045,6 +1055,7 @@ class _LessonScreenState extends State<LessonScreen>
     required LessonContextSelection context,
     required String learnerText,
     required String source,
+    required bool suppressAutomaticPlayback,
   }) async {
     final variant = context.selectedContextVariant;
     if (variant == null) return null;
@@ -1058,7 +1069,8 @@ class _LessonScreenState extends State<LessonScreen>
     if (opening.isEmpty) {
       if (kDebugMode) {
         debugPrint(
-            'cms_context_start contextMessageAdded=false openingMessageAdded=false contextPersistScheduled=false openingPersistScheduled=false lessonReplyCalled=false');
+          'cms_context_start contextMessageAdded=false openingMessageAdded=false contextPersistScheduled=false openingPersistScheduled=false lessonReplyCalled=false',
+        );
       }
       setState(() => _sendError = 'This lesson context is unavailable.');
       return null;
@@ -1100,7 +1112,14 @@ class _LessonScreenState extends State<LessonScreen>
     _trackMessagePersistence(persistence);
     if (kDebugMode) {
       debugPrint(
-          'cms_context_start contextMessageAdded=true openingMessageAdded=true contextPersistScheduled=true openingPersistScheduled=true lessonReplyCalled=false');
+        'cms_context_start contextMessageAdded=true openingMessageAdded=true contextPersistScheduled=true openingPersistScheduled=true lessonReplyCalled=false',
+      );
+    }
+    if (!suppressAutomaticPlayback && _autoPlayBotVoice) {
+      await _playTutorVoice(
+        tutorMessage,
+        purpose: AudioSpeechPurpose.lessonChatTts,
+      );
     }
     return opening;
   }
@@ -1112,6 +1131,7 @@ class _LessonScreenState extends State<LessonScreen>
     required LessonContextSelection context,
     required String learnerText,
     required String source,
+    required bool suppressAutomaticPlayback,
   }) async {
     final customContext = context.selectedContextTitle?.trim() ?? '';
     if (customContext.isEmpty) return null;
@@ -1151,6 +1171,12 @@ class _LessonScreenState extends State<LessonScreen>
     );
     userMessage.persistenceOperation = persistence;
     _trackMessagePersistence(persistence);
+    if (!suppressAutomaticPlayback && _autoPlayBotVoice) {
+      await _playTutorVoice(
+        tutorMessage,
+        purpose: AudioSpeechPurpose.lessonChatTts,
+      );
+    }
     return opening;
   }
 
@@ -2104,6 +2130,99 @@ class _LessonScreenState extends State<LessonScreen>
     } catch (_) {}
   }
 
+  Future<void> _preloadTutorAudio(
+    _LessonChatMessage message,
+    UserSettings settings,
+    LessonSessionResponse session,
+  ) async {
+    try {
+      await _ensureTutorAudio(
+        message,
+        settings,
+        session,
+        AudioSpeechPurpose.lessonChatTts,
+      );
+    } catch (_) {
+      // Cache preparation is silent and never changes playback or lesson UI state.
+    }
+  }
+
+  Future<AudioSpeechResult> _ensureTutorAudio(
+    _LessonChatMessage message,
+    UserSettings settings,
+    LessonSessionResponse session,
+    AudioSpeechPurpose purpose,
+  ) async {
+    final pending = message.ttsPreparation;
+    if (pending != null) return pending;
+    final operation = _cacheTutorAudio(
+      message,
+      settings,
+      session,
+      purpose,
+      _tutorAudioCacheGeneration,
+    );
+    message.ttsPreparation = operation;
+    try {
+      return await operation;
+    } finally {
+      if (identical(message.ttsPreparation, operation)) {
+        message.ttsPreparation = null;
+      }
+    }
+  }
+
+  bool _canCacheTutorAudio(_LessonChatMessage message, int generation) =>
+      mounted &&
+      generation == _tutorAudioCacheGeneration &&
+      _messages.contains(message) &&
+      !_isFinishing &&
+      !_isAbandoning &&
+      !_isCompleted &&
+      !_isAuthenticationRequired &&
+      !_lessonSessionEnded;
+
+  Future<AudioSpeechResult> _cacheTutorAudio(
+    _LessonChatMessage message,
+    UserSettings settings,
+    LessonSessionResponse session,
+    AudioSpeechPurpose purpose,
+    int generation,
+  ) async {
+    final result = await _authService.requestTutorSpeech(
+      request: _speechRequestBuilder.build(
+        text: message.text,
+        settings: settings,
+        backendSessionId: session.lessonSessionId,
+        purpose: purpose,
+      ),
+    );
+    if (!result.isSuccess ||
+        result.audioBytes == null ||
+        !_canCacheTutorAudio(message, generation)) {
+      return result;
+    }
+    final file = File(
+      '${Directory.systemTemp.path}${Platform.pathSeparator}'
+      'language-voice-tutor-${message.id}-${DateTime.now().microsecondsSinceEpoch}.wav',
+    );
+    var attached = false;
+    try {
+      await file.writeAsBytes(result.audioBytes!, flush: true);
+      if (_canCacheTutorAudio(message, generation)) {
+        message.cachedTtsPath = file.path;
+        attached = true;
+      }
+    } finally {
+      if (!attached) {
+        try {
+          await file.delete();
+        } catch (_) {}
+      }
+    }
+    return result;
+  }
+
   Future<void> _playTutorVoice(
     _LessonChatMessage message, {
     AudioSpeechPurpose purpose = AudioSpeechPurpose.lessonChatTts,
@@ -2121,7 +2240,12 @@ class _LessonScreenState extends State<LessonScreen>
       await _stopTutorPlayback();
       return;
     }
+    setState(() {
+      message.isTtsLoading = true;
+      message.ttsError = null;
+    });
     await _stopTutorPlayback();
+    if (!mounted || !_actionAvailability.canUseTts) return;
     final playbackGeneration = ++_playbackOperationGeneration;
     var cachedPath = message.cachedTtsPath;
     if (cachedPath != null && !await File(cachedPath).exists()) {
@@ -2129,46 +2253,31 @@ class _LessonScreenState extends State<LessonScreen>
       cachedPath = null;
     }
     if (cachedPath == null) {
-      setState(() {
-        message.isTtsLoading = true;
-        message.ttsError = null;
-      });
-      final result = await _authService.requestTutorSpeech(
-        request: _speechRequestBuilder.build(
-          text: message.text,
-          settings: settings,
-          backendSessionId: session.lessonSessionId,
-          purpose: purpose,
-        ),
-      );
-      if (!mounted || !_actionAvailability.canUseTts) return;
-      if (!result.isSuccess || result.audioBytes == null) {
-        setState(() {
-          message.isTtsLoading = false;
-          message.ttsError = _speechFailureMessage(result.status);
-          if (result.status == AudioSpeechStatus.authenticationRequired) {
-            _isAuthenticationRequired = true;
-          }
-          if (result.status == AudioSpeechStatus.sessionEnded) {
-            _lessonSessionEnded = true;
-          }
-        });
-        return;
-      }
       try {
-        final file = File(
-          '${Directory.systemTemp.path}${Platform.pathSeparator}'
-          'language-voice-tutor-${message.id}-${DateTime.now().microsecondsSinceEpoch}.wav',
+        final result = await _ensureTutorAudio(
+          message,
+          settings,
+          session,
+          purpose,
         );
-        await file.writeAsBytes(result.audioBytes!, flush: true);
-        cachedPath = file.path;
-        if (!mounted || !_actionAvailability.canUseTts) {
-          try {
-            await file.delete();
-          } catch (_) {}
+        if (!mounted || !_actionAvailability.canUseTts || playbackGeneration != _playbackOperationGeneration) {
+          if (mounted) setState(() => message.isTtsLoading = false);
           return;
         }
-        message.cachedTtsPath = cachedPath;
+        if (!result.isSuccess || result.audioBytes == null) {
+          setState(() {
+            message.isTtsLoading = false;
+            message.ttsError = _speechFailureMessage(result.status);
+            if (result.status == AudioSpeechStatus.authenticationRequired) {
+              _isAuthenticationRequired = true;
+            }
+            if (result.status == AudioSpeechStatus.sessionEnded) {
+              _lessonSessionEnded = true;
+            }
+          });
+          return;
+        }
+        cachedPath = message.cachedTtsPath;
       } catch (_) {
         if (mounted) {
           setState(() {
@@ -2179,7 +2288,13 @@ class _LessonScreenState extends State<LessonScreen>
         return;
       }
     }
-    if (!mounted) return;
+    if (!mounted ||
+        !_actionAvailability.canUseTts ||
+        playbackGeneration != _playbackOperationGeneration ||
+        cachedPath == null) {
+      if (mounted) setState(() => message.isTtsLoading = false);
+      return;
+    }
     final playbackPath = cachedPath;
     try {
       final result = await _audioPlaybackService.playToCompletion(
@@ -2247,6 +2362,7 @@ class _LessonScreenState extends State<LessonScreen>
   }
 
   Future<void> _stopAndClearTutorAudio() async {
+    _tutorAudioCacheGeneration++;
     await _stopTutorPlayback();
     for (final message in _messages) {
       final path = message.cachedTtsPath;
@@ -3531,6 +3647,7 @@ class _LessonChatMessage {
   bool isTtsLoading = false;
   bool isTtsPlaying = false;
   String? cachedTtsPath;
+  Future<AudioSpeechResult>? ttsPreparation;
   String? ttsError;
   bool isFeedbackLoading = false;
   bool isFeedbackVisible = false;

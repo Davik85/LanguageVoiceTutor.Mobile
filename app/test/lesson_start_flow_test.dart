@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +8,7 @@ import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/l10n/app_localizations.dart';
 import 'package:language_voice_tutor_mobile/models/auth_models.dart';
 import 'package:language_voice_tutor_mobile/models/audio_transcription.dart';
+import 'package:language_voice_tutor_mobile/models/audio_speech.dart';
 import 'package:language_voice_tutor_mobile/models/achievements.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_chat.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_access_decision.dart';
@@ -19,7 +22,9 @@ import 'package:language_voice_tutor_mobile/models/user_settings.dart';
 import 'package:language_voice_tutor_mobile/models/voice_scenario_resolution.dart';
 import 'package:language_voice_tutor_mobile/screens/home_screen.dart';
 import 'package:language_voice_tutor_mobile/screens/lesson_screen.dart';
+import 'package:language_voice_tutor_mobile/screens/conversation_mode_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
+import 'package:language_voice_tutor_mobile/services/tutor_audio_playback_service.dart';
 import 'package:language_voice_tutor_mobile/services/session_storage.dart';
 import 'package:language_voice_tutor_mobile/services/learner_audio_recording_service.dart';
 import 'package:language_voice_tutor_mobile/services/learner_microphone_permission_service.dart';
@@ -145,6 +150,53 @@ class FakeApiClient implements ApiClient {
       const ApiResponse(statusCode: 200, body: '{}');
 }
 
+class _SpeechPlayback implements TutorAudioPlaybackService {
+  final _completed = StreamController<Object?>.broadcast();
+  final paths = <String>[];
+  @override
+  Stream<Object?> get completed => _completed.stream;
+  @override
+  Future<void> playFile(String path) async => paths.add(path);
+  @override
+  Future<TutorPlaybackResult> playToCompletion(
+    String path, {
+    required Duration timeout,
+    void Function()? onStarted,
+  }) async {
+    paths.add(path);
+    onStarted?.call();
+    _completed.add(null);
+    return const TutorPlaybackResult(TutorPlaybackStatus.completed);
+  }
+
+  @override
+  Future<void> stop() async {}
+  @override
+  Future<void> dispose() => _completed.close();
+}
+
+final class _DefaultFileIo extends IOOverrides {}
+
+class _PendingCacheWrite implements File {
+  _PendingCacheWrite(this.file);
+  final File file;
+  final written = Completer<void>();
+  final release = Completer<void>();
+  @override
+  String get path => file.path;
+  @override
+  Future<File> writeAsBytes(List<int> bytes, {FileMode mode = FileMode.write, bool flush = false}) async {
+    await file.writeAsBytes(bytes, mode: mode, flush: flush);
+    written.complete();
+    await release.future;
+    return this;
+  }
+  @override
+  Future<FileSystemEntity> delete({bool recursive = false}) => file.delete(recursive: recursive);
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class FakeAuthService extends AuthService {
   FakeAuthService({
     this.lessonStartCompleter,
@@ -223,6 +275,20 @@ class FakeAuthService extends AuthService {
   final bool voiceScenarioFailure;
   final AuthUser? currentUser;
   final bool currentUserFailure;
+
+  final speechRequests = <AudioSpeechRequest>[];
+  Completer<AudioSpeechResult>? speechCompleter;
+  AudioSpeechResult speechResult = AudioSpeechResult.temporarilyUnavailable();
+  Object? speechError;
+
+  @override
+  Future<AudioSpeechResult> requestTutorSpeech({
+    required AudioSpeechRequest request,
+  }) async {
+    speechRequests.add(request);
+    if (speechError != null) throw speechError!;
+    return speechCompleter?.future ?? speechResult;
+  }
 
   int startLessonSessionCallCount = 0;
   int fetchScenarioCallCount = 0;
@@ -643,6 +709,7 @@ Widget _lessonScreen(
   FakeAuthService authService, {
   LessonStartSelection selection = _introLessonSelection,
   LearnerAudioRecordingService? recordingService,
+  TutorAudioPlaybackService? audioPlaybackService,
   LearnerMicrophonePermissionService? microphonePermissionService,
   TextScaler? textScaler,
   Locale locale = const Locale('en'),
@@ -661,6 +728,7 @@ Widget _lessonScreen(
         key: ValueKey(authService),
         authService: authService,
         recordingService: recordingService,
+        audioPlaybackService: audioPlaybackService,
         microphonePermissionService: microphonePermissionService,
         selection: selection,
       ),
@@ -779,6 +847,352 @@ Future<void> _autoSendOneRecording(WidgetTester tester) async {
 }
 
 void main() {
+  group('tutor speech preload and scenario Auto-play', () {
+    final bytes = Uint8List.fromList([82, 73, 70, 70, 1, 2, 3, 4]);
+    Finder voiceButton() =>
+        find.byKey(const Key('lesson-message-action-tutor-voice')).first;
+    Future<void> flushAudioIo(WidgetTester tester) async {
+      // Alternate real file IO with widget microtasks until cache and playback settle.
+      for (var step = 0; step < 10; step++) {
+        await tester.pump();
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+      }
+      await tester.pumpAndSettle();
+    }
+    Widget speechScreen(FakeAuthService auth, TutorAudioPlaybackService playback) => _lessonScreen(
+      auth, audioPlaybackService: playback,
+      recordingService: LearnerAudioRecordingService(recorder: FakeLearnerRecorder()),
+    );
+
+    Future<void> enableAutoPlay(WidgetTester tester) async {
+      final toggle = find.byKey(const Key('lesson-auto-play-bot-voice-switch'));
+      await _showWidget(tester, toggle);
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> selectContext(WidgetTester tester, String text) async {
+      await _openTextComposer(tester);
+      await tester.enterText(find.byType(TextField), text);
+      await tester.pump();
+      await tester.tap(_sendButton());
+      await flushAudioIo(tester);
+    }
+
+    testWidgets(
+      'initial preload is silent and leaves lesson actions available',
+      (tester) async {
+        final auth = FakeAuthService()
+          ..speechCompleter = Completer<AudioSpeechResult>();
+        final playback = _SpeechPlayback();
+        await tester.pumpWidget(
+          speechScreen(auth, playback),
+        );
+        await tester.pumpAndSettle();
+        final request = auth.speechRequests.single;
+        expect(find.text(request.text), findsOneWidget);
+        expect(request.purpose, AudioSpeechPurpose.lessonChatTts);
+        expect(
+          request.backendSessionId,
+          auth.lessonStartResult.session!.lessonSessionId,
+        );
+        expect(request.speechSpeed, 1.0);
+        expect(request.speechVoice, 'coral');
+        expect(request.targetLanguageId, 'en');
+        expect(request.targetLanguageName, 'English');
+        expect(request.targetLanguageNativeName, 'English');
+        expect(request.targetLanguageCode, 'en');
+        expect(playback.paths, isEmpty);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(tester.widget<IconButton>(voiceButton()).onPressed, isNotNull);
+        expect(
+          tester
+              .widget<OutlinedButton>(find.byKey(const Key('lesson-action-record')))
+              .onPressed,
+          isNotNull,
+        );
+        expect(
+          tester
+              .widget<OutlinedButton>(find.byKey(const Key('lesson-action-hint')))
+              .onPressed,
+          isNotNull,
+        );
+        await _openTextComposer(tester);
+        await tester.enterText(find.byType(TextField), 'Typing during preload');
+        expect(
+          tester.widget<TextField>(find.byType(TextField)).controller!.text,
+          'Typing during preload',
+        );
+        auth.speechCompleter!.complete(
+          AudioSpeechResult.temporarilyUnavailable(),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.textContaining('Voice is temporarily unavailable'),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'successful preload caches without playing and manual Play reuses WAV',
+      (tester) async {
+        final auth = FakeAuthService()
+          ..speechResult = AudioSpeechResult.success(bytes);
+        final playback = _SpeechPlayback();
+        await tester.pumpWidget(
+          speechScreen(auth, playback),
+        );
+        await flushAudioIo(tester);
+        expect(auth.speechRequests, hasLength(1));
+        expect(playback.paths, isEmpty);
+        await _showWidget(tester, voiceButton());
+        await tester.tap(voiceButton());
+        await flushAudioIo(tester);
+        expect(auth.speechRequests, hasLength(1));
+        final path = playback.paths.single;
+        expect(File(path).readAsBytesSync(), bytes);
+        await tester.tap(voiceButton());
+        await flushAudioIo(tester);
+        expect(playback.paths, [path, path]);
+        expect(auth.speechRequests, hasLength(1));
+        await tester.pumpWidget(const SizedBox());
+        await flushAudioIo(tester);
+        expect(File(path).existsSync(), isFalse);
+      },
+    );
+
+    testWidgets(
+      'manual Play during preload shares request and plays once when ready',
+      (tester) async {
+        final auth = FakeAuthService()
+          ..speechCompleter = Completer<AudioSpeechResult>();
+        final playback = _SpeechPlayback();
+        await tester.pumpWidget(
+          speechScreen(auth, playback),
+        );
+        await tester.pumpAndSettle();
+        await _showWidget(tester, voiceButton());
+        await tester.tap(voiceButton());
+        await tester.pump();
+        await tester.tap(voiceButton());
+        await tester.pump();
+        expect(auth.speechRequests, hasLength(1));
+        expect(playback.paths, isEmpty);
+        auth.speechCompleter!.complete(AudioSpeechResult.success(bytes));
+        await flushAudioIo(tester);
+        expect(auth.speechRequests, hasLength(1));
+        expect(playback.paths, hasLength(1));
+        expect(File(playback.paths.single).readAsBytesSync(), bytes);
+        await tester.pumpWidget(const SizedBox());
+        await flushAudioIo(tester);
+      },
+    );
+
+    for (final throws in [false, true]) {
+      testWidgets(
+        'silent preload failure (throws=$throws) permits fresh manual speech',
+        (tester) async {
+          final auth = FakeAuthService();
+          if (throws) auth.speechError = StateError('speech failed');
+          final playback = _SpeechPlayback();
+          await tester.pumpWidget(
+            speechScreen(auth, playback),
+          );
+          await tester.pumpAndSettle();
+          expect(auth.speechRequests, hasLength(1));
+          expect(
+            find.textContaining('Voice is temporarily unavailable'),
+            findsNothing,
+          );
+          expect(playback.paths, isEmpty);
+          auth.speechError = null;
+          auth.speechResult = AudioSpeechResult.success(bytes);
+          await _showWidget(tester, voiceButton());
+          await tester.tap(voiceButton());
+          await flushAudioIo(tester);
+          expect(auth.speechRequests, hasLength(2));
+          expect(playback.paths, hasLength(1));
+          await tester.pumpWidget(const SizedBox());
+          await flushAudioIo(tester);
+        },
+      );
+    }
+
+    testWidgets('actual manual speech failure still shows the existing error', (
+      tester,
+    ) async {
+      final auth = FakeAuthService();
+      await tester.pumpWidget(
+        speechScreen(auth, _SpeechPlayback()),
+      );
+      await tester.pumpAndSettle();
+      await _showWidget(tester, voiceButton());
+      await tester.tap(voiceButton());
+      await tester.pumpAndSettle();
+      expect(auth.speechRequests, hasLength(2));
+      expect(
+        find.textContaining('Voice is temporarily unavailable'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'late preload completion after disposal creates no orphan WAV or playback',
+      (tester) async {
+        final auth = FakeAuthService()
+          ..speechCompleter = Completer<AudioSpeechResult>();
+        final playback = _SpeechPlayback();
+        await tester.pumpWidget(
+          speechScreen(auth, playback),
+        );
+        await tester.pumpAndSettle();
+        final before = Directory.systemTemp
+            .listSync()
+            .whereType<File>()
+            .where((file) => file.path.contains('language-voice-tutor-'))
+            .map((file) => file.path)
+            .toSet();
+        await tester.pumpWidget(const SizedBox());
+        auth.speechCompleter!.complete(AudioSpeechResult.success(bytes));
+        await flushAudioIo(tester);
+        final after = Directory.systemTemp
+            .listSync()
+            .whereType<File>()
+            .where((file) => file.path.contains('language-voice-tutor-'))
+            .map((file) => file.path)
+            .toSet();
+        expect(after.difference(before), isEmpty);
+        expect(playback.paths, isEmpty);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('disposal during preload file writing deletes the unattached WAV', (tester) async {
+      final file = File('${Directory.systemTemp.path}${Platform.pathSeparator}language-voice-tutor-pending-${DateTime.now().microsecondsSinceEpoch}.wav');
+      final pending = _PendingCacheWrite(file);
+      addTearDown(() { if (file.existsSync()) file.deleteSync(); });
+      final auth = FakeAuthService()..speechResult = AudioSpeechResult.success(bytes);
+      final playback = _SpeechPlayback();
+      await IOOverrides.runZoned(() async {
+        await tester.pumpWidget(speechScreen(auth, playback));
+        await flushAudioIo(tester);
+        expect(pending.written.isCompleted, isTrue);
+        expect(file.existsSync(), isTrue);
+        await tester.pumpWidget(const SizedBox());
+        pending.release.complete();
+        await flushAudioIo(tester);
+        expect(file.existsSync(), isFalse);
+        expect(playback.paths, isEmpty);
+        expect(tester.takeException(), isNull);
+      }, createFile: (path) => path.contains('language-voice-tutor-') ? pending : _DefaultFileIo().createFile(path));
+    });
+
+    testWidgets('normal reply and local final message retain Auto-play after scenario opening', (tester) async {
+      final auth = FakeAuthService(scenario: _runtimeScenario(softWrapUpAfterUserTurn: 1, finalMessageAtUserTurn: 2))
+        ..speechResult = AudioSpeechResult.success(bytes);
+      final playback = _SpeechPlayback();
+      await tester.pumpWidget(speechScreen(auth, playback));
+      await flushAudioIo(tester);
+      await enableAutoPlay(tester);
+      await selectContext(tester, '1');
+      await selectContext(tester, 'First learner reply');
+      await selectContext(tester, 'Final learner reply');
+      expect(auth.sendLessonChatReplyCallCount, 1);
+      expect(auth.speechRequests, hasLength(4));
+      expect(playback.paths, hasLength(3));
+      expect(auth.speechRequests.every((request) => request.purpose == AudioSpeechPurpose.lessonChatTts), isTrue);
+      expect(find.text(auth.speechRequests.last.text), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      await flushAudioIo(tester);
+    });
+
+    for (final custom in [false, true]) {
+      for (final autoPlay in [false, true]) {
+        testWidgets(
+          '${custom ? "custom" : "known"} scenario opening respects Auto-play=$autoPlay',
+          (tester) async {
+            final auth = FakeAuthService()
+              ..speechResult = AudioSpeechResult.success(bytes);
+            final playback = _SpeechPlayback();
+            await tester.pumpWidget(
+              speechScreen(auth, playback),
+            );
+            await flushAudioIo(tester);
+            if (autoPlay) await enableAutoPlay(tester);
+            await selectContext(tester, custom ? 'Meeting a colleague' : '1');
+            expect(auth.sendLessonChatReplyCallCount, 0);
+            expect(auth.speechRequests, hasLength(autoPlay ? 2 : 1));
+            expect(playback.paths, hasLength(autoPlay ? 1 : 0));
+            if (autoPlay) {
+              final request = auth.speechRequests.last;
+              expect(find.text(request.text), findsOneWidget);
+              expect(request.purpose, AudioSpeechPurpose.lessonChatTts);
+              expect(
+                request.backendSessionId,
+                auth.speechRequests.first.backendSessionId,
+              );
+              expect(request.speechSpeed, 1.0);
+              await _showWidget(
+                tester,
+                find.byKey(const Key('lesson-message-action-tutor-voice')).last,
+              );
+              await tester.tap(
+                find.byKey(const Key('lesson-message-action-tutor-voice')).last,
+              );
+              await flushAudioIo(tester);
+              expect(auth.speechRequests, hasLength(2));
+              expect(playback.paths, hasLength(2));
+            } else {
+              await selectContext(tester, 'First learner reply');
+              expect(auth.speechRequests, hasLength(1));
+              expect(playback.paths, isEmpty);
+            }
+            await tester.pumpWidget(const SizedBox());
+            await flushAudioIo(tester);
+          },
+        );
+      }
+      testWidgets(
+        '${custom ? "custom" : "known"} opening suppresses Lesson Chat playback for Conversation Mode',
+        (tester) async {
+          final auth = FakeAuthService(
+            voiceScenarioResponse: custom ? const VoiceScenarioSemanticResponse(
+              decision: VoiceScenarioSemanticDecision.freeContext,
+              confidence: .94,
+              normalizedFreeContext: 'Meeting a colleague',
+            ) : null,
+          );
+          final playback = _SpeechPlayback();
+          await tester.pumpWidget(
+            speechScreen(auth, playback),
+          );
+          await tester.pumpAndSettle();
+          await enableAutoPlay(tester);
+          final button = find.byKey(
+            const Key('lesson-conversation-mode-button'),
+          );
+          await _showWidget(tester, button);
+          await tester.tap(button);
+          await tester.pumpAndSettle();
+          final conversation = tester.widget<ConversationModeScreen>(
+            find.byType(ConversationModeScreen),
+          );
+          final opening = await conversation.onSubmitTranscript(
+            custom ? 'Meeting a colleague' : '1',
+          );
+          await tester.pumpAndSettle();
+          expect(opening, isNotNull);
+          expect(auth.persistedMessages, hasLength(2));
+          expect(auth.persistedMessages.last.text, opening);
+          expect(auth.speechRequests, hasLength(1));
+          expect(playback.paths, isEmpty);
+          await tester.pumpWidget(const SizedBox());
+          await tester.pumpAndSettle();
+        },
+      );
+    }
+  });
   testWidgets(
       'hidden composer anchors action row near bottom SafeArea and transcript fills remaining space',
       (tester) async {

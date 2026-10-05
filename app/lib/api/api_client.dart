@@ -92,6 +92,7 @@ class ApiException implements Exception {
 }
 
 class HttpApiClient implements ApiClient, BinaryApiClient, MultipartApiClient {
+  static const _tutorSpeechTimeout = Duration(seconds: 25);
   HttpApiClient({
     String baseUrl = AppConfig.productionApiBaseUrl,
     Duration timeout = const Duration(seconds: 10),
@@ -134,44 +135,68 @@ class HttpApiClient implements ApiClient, BinaryApiClient, MultipartApiClient {
       final requestUri = _baseUri.resolve(
         path.startsWith('/') ? path.substring(1) : path,
       );
-      final request = await _httpClient.openUrl('POST', requestUri).timeout(
-            _timeout,
-          );
-      request.headers.set(HttpHeaders.acceptHeader, 'audio/wav');
-      if (accessToken != null && accessToken.isNotEmpty) {
-        request.headers
-            .set(HttpHeaders.authorizationHeader, 'Bearer $accessToken');
-      }
-      request.headers.contentType = ContentType.json;
-      request.write(jsonEncode(body));
-
-      final response = await request.close().timeout(_timeout);
-      final bytes = await response.fold<List<int>>(
-        <int>[],
-        (all, chunk) => all..addAll(chunk),
-      ).timeout(_timeout);
-      final headers = <String, String>{};
-      response.headers.forEach((name, values) {
-        headers[name.toLowerCase()] = values.join(',');
-      });
-      return BinaryApiResponse(
-        statusCode: response.statusCode,
-        bodyBytes: Uint8List.fromList(bytes),
-        headers: headers,
+      final isTutorSpeech = requestUri.path == '/api/audio/speech';
+      final timeout = isTutorSpeech ? _tutorSpeechTimeout : _timeout;
+      final operation = _sendBinary(
+        requestUri,
+        body: body,
+        accessToken: accessToken,
+        timeout: timeout,
       );
+      // Speech has one effective budget, including response headers and WAV bytes.
+      return await (isTutorSpeech ? operation.timeout(timeout) : operation);
     } on TimeoutException {
-      throw const ApiException('The service took too long to respond.',
-          category: ApiFailureCategory.timeout);
+      throw const ApiException(
+        'The service took too long to respond.',
+        category: ApiFailureCategory.timeout,
+      );
     } on SocketException {
-      throw const ApiException('Unable to reach the service.',
-          category: ApiFailureCategory.network);
+      throw const ApiException(
+        'Unable to reach the service.',
+        category: ApiFailureCategory.network,
+      );
     } on FormatException {
-      throw const ApiException('The service returned an unexpected response.',
-          category: ApiFailureCategory.transport);
+      throw const ApiException(
+        'The service returned an unexpected response.',
+        category: ApiFailureCategory.transport,
+      );
     } catch (_) {
-      throw const ApiException('Something went wrong. Please try again.',
-          category: ApiFailureCategory.unknown);
+      throw const ApiException(
+        'Something went wrong. Please try again.',
+        category: ApiFailureCategory.unknown,
+      );
     }
+  }
+
+  Future<BinaryApiResponse> _sendBinary(
+    Uri requestUri, {
+    required Map<String, dynamic> body,
+    required String? accessToken,
+    required Duration timeout,
+  }) async {
+    final request =
+        await _httpClient.openUrl('POST', requestUri).timeout(timeout);
+    request.headers.set(HttpHeaders.acceptHeader, 'audio/wav');
+    if (accessToken != null && accessToken.isNotEmpty) {
+      request.headers.set(
+        HttpHeaders.authorizationHeader,
+        'Bearer $accessToken',
+      );
+    }
+    request.headers.contentType = ContentType.json;
+    request.write(jsonEncode(body));
+    final response = await request.close().timeout(timeout);
+    final bytes = await response.fold<List<int>>(
+        <int>[], (all, chunk) => all..addAll(chunk)).timeout(timeout);
+    final headers = <String, String>{};
+    response.headers.forEach((name, values) {
+      headers[name.toLowerCase()] = values.join(',');
+    });
+    return BinaryApiResponse(
+      statusCode: response.statusCode,
+      bodyBytes: Uint8List.fromList(bytes),
+      headers: headers,
+    );
   }
 
   @override
