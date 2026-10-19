@@ -12,7 +12,7 @@ All mobile-to-backend communication must use HTTPS.
 
 ## Contract status
 
-This document records expected contracts and assumptions before implementation. Endpoint names are placeholders unless already confirmed by backend documentation or backend code. Exact paths, methods, payloads, response shapes, authentication requirements, and error codes must be confirmed before Flutter runtime code is added.
+Confirmed sections describe the existing Mobile client as of 2026-10-19 (`b66c0efccd1fbceb1bde9f70f4ad529de30df2bd`, `0.1.0+14`). Earlier expectations are retained as planning context where not superseded by a confirmed section; they do not make implemented authentication, lesson completion or device activity provisional. Current owner-reported production backend is `0.1.35-backend.169` after rollback of `.170`, shared by Android and Windows Desktop.
 
 ## Localized lesson setup response
 
@@ -20,21 +20,12 @@ The completed Mobile integration at commit `01d6226` consumes the additive, resp
 
 ## Authentication and session expectations
 
-Expected behavior:
+Confirmed Mobile behavior:
 
-- Mobile authenticates against the existing backend account system.
-- Mobile receives backend-issued session credentials or tokens.
-- Mobile stores session credentials using platform-secure storage.
-- Mobile sends credentials only to the Language Voice Tutor backend over HTTPS.
-- Backend remains responsible for validating sessions and revoking access.
-
-Open contract questions:
-
-- Login method: email/password, magic link, OAuth, desktop-compatible flow, or another flow.
-- Whether refresh tokens are issued.
-- Token expiration and refresh behavior.
-- Logout and session revocation endpoint.
-- Device/session listing requirements.
+- Email/password registration and explicit login use `POST /api/auth/register` and `POST /api/auth/login`; current-user discovery uses `GET /api/auth/me`.
+- Backend issues access and refresh tokens; Mobile uses platform-secure storage and the existing refresh-on-401 `POST /api/auth/refresh` path. Explicit logout uses `POST /api/auth/revoke` and clears/suppresses local session restoration.
+- Credentials are sent only to the shared backend over HTTPS. Firebase Analytics is not authentication, session authority or a Premium decision source.
+- Optional registration analytics consent is independent of account creation and its Terms/Privacy notice. Its Privacy Policy link uses the existing external document launcher and does not change consent. The UI has one optional analytics checkbox, not a second mandatory legal checkbox.
 
 ## Account-deletion session boundary
 
@@ -54,6 +45,12 @@ POST /api/auth/restore-credentials/assertion/verify      # anonymous; returns no
 ```
 
 The registration routes exchange high-level WebAuthn ceremony options and public credential responses. The assertion routes exchange discovery/assertion ceremony data; Mobile persists a session only after the backend verifies the assertion. The contract does not expose or transfer private credential material, existing refresh tokens, provider secrets, or backend configuration.
+
+## Authenticated Android device activity
+
+`POST /api/me/devices` uses the existing authenticated/session-recovering client, independently of optional Firebase consent. Request keys are `platform`, `deviceName`, and `appVersion`; the installation-scoped Android label/UUID is operational account data, not an analytics payload. The response exposes `registered`, server-owned `lastSeenAt`, and parsed `trackingScope` when supplied. Successful account discovery and foreground resume trigger updates; continued foreground use refreshes every **15 minutes**, with one-minute coalescing and no background timer.
+
+Backend device records store `LastSeenAt`. The agreed account-level last activity is `max(lastSeenAt)` over devices belonging to that user. This review does not establish a dedicated user `LastActiveAt` database field or Admin last-activity UI. Detailed identity, consent and deduplication boundaries are in [v14 analytics and devices](ANDROID_V14_ANALYTICS_AND_DEVICES.md).
 
 ## `/api/me` and settings expectations
 
@@ -166,7 +163,7 @@ POST /api/lesson-chat/feedback
 POST /api/audio/speech
 POST /api/audio/transcribe
 POST /api/me/lesson-sessions/{sessionId}/messages
-POST /api/lesson-sessions/{sessionId}/abandon
+POST /api/lesson-sessions/{sessionId}/heartbeat
 PUT /api/me/lesson-sessions/{sessionId}/finish
 GET /api/me/lesson-sessions/{sessionId}/summary
 ```
@@ -321,35 +318,25 @@ Feedback error boundaries:
 - Provider, backend, network, and malformed-response failures remain learner-safe and retryable.
 - Raw provider or HTTP details are not shown.
 
-## Confirmed lesson abandon contract
+## Existing abandon API and historical Mobile Back behavior
 
-Mobile uses the existing backend abandon flow as a second client of the same product runtime:
+The existing backend API remains available:
 
 ```http
 POST /api/lesson-sessions/{sessionId}/abandon
 ```
 
-The request has no body. Mobile sends the same authenticated bearer token used by lesson APIs and reuses the existing refresh-on-401 flow. Backend remains the source of truth for lesson-session state. Visible Back and Android system Back use the same leave-confirmation flow: **Stay** keeps the learner inside the lesson and makes no backend request; **Leave lesson** abandons the unfinished backend session and then closes the lesson screen. Duplicate abandon requests are prevented.
+It accepts no body and uses the shared authenticated bearer-token/refresh-on-401 flow. Abandon is not Finish: it does not request Summary, change valid turns, persist messages or alter transcript/Hint data. The original Mobile `1a392dc` implementation used it from the Back confirmation; that is historical behavior, superseded by v14.
 
-Abandon boundaries:
+Visible Back and Android system Back open the same existing confirmation dialog, with its title, styling and two-button layout retained. **Stay** keeps the lesson active without a completion or abandon request. The former **Exit lesson / Leave lesson** action is now **Finish lesson** (Russian: **Завершить урок**) and calls the exact same `_finishLesson()` method used by the top-right finish flag. It reuses the existing persistence barrier, valid-turn count, authenticated finish request, backend summary generation/read and summary screen. The explanatory text uses existing localized completion wording. Completion failure keeps the learner in the lesson with the existing error behavior; existing completion guards prevent duplicate requests. No second confirmation, third exit option, new completion API or separate completion flow was added.
 
-- Abandon does not call Finish.
-- Abandon does not generate or request Summary.
-- Abandon does not change `validTurnCount`.
-- Abandon does not create or persist a learner or tutor message.
-- Abandon does not alter Hint behavior or lesson transcript data.
+The existing `LessonSessionLifecycleCoordinator` starts a heartbeat for an open lesson session immediately and every **30 seconds**, without concurrent heartbeat requests, through `POST /api/lesson-sessions/{sessionId}/heartbeat`. It stops on completion, disposal, or terminal/auth-required heartbeat results. This lesson lease is separate from the **15-minute authenticated foreground device-activity** refresh and from optional Firebase events. Backend remains authoritative for expiry and cleanup; this documentation update changes no timeout or session behavior.
 
-Failure and timeout boundaries:
-
-- Authentication failures use the existing authentication-required behavior.
-- Network/backend failures keep the learner on the lesson screen and allow retry.
-- Active-lesson conflict wording is neutral and does not claim that the session is necessarily on another physical device.
-- The backend stale active-session interval remains two minutes; no backend timeout change was made and no mobile heartbeat was added.
-- Normal confirmed Back navigation releases the session immediately. If the app is force-closed or terminated without the confirmed leave flow, the existing backend timeout remains the fallback. The two-minute timeout is intentionally retained unless real user feedback proves it needs adjustment.
+Active-session conflict wording remains neutral and does not identify another physical device. Backend owns session status, expiry and cleanup. No new abandonment, completion or session API was introduced for the v14 dialog change.
 
 ## Confirmed finish and summary contract
 
-The Android mobile client now has a production-verified end-to-end text lesson completion path against backend `0.1.35-backend.112` or later. Version `.112` is required for the verified summary flow because it supports nested Responses API output extraction. Backend `0.1.35-backend.111` is the previous rollback version and should not be treated as the verified summary baseline.
+The Android mobile client now has a production-verified end-to-end text lesson completion path against backend `0.1.35-backend.112` or later. Version `.112` is required for the verified summary flow because it supports nested Responses API output extraction. At that original summary checkpoint, backend `0.1.35-backend.111` was the rollback version and was not the verified summary baseline; current `.169` production is recorded above.
 
 Exact authenticated routes in the current text lesson loop:
 
@@ -364,7 +351,7 @@ POST /api/lesson-chat/feedback
 POST /api/audio/speech
 POST /api/audio/transcribe
 POST /api/me/lesson-sessions/{sessionId}/messages
-POST /api/lesson-sessions/{sessionId}/abandon
+POST /api/lesson-sessions/{sessionId}/heartbeat
 PUT /api/me/lesson-sessions/{sessionId}/finish
 GET /api/me/lesson-sessions/{sessionId}/summary
 POST /api/auth/refresh
@@ -399,7 +386,7 @@ Expected behavior:
 - Backend orchestrates AI tutor behavior and stores lesson history and progress.
 - Mobile retrieves history and progress from backend APIs when those phases are approved.
 
-Confirmed mobile lesson abandonment is complete. Heartbeat or timeout reduction is optional future reliability work only if real user feedback requires it, not the next required task.
+The existing abandon API is retained as a separate contract. V14 visible/system Back completes only after the explicit Finish choice and never silently abandons after completion failure. Current lesson heartbeat behavior is recorded above.
 
 Explicit no-go items for the next text-chat step:
 
