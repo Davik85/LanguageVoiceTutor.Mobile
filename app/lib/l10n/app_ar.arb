@@ -660,5 +660,28 @@
   "lessonUnavailable": "هذا الدرس غير متاح.",
   "lessonNoLongerAvailable": "هذا الدرس لم يعد متاحًا.",
   "lessonHistoryUnavailable": "سجل الدروس غير متاح مؤقتًا. يُرجى المحاولة مرة أخرى.",
-  "lessonDetailLoadFailed": "يتعذر تحميل تفاصيل الدرس. يُرجى المحاولة مرة أخرى."
+  "lessonDetailLoadFailed": "يتعذر تحميل تفاصيل الدرس. يُرجى المحاولة مرة أخرى.",
+  "analyticsTitle": "إحصاءات الاستخدام",
+  "analyticsExplanation": "مشاركة إحصاءات استخدام التطبيق للمساعدة في تحسينه.",
+  "registrationAnalyticsConsent": "أوافق على مشاركة إحصاءات استخدام التطبيق للمساعدة في تحسينه.",
+  "analyticsDecline": "رفض / إيقاف",
+  "analyticsAllow": "السماح بالتحليلات",
+  "analyticsEnabled": "التحليلات مفعلة",
+  "analyticsDisabled": "التحليلات معطلة",
+  "analyticsSaveFailed": "تعذر حفظ اختيارك. التحليلات معطلة. حاول مجددًا.",
+  "registrationLegalNotice": "بإنشاء حساب، فإنك توافق على {terms} الخاصة بنا. يُرجى مراجعة {privacy} الخاصة بنا.",
+  "termsOfService": "شروط الخدمة",
+  "privacyPolicy": "سياسة الخصوصية",
+  "legalDocumentOpenFailed": "تعذر فتح المستند. يرجى المحاولة مجددًا.",
+  "@registrationLegalNotice": {
+    "description": "Informational notice below Register; document placeholders become independent clickable links. Keep their natural local word order.",
+    "placeholders": {
+      "terms": {
+        "type": "String"
+      },
+      "privacy": {
+        "type": "String"
+      }
+    }
+  }
 }

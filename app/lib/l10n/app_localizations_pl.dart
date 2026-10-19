@@ -1610,4 +1610,46 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get lessonDetailLoadFailed =>
       'Nie można wczytać szczegółów lekcji. Spróbuj ponownie.';
+
+  @override
+  String get analyticsTitle => 'Statystyki użytkowania';
+
+  @override
+  String get analyticsExplanation =>
+      'Udostępniaj statystyki korzystania z aplikacji, aby pomóc ją ulepszać.';
+
+  @override
+  String get registrationAnalyticsConsent =>
+      'Zgadzam się udostępniać statystyki korzystania z aplikacji, aby pomóc ją ulepszać.';
+
+  @override
+  String get analyticsDecline => 'Odrzuć / wyłącz';
+
+  @override
+  String get analyticsAllow => 'Zezwól na analitykę';
+
+  @override
+  String get analyticsEnabled => 'Analityka włączona';
+
+  @override
+  String get analyticsDisabled => 'Analityka wyłączona';
+
+  @override
+  String get analyticsSaveFailed =>
+      'Nie udało się zapisać wyboru. Analityka jest wyłączona. Spróbuj ponownie.';
+
+  @override
+  String registrationLegalNotice(String terms, String privacy) {
+    return 'Tworząc konto, akceptujesz nasze $terms. Zapoznaj się z naszą $privacy.';
+  }
+
+  @override
+  String get termsOfService => 'Warunki korzystania z usługi';
+
+  @override
+  String get privacyPolicy => 'Politykę prywatności';
+
+  @override
+  String get legalDocumentOpenFailed =>
+      'Nie udało się otworzyć dokumentu. Spróbuj ponownie.';
 }

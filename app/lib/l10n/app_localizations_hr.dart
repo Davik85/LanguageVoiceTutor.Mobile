@@ -1609,4 +1609,46 @@ class AppLocalizationsHr extends AppLocalizations {
   @override
   String get lessonDetailLoadFailed =>
       'Nije moguće učitati pojedinosti lekcije. Pokušajte ponovno.';
+
+  @override
+  String get analyticsTitle => 'Statistika upotrebe';
+
+  @override
+  String get analyticsExplanation =>
+      'Dijelite statistiku upotrebe aplikacije kako biste pomogli u njezinu poboljšanju.';
+
+  @override
+  String get registrationAnalyticsConsent =>
+      'Pristajem dijeliti statistiku upotrebe aplikacije kako bih pomogao u njezinu poboljšanju.';
+
+  @override
+  String get analyticsDecline => 'Odbij / isključi';
+
+  @override
+  String get analyticsAllow => 'Dopusti analitiku';
+
+  @override
+  String get analyticsEnabled => 'Analitika je uključena';
+
+  @override
+  String get analyticsDisabled => 'Analitika je isključena';
+
+  @override
+  String get analyticsSaveFailed =>
+      'Izbor nije spremljen. Analitika je isključena. Pokušajte ponovno.';
+
+  @override
+  String registrationLegalNotice(String terms, String privacy) {
+    return 'Izradom računa prihvaćate naše $terms. Pročitajte naša $privacy.';
+  }
+
+  @override
+  String get termsOfService => 'Uvjete korištenja';
+
+  @override
+  String get privacyPolicy => 'Pravila privatnosti';
+
+  @override
+  String get legalDocumentOpenFailed =>
+      'Dokument nije moguće otvoriti. Pokušajte ponovno.';
 }

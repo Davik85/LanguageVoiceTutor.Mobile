@@ -1,5 +1,9 @@
 # Language Voice Tutor Mobile
 
+## Android v14 implementation preparation (2026-10-18)
+
+Optional consent-controlled Firebase Analytics and authenticated Android device/foreground activity tracking are implemented in the working tree. The application version remains `0.1.0+13`. Firebase client configuration is still operator-blocked; release approval and physical/configured-device verification remain pending. See [Android analytics and device tracking](docs/ANDROID_V14_ANALYTICS_AND_DEVICES.md) for event boundaries, setup commands, deduplication limitations, privacy/Data safety work and DebugView/manual QA. The dated v13 release checkpoint below is historical evidence.
+
 ## Current 2026-10-05 Android Production v13 checkpoint
 
 Current Mobile source/release commit is `bbd9702d626a99f760dbf2484f827e9ddac5c73e` with `0.1.0+13` / versionCode 13 for package `com.languagevoicetutor.mobile`, published as **Orralen - Language Voice Tutor**; target SDK remains 36. Google Play Console on 2026-10-05 confirmed version 13 / 0.1.0 as the latest Production working release, with 100% rollout and no unpublished changes at that checkpoint. This does not imply every installed user already has v13. The next future uploaded artifact must use versionCode at least 14.

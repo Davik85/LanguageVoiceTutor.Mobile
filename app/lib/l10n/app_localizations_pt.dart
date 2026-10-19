@@ -1618,6 +1618,48 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get lessonDetailLoadFailed =>
       'Não foi possível carregar os detalhes da lição. Tente novamente.';
+
+  @override
+  String get analyticsTitle => 'Estatísticas de utilização';
+
+  @override
+  String get analyticsExplanation =>
+      'Partilhe estatísticas de utilização da aplicação para ajudar a melhorá-la.';
+
+  @override
+  String get registrationAnalyticsConsent =>
+      'Concordo em partilhar estatísticas de utilização da aplicação para ajudar a melhorá-la.';
+
+  @override
+  String get analyticsDecline => 'Recusar / desativar';
+
+  @override
+  String get analyticsAllow => 'Permitir análise';
+
+  @override
+  String get analyticsEnabled => 'Análise ativada';
+
+  @override
+  String get analyticsDisabled => 'Análise desativada';
+
+  @override
+  String get analyticsSaveFailed =>
+      'Não foi possível guardar a escolha. A análise está desativada. Tente novamente.';
+
+  @override
+  String registrationLegalNotice(String terms, String privacy) {
+    return 'Ao criar uma conta, aceita os nossos $terms. Consulte a nossa $privacy.';
+  }
+
+  @override
+  String get termsOfService => 'Termos de Serviço';
+
+  @override
+  String get privacyPolicy => 'Política de Privacidade';
+
+  @override
+  String get legalDocumentOpenFailed =>
+      'Não foi possível abrir o documento. Tente novamente.';
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).
@@ -3234,4 +3276,46 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
   @override
   String get lessonDetailLoadFailed =>
       'Não foi possível carregar os detalhes da lição. Tente novamente.';
+
+  @override
+  String get analyticsTitle => 'Estatísticas de utilização';
+
+  @override
+  String get analyticsExplanation =>
+      'Partilhe estatísticas de utilização da aplicação para ajudar a melhorá-la.';
+
+  @override
+  String get registrationAnalyticsConsent =>
+      'Concordo em partilhar estatísticas de utilização da aplicação para ajudar a melhorá-la.';
+
+  @override
+  String get analyticsDecline => 'Recusar / desativar';
+
+  @override
+  String get analyticsAllow => 'Permitir análise';
+
+  @override
+  String get analyticsEnabled => 'Análise ativada';
+
+  @override
+  String get analyticsDisabled => 'Análise desativada';
+
+  @override
+  String get analyticsSaveFailed =>
+      'Não foi possível guardar a escolha. A análise está desativada. Tente novamente.';
+
+  @override
+  String registrationLegalNotice(String terms, String privacy) {
+    return 'Ao criar uma conta, aceita os nossos $terms. Consulte a nossa $privacy.';
+  }
+
+  @override
+  String get termsOfService => 'Termos de Serviço';
+
+  @override
+  String get privacyPolicy => 'Política de Privacidade';
+
+  @override
+  String get legalDocumentOpenFailed =>
+      'Não foi possível abrir o documento. Tente novamente.';
 }

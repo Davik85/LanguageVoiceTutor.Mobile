@@ -1500,4 +1500,42 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get lessonDetailLoadFailed => 'レッスンの詳細を読み込めません。もう一度お試しください。';
+
+  @override
+  String get analyticsTitle => '利用統計';
+
+  @override
+  String get analyticsExplanation => 'アプリの改善に役立てるため、利用統計を共有します。';
+
+  @override
+  String get registrationAnalyticsConsent => 'アプリの改善に役立てるため、利用統計を共有することに同意します。';
+
+  @override
+  String get analyticsDecline => '拒否・無効にする';
+
+  @override
+  String get analyticsAllow => '分析を許可';
+
+  @override
+  String get analyticsEnabled => '分析は有効です';
+
+  @override
+  String get analyticsDisabled => '分析は無効です';
+
+  @override
+  String get analyticsSaveFailed => '選択を保存できませんでした。分析は無効です。もう一度お試しください。';
+
+  @override
+  String registrationLegalNotice(String terms, String privacy) {
+    return 'アカウントを作成すると、$termsに同意したことになります。$privacyをご確認ください。';
+  }
+
+  @override
+  String get termsOfService => '利用規約';
+
+  @override
+  String get privacyPolicy => 'プライバシーポリシー';
+
+  @override
+  String get legalDocumentOpenFailed => '文書を開けませんでした。もう一度お試しください。';
 }

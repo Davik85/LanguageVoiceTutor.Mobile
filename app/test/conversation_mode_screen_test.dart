@@ -1,15 +1,19 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:language_voice_tutor_mobile/api/api_client.dart';
 import 'package:language_voice_tutor_mobile/l10n/app_localizations.dart';
 import 'package:language_voice_tutor_mobile/models/audio_transcription.dart';
+import 'package:language_voice_tutor_mobile/models/audio_speech.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_runtime.dart';
 import 'package:language_voice_tutor_mobile/models/lesson_session.dart';
 import 'package:language_voice_tutor_mobile/models/user_settings.dart';
 import 'package:language_voice_tutor_mobile/screens/conversation_mode_screen.dart';
 import 'package:language_voice_tutor_mobile/services/auth_service.dart';
+import 'package:language_voice_tutor_mobile/services/http_audio_diagnostics.dart';
 import 'package:language_voice_tutor_mobile/services/learner_audio_recording_service.dart';
 import 'package:language_voice_tutor_mobile/services/learner_microphone_permission_service.dart';
 import 'package:language_voice_tutor_mobile/services/lesson_context_selection_resolver.dart';
@@ -70,6 +74,29 @@ class _Playback implements TutorAudioPlaybackService {
       const TutorPlaybackResult(TutorPlaybackStatus.completed);
   @override
   Future<void> stop() async {}
+}
+
+class _SpeakingAuthService extends _TranscribingAuthService {
+  _SpeakingAuthService(this.bytes) : super('A synthetic reply.');
+  final Uint8List bytes;
+  @override
+  Future<AudioSpeechResult> requestTutorSpeech({
+    required AudioSpeechRequest request,
+  }) async {
+    TutorSpeechTrace.start(request.text)?.received(bytes, 200);
+    return AudioSpeechResult.success(bytes);
+  }
+}
+
+class _ObservedPlayback extends _Playback {
+  final files = <List<int>>[];
+  @override
+  Future<TutorPlaybackResult> playToCompletion(String path,
+      {required Duration timeout, void Function()? onStarted}) async {
+    files.add(await File(path).readAsBytes());
+    onStarted?.call();
+    return const TutorPlaybackResult(TutorPlaybackStatus.completed);
+  }
 }
 
 class _Recording extends LearnerAudioRecordingService {
@@ -178,13 +205,14 @@ Widget _screen({
   _Recording? recording,
   _Permission? permission,
   AuthService? authService,
+  TutorAudioPlaybackService? playback,
   Future<String?> Function(String text)? onSubmitTranscript,
   String tutorDisplayName = 'Tutor',
 }) =>
     ConversationModeScreen(
-      authService: authService ??
-          AuthService(apiClient: _Api(), storage: _Storage()),
-      audioPlaybackService: _Playback(),
+      authService:
+          authService ?? AuthService(apiClient: _Api(), storage: _Storage()),
+      audioPlaybackService: playback ?? _Playback(),
       recordingService: recording ?? _Recording(),
       microphonePermissionService: permission ?? _Permission(),
       session: const LessonSessionResponse(
@@ -214,6 +242,7 @@ Widget _conversation({
   _Recording? recording,
   _Permission? permission,
   AuthService? authService,
+  TutorAudioPlaybackService? playback,
   Future<String?> Function(String text)? onSubmitTranscript,
   Locale locale = const Locale('en'),
   String tutorDisplayName = 'Tutor',
@@ -226,12 +255,63 @@ Widget _conversation({
         recording: recording,
         permission: permission,
         authService: authService,
+        playback: playback,
         onSubmitTranscript: onSubmitTranscript,
         tutorDisplayName: tutorDisplayName,
       ),
     );
 
 void main() {
+  testWidgets('speech tracing preserves Conversation WAV write and playback',
+      (tester) async {
+    final bytes = Uint8List.fromList([82, 73, 70, 70, 1, 2, 3, 4]);
+    final playback = _ObservedPlayback();
+    final lines = <String>[];
+    final original = debugPrint;
+    debugPrint = (line, {wrapWidth}) {
+      if (line != null) lines.add(line);
+    };
+    addTearDown(() => debugPrint = original);
+    try {
+      await tester.pumpWidget(_conversation(
+          authService: _SpeakingAuthService(bytes), playback: playback));
+      await tester.pumpAndSettle();
+      final record = find.byKey(const Key('conversation-mode-record-button'));
+      await tester.tap(record);
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 550)));
+      await tester.pump();
+      await tester.tap(record);
+      for (var i = 0; i < 15; i++) {
+        await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 20)));
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+      expect(playback.files, [bytes], reason: lines.join('\n'));
+      if (ReceivedTutorWavDiagnostics.configuredEnabled) {
+        final prepared =
+            lines.singleWhere((s) => s.contains('event=prepared '));
+        expect(prepared, contains('matchesHttp=true diskReadback=unavailable'));
+        final handoff = lines.singleWhere((s) => s.contains('event=handoff '));
+        expect(handoff, contains('rawBytes=available source=write_buffer'));
+        expect(handoff, contains('matchesHttp=true fileContent=unverified'));
+        expect(lines.any((s) => s.contains('event=started')), isTrue);
+        expect(lines.any((s) => s.contains('event=result status=completed')),
+            isTrue);
+        final id = RegExp(r'request=([0-9]+)').firstMatch(prepared)![1];
+        expect(handoff, contains('request=$id '));
+      } else {
+        expect(lines.where((s) => s.startsWith('[TutorSpeech')), isEmpty);
+      }
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await playback.dispose();
+    } finally {
+      debugPrint = original;
+    }
+  });
   test('Conversation turn prerequisites are resolved before submission', () {
     final script = TranscriptScriptNormalizer.normalize(
       'MEETING A NEW NEIGHBOR.',
@@ -294,7 +374,8 @@ void main() {
     expect(recording.recording, isTrue);
   });
 
-  testWidgets('recognized speech submits through the supplied normal reply path',
+  testWidgets(
+      'recognized speech submits through the supplied normal reply path',
       (tester) async {
     final recording = _Recording();
     var normalReplyCallCount = 0;

@@ -660,5 +660,28 @@
   "lessonUnavailable": "Quella lezione non è disponibile.",
   "lessonNoLongerAvailable": "Questa lezione non è più disponibile.",
   "lessonHistoryUnavailable": "La cronologia delle lezioni non è disponibile temporaneamente. Riprova.",
-  "lessonDetailLoadFailed": "Impossibile caricare i dettagli della lezione. Riprova."
+  "lessonDetailLoadFailed": "Impossibile caricare i dettagli della lezione. Riprova.",
+  "analyticsTitle": "Statistiche di utilizzo",
+  "analyticsExplanation": "Condividi le statistiche di utilizzo dell’app per contribuire a migliorarla.",
+  "registrationAnalyticsConsent": "Acconsento a condividere le statistiche di utilizzo dell’app per contribuire a migliorarla.",
+  "analyticsDecline": "Rifiuta / disattiva",
+  "analyticsAllow": "Consenti analisi",
+  "analyticsEnabled": "Analisi attive",
+  "analyticsDisabled": "Analisi disattivate",
+  "analyticsSaveFailed": "Impossibile salvare la scelta. Analisi disattivate. Riprova.",
+  "registrationLegalNotice": "Creando un account, accetti i nostri {terms}. Consulta la nostra {privacy}.",
+  "termsOfService": "Termini di servizio",
+  "privacyPolicy": "Informativa sulla privacy",
+  "legalDocumentOpenFailed": "Impossibile aprire il documento. Riprova.",
+  "@registrationLegalNotice": {
+    "description": "Informational notice below Register; document placeholders become independent clickable links. Keep their natural local word order.",
+    "placeholders": {
+      "terms": {
+        "type": "String"
+      },
+      "privacy": {
+        "type": "String"
+      }
+    }
+  }
 }

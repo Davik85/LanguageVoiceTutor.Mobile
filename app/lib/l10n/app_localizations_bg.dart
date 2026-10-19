@@ -1607,4 +1607,46 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get lessonDetailLoadFailed =>
       'Детайлите за урока не можаха да бъдат заредени. Моля, опитайте отново.';
+
+  @override
+  String get analyticsTitle => 'Статистика за използването';
+
+  @override
+  String get analyticsExplanation =>
+      'Споделяйте статистика за използването на приложението, за да помогнете за подобряването му.';
+
+  @override
+  String get registrationAnalyticsConsent =>
+      'Съгласявам се да споделям статистика за използването на приложението, за да помогна за подобряването му.';
+
+  @override
+  String get analyticsDecline => 'Отказ / изключване';
+
+  @override
+  String get analyticsAllow => 'Разрешаване на анализ';
+
+  @override
+  String get analyticsEnabled => 'Анализът е включен';
+
+  @override
+  String get analyticsDisabled => 'Анализът е изключен';
+
+  @override
+  String get analyticsSaveFailed =>
+      'Изборът не бе запазен. Анализът е изключен. Опитайте отново.';
+
+  @override
+  String registrationLegalNotice(String terms, String privacy) {
+    return 'Със създаването на акаунт приемате нашите $terms. Моля, прегледайте нашата $privacy.';
+  }
+
+  @override
+  String get termsOfService => 'Условията за ползване';
+
+  @override
+  String get privacyPolicy => 'Политиката за поверителност';
+
+  @override
+  String get legalDocumentOpenFailed =>
+      'Документът не може да бъде отворен. Моля, опитайте отново.';
 }

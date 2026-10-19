@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 
 import 'package:record/record.dart';
 
+import 'tutor_audio_diagnostics.dart';
+
 abstract class LearnerAudioRecorderAdapter {
   Future<bool> hasPermission();
   Future<void> start(
@@ -71,6 +73,8 @@ class LearnerAudioRecordingService {
   static const noSpeechMessage =
       'No speech was detected. Check your microphone and try again.';
   final LearnerAudioRecorderAdapter _recorder;
+  final _diagnostics =
+      TutorAudioDiagnostics(source: TutorAudioTraceSource.recorder);
   bool _disposed = false;
 
   Future<bool> requestPermission() async {
@@ -79,19 +83,26 @@ class LearnerAudioRecordingService {
   }
 
   Future<void> start(String path) async {
+    _diagnostics.record(TutorAudioTraceEvent.recordingRequested);
     if (_disposed) throw StateError('Recorder has been disposed.');
     if (await _recorder.isRecording) return;
     await _recorder.start(path: path, config: config);
+    _diagnostics.record(TutorAudioTraceEvent.recordingStarted);
   }
 
   Future<String?> stop() async {
+    _diagnostics.record(TutorAudioTraceEvent.recordingStopRequested);
     if (_disposed || !await _recorder.isRecording) return null;
-    return _recorder.stop();
+    final path = await _recorder.stop();
+    _diagnostics.record(TutorAudioTraceEvent.recordingStopped);
+    return path;
   }
 
   Future<void> cancel() async {
+    _diagnostics.record(TutorAudioTraceEvent.recordingCancelRequested);
     if (_disposed || !await _recorder.isRecording) return;
     await _recorder.cancel();
+    _diagnostics.record(TutorAudioTraceEvent.recordingCancelled);
   }
 
   Future<bool> get isRecording async =>
@@ -132,9 +143,11 @@ class LearnerAudioRecordingService {
 
   Future<void> dispose() async {
     if (_disposed) return;
+    _diagnostics.record(TutorAudioTraceEvent.disposeRequested);
     _disposed = true;
     await _recorder.cancel();
     await _recorder.dispose();
+    _diagnostics.record(TutorAudioTraceEvent.disposed);
   }
 }
 

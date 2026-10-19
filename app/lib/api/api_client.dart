@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import '../config/app_config.dart';
+import '../services/http_audio_diagnostics.dart';
 
 class ApiResponse {
   const ApiResponse({required this.statusCode, required this.body});
@@ -93,6 +94,7 @@ class ApiException implements Exception {
 
 class HttpApiClient implements ApiClient, BinaryApiClient, MultipartApiClient {
   static const _tutorSpeechTimeout = Duration(seconds: 25);
+  static final _receivedWavDiagnostics = ReceivedTutorWavDiagnostics();
   HttpApiClient({
     String baseUrl = AppConfig.productionApiBaseUrl,
     Duration timeout = const Duration(seconds: 10),
@@ -184,19 +186,37 @@ class HttpApiClient implements ApiClient, BinaryApiClient, MultipartApiClient {
       );
     }
     request.headers.contentType = ContentType.json;
-    request.write(jsonEncode(body));
-    final response = await request.close().timeout(timeout);
-    final bytes = await response.fold<List<int>>(
-        <int>[], (all, chunk) => all..addAll(chunk)).timeout(timeout);
-    final headers = <String, String>{};
-    response.headers.forEach((name, values) {
-      headers[name.toLowerCase()] = values.join(',');
-    });
-    return BinaryApiResponse(
-      statusCode: response.statusCode,
-      bodyBytes: Uint8List.fromList(bytes),
-      headers: headers,
-    );
+    final speechTrace = ReceivedTutorWavDiagnostics.configuredEnabled &&
+            requestUri.path == '/api/audio/speech'
+        ? TutorSpeechTrace.start(body['text'])
+        : null;
+    try {
+      request.write(jsonEncode(body));
+      final response = await request.close().timeout(timeout);
+      final bytes = await response.fold<List<int>>(
+          <int>[], (all, chunk) => all..addAll(chunk)).timeout(timeout);
+      final headers = <String, String>{};
+      response.headers.forEach((name, values) {
+        headers[name.toLowerCase()] = values.join(',');
+      });
+      final result = BinaryApiResponse(
+        statusCode: response.statusCode,
+        bodyBytes: Uint8List.fromList(bytes),
+        headers: headers,
+      );
+      speechTrace?.received(result.bodyBytes, result.statusCode);
+      if (ReceivedTutorWavDiagnostics.configuredEnabled &&
+          requestUri.path == '/api/audio/speech') {
+        _receivedWavDiagnostics.record(result.bodyBytes,
+            status: result.statusCode, request: speechTrace?.request);
+      }
+      return result;
+    } catch (error) {
+      speechTrace?.failed(error is TimeoutException ? 'timeout'
+          : error is SocketException ? 'network'
+          : error is FormatException ? 'transport' : 'unknown');
+      rethrow;
+    }
   }
 
   @override
@@ -273,6 +293,7 @@ class HttpApiClient implements ApiClient, BinaryApiClient, MultipartApiClient {
     Map<String, dynamic>? body,
     String? accessToken,
   }) async {
+    DeviceRegistrationHttpTrace? deviceTrace;
     try {
       final requestUri = _baseUri.resolve(
         path.startsWith('/') ? path.substring(1) : path,
@@ -290,21 +311,31 @@ class HttpApiClient implements ApiClient, BinaryApiClient, MultipartApiClient {
         request.write(jsonEncode(body));
       }
 
+      if (DeviceRegistrationHttpTrace.enabled &&
+          method == 'POST' &&
+          requestUri.path == '/api/me/devices') {
+        deviceTrace = DeviceRegistrationHttpTrace.start();
+      }
       final response = await request.close().timeout(_timeout);
       final responseBody =
           await response.transform(utf8.decoder).join().timeout(_timeout);
+      deviceTrace?.complete(response.statusCode);
 
       return ApiResponse(statusCode: response.statusCode, body: responseBody);
     } on TimeoutException {
+      deviceTrace?.failed(DeviceRegistrationFailure.timeout);
       throw const ApiException('The service took too long to respond.',
           category: ApiFailureCategory.timeout);
     } on SocketException {
+      deviceTrace?.failed(DeviceRegistrationFailure.network);
       throw const ApiException('Unable to reach the service.',
           category: ApiFailureCategory.network);
     } on FormatException {
+      deviceTrace?.failed(DeviceRegistrationFailure.transport);
       throw const ApiException('The service returned an unexpected response.',
           category: ApiFailureCategory.transport);
     } catch (_) {
+      deviceTrace?.failed(DeviceRegistrationFailure.unknown);
       throw const ApiException('Something went wrong. Please try again.',
           category: ApiFailureCategory.unknown);
     }

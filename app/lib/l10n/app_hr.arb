@@ -660,5 +660,28 @@
   "lessonUnavailable": "Ta lekcija nije dostupna.",
   "lessonNoLongerAvailable": "Ova lekcija više nije dostupna.",
   "lessonHistoryUnavailable": "Povijest lekcija trenutačno nije dostupna. Pokušajte ponovno.",
-  "lessonDetailLoadFailed": "Nije moguće učitati pojedinosti lekcije. Pokušajte ponovno."
+  "lessonDetailLoadFailed": "Nije moguće učitati pojedinosti lekcije. Pokušajte ponovno.",
+  "analyticsTitle": "Statistika upotrebe",
+  "analyticsExplanation": "Dijelite statistiku upotrebe aplikacije kako biste pomogli u njezinu poboljšanju.",
+  "registrationAnalyticsConsent": "Pristajem dijeliti statistiku upotrebe aplikacije kako bih pomogao u njezinu poboljšanju.",
+  "analyticsDecline": "Odbij / isključi",
+  "analyticsAllow": "Dopusti analitiku",
+  "analyticsEnabled": "Analitika je uključena",
+  "analyticsDisabled": "Analitika je isključena",
+  "analyticsSaveFailed": "Izbor nije spremljen. Analitika je isključena. Pokušajte ponovno.",
+  "registrationLegalNotice": "Izradom računa prihvaćate naše {terms}. Pročitajte naša {privacy}.",
+  "termsOfService": "Uvjete korištenja",
+  "privacyPolicy": "Pravila privatnosti",
+  "legalDocumentOpenFailed": "Dokument nije moguće otvoriti. Pokušajte ponovno.",
+  "@registrationLegalNotice": {
+    "description": "Informational notice below Register; document placeholders become independent clickable links. Keep their natural local word order.",
+    "placeholders": {
+      "terms": {
+        "type": "String"
+      },
+      "privacy": {
+        "type": "String"
+      }
+    }
+  }
 }

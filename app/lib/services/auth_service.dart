@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../api/api_client.dart';
@@ -20,6 +21,8 @@ import '../models/translation.dart';
 import '../models/user_settings.dart';
 import '../models/voice_scenario_resolution.dart';
 import 'session_storage.dart';
+import 'analytics_service.dart';
+import '../models/device_registration.dart';
 import 'restore_credentials_service.dart';
 
 enum SessionCheckResult {
@@ -33,9 +36,92 @@ class AuthService {
     required ApiClient apiClient,
     required SessionStorage storage,
     RestoreCredentialsService? restoreCredentialsService,
+    AnalyticsService? analytics,
   })  : _apiClient = apiClient,
         _storage = storage,
+        analytics = analytics ?? NoopAnalyticsService(),
         _restoreCredentialsService = restoreCredentialsService;
+
+  final AnalyticsService analytics;
+  final ValueNotifier<String?> _authenticatedUser = ValueNotifier(null);
+  ValueListenable<String?> get authenticatedUser => _authenticatedUser;
+  int _sessionGeneration = 0;
+
+  void _confirmUser(AuthUser user) {
+    final id = user.userId.trim();
+    if (id.isEmpty || _authenticatedUser.value == id) return;
+    _sessionGeneration++;
+    _authenticatedUser.value = id;
+  }
+
+  void _endSession() {
+    _sessionGeneration++;
+    _authenticatedUser.value = null;
+  }
+
+  void _recordAnalytics(AnalyticsEvent event,
+      {String? key, Map<String, Object> parameters = const {}}) {
+    unawaited(Future.sync(() => analytics.log(event,
+        localDeduplicationKey: key,
+        parameters: parameters)).catchError((Object _) {}));
+  }
+
+  /// Captures account scope before any metadata/network work. A stale request
+  /// must not refresh, register or clear a different account after switching.
+  Future<DeviceRegistrationResponse?> registerDevice(
+      String expectedUserId, DeviceRegistrationRequest request,
+      {bool Function()? canSend}) async {
+    // Temporary A/B diagnostic; release always retains normal registration.
+    const suppressed = !kReleaseMode &&
+        bool.fromEnvironment('LVT_DIAG_DISABLE_DEVICE_REGISTRATION');
+    if (!kReleaseMode) {
+      debugPrint('[DeviceRegistration] ${suppressed ? 'suppressed' : 'enabled'}');
+    }
+    if (suppressed) return null;
+    final generation = _sessionGeneration;
+    bool current() =>
+        _authenticatedUser.value == expectedUserId &&
+        generation == _sessionGeneration &&
+        (canSend?.call() ?? true);
+    if (!current() || expectedUserId.isEmpty) return null;
+    try {
+      final response = (await _sendWithSessionRecovery(
+        (token) {
+          if (!current()) throw StateError('Session changed.');
+          return _apiClient.post('/api/me/devices',
+              body: request.toJson(), accessToken: token);
+        },
+        (response) => response.statusCode == 401,
+        sessionIsCurrent: current,
+      ))
+          .response;
+      if (!current() || !_isSuccess(response.statusCode)) return null;
+      return DeviceRegistrationResponse.fromJson(_decodeObject(response.body));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // This optional evidence read deliberately never refreshes or clears tokens.
+  // Unauthorized, malformed, timed-out and failed responses all mean unknown.
+  Future<bool?> _analyticsHistoryIsEmpty(String user, int generation) async {
+    final token = await _storage.readAccessToken();
+    if (_authenticatedUser.value != user ||
+        generation != _sessionGeneration ||
+        token == null ||
+        token.isEmpty) {
+      return null;
+    }
+    final response =
+        await _apiClient.get('/api/me/lesson-history', accessToken: token);
+    if (response.statusCode != 200 ||
+        _authenticatedUser.value != user ||
+        generation != _sessionGeneration) {
+      return null;
+    }
+    final items = _decodeObject(response.body)['items'];
+    return items is List ? items.isEmpty : null;
+  }
 
   final ApiClient _apiClient;
   final SessionStorage _storage;
@@ -192,6 +278,12 @@ class AuthService {
   Future<AuthUser> login(String email, String password) async {
     final auth = await _authenticate('/api/auth/login',
         LoginRequest(email: email, password: password).toJson());
+    if (auth.user.userId.trim().isNotEmpty &&
+        auth.accessToken.isNotEmpty &&
+        auth.refreshToken.isNotEmpty) {
+      _recordAnalytics(AnalyticsEvent.login,
+          parameters: const {'method': 'password'});
+    }
     return auth.user;
   }
 
@@ -202,12 +294,21 @@ class AuthService {
         RegisterRequest(
                 email: email, password: password, displayName: displayName)
             .toJson());
+    if (auth.user.userId.trim().isNotEmpty &&
+        auth.accessToken.isNotEmpty &&
+        auth.refreshToken.isNotEmpty) {
+      _recordAnalytics(AnalyticsEvent.signUp,
+          parameters: const {'method': 'password'});
+    }
     return auth.user;
   }
 
   Future<AuthUser> loadCurrentUser() async {
+    final generation = _sessionGeneration;
     final response = await _authenticatedGet('/api/auth/me');
-    return AuthUser.fromJson(_decodeObject(response.body));
+    final user = AuthUser.fromJson(_decodeObject(response.body));
+    if (generation == _sessionGeneration) _confirmUser(user);
+    return user;
   }
 
   Future<SubscriptionStatus> fetchSubscriptionStatus() async {
@@ -391,15 +492,42 @@ class AuthService {
   Future<LessonSessionStartResult> startLessonSession({
     required StartLessonSessionRequest request,
   }) async {
+    final user = _authenticatedUser.value;
+    final generation = _sessionGeneration;
+    var firstCandidate = false;
+    if (user != null) {
+      try {
+        firstCandidate = await analytics
+            .firstLessonCandidate(
+                user, () => _analyticsHistoryIsEmpty(user, generation))
+            .timeout(const Duration(seconds: 2));
+      } catch (_) {}
+    }
     try {
       final response = await _authenticatedPost(
         '/api/me/lesson-sessions',
         body: request.toJson(),
         failureMessageForResponse: _lessonSessionStartFailureMessage,
       );
-      return LessonSessionStartResult.ready(
-        LessonSessionResponse.fromJson(_decodeObject(response.body)),
-      );
+      final session =
+          LessonSessionResponse.fromJson(_decodeObject(response.body));
+      if (user != null &&
+          _authenticatedUser.value == user &&
+          generation == _sessionGeneration &&
+          _isGuid(session.lessonSessionId)) {
+        final parameters = <String, Object>{
+          'study_language': request.studyLanguage,
+          'level': request.level,
+        };
+        _recordAnalytics(AnalyticsEvent.lessonStart,
+            key: 'start:$user:${session.lessonSessionId.toLowerCase()}',
+            parameters: parameters);
+        if (firstCandidate) {
+          _recordAnalytics(AnalyticsEvent.firstLessonStarted,
+              key: 'first:$user', parameters: parameters);
+        }
+      }
+      return LessonSessionStartResult.ready(session);
     } on ApiException catch (error) {
       return _safeLessonSessionStartResult(error);
     } catch (_) {
@@ -816,13 +944,27 @@ class AuthService {
     if (normalizedId.isEmpty || validTurnCount < 0) {
       return LessonCompletionResult.failed();
     }
+    final user = _authenticatedUser.value;
+    final generation = _sessionGeneration;
     try {
-      await _authenticatedPut(
+      final response = await _authenticatedPut(
         '/api/me/lesson-sessions/$normalizedId/finish',
         body:
             FinishLessonSessionRequest(validTurnCount: validTurnCount).toJson(),
         failureMessageForResponse: _lessonFinishFailureMessage,
       );
+      try {
+        final finished = _decodeObject(response.body);
+        if (user != null &&
+            generation == _sessionGeneration &&
+            _authenticatedUser.value == user &&
+            _jsonString(finished, 'status').toLowerCase() == 'finished' &&
+            _jsonString(finished, 'id').toLowerCase() ==
+                normalizedId.toLowerCase()) {
+          _recordAnalytics(AnalyticsEvent.lessonComplete,
+              key: 'complete:$user:${normalizedId.toLowerCase()}');
+        }
+      } catch (_) {/* Optional event parsing cannot change completion. */}
       final summaryResult = await loadLessonSummary(sessionId: normalizedId);
       return summaryResult;
     } on ApiException catch (error) {
@@ -1003,6 +1145,7 @@ class AuthService {
   }
 
   Future<void> logout() async {
+    _endSession();
     final restoreCredentialsService = _restoreCredentialsService;
     if (restoreCredentialsService != null) {
       await restoreCredentialsService.prepareForExplicitLogout();
@@ -1029,6 +1172,7 @@ class AuthService {
     final auth = AuthResponse.fromJson(_decodeObject(response.body));
     await _storage.saveTokens(
         accessToken: auth.accessToken, refreshToken: auth.refreshToken);
+    _confirmUser(auth.user);
     final restoreCredentialsService = _restoreCredentialsService;
     if (restoreCredentialsService != null) {
       await restoreCredentialsService.onManualAuthenticationSucceeded(auth);
@@ -1036,9 +1180,15 @@ class AuthService {
     return auth;
   }
 
-  Future<RestoreAuthenticationResult> tryAutomaticRestore() async =>
-      _restoreCredentialsService?.tryAutomaticRestore() ??
-      RestoreAuthenticationResult.noCredential;
+  Future<RestoreAuthenticationResult> tryAutomaticRestore() async {
+    final result = await (_restoreCredentialsService?.tryAutomaticRestore() ??
+        Future.value(RestoreAuthenticationResult.noCredential));
+    if (result == RestoreAuthenticationResult.restored) {
+      final user = _restoreCredentialsService?.restoredUser;
+      if (user != null) _confirmUser(user);
+    }
+    return result;
+  }
 
   Future<void> syncRestoreCredentialsForCurrentSession() async {
     final service = _restoreCredentialsService;
@@ -1192,14 +1342,24 @@ class AuthService {
 
   Future<({T response, bool refreshed})> _sendWithSessionRecovery<T>(
     Future<T> Function(String accessToken) send,
-    bool Function(T response) isUnauthorized,
-  ) async {
+    bool Function(T response) isUnauthorized, {
+    bool Function()? sessionIsCurrent,
+  }) async {
+    void ensureCurrent() {
+      if (sessionIsCurrent != null && !sessionIsCurrent()) {
+        throw StateError('Session changed.');
+      }
+    }
+
+    ensureCurrent();
     final failedToken = await _storage.readAccessToken();
     if (failedToken == null || failedToken.isEmpty) {
       throw const _AuthenticationRequiredException();
     }
 
+    ensureCurrent();
     var response = await send(failedToken);
+    ensureCurrent();
     if (!isUnauthorized(response)) {
       return (response: response, refreshed: false);
     }
@@ -1210,20 +1370,25 @@ class AuthService {
         currentToken != failedToken) {
       _debugRefresh('retry_with_newer_access_token');
       response = await send(currentToken);
+      ensureCurrent();
       if (!isUnauthorized(response)) {
         return (response: response, refreshed: false);
       }
     }
 
+    ensureCurrent();
     final refresh = await _refreshSession();
+    ensureCurrent();
     switch (refresh) {
       case _RefreshResult.success:
         final newToken = await _storage.readAccessToken();
+        ensureCurrent();
         if (newToken == null || newToken.isEmpty) {
           await _clearInvalidSession();
           throw const _AuthenticationRequiredException();
         }
         response = await send(newToken);
+        ensureCurrent();
         if (isUnauthorized(response)) {
           await _clearInvalidSession();
           throw const _AuthenticationRequiredException();
@@ -1260,12 +1425,16 @@ class AuthService {
   }
 
   Future<_RefreshResult> _performRefresh() async {
+    final generation = _sessionGeneration;
     _debugRefresh('refresh_started');
     String? refreshToken;
     try {
       refreshToken = await _storage.readRefreshToken();
     } catch (_) {
       _debugRefresh('refresh_temporary_failure');
+      return _RefreshResult.temporaryFailure;
+    }
+    if (generation != _sessionGeneration) {
       return _RefreshResult.temporaryFailure;
     }
     if (refreshToken == null || refreshToken.trim().isEmpty) {
@@ -1277,6 +1446,9 @@ class AuthService {
     try {
       final response = await _apiClient.post('/api/auth/refresh',
           body: RefreshTokenRequest(refreshToken: refreshToken).toJson());
+      if (generation != _sessionGeneration) {
+        return _RefreshResult.temporaryFailure;
+      }
       if (!_isSuccess(response.statusCode)) {
         if (response.statusCode == 400 ||
             response.statusCode == 401 ||
@@ -1300,6 +1472,7 @@ class AuthService {
   }
 
   Future<void> _clearInvalidSession() async {
+    _endSession();
     try {
       await _storage.clear();
     } catch (_) {

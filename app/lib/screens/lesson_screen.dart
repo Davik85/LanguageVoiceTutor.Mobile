@@ -26,6 +26,8 @@ import '../services/lesson_turn_request_builder.dart';
 import '../services/mobile_transcription_request_builder.dart';
 import '../services/tutor_avatar_preloader.dart';
 import '../services/tutor_audio_playback_service.dart';
+import '../services/tutor_audio_diagnostics.dart';
+import '../services/http_audio_diagnostics.dart';
 import '../services/tutor_speech_request_builder.dart';
 import '../services/transcript_script_normalizer.dart';
 import '../services/voice_scenario_intent_resolver.dart';
@@ -129,7 +131,6 @@ class _LessonScreenState extends State<LessonScreen>
   bool _isSending = false;
   bool _isHintLoading = false;
   bool _isFinishing = false;
-  bool _isAbandoning = false;
   bool _isCompleted = false;
   bool _isAuthenticationRequired = false;
   bool _lessonSessionEnded = false;
@@ -177,6 +178,9 @@ class _LessonScreenState extends State<LessonScreen>
   final _avatarPreloader = TutorAvatarPreloader();
   Future<bool>? _conversationAvatarPreload;
 
+  final _audioTrace =
+      TutorAudioDiagnostics(source: TutorAudioTraceSource.lesson);
+
   @override
   void initState() {
     super.initState();
@@ -205,6 +209,7 @@ class _LessonScreenState extends State<LessonScreen>
 
   @override
   void dispose() {
+    _audioTrace.record(TutorAudioTraceEvent.disposeRequested);
     WidgetsBinding.instance.removeObserver(this);
     unawaited(_sessionLifecycle.stop());
     unawaited(_cancelLearnerRecording(forDeparture: true));
@@ -217,10 +222,12 @@ class _LessonScreenState extends State<LessonScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _audioTrace.record(TutorAudioTraceEvent.lifecycle,
+        fields: {'lifecycle': state.index});
     if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
-      unawaited(_stopTutorPlayback());
+      unawaited(_stopTutorPlayback(reason: TutorAudioTraceReason.lifecycle));
       unawaited(_cancelLearnerRecording());
     }
     if (state == AppLifecycleState.resumed) {
@@ -1561,7 +1568,6 @@ class _LessonScreenState extends State<LessonScreen>
           !_isHintLoading &&
           !hasPerMessageWork &&
           !tutorAudioLoading &&
-          !_isAbandoning &&
           !_isFinishing &&
           !_isCompleted &&
           !isCompletedAwaitingFinish &&
@@ -1579,19 +1585,16 @@ class _LessonScreenState extends State<LessonScreen>
           !_isAuthenticationRequired,
       canUseFeedback: lessonReady &&
           !_isFinishing &&
-          !_isAbandoning &&
           !_isCompleted &&
           !_lessonSessionEnded &&
           !_isAuthenticationRequired,
       canUseTranslation: lessonReady &&
           !_isFinishing &&
-          !_isAbandoning &&
           !_isCompleted &&
           !_lessonSessionEnded &&
           !_isAuthenticationRequired,
       canUseTts: lessonReady &&
           !_isFinishing &&
-          !_isAbandoning &&
           !_isCompleted &&
           !_lessonSessionEnded &&
           !_isAuthenticationRequired,
@@ -1622,18 +1625,6 @@ class _LessonScreenState extends State<LessonScreen>
   bool get _hasActiveLessonSession =>
       (_startResult?.isReady ?? false) && !_lessonSessionEnded && !_isCompleted;
 
-  bool get _canAbandon =>
-      _hasActiveLessonSession &&
-      _activeLessonState.phase != LessonLivePhase.completed &&
-      !_isSending &&
-      !_isHintLoading &&
-      !_isFinishing &&
-      !_isLoadingScenario &&
-      _recordingState != LearnerRecordingUiState.recording &&
-      _recordingState != LearnerRecordingUiState.stopping &&
-      _recordingState != LearnerRecordingUiState.transcribing &&
-      !_isAbandoning;
-
   Future<void> _handleLeaveRequest() async {
     if (_activeLessonState.phase == LessonLivePhase.completed) return;
     await _cancelLearnerRecording();
@@ -1642,12 +1633,12 @@ class _LessonScreenState extends State<LessonScreen>
       await Navigator.of(context).maybePop(LessonExitResult.unfinished);
       return;
     }
-    if (!_canAbandon) return;
+    if (!_canFinish) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(context.l10n.leaveLessonTitle),
-        content: Text(context.l10n.leaveLessonDescription),
+        content: Text(context.l10n.finishLessonDescription),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -1655,47 +1646,12 @@ class _LessonScreenState extends State<LessonScreen>
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text(context.l10n.leaveLesson),
+            child: Text(context.l10n.finishLesson),
           ),
         ],
       ),
     );
-    if (confirmed == true) await _abandonLesson();
-  }
-
-  Future<void> _abandonLesson() async {
-    final session = _startResult?.session;
-    if (session == null || !_canAbandon) return;
-    await _cancelLearnerRecording(forDeparture: true);
-    await _stopAndClearTutorAudio();
-    setState(() {
-      _isAbandoning = true;
-      _hintText = null;
-      _hintError = null;
-      _sendError = null;
-      _finishError = null;
-      _recordingState = LearnerRecordingUiState.idle;
-    });
-    final result = await _sessionLifecycle.abandon();
-    if (!mounted) return;
-    if (result.canLeave ||
-        result.status == LessonSessionAbandonStatus.unavailable ||
-        result.status == LessonSessionAbandonStatus.failed) {
-      setState(() {
-        _isAbandoning = false;
-        _lessonSessionEnded = true;
-      });
-      await WidgetsBinding.instance.endOfFrame;
-      if (!mounted) return;
-      await Navigator.of(context).maybePop(LessonExitResult.abandoned);
-      return;
-    }
-    setState(() {
-      _isAbandoning = false;
-      _sendError = result.message;
-      _isAuthenticationRequired =
-          result.status == LessonSessionAbandonStatus.authRequired;
-    });
+    if (confirmed == true) await _finishLesson();
   }
 
   Future<void> _confirmFinishLesson() async {
@@ -1824,7 +1780,7 @@ class _LessonScreenState extends State<LessonScreen>
   }
 
   Future<void> _startRecording() async {
-    await _stopTutorPlayback();
+    await _stopTutorPlayback(reason: TutorAudioTraceReason.recording);
     if (!mounted ||
         _recordingState == LearnerRecordingUiState.recording ||
         !_actionAvailability.canToggleRecordingPlaceholder) {
@@ -2177,7 +2133,6 @@ class _LessonScreenState extends State<LessonScreen>
       generation == _tutorAudioCacheGeneration &&
       _messages.contains(message) &&
       !_isFinishing &&
-      !_isAbandoning &&
       !_isCompleted &&
       !_isAuthenticationRequired &&
       !_lessonSessionEnded;
@@ -2209,6 +2164,7 @@ class _LessonScreenState extends State<LessonScreen>
     var attached = false;
     try {
       await file.writeAsBytes(result.audioBytes!, flush: true);
+      TutorSpeechTrace.prepared(result.audioBytes, file.path);
       if (_canCacheTutorAudio(message, generation)) {
         message.cachedTtsPath = file.path;
         attached = true;
@@ -2244,7 +2200,7 @@ class _LessonScreenState extends State<LessonScreen>
       message.isTtsLoading = true;
       message.ttsError = null;
     });
-    await _stopTutorPlayback();
+    await _stopTutorPlayback(reason: TutorAudioTraceReason.replacement);
     if (!mounted || !_actionAvailability.canUseTts) return;
     final playbackGeneration = ++_playbackOperationGeneration;
     var cachedPath = message.cachedTtsPath;
@@ -2296,11 +2252,13 @@ class _LessonScreenState extends State<LessonScreen>
       return;
     }
     final playbackPath = cachedPath;
+    final speechPlayback = TutorSpeechTrace.beforePlayback(playbackPath);
     try {
       final result = await _audioPlaybackService.playToCompletion(
         playbackPath,
         timeout: const Duration(seconds: 90),
         onStarted: () {
+          speechPlayback?.started();
           if (!mounted || playbackGeneration != _playbackOperationGeneration) {
             return;
           }
@@ -2312,6 +2270,7 @@ class _LessonScreenState extends State<LessonScreen>
           });
         },
       );
+      speechPlayback?.completed(result.status.name);
       if (!mounted || playbackGeneration != _playbackOperationGeneration) {
         return;
       }
@@ -2325,6 +2284,7 @@ class _LessonScreenState extends State<LessonScreen>
         });
       }
     } catch (_) {
+      speechPlayback?.completed('failed');
       if (mounted && playbackGeneration == _playbackOperationGeneration) {
         setState(() {
           message.isTtsLoading = false;
@@ -2342,7 +2302,10 @@ class _LessonScreenState extends State<LessonScreen>
     _clearTutorPlayback(activeId);
   }
 
-  Future<void> _stopTutorPlayback() async {
+  Future<void> _stopTutorPlayback({
+    TutorAudioTraceReason reason = TutorAudioTraceReason.user,
+  }) async {
+    _audioTrace.record(TutorAudioTraceEvent.stopOrigin, reason: reason);
     _playbackOperationGeneration++;
     final activeId = _activePlayingMessageId;
     if (activeId != null) _clearTutorPlayback(activeId);
@@ -2363,7 +2326,7 @@ class _LessonScreenState extends State<LessonScreen>
 
   Future<void> _stopAndClearTutorAudio() async {
     _tutorAudioCacheGeneration++;
-    await _stopTutorPlayback();
+    await _stopTutorPlayback(reason: TutorAudioTraceReason.cleanup);
     for (final message in _messages) {
       final path = message.cachedTtsPath;
       message.cachedTtsPath = null;
@@ -2411,7 +2374,7 @@ class _LessonScreenState extends State<LessonScreen>
         backendSessionId: session.lessonSessionId,
       ),
     );
-    if (!mounted || _isCompleted || _isAbandoning) return;
+    if (!mounted || _isCompleted) return;
     setState(() {
       message.isTranslationLoading = false;
       if (result.isSuccess && result.translation != null) {
@@ -2442,7 +2405,6 @@ class _LessonScreenState extends State<LessonScreen>
         settings == null ||
         _isAuthenticationRequired ||
         _lessonSessionEnded ||
-        _isAbandoning ||
         _isFinishing ||
         _isCompleted ||
         message.isFeedbackLoading) {
@@ -2467,7 +2429,7 @@ class _LessonScreenState extends State<LessonScreen>
     if (message.persistedBackendMessageId == null && persistence != null) {
       await persistence.timeout(const Duration(seconds: 5), onTimeout: () {});
     }
-    if (!mounted || _isCompleted || _isAbandoning || _isFinishing) return;
+    if (!mounted || _isCompleted || _isFinishing) return;
     final persistedId = message.persistedBackendMessageId;
     if (persistedId == null || persistedId.isEmpty) {
       setState(() {
@@ -2512,7 +2474,7 @@ class _LessonScreenState extends State<LessonScreen>
       sourceMessageKind: 'user',
     );
     final result = await _authService.requestLessonFeedback(request: request);
-    if (!mounted || _isCompleted || _isAbandoning) return;
+    if (!mounted || _isCompleted) return;
     setState(() {
       message.isFeedbackLoading = false;
       if (result.isSuccess && result.feedback != null) {

@@ -3,6 +3,18 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+// Operator-supplied existing Firebase app configuration. Without it the app
+// still compiles and optional analytics remains unavailable.
+if (file("google-services.json").isFile()) {
+    def firebaseClient = new groovy.json.JsonSlurper().parse(file("google-services.json"))
+    def expectedPackage = "com.languagevoicetutor.mobile"
+    if (firebaseClient.project_info?.project_id != "orralen-lvt-production" ||
+        !firebaseClient.client?.any { it.client_info?.android_client_info?.package_name == expectedPackage }) {
+        throw new GradleException("Firebase configuration does not match the approved project/package.")
+    }
+    apply plugin: "com.google.gms.google-services"
+}
+
 def releaseSigningProperties = new Properties()
 def releaseStoreFile = null
 def releaseSigningConfigurationError = null
@@ -78,6 +90,7 @@ android {
 }
 
 dependencies {
+    testImplementation 'junit:junit:4.13.2'
     implementation 'androidx.credentials:credentials:1.6.0'
     implementation 'androidx.credentials:credentials-play-services-auth:1.6.0'
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'

@@ -1616,4 +1616,46 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get lessonDetailLoadFailed =>
       'Impossibile caricare i dettagli della lezione. Riprova.';
+
+  @override
+  String get analyticsTitle => 'Statistiche di utilizzo';
+
+  @override
+  String get analyticsExplanation =>
+      'Condividi le statistiche di utilizzo dell’app per contribuire a migliorarla.';
+
+  @override
+  String get registrationAnalyticsConsent =>
+      'Acconsento a condividere le statistiche di utilizzo dell’app per contribuire a migliorarla.';
+
+  @override
+  String get analyticsDecline => 'Rifiuta / disattiva';
+
+  @override
+  String get analyticsAllow => 'Consenti analisi';
+
+  @override
+  String get analyticsEnabled => 'Analisi attive';
+
+  @override
+  String get analyticsDisabled => 'Analisi disattivate';
+
+  @override
+  String get analyticsSaveFailed =>
+      'Impossibile salvare la scelta. Analisi disattivate. Riprova.';
+
+  @override
+  String registrationLegalNotice(String terms, String privacy) {
+    return 'Creando un account, accetti i nostri $terms. Consulta la nostra $privacy.';
+  }
+
+  @override
+  String get termsOfService => 'Termini di servizio';
+
+  @override
+  String get privacyPolicy => 'Informativa sulla privacy';
+
+  @override
+  String get legalDocumentOpenFailed =>
+      'Impossibile aprire il documento. Riprova.';
 }

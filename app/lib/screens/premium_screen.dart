@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
 import '../models/subscription_status.dart';
 import '../l10n/app_localizations_context.dart';
 import '../services/auth_service.dart';
+import '../services/analytics_service.dart';
 import '../services/premium_purchase_adapter.dart';
 import '../services/premium_purchase_coordinator.dart';
 import '../services/service_factory.dart';
@@ -53,6 +55,12 @@ class _PremiumScreenState extends State<PremiumScreen> {
   void initState() {
     super.initState();
     _authService = widget._authService ?? createAuthService();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(Future.sync(
+              () => _authService.analytics.log(AnalyticsEvent.premiumView))
+          .catchError((Object _) {}));
+    });
     _ownsPurchaseCoordinator = widget._purchaseCoordinator == null;
     _purchaseCoordinator = widget._purchaseCoordinator ??
         createPremiumPurchaseCoordinator(

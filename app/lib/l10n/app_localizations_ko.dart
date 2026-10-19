@@ -1514,4 +1514,43 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get lessonDetailLoadFailed => '레슨 세부 정보를 불러올 수 없습니다. 다시 시도해 주세요.';
+
+  @override
+  String get analyticsTitle => '사용 통계';
+
+  @override
+  String get analyticsExplanation => '앱 개선에 도움이 되도록 사용 통계를 공유합니다.';
+
+  @override
+  String get registrationAnalyticsConsent =>
+      '앱 개선에 도움이 되도록 사용 통계를 공유하는 데 동의합니다.';
+
+  @override
+  String get analyticsDecline => '거부 / 끄기';
+
+  @override
+  String get analyticsAllow => '분석 허용';
+
+  @override
+  String get analyticsEnabled => '분석 켜짐';
+
+  @override
+  String get analyticsDisabled => '분석 꺼짐';
+
+  @override
+  String get analyticsSaveFailed => '선택을 저장하지 못했습니다. 분석이 꺼져 있습니다. 다시 시도하세요.';
+
+  @override
+  String registrationLegalNotice(String terms, String privacy) {
+    return '계정을 만들면 $terms에 동의하게 됩니다. $privacy을 확인해 주세요.';
+  }
+
+  @override
+  String get termsOfService => '서비스 이용약관';
+
+  @override
+  String get privacyPolicy => '개인정보 처리방침';
+
+  @override
+  String get legalDocumentOpenFailed => '문서를 열 수 없습니다. 다시 시도해 주세요.';
 }

@@ -660,5 +660,28 @@
   "lessonUnavailable": "Този урок не е наличен.",
   "lessonNoLongerAvailable": "Този урок вече не е наличен.",
   "lessonHistoryUnavailable": "Историята на уроците временно не е достъпна. Моля, опитайте отново.",
-  "lessonDetailLoadFailed": "Детайлите за урока не можаха да бъдат заредени. Моля, опитайте отново."
+  "lessonDetailLoadFailed": "Детайлите за урока не можаха да бъдат заредени. Моля, опитайте отново.",
+  "analyticsTitle": "Статистика за използването",
+  "analyticsExplanation": "Споделяйте статистика за използването на приложението, за да помогнете за подобряването му.",
+  "registrationAnalyticsConsent": "Съгласявам се да споделям статистика за използването на приложението, за да помогна за подобряването му.",
+  "analyticsDecline": "Отказ / изключване",
+  "analyticsAllow": "Разрешаване на анализ",
+  "analyticsEnabled": "Анализът е включен",
+  "analyticsDisabled": "Анализът е изключен",
+  "analyticsSaveFailed": "Изборът не бе запазен. Анализът е изключен. Опитайте отново.",
+  "registrationLegalNotice": "Със създаването на акаунт приемате нашите {terms}. Моля, прегледайте нашата {privacy}.",
+  "termsOfService": "Условията за ползване",
+  "privacyPolicy": "Политиката за поверителност",
+  "legalDocumentOpenFailed": "Документът не може да бъде отворен. Моля, опитайте отново.",
+  "@registrationLegalNotice": {
+    "description": "Informational notice below Register; document placeholders become independent clickable links. Keep their natural local word order.",
+    "placeholders": {
+      "terms": {
+        "type": "String"
+      },
+      "privacy": {
+        "type": "String"
+      }
+    }
+  }
 }

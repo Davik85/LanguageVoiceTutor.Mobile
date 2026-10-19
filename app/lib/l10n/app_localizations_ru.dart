@@ -1613,4 +1613,46 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get lessonDetailLoadFailed =>
       'Не удалось загрузить сведения об уроке. Попробуйте ещё раз.';
+
+  @override
+  String get analyticsTitle => 'Статистика использования';
+
+  @override
+  String get analyticsExplanation =>
+      'Передавать статистику использования приложения для его улучшения.';
+
+  @override
+  String get registrationAnalyticsConsent =>
+      'Я согласен на передачу статистических данных об использовании приложения для его улучшения.';
+
+  @override
+  String get analyticsDecline => 'Отказаться / отключить';
+
+  @override
+  String get analyticsAllow => 'Разрешить аналитику';
+
+  @override
+  String get analyticsEnabled => 'Аналитика включена';
+
+  @override
+  String get analyticsDisabled => 'Аналитика отключена';
+
+  @override
+  String get analyticsSaveFailed =>
+      'Не удалось сохранить выбор. Аналитика отключена. Повторите попытку.';
+
+  @override
+  String registrationLegalNotice(String terms, String privacy) {
+    return 'Создавая аккаунт, вы принимаете наши $terms. Ознакомьтесь с нашей $privacy.';
+  }
+
+  @override
+  String get termsOfService => 'Условия использования';
+
+  @override
+  String get privacyPolicy => 'Политику конфиденциальности';
+
+  @override
+  String get legalDocumentOpenFailed =>
+      'Не удалось открыть документ. Повторите попытку.';
 }

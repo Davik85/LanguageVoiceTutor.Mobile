@@ -1610,6 +1610,48 @@ class AppLocalizationsSr extends AppLocalizations {
   @override
   String get lessonDetailLoadFailed =>
       'Nije moguće učitati detalje lekcije. Pokušajte ponovo.';
+
+  @override
+  String get analyticsTitle => 'Statistika korišćenja';
+
+  @override
+  String get analyticsExplanation =>
+      'Delite statistiku korišćenja aplikacije da biste pomogli u njenom poboljšanju.';
+
+  @override
+  String get registrationAnalyticsConsent =>
+      'Pristajem da delim statistiku korišćenja aplikacije da bih pomogao u njenom poboljšanju.';
+
+  @override
+  String get analyticsDecline => 'Odbij / isključi';
+
+  @override
+  String get analyticsAllow => 'Dozvoli analitiku';
+
+  @override
+  String get analyticsEnabled => 'Analitika je uključena';
+
+  @override
+  String get analyticsDisabled => 'Analitika je isključena';
+
+  @override
+  String get analyticsSaveFailed =>
+      'Izbor nije sačuvan. Analitika je isključena. Pokušajte ponovo.';
+
+  @override
+  String registrationLegalNotice(String terms, String privacy) {
+    return 'Kreiranjem naloga prihvatate naše $terms. Pročitajte našu $privacy.';
+  }
+
+  @override
+  String get termsOfService => 'Uslove korišćenja';
+
+  @override
+  String get privacyPolicy => 'Politiku privatnosti';
+
+  @override
+  String get legalDocumentOpenFailed =>
+      'Dokument nije moguće otvoriti. Pokušajte ponovo.';
 }
 
 /// The translations for Serbian, using the Latin script (`sr_Latn`).
@@ -3218,4 +3260,46 @@ class AppLocalizationsSrLatn extends AppLocalizationsSr {
   @override
   String get lessonDetailLoadFailed =>
       'Nije moguće učitati detalje lekcije. Pokušajte ponovo.';
+
+  @override
+  String get analyticsTitle => 'Statistika korišćenja';
+
+  @override
+  String get analyticsExplanation =>
+      'Delite statistiku korišćenja aplikacije da biste pomogli u njenom poboljšanju.';
+
+  @override
+  String get registrationAnalyticsConsent =>
+      'Pristajem da delim statistiku korišćenja aplikacije da bih pomogao u njenom poboljšanju.';
+
+  @override
+  String get analyticsDecline => 'Odbij / isključi';
+
+  @override
+  String get analyticsAllow => 'Dozvoli analitiku';
+
+  @override
+  String get analyticsEnabled => 'Analitika je uključena';
+
+  @override
+  String get analyticsDisabled => 'Analitika je isključena';
+
+  @override
+  String get analyticsSaveFailed =>
+      'Izbor nije sačuvan. Analitika je isključena. Pokušajte ponovo.';
+
+  @override
+  String registrationLegalNotice(String terms, String privacy) {
+    return 'Kreiranjem naloga prihvatate naše $terms. Pročitajte našu $privacy.';
+  }
+
+  @override
+  String get termsOfService => 'Uslove korišćenja';
+
+  @override
+  String get privacyPolicy => 'Politiku privatnosti';
+
+  @override
+  String get legalDocumentOpenFailed =>
+      'Dokument nije moguće otvoriti. Pokušajte ponovo.';
 }

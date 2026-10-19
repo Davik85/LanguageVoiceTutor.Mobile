@@ -660,5 +660,28 @@
   "lessonUnavailable": "そのレッスンは利用できません。",
   "lessonNoLongerAvailable": "このレッスンは利用できなくなりました。",
   "lessonHistoryUnavailable": "レッスン履歴は一時的に利用できません。もう一度お試しください。",
-  "lessonDetailLoadFailed": "レッスンの詳細を読み込めません。もう一度お試しください。"
+  "lessonDetailLoadFailed": "レッスンの詳細を読み込めません。もう一度お試しください。",
+  "analyticsTitle": "利用統計",
+  "analyticsExplanation": "アプリの改善に役立てるため、利用統計を共有します。",
+  "registrationAnalyticsConsent": "アプリの改善に役立てるため、利用統計を共有することに同意します。",
+  "analyticsDecline": "拒否・無効にする",
+  "analyticsAllow": "分析を許可",
+  "analyticsEnabled": "分析は有効です",
+  "analyticsDisabled": "分析は無効です",
+  "analyticsSaveFailed": "選択を保存できませんでした。分析は無効です。もう一度お試しください。",
+  "registrationLegalNotice": "アカウントを作成すると、{terms}に同意したことになります。{privacy}をご確認ください。",
+  "termsOfService": "利用規約",
+  "privacyPolicy": "プライバシーポリシー",
+  "legalDocumentOpenFailed": "文書を開けませんでした。もう一度お試しください。",
+  "@registrationLegalNotice": {
+    "description": "Informational notice below Register; document placeholders become independent clickable links. Keep their natural local word order.",
+    "placeholders": {
+      "terms": {
+        "type": "String"
+      },
+      "privacy": {
+        "type": "String"
+      }
+    }
+  }
 }

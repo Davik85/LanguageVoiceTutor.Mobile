@@ -660,5 +660,28 @@
   "lessonUnavailable": "해당 레슨을 사용할 수 없습니다.",
   "lessonNoLongerAvailable": "이 레슨은 더 이상 사용할 수 없습니다.",
   "lessonHistoryUnavailable": "레슨 기록을 일시적으로 사용할 수 없습니다. 다시 시도해 주세요.",
-  "lessonDetailLoadFailed": "레슨 세부 정보를 불러올 수 없습니다. 다시 시도해 주세요."
+  "lessonDetailLoadFailed": "레슨 세부 정보를 불러올 수 없습니다. 다시 시도해 주세요.",
+  "analyticsTitle": "사용 통계",
+  "analyticsExplanation": "앱 개선에 도움이 되도록 사용 통계를 공유합니다.",
+  "registrationAnalyticsConsent": "앱 개선에 도움이 되도록 사용 통계를 공유하는 데 동의합니다.",
+  "analyticsDecline": "거부 / 끄기",
+  "analyticsAllow": "분석 허용",
+  "analyticsEnabled": "분석 켜짐",
+  "analyticsDisabled": "분석 꺼짐",
+  "analyticsSaveFailed": "선택을 저장하지 못했습니다. 분석이 꺼져 있습니다. 다시 시도하세요.",
+  "registrationLegalNotice": "계정을 만들면 {terms}에 동의하게 됩니다. {privacy}을 확인해 주세요.",
+  "termsOfService": "서비스 이용약관",
+  "privacyPolicy": "개인정보 처리방침",
+  "legalDocumentOpenFailed": "문서를 열 수 없습니다. 다시 시도해 주세요.",
+  "@registrationLegalNotice": {
+    "description": "Informational notice below Register; document placeholders become independent clickable links. Keep their natural local word order.",
+    "placeholders": {
+      "terms": {
+        "type": "String"
+      },
+      "privacy": {
+        "type": "String"
+      }
+    }
+  }
 }

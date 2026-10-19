@@ -23,6 +23,7 @@ import '../services/practice_reminder_service.dart';
 import '../services/practice_reminder_preferences.dart';
 import '../theme/app_visuals.dart';
 import '../widgets/password_recovery_form.dart';
+import '../widgets/analytics_consent_control.dart';
 import '../widgets/practice_reminders_card.dart';
 import 'achievements_screen.dart';
 import 'login_screen.dart';
@@ -586,6 +587,8 @@ class _SettingsScreenState extends State<SettingsScreen>
             }),
             onSubmit: _submitFeedback,
           ),
+          const SizedBox(height: 12),
+          AnalyticsConsentControl(analytics: _authService.analytics),
           const SizedBox(height: 12),
           PracticeRemindersCard(
             preferences: _reminderPreferences,

@@ -1,5 +1,7 @@
 package com.languagevoicetutor.mobile
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.CancellationSignal
 import androidx.credentials.ClearCredentialStateRequest
@@ -24,9 +26,35 @@ import java.util.concurrent.atomic.AtomicBoolean
 class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger,
+            "com.languagevoicetutor.mobile/legal_documents")
+            .setMethodCallHandler { call, result ->
+                if (call.method != "openExternal") result.notImplemented()
+                else {
+                    val url = call.argument<String>("url")
+                    val allowed = url == "https://languagevoicetutor.com/terms.html" ||
+                        url == "https://languagevoicetutor.com/privacy.html"
+                    if (!allowed) result.success(false)
+                    else try {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            .addCategory(Intent.CATEGORY_BROWSABLE))
+                        result.success(true)
+                    } catch (_: Exception) { result.success(false) }
+                }
+            }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger,
+            "com.languagevoicetutor.mobile/device_metadata")
+            .setMethodCallHandler { call, result ->
+                if (call.method != "getDeviceName") result.notImplemented()
+                else try { result.success(installationDeviceName()) }
+                catch (_: Exception) { result.error("unavailable", "Device metadata unavailable", null) }
+            }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
             .setMethodCallHandler { call, result -> handleRestoreCredential(call, result) }
     }
+
+    private fun installationDeviceName(): String =
+        InstallationDeviceName.load(noBackupFilesDir, Build.MANUFACTURER, Build.MODEL)
 
     private fun handleRestoreCredential(call: MethodCall, result: MethodChannel.Result) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {

@@ -1576,4 +1576,46 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get lessonDetailLoadFailed =>
       'يتعذر تحميل تفاصيل الدرس. يُرجى المحاولة مرة أخرى.';
+
+  @override
+  String get analyticsTitle => 'إحصاءات الاستخدام';
+
+  @override
+  String get analyticsExplanation =>
+      'مشاركة إحصاءات استخدام التطبيق للمساعدة في تحسينه.';
+
+  @override
+  String get registrationAnalyticsConsent =>
+      'أوافق على مشاركة إحصاءات استخدام التطبيق للمساعدة في تحسينه.';
+
+  @override
+  String get analyticsDecline => 'رفض / إيقاف';
+
+  @override
+  String get analyticsAllow => 'السماح بالتحليلات';
+
+  @override
+  String get analyticsEnabled => 'التحليلات مفعلة';
+
+  @override
+  String get analyticsDisabled => 'التحليلات معطلة';
+
+  @override
+  String get analyticsSaveFailed =>
+      'تعذر حفظ اختيارك. التحليلات معطلة. حاول مجددًا.';
+
+  @override
+  String registrationLegalNotice(String terms, String privacy) {
+    return 'بإنشاء حساب، فإنك توافق على $terms الخاصة بنا. يُرجى مراجعة $privacy الخاصة بنا.';
+  }
+
+  @override
+  String get termsOfService => 'شروط الخدمة';
+
+  @override
+  String get privacyPolicy => 'سياسة الخصوصية';
+
+  @override
+  String get legalDocumentOpenFailed =>
+      'تعذر فتح المستند. يرجى المحاولة مجددًا.';
 }

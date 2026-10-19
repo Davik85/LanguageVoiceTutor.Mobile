@@ -2853,6 +2853,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not load lesson details. Please try again.'**
   String get lessonDetailLoadFailed;
+
+  /// No description provided for @analyticsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage statistics'**
+  String get analyticsTitle;
+
+  /// No description provided for @analyticsExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Share app usage statistics to help improve the app.'**
+  String get analyticsExplanation;
+
+  /// No description provided for @registrationAnalyticsConsent.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to share app usage statistics to help improve the app.'**
+  String get registrationAnalyticsConsent;
+
+  /// No description provided for @analyticsDecline.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline / turn off'**
+  String get analyticsDecline;
+
+  /// No description provided for @analyticsAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow analytics'**
+  String get analyticsAllow;
+
+  /// No description provided for @analyticsEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics is on'**
+  String get analyticsEnabled;
+
+  /// No description provided for @analyticsDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics is off'**
+  String get analyticsDisabled;
+
+  /// No description provided for @analyticsSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save your choice. Analytics is off. Please try again.'**
+  String get analyticsSaveFailed;
+
+  /// Informational notice below Register; document placeholders become independent clickable links. Keep their natural local word order.
+  ///
+  /// In en, this message translates to:
+  /// **'By creating an account, you agree to our {terms}. Please review our {privacy}.'**
+  String registrationLegalNotice(String terms, String privacy);
+
+  /// No description provided for @termsOfService.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service'**
+  String get termsOfService;
+
+  /// No description provided for @privacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// No description provided for @legalDocumentOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the document. Please try again.'**
+  String get legalDocumentOpenFailed;
 }
 
 class _AppLocalizationsDelegate

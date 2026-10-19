@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'config/app_config.dart';
@@ -5,6 +7,10 @@ import 'l10n/app_localizations.dart';
 import 'l10n/app_locale_controller.dart';
 import 'l10n/device_language_defaults.dart';
 import 'services/auth_service.dart';
+import 'services/analytics_service.dart';
+import 'services/firebase_analytics_sink.dart';
+import 'services/device_activity_tracker.dart';
+import 'services/device_metadata.dart';
 import 'services/service_factory.dart';
 import 'services/practice_reminder_service.dart';
 import 'services/premium_purchase_adapter.dart';
@@ -19,6 +25,10 @@ import 'theme/app_visuals.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final analytics = ConsentAnalyticsService(
+      store: const SecureAnalyticsStore(), sink: FirebaseAnalyticsSink());
+  unawaited(analytics.initialize());
+  final auth = createAuthService(analytics: analytics);
   final reminders = LocalPracticeReminderService();
   try {
     await reminders.initialize();
@@ -27,6 +37,7 @@ Future<void> main() async {
     WidgetsBinding.instance.platformDispatcher.locales,
   );
   runApp(LanguageVoiceTutorApp(
+    authService: auth,
     practiceReminderService: reminders,
     deviceLanguageDefaults: deviceLanguageDefaults,
   ));
@@ -78,13 +89,33 @@ class LanguageVoiceTutorApp extends StatefulWidget {
   State<LanguageVoiceTutorApp> createState() => _LanguageVoiceTutorAppState();
 }
 
-class _LanguageVoiceTutorAppState extends State<LanguageVoiceTutorApp> {
+class _LanguageVoiceTutorAppState extends State<LanguageVoiceTutorApp>
+    with WidgetsBindingObserver {
+  DeviceActivityTracker? _deviceActivity;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _deviceActivity?.setForeground(state == AppLifecycleState.resumed);
+  }
+
   late final AppLocaleController _localeController;
   late final PremiumPurchaseCoordinator _premiumPurchaseCoordinator;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      _deviceActivity = DeviceActivityTracker(
+        authenticatedUser: widget._authService.authenticatedUser,
+        metadata: AndroidDeviceMetadata(),
+        register: (user, request) async {
+          await widget._authService.registerDevice(user, request,
+              canSend: () => _deviceActivity?.isForeground == true);
+        },
+      )..setForeground(WidgetsBinding.instance.lifecycleState == null ||
+          WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed);
+    }
     _localeController = AppLocaleController(
       initialLanguageId: widget._deviceLanguageDefaults.interfaceLanguageId,
     );
@@ -99,6 +130,8 @@ class _LanguageVoiceTutorAppState extends State<LanguageVoiceTutorApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _deviceActivity?.dispose();
     _localeController.dispose();
     _premiumPurchaseCoordinator.close();
     _premiumPurchaseCoordinator.dispose();

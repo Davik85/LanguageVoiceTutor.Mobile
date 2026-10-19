@@ -8,15 +8,19 @@ import '../services/auth_service.dart';
 import '../services/service_factory.dart';
 import '../theme/app_visuals.dart';
 import '../widgets/password_recovery_form.dart';
+import '../widgets/registration_legal_notice.dart';
+import '../services/legal_document_launcher.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
     super.key,
     AuthService? authService,
+    LegalDocumentLauncher? legalDocumentLauncher,
     DeviceLanguageDefaults? deviceLanguageDefaults,
     ValueChanged<String>? onInterfaceLanguageLoaded,
   })  : _authService = authService,
+        _legalDocumentLauncher = legalDocumentLauncher,
         _deviceLanguageDefaults = deviceLanguageDefaults ??
             const DeviceLanguageDefaults(
               interfaceLanguageId: 'en',
@@ -26,6 +30,7 @@ class LoginScreen extends StatefulWidget {
 
   static const String routeName = '/login';
   final AuthService? _authService;
+  final LegalDocumentLauncher? _legalDocumentLauncher;
   final DeviceLanguageDefaults _deviceLanguageDefaults;
   final ValueChanged<String>? _onInterfaceLanguageLoaded;
 
@@ -40,6 +45,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _displayNameController = TextEditingController();
   late final AuthService _authService;
   bool _isRegistering = false;
+  bool _analyticsAccepted = false;
+  bool _analyticsSaveFailed = false;
   bool _showPasswordRecovery = false;
   bool _isSubmitting = false;
   String? _error;
@@ -59,13 +66,26 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _submit({required bool register}) async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_isSubmitting) return;
+    final validForm = _formKey.currentState!.validate();
+    if (!validForm) return;
     setState(() {
       _isSubmitting = true;
       _error = null;
     });
     try {
       if (register) {
+        // Consent must be persisted and applied before AuthService can log sign_up.
+        // Optional analytics failures must never prevent account creation.
+        var saved = false;
+        try {
+          saved =
+              await _authService.analytics.chooseConsent(_analyticsAccepted);
+        } catch (_) {
+          // AnalyticsService fails closed; keep authentication independent.
+        }
+        if (!mounted) return;
+        setState(() => _analyticsSaveFailed = !saved);
         await _authService.register(_emailController.text.trim(),
             _passwordController.text, _displayNameController.text.trim());
         await _initializeNewAccountLanguages();
@@ -84,6 +104,22 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _error = 'Unable to sign in right now. Please try again.');
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  Future<void> _openLegalDocument(Uri document) async {
+    var opened = false;
+    try {
+      opened = await (widget._legalDocumentLauncher ??
+              const AndroidLegalDocumentLauncher())
+          .open(document);
+    } catch (_) {
+      // Browser availability must not change authentication or consent state.
+    }
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(context.l10n.legalDocumentOpenFailed),
+      ));
     }
   }
 
@@ -180,7 +216,79 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: TextStyle(
                               color: Theme.of(context).colorScheme.error)),
                     ],
-                    const SizedBox(height: 24),
+                    SizedBox(height: _isRegistering ? 12 : 24),
+                    if (_isRegistering) ...[
+                      Row(
+                        key: const Key('registration-analytics-choice'),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Checkbox(
+                            key: const Key('registration-analytics-checkbox'),
+                            value: _analyticsAccepted,
+                            semanticLabel:
+                                context.l10n.registrationAnalyticsConsent,
+                            onChanged: _isSubmitting
+                                ? null
+                                : (value) => setState(() {
+                                      _analyticsAccepted = value ?? false;
+                                      _analyticsSaveFailed = false;
+                                    }),
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  GestureDetector(
+                                    excludeFromSemantics: true,
+                                    onTap: _isSubmitting
+                                        ? null
+                                        : () => setState(() {
+                                              _analyticsAccepted =
+                                                  !_analyticsAccepted;
+                                              _analyticsSaveFailed = false;
+                                            }),
+                                    child: ExcludeSemantics(
+                                      child: Text(
+                                          context.l10n.registrationAnalyticsConsent,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    key: const Key(
+                                        'registration-analytics-privacy-link'),
+                                    onPressed: () => _openLegalDocument(
+                                        LegalDocuments.privacy),
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      textStyle: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            decoration:
+                                                TextDecoration.underline,
+                                          ),
+                                    ),
+                                    child: Text(context.l10n.privacyPolicy),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_analyticsSaveFailed)
+                        Semantics(
+                          liveRegion: true,
+                          child: Text(context.l10n.analyticsSaveFailed,
+                              style: TextStyle(
+                                  color: Theme.of(context).colorScheme.error)),
+                        ),
+                      const SizedBox(height: 8),
+                    ],
                     FilledButton(
                       onPressed: _isSubmitting
                           ? null
@@ -191,6 +299,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               ? context.l10n.register
                               : context.l10n.login)),
                     ),
+                    if (_isRegistering) ...[
+                      const SizedBox(height: 8),
+                      RegistrationLegalNotice(
+                          onOpenDocument: _openLegalDocument),
+                    ],
                     if (!_isRegistering) ...[
                       TextButton(
                         key: const Key('login-forgot-password'),
@@ -229,6 +342,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           ? null
                           : () => setState(() {
                                 _isRegistering = !_isRegistering;
+                                _analyticsAccepted = false;
+                                _analyticsSaveFailed = false;
                                 _showPasswordRecovery = false;
                                 _error = null;
                               }),

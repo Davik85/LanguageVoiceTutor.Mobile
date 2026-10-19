@@ -16,6 +16,8 @@ import '../services/learner_audio_recording_service.dart';
 import '../services/learner_microphone_permission_service.dart';
 import '../services/mobile_transcription_request_builder.dart';
 import '../services/tutor_audio_playback_service.dart';
+import '../services/tutor_audio_diagnostics.dart';
+import '../services/http_audio_diagnostics.dart';
 import '../services/tutor_speech_request_builder.dart';
 import '../services/transcript_script_normalizer.dart';
 import '../widgets/tutor_avatar.dart';
@@ -87,6 +89,9 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
   bool _openingMicrophoneSettings = false;
   DateTime? _hintDismissedAt;
 
+  final _audioTrace =
+      TutorAudioDiagnostics(source: TutorAudioTraceSource.conversation);
+
   @override
   void initState() {
     super.initState();
@@ -96,10 +101,13 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
 
   @override
   void dispose() {
+    _audioTrace.record(TutorAudioTraceEvent.disposeRequested);
     _disposed = true;
     WidgetsBinding.instance.removeObserver(this);
     _invalidateOperation();
     unawaited(_stopAndDeleteRecording());
+    _audioTrace.record(TutorAudioTraceEvent.stopOrigin,
+        reason: TutorAudioTraceReason.cleanup);
     unawaited(widget.audioPlaybackService.stop());
     unawaited(_deletePlaybackFile());
     unawaited(widget.recordingService.dispose());
@@ -111,6 +119,8 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _audioTrace.record(TutorAudioTraceEvent.lifecycle,
+        fields: {'lifecycle': state.index});
     if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
@@ -118,6 +128,8 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
           message: context.l10n.conversationPaused);
       _invalidateOperation();
       unawaited(_stopAndDeleteRecording());
+      _audioTrace.record(TutorAudioTraceEvent.stopOrigin,
+        reason: TutorAudioTraceReason.lifecycle);
       unawaited(widget.audioPlaybackService.stop());
       if (mounted) setState(() => _state = _ConversationState.idle);
     }
@@ -145,6 +157,8 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
         _state != _ConversationState.error) {
       return;
     }
+    _audioTrace.record(TutorAudioTraceEvent.stopOrigin,
+        reason: TutorAudioTraceReason.recording);
     await widget.audioPlaybackService.stop();
     if (!mounted) return;
     final generation = ++_operationGeneration;
@@ -367,18 +381,24 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
       '${Directory.systemTemp.path}${Platform.pathSeparator}'
       'language-voice-conversation-${DateTime.now().microsecondsSinceEpoch}.wav',
     );
+    TutorSpeechPlaybackTrace? speechPlayback;
     try {
       await file.writeAsBytes(result.audioBytes!, flush: true);
+      TutorSpeechTrace.prepared(result.audioBytes, file.path);
       _playbackFilePath = file.path;
+      speechPlayback = TutorSpeechTrace.beforePlayback(file.path,
+          sourceBytes: result.audioBytes);
       final playbackResult = await widget.audioPlaybackService.playToCompletion(
         file.path,
         timeout: const Duration(seconds: 90),
         onStarted: () {
+          speechPlayback?.started();
           if (_isCurrent(generation)) {
             setState(() => _state = _ConversationState.speaking);
           }
         },
       );
+      speechPlayback?.completed(playbackResult.status.name);
       if (!_isCurrent(generation)) return;
       final message = switch (playbackResult.status) {
         TutorPlaybackStatus.completed => null,
@@ -390,6 +410,7 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
       };
       _finishConversationOperation(generation, message: message);
     } catch (_) {
+      speechPlayback?.completed('failed');
       if (_isCurrent(generation)) {
         setState(() {
           _state = _ConversationState.idle;
@@ -501,6 +522,8 @@ class _ConversationModeScreenState extends State<ConversationModeScreen>
     _finishConversationOperation(_operationGeneration);
     _invalidateOperation();
     await _stopAndDeleteRecording();
+    _audioTrace.record(TutorAudioTraceEvent.stopOrigin,
+        reason: TutorAudioTraceReason.cleanup);
     await widget.audioPlaybackService.stop();
     await _deletePlaybackFile();
     if (!mounted) return;

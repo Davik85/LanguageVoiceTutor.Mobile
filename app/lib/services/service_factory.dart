@@ -1,6 +1,7 @@
 import '../api/api_client.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
+import 'analytics_service.dart';
 import 'premium_purchase_adapter.dart';
 import 'premium_purchase_coordinator.dart';
 import 'session_storage.dart';
@@ -8,11 +9,12 @@ import 'restore_credentials_platform.dart';
 import 'restore_credentials_service.dart';
 import 'restore_credentials_state.dart';
 
-AuthService createAuthService() {
+AuthService createAuthService({AnalyticsService? analytics}) {
   final apiClient = HttpApiClient();
   final storage = SecureSessionStorage();
   return AuthService(
     apiClient: apiClient,
+    analytics: analytics,
     storage: storage,
     restoreCredentialsService: RestoreCredentialsService(
       apiClient: apiClient,

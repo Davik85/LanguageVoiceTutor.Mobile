@@ -19,6 +19,10 @@ class RestoreCredentialsService {
         _platform = platform,
         _state = state;
 
+  // Set only from a successful backend assertion and locally saved session.
+  AuthUser? _restoredUser;
+  AuthUser? get restoredUser => _restoredUser;
+
   final ApiClient _apiClient;
   final SessionStorage _sessionStorage;
   final RestoreCredentialsPlatform _platform;
@@ -67,6 +71,7 @@ class RestoreCredentialsService {
   }
 
   Future<RestoreAuthenticationResult> tryAutomaticRestore() async {
+    _restoredUser = null;
     if (await _state.isAutomaticRestoreSuppressed()) {
       return RestoreAuthenticationResult.noCredential;
     }
@@ -107,6 +112,7 @@ class RestoreCredentialsService {
       await _sessionStorage.saveTokens(
           accessToken: auth.accessToken, refreshToken: auth.refreshToken);
       await syncForAuthenticatedUser(auth.user, auth.accessToken);
+      _restoredUser = auth.user;
       return RestoreAuthenticationResult.restored;
     } catch (_) {
       return RestoreAuthenticationResult.failed;

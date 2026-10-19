@@ -153,6 +153,7 @@ class FakeApiClient implements ApiClient {
 class _SpeechPlayback implements TutorAudioPlaybackService {
   final _completed = StreamController<Object?>.broadcast();
   final paths = <String>[];
+  int stopCalls = 0;
   @override
   Stream<Object?> get completed => _completed.stream;
   @override
@@ -170,7 +171,7 @@ class _SpeechPlayback implements TutorAudioPlaybackService {
   }
 
   @override
-  Future<void> stop() async {}
+  Future<void> stop() async { stopCalls++; }
   @override
   Future<void> dispose() => _completed.close();
 }
@@ -878,6 +879,25 @@ void main() {
       await tester.tap(_sendButton());
       await flushAudioIo(tester);
     }
+
+    testWidgets('resumed lifecycle does not stop audio; inactive lifecycle still stops explicitly', (tester) async {
+      final playback = _SpeechPlayback();
+      final auth = FakeAuthService();
+      await tester.pumpWidget(speechScreen(auth, playback));
+      await flushAudioIo(tester);
+      final before = playback.stopCalls;
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(playback.stopCalls, before);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pumpAndSettle();
+      expect(playback.stopCalls, before + 1);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(playback.stopCalls, before + 1);
+      await tester.pumpWidget(const SizedBox());
+      await flushAudioIo(tester);
+    });
 
     testWidgets(
       'initial preload is silent and leaves lesson actions available',
@@ -3333,6 +3353,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(auth.abandonLessonSessionCallCount, 0);
+    expect(auth.finishLessonSessionCallCount, 0);
     expect(find.byKey(const Key('lesson-action-keyboard')), findsOneWidget);
   });
 
@@ -3345,42 +3366,108 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Leave lesson?'), findsOneWidget);
-    expect(auth.abandonLessonSessionCallCount, 0);
-  });
-
-  testWidgets('leaving abandons once and returns home without finishing',
-      (tester) async {
-    final auth = FakeAuthService();
-    await tester.pumpWidget(_lessonScreenWithHome(auth));
+    await tester.tap(find.text('Stay'));
     await tester.pumpAndSettle();
-
-    await tester.tap(find.byKey(const Key('lesson-back-button')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Leave lesson'));
-    await tester.pumpAndSettle();
-
-    expect(auth.abandonLessonSessionCallCount, 1);
     expect(auth.finishLessonSessionCallCount, 0);
-    expect(auth.loadLessonSummaryCallCount, 0);
-    expect(auth.persistedMessages, isEmpty);
-    expect(find.text('Home'), findsOneWidget);
+    expect(auth.abandonLessonSessionCallCount, 0);
+    expect(find.byKey(const Key('lesson-action-keyboard')), findsOneWidget);
   });
 
-  testWidgets('temporary abandon failure still lets the learner leave',
-      (tester) async {
-    final auth = FakeAuthService(
-      abandonResult: LessonSessionAbandonResult.failed(),
-    );
-    await tester.pumpWidget(_lessonScreenWithHome(auth));
-    await tester.pumpAndSettle();
+  for (final systemBack in [false, true]) {
+    final source = systemBack ? 'system Back' : 'visible Back';
+    testWidgets('$source finishes once after persistence and shows the summary',
+        (tester) async {
+      final userPersisted = Completer<void>();
+      final tutorPersisted = Completer<void>();
+      final completion = Completer<LessonCompletionResult>();
+      final auth = FakeAuthService(
+        persistenceCompleters: [userPersisted, tutorPersisted],
+        finishCompleter: completion,
+      );
+      await tester.pumpWidget(
+          _lessonScreen(auth, selection: _introLessonSelectionWithContext));
+      await tester.pumpAndSettle();
+      await _openTextComposer(tester);
+      await tester.enterText(find.byKey(const Key('lesson-input')), 'Hello');
+      await tester.pump();
+      await tester.tap(_sendButton());
+      await tester.pumpAndSettle();
+      final finishFlag = tester
+          .widget<IconButton>(find.byKey(const Key('lesson-action-finish')))
+          .onPressed!;
 
-    await tester.tap(find.byKey(const Key('lesson-back-button')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Leave lesson'));
-    await tester.pumpAndSettle();
-    expect(auth.abandonLessonSessionCallCount, 1);
-    expect(find.text('Home'), findsOneWidget);
-  });
+      if (systemBack) {
+        await tester.binding.handlePopRoute();
+      } else {
+        await tester.tap(find.byKey(const Key('lesson-back-button')));
+      }
+      await tester.pumpAndSettle();
+      final dialog = tester.widget<AlertDialog>(find.byType(AlertDialog));
+      expect((dialog.title! as Text).data, 'Leave lesson?');
+      expect((dialog.content! as Text).data,
+          'Finish this lesson and view your summary?');
+      expect(dialog.actions, hasLength(2));
+      expect((dialog.actions![0] as TextButton).child, isA<Text>());
+      expect(((dialog.actions![0] as TextButton).child! as Text).data, 'Stay');
+      expect(((dialog.actions![1] as FilledButton).child! as Text).data,
+          'Finish lesson');
+      await tester.tap(find.text('Finish lesson'));
+      await tester.pumpAndSettle();
+      expect(auth.finishLessonSessionCallCount, 0);
+      await tester.binding.handlePopRoute();
+      finishFlag();
+      await tester.pump();
+      expect(find.byType(AlertDialog), findsNothing);
+
+      userPersisted.complete();
+      await tester.pump();
+      expect(auth.finishLessonSessionCallCount, 0);
+      tutorPersisted.complete();
+      await tester.pumpAndSettle();
+      expect(auth.finishLessonSessionCallCount, 1);
+      expect(auth.lastValidTurnCount, 1);
+      expect(auth.persistedMessages.map((message) => message.role),
+          ['user', 'assistant']);
+      await tester.binding.handlePopRoute();
+      finishFlag();
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(auth.finishLessonSessionCallCount, 1);
+
+      completion.complete(LessonCompletionResult.summaryReady(
+          const LessonSummaryResponse(status: 'ready', summary: 'Nice work.')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('lesson-summary-scroll')), findsOneWidget);
+      expect(find.text('Lesson summary'), findsOneWidget);
+      expect(find.text('Nice work.'), findsOneWidget);
+      expect(auth.abandonLessonSessionCallCount, 0);
+      expect(auth.finishLessonSessionCallCount, 1);
+    });
+
+    testWidgets('$source completion failure keeps the lesson active',
+        (tester) async {
+      final auth = FakeAuthService(finishResult: LessonCompletionResult.failed());
+      await tester.pumpWidget(_lessonScreenWithHome(auth));
+      await tester.pumpAndSettle();
+      await _openTextComposer(tester);
+      await tester.enterText(find.byKey(const Key('lesson-input')), 'Hello');
+      if (systemBack) {
+        await tester.binding.handlePopRoute();
+      } else {
+        await tester.tap(find.byKey(const Key('lesson-back-button')));
+      }
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Finish lesson'));
+      await tester.pumpAndSettle();
+      expect(auth.finishLessonSessionCallCount, 1);
+      expect(auth.abandonLessonSessionCallCount, 0);
+      expect(find.text('Home'), findsNothing);
+      expect(find.byKey(const Key('lesson-summary-scroll')), findsNothing);
+      expect(find.text('Could not finish the lesson. Please check your connection and try again.'),
+          findsOneWidget);
+      expect(tester.widget<FilledButton>(_sendButton()).onPressed, isNotNull);
+    });
+  }
 
   testWidgets('finish sends once and shows unavailable completed state',
       (tester) async {
@@ -3660,10 +3747,12 @@ void main() {
 
       expect(find.text('Выйти из урока?'), findsOneWidget);
       expect(
-        find.text('Выход завершит незаконченный урок без создания итогов.'),
+        find.text('Завершить этот урок и посмотреть итоги?'),
         findsOneWidget,
       );
       expect(find.text('Остаться'), findsOneWidget);
+      expect(find.text('Завершить урок'), findsOneWidget);
+      expect(find.text('Выйти из урока'), findsNothing);
       await tester.tap(find.text('Остаться'));
       await tester.pumpAndSettle();
 
