@@ -45,8 +45,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _displayNameController = TextEditingController();
   late final AuthService _authService;
   bool _isRegistering = false;
-  bool _analyticsAccepted = false;
-  bool _analyticsSaveFailed = false;
   bool _showPasswordRecovery = false;
   bool _isSubmitting = false;
   String? _error;
@@ -75,17 +73,6 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     try {
       if (register) {
-        // Consent must be persisted and applied before AuthService can log sign_up.
-        // Optional analytics failures must never prevent account creation.
-        var saved = false;
-        try {
-          saved =
-              await _authService.analytics.chooseConsent(_analyticsAccepted);
-        } catch (_) {
-          // AnalyticsService fails closed; keep authentication independent.
-        }
-        if (!mounted) return;
-        setState(() => _analyticsSaveFailed = !saved);
         await _authService.register(_emailController.text.trim(),
             _passwordController.text, _displayNameController.text.trim());
         await _initializeNewAccountLanguages();
@@ -217,78 +204,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: Theme.of(context).colorScheme.error)),
                     ],
                     SizedBox(height: _isRegistering ? 12 : 24),
-                    if (_isRegistering) ...[
-                      Row(
-                        key: const Key('registration-analytics-choice'),
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Checkbox(
-                            key: const Key('registration-analytics-checkbox'),
-                            value: _analyticsAccepted,
-                            semanticLabel:
-                                context.l10n.registrationAnalyticsConsent,
-                            onChanged: _isSubmitting
-                                ? null
-                                : (value) => setState(() {
-                                      _analyticsAccepted = value ?? false;
-                                      _analyticsSaveFailed = false;
-                                    }),
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  GestureDetector(
-                                    excludeFromSemantics: true,
-                                    onTap: _isSubmitting
-                                        ? null
-                                        : () => setState(() {
-                                              _analyticsAccepted =
-                                                  !_analyticsAccepted;
-                                              _analyticsSaveFailed = false;
-                                            }),
-                                    child: ExcludeSemantics(
-                                      child: Text(
-                                          context.l10n.registrationAnalyticsConsent,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall),
-                                    ),
-                                  ),
-                                  TextButton(
-                                    key: const Key(
-                                        'registration-analytics-privacy-link'),
-                                    onPressed: () => _openLegalDocument(
-                                        LegalDocuments.privacy),
-                                    style: TextButton.styleFrom(
-                                      padding: EdgeInsets.zero,
-                                      textStyle: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            decoration:
-                                                TextDecoration.underline,
-                                          ),
-                                    ),
-                                    child: Text(context.l10n.privacyPolicy),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (_analyticsSaveFailed)
-                        Semantics(
-                          liveRegion: true,
-                          child: Text(context.l10n.analyticsSaveFailed,
-                              style: TextStyle(
-                                  color: Theme.of(context).colorScheme.error)),
-                        ),
-                      const SizedBox(height: 8),
-                    ],
                     FilledButton(
                       onPressed: _isSubmitting
                           ? null
@@ -342,8 +257,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ? null
                           : () => setState(() {
                                 _isRegistering = !_isRegistering;
-                                _analyticsAccepted = false;
-                                _analyticsSaveFailed = false;
                                 _showPasswordRecovery = false;
                                 _error = null;
                               }),

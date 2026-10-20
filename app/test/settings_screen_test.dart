@@ -322,68 +322,15 @@ Future<void> _openAccountDeletion(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets(
-      'App settings has one compact persistent analytics switch with withdrawal',
-      (tester) async {
-    final store = MemoryAnalyticsStore();
-    final sink = FakeAnalyticsSink();
-    final analytics = ConsentAnalyticsService(store: store, sink: sink);
-    await analytics.initialize();
-    addTearDown(analytics.dispose);
-    await tester.pumpWidget(_screen(FakeAuthService(analytics: analytics)));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('settings-app-tab')));
-    await tester.pumpAndSettle();
-    final toggle = find.byKey(const Key('analytics-toggle'));
-    await _scrollToFinder(tester, toggle);
-    expect(find.text('Usage statistics'), findsOneWidget);
-    expect(find.text('Share app usage statistics to help improve the app.'),
-        findsOneWidget);
-    final card = find.byKey(const Key('analytics-settings-card'));
-    expect(card, findsOneWidget);
-    expect(find.descendant(of: card, matching: toggle), findsOneWidget);
-    expect(tester.widget<Card>(card).color, isNull); // Shared Settings theme.
-    expect(tester.widget<Card>(card).shape, isNull);
-    expect((tester.widget<Card>(card).child! as Padding).padding,
-        const EdgeInsets.all(16));
-    final tile = tester.widget<SwitchListTile>(toggle);
-    expect(tile.controlAffinity, ListTileControlAffinity.trailing);
-    expect(ListTileTheme.of(tester.element(toggle)).titleAlignment,
-        ListTileTitleAlignment.center);
-    expect(find.text('Optional analytics'), findsNothing);
-    expect(find.byKey(const Key('analytics-allow')), findsNothing);
-    expect(find.byKey(const Key('analytics-decline')), findsNothing);
-    expect(
-        find.byKey(const Key('registration-analytics-checkbox')), findsNothing);
-    expect(tester.widget<SwitchListTile>(toggle).value, isFalse);
-    await tester.tap(toggle);
-    await tester.pumpAndSettle();
-    expect(analytics.consent, isTrue);
-    expect(store.values['consent_v1'], 'yes');
-    await analytics.log(AnalyticsEvent.login);
-    expect(sink.count('login'), 1);
-    await tester.tap(toggle);
-    await tester.pumpAndSettle();
-    expect(analytics.consent, isFalse);
-    expect(store.values['consent_v1'], 'no');
-    expect(sink.consents.last, isFalse);
-    await analytics.log(AnalyticsEvent.login);
-    expect(sink.count('login'), 1);
-    final restarted =
-        ConsentAnalyticsService(store: store, sink: FakeAnalyticsSink());
-    await restarted.initialize();
-    expect(restarted.consent, isFalse);
-    restarted.dispose();
-  });
-
   for (final locale in [const Locale('en'), const Locale('ru')]) {
     testWidgets(
-        'usage statistics card stays usable and centers its switch on a narrow screen: $locale',
+        'App settings hides analytics even with a stored grant: $locale',
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(320, 640));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final analytics = ConsentAnalyticsService(
-          store: MemoryAnalyticsStore(), sink: FakeAnalyticsSink());
+      final store = MemoryAnalyticsStore()..values['consent_v1'] = 'yes';
+      final analytics =
+          ConsentAnalyticsService(store: store, sink: FakeAnalyticsSink());
       await analytics.initialize();
       addTearDown(analytics.dispose);
       await tester.pumpWidget(
@@ -391,34 +338,19 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('settings-app-tab')));
       await tester.pumpAndSettle();
-      final card = find.byKey(const Key('analytics-settings-card'));
-      await _scrollToFinder(tester, card);
-      final title = locale.languageCode == 'ru'
-          ? 'Статистика использования'
-          : 'Usage statistics';
-      final description = locale.languageCode == 'ru'
-          ? 'Передавать статистику использования приложения для его улучшения.'
-          : 'Share app usage statistics to help improve the app.';
-      expect(find.descendant(of: card, matching: find.text(title)),
-          findsOneWidget);
-      expect(find.descendant(of: card, matching: find.text(description)),
-          findsOneWidget);
-      final toggle = find.byKey(const Key('analytics-toggle'));
-      final switchFinder =
-          find.descendant(of: toggle, matching: find.byType(Switch));
-      expect(tester.getCenter(switchFinder).dx,
-          greaterThan(tester.getCenter(find.text(title)).dx));
-      expect(tester.getCenter(switchFinder).dy,
-          closeTo(tester.getCenter(toggle).dy, 1));
-      expect(tester.getRect(switchFinder).right,
-          lessThanOrEqualTo(tester.getRect(card).right - 16));
-      expect(tester.getRect(card).right, lessThanOrEqualTo(320));
-      await tester.tap(switchFinder);
-      await tester.pumpAndSettle();
-      expect(analytics.consent, isTrue);
-      await tester.tap(switchFinder);
-      await tester.pumpAndSettle();
-      expect(analytics.consent, isFalse);
+      // Inspect both ends of the scrollable App section.
+      for (var i = 0; i < 5; i++) {
+        expect(find.byKey(const Key('analytics-toggle')), findsNothing);
+        expect(find.byKey(const Key('analytics-settings-card')), findsNothing);
+        expect(
+            find.text(locale.languageCode == 'ru'
+                ? 'Статистика использования'
+                : 'Usage statistics'),
+            findsNothing);
+        await tester.drag(_settingsScrollable, const Offset(0, -400));
+        await tester.pumpAndSettle();
+      }
+      expect(store.values['consent_v1'], 'yes');
       expect(tester.takeException(), isNull);
     });
   }

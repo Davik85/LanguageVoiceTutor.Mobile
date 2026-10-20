@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -8,7 +7,6 @@ import 'l10n/app_locale_controller.dart';
 import 'l10n/device_language_defaults.dart';
 import 'services/auth_service.dart';
 import 'services/analytics_service.dart';
-import 'services/firebase_analytics_sink.dart';
 import 'services/device_activity_tracker.dart';
 import 'services/device_metadata.dart';
 import 'services/service_factory.dart';
@@ -25,9 +23,10 @@ import 'theme/app_visuals.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final analytics = ConsentAnalyticsService(
-      store: const SecureAnalyticsStore(), sink: FirebaseAnalyticsSink());
-  unawaited(analytics.initialize());
+  // Native collection is also deactivated in AndroidManifest.xml.
+  // Reactivation requires a separately approved consent-management decision;
+  // never silently reuse stored consent while its controls are hidden.
+  final analytics = NoopAnalyticsService();
   final auth = createAuthService(analytics: analytics);
   final reminders = LocalPracticeReminderService();
   try {

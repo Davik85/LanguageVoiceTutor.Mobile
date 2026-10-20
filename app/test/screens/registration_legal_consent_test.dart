@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:language_voice_tutor_mobile/api/api_client.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -55,17 +57,12 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
 
 Future<void> _registerMode(WidgetTester tester) =>
     _tap(tester, find.byKey(const Key('login-mode-switch')));
-Future<void> _accept(WidgetTester tester) =>
-    _tap(tester, find.byKey(const Key('registration-analytics-checkbox')));
 Future<void> _fill(WidgetTester tester) async {
   await tester.enterText(
       find.byType(TextFormField).at(0), 'learner@example.test');
   await tester.enterText(find.byType(TextFormField).at(1), 'password');
 }
 
-bool _accepted(WidgetTester tester) => tester
-    .widget<Checkbox>(find.byKey(const Key('registration-analytics-checkbox')))
-    .value!;
 FilledButton _submit(WidgetTester tester) =>
     tester.widget<FilledButton>(find.byType(FilledButton));
 
@@ -80,35 +77,27 @@ Future<void> _tapLink(WidgetTester tester, String label) async {
   expect(start, greaterThanOrEqualTo(0));
   final box = paragraph
       .getBoxesForSelection(
-          TextSelection(baseOffset: start, extentOffset: start + label.length))
+          TextSelection(baseOffset: start, extentOffset: start + 1))
       .first;
   await tester.tapAt(paragraph.localToGlobal(box.toRect().center));
   await tester.pumpAndSettle();
 }
 
-class _OrderedSink extends FakeAnalyticsSink {
-  _OrderedSink(this.store);
-  final MemoryAnalyticsStore store;
-  final trace = <String>[];
+class _UnavailableAnalytics extends NoopAnalyticsService {
   @override
-  Future<void> setConsent(bool allowed) async {
-    trace.add('consent:$allowed');
-    await super.setConsent(allowed);
-  }
-
+  Future<void> initialize() async => throw StateError('Firebase unavailable');
   @override
-  Future<void> log(String name, Map<String, Object> parameters) async {
-    trace.add('$name:${store.values['consent_v1']}:${consents.last}');
-    await super.log(name, parameters);
-  }
+  Future<bool> chooseConsent(bool allowed) async =>
+      throw StateError('Consent storage unavailable');
 }
 
-class _PendingStore extends MemoryAnalyticsStore {
+class _PendingRegistrationApi extends TrackingApi {
   final pending = Completer<void>();
   @override
-  Future<void> write(String key, String value) async {
-    if (key == 'consent_v1') await pending.future;
-    await super.write(key, value);
+  Future<ApiResponse> post(String path,
+      {Map<String, dynamic>? body, String? accessToken}) async {
+    if (path == '/api/auth/register') await pending.future;
+    return super.post(path, body: body, accessToken: accessToken);
   }
 }
 
@@ -130,55 +119,46 @@ void main() {
     launcher = _Launcher();
   });
 
-  testWidgets('exact field, optional checkbox, button, then legal notice order',
+  testWidgets(
+      'fields, Register and legal notice remain without analytics controls',
       (tester) async {
     await tester.pumpWidget(_app(auth, launcher));
     await tester.pumpAndSettle();
-    expect(find.byType(Checkbox), findsNothing);
     expect(find.byKey(const Key('registration-legal-sentence')), findsNothing);
     await _registerMode(tester);
-    expect(find.byType(Checkbox), findsOneWidget);
-    expect(_accepted(tester), isFalse);
-    expect(_submit(tester).onPressed, isNotNull);
-    final form = find
-        .descendant(of: find.byType(LoginScreen), matching: find.byType(Column))
-        .first;
-    final children = tester.widget<Column>(form).children;
-    final fields = children.whereType<TextFormField>().toList();
+    expect(find.byType(Checkbox), findsNothing);
+    expect(
+        find.byKey(const Key('registration-analytics-choice')), findsNothing);
+    expect(find.byKey(const Key('registration-analytics-privacy-link')),
+        findsNothing);
+    expect(
+        find.text(
+            'I agree to share app usage statistics to help improve the app.'),
+        findsNothing);
+    expect(
+        find.text(AppLocalizations.of(tester.element(find.byType(LoginScreen)))
+            .analyticsSaveFailed),
+        findsNothing);
     expect(
         tester
             .widgetList<TextField>(find.byType(TextField))
             .map((f) => f.decoration!.labelText),
         ['Email', 'Password', 'Display name (optional)']);
-    final consentIndex = children
-        .indexWhere((w) => w.key == const Key('registration-analytics-choice'));
+    final form = find
+        .descendant(of: find.byType(LoginScreen), matching: find.byType(Column))
+        .first;
+    final children = tester.widget<Column>(form).children;
     final buttonIndex = children.indexWhere((w) => w is FilledButton);
     final noticeIndex = children.indexWhere(
         (w) => w.runtimeType.toString() == 'RegistrationLegalNotice');
-    expect(children.indexOf(fields.last), lessThan(consentIndex));
-    expect(consentIndex, lessThan(buttonIndex));
+    expect(children.indexOf(children.whereType<TextFormField>().last),
+        lessThan(buttonIndex));
     expect(buttonIndex, lessThan(noticeIndex));
-    expect(
-        children
-            .sublist(consentIndex + 1, buttonIndex)
-            .every((w) => w is SizedBox),
-        isTrue);
     expect(
         children
             .sublist(buttonIndex + 1, noticeIndex)
             .every((w) => w is SizedBox),
         isTrue);
-    final consent = find.byKey(const Key('registration-analytics-choice'));
-    expect(
-        find.descendant(of: consent, matching: find.text('Privacy Policy')),
-        findsOneWidget);
-    expect(
-        find
-            .descendant(of: consent, matching: find.byType(RichText))
-            .evaluate()
-            .map((e) => (e.widget as RichText).text.toPlainText()),
-        contains(
-            'I agree to share app usage statistics to help improve the app.'));
     expect(
         tester
             .widget<Text>(find.byKey(const Key('registration-legal-sentence')))
@@ -186,17 +166,15 @@ void main() {
             .toPlainText(),
         'By creating an account, you agree to our Terms of Service. Please review our Privacy Policy.');
     await _tap(tester, find.byType(FilledButton));
-    expect(api.calls, isEmpty); // Input validation still runs without opt-in.
+    expect(api.calls, isEmpty); // Existing form validation still applies.
   });
 
-  for (final optedIn in [false, true]) {
+  for (final unavailable in [false, true]) {
     testWidgets(
-        'registration succeeds with analytics consent $optedIn, applied before conversion',
+        'registration succeeds without analytics interaction, unavailable: $unavailable',
         (tester) async {
-      final store = MemoryAnalyticsStore();
-      final sink = _OrderedSink(store);
-      final analytics = ConsentAnalyticsService(store: store, sink: sink);
-      await analytics.initialize();
+      final analytics =
+          unavailable ? _UnavailableAnalytics() : NoopAnalyticsService();
       addTearDown(analytics.dispose);
       auth = AuthService(
           apiClient: api, storage: TrackingStorage(), analytics: analytics);
@@ -204,141 +182,64 @@ void main() {
       await tester.pumpAndSettle();
       await _registerMode(tester);
       await _fill(tester);
-      if (optedIn) await _accept(tester);
-      expect(analytics.consent,
-          isNull); // Draft checkbox does not enable collection.
       await _tap(tester, find.byType(FilledButton));
-      final call = api.calls.first;
-      expect(call.path, '/api/auth/register');
-      expect(
-          call.body, {'email': 'learner@example.test', 'password': 'password'});
+      expect(api.calls.first.path, '/api/auth/register');
+      expect(api.calls.first.body,
+          {'email': 'learner@example.test', 'password': 'password'});
       expect(find.text('Home ready'), findsOneWidget);
-      expect(store.values['consent_v1'], optedIn ? 'yes' : 'no');
-      expect(sink.consents.last, optedIn);
-      expect(sink.count('sign_up'), optedIn ? 1 : 0);
-      if (optedIn) {
-        expect(sink.trace,
-            containsAllInOrder(['consent:true', 'sign_up:yes:true']));
-        expect(sink.events.single.parameters, {'method': 'password'});
-      }
-      final restarted =
-          ConsentAnalyticsService(store: store, sink: FakeAnalyticsSink());
-      await restarted.initialize();
-      expect(restarted.consent, optedIn);
-      restarted.dispose();
+      expect(analytics.consent, isFalse);
     });
   }
 
   testWidgets(
-      'registration waits for consent persistence and ignores duplicate submit callbacks',
+      'registration ignores duplicate submit callbacks while authentication is pending',
       (tester) async {
-    final store = _PendingStore();
-    final sink = FakeAnalyticsSink();
-    final analytics = ConsentAnalyticsService(store: store, sink: sink);
-    await analytics.initialize();
-    addTearDown(analytics.dispose);
-    auth = AuthService(
-        apiClient: api, storage: TrackingStorage(), analytics: analytics);
+    final pendingApi = _PendingRegistrationApi();
+    auth = AuthService(apiClient: pendingApi, storage: TrackingStorage());
     await tester.pumpWidget(_app(auth, launcher));
     await tester.pumpAndSettle();
     await _registerMode(tester);
     await _fill(tester);
-    await _accept(tester);
     final callback = _submit(tester).onPressed!;
     callback();
     callback();
     await tester.pump();
-    expect(api.calls, isEmpty);
-    expect(sink.events, isEmpty);
     expect(_submit(tester).onPressed, isNull);
-    store.pending.complete();
+    pendingApi.pending.complete();
     await tester.pumpAndSettle();
     expect(
-        api.calls.where((call) => call.path == '/api/auth/register').length, 1);
-    expect(sink.count('sign_up'), 1);
-  });
-
-  testWidgets('failed consent storage cannot block registration or send events',
-      (tester) async {
-    final store = MemoryAnalyticsStore();
-    final sink = FakeAnalyticsSink();
-    final analytics = ConsentAnalyticsService(store: store, sink: sink);
-    await analytics.initialize();
-    await analytics.chooseConsent(true);
-    store.fail = true;
-    addTearDown(analytics.dispose);
-    auth = AuthService(
-        apiClient: api, storage: TrackingStorage(), analytics: analytics);
-    await tester.pumpWidget(_app(auth, launcher));
-    await tester.pumpAndSettle();
-    await _registerMode(tester);
-    await _fill(tester);
-    await _accept(tester);
-    await _tap(tester, find.byType(FilledButton));
+        pendingApi.calls
+            .where((call) => call.path == '/api/auth/register')
+            .length,
+        1);
     expect(find.text('Home ready'), findsOneWidget);
-    expect(analytics.consent, isFalse);
-    expect(sink.consents.last, isFalse);
-    expect(sink.events, isEmpty);
-  });
-
-  testWidgets('unchecked registration overrides a previous installation grant',
-      (tester) async {
-    final store = MemoryAnalyticsStore();
-    final sink = FakeAnalyticsSink();
-    final analytics = ConsentAnalyticsService(store: store, sink: sink);
-    await analytics.initialize();
-    await analytics.chooseConsent(true);
-    addTearDown(analytics.dispose);
-    auth = AuthService(
-        apiClient: api, storage: TrackingStorage(), analytics: analytics);
-    await tester.pumpWidget(_app(auth, launcher));
-    await tester.pumpAndSettle();
-    await _registerMode(tester);
-    expect(_accepted(tester), isFalse);
-    await _fill(tester);
-    await _tap(tester, find.byType(FilledButton));
-    expect(find.text('Home ready'), findsOneWidget);
-    expect(store.values['consent_v1'], 'no');
-    expect(sink.events, isEmpty);
   });
 
   testWidgets(
-      'failed registration emits no conversion and keeps the optional choice editable',
+      'failed registration remains retryable without analytics controls',
       (tester) async {
-    final sink = FakeAnalyticsSink();
-    final real =
-        ConsentAnalyticsService(store: MemoryAnalyticsStore(), sink: sink);
-    await real.initialize();
-    addTearDown(real.dispose);
     api.loginStatus = 400;
-    auth = AuthService(
-        apiClient: api, storage: TrackingStorage(), analytics: real);
     await tester.pumpWidget(_app(auth, launcher));
     await tester.pumpAndSettle();
     await _registerMode(tester);
     await _fill(tester);
-    await _accept(tester);
     await _tap(tester, find.byType(FilledButton));
-    expect(sink.events, isEmpty);
+    expect(find.text('Home ready'), findsNothing);
     expect(_submit(tester).onPressed, isNotNull);
-    expect(_accepted(tester), isTrue);
-    await _accept(tester);
-    expect(_accepted(tester), isFalse);
+    expect(find.byType(Checkbox), findsNothing);
+    api.loginStatus = 200;
+    await _tap(tester, find.byType(FilledButton));
+    expect(find.text('Home ready'), findsOneWidget);
   });
 
-  testWidgets(
-      'returning to Login needs no consent and registration draft resets',
+  testWidgets('switching modes leaves login independent of analytics',
       (tester) async {
     await tester.pumpWidget(_app(auth, launcher));
     await tester.pumpAndSettle();
     await _registerMode(tester);
-    await _accept(tester);
     await _registerMode(tester);
     expect(find.byType(Checkbox), findsNothing);
-    expect(_submit(tester).onPressed, isNotNull);
-    await _registerMode(tester);
-    expect(_accepted(tester), isFalse);
-    await _registerMode(tester);
+    expect(find.byKey(const Key('registration-legal-sentence')), findsNothing);
     await _fill(tester);
     await _tap(tester, find.byType(FilledButton));
     expect(api.calls.first.path, '/api/auth/login');
@@ -355,51 +256,17 @@ void main() {
     expect(find.byType(Checkbox), findsNothing);
   });
 
-  testWidgets('Terms and Privacy links below Register do not toggle or submit',
+  testWidgets('Terms and Privacy links below Register open without submitting',
       (tester) async {
     await tester.pumpWidget(_app(auth, launcher));
     await tester.pumpAndSettle();
     await _registerMode(tester);
     await _tapLink(tester, 'Terms of Service');
-    expect(launcher.opened, [LegalDocuments.terms]);
     await _tapLink(tester, 'Privacy Policy');
     expect(launcher.opened, [LegalDocuments.terms, LegalDocuments.privacy]);
-    expect(_accepted(tester), isFalse);
     expect(_submit(tester).onPressed, isNotNull);
     expect(api.calls, isEmpty);
   });
-
-  for (final optedIn in [false, true]) {
-    testWidgets('analytics privacy link preserves consent $optedIn',
-        (tester) async {
-      final store = MemoryAnalyticsStore();
-      final sink = FakeAnalyticsSink();
-      final analytics = ConsentAnalyticsService(store: store, sink: sink);
-      await analytics.initialize();
-      addTearDown(analytics.dispose);
-      auth = AuthService(
-          apiClient: api, storage: TrackingStorage(), analytics: analytics);
-      await tester.pumpWidget(_app(auth, launcher));
-      await tester.pumpAndSettle();
-      await _registerMode(tester);
-      if (optedIn) await _accept(tester);
-      final storedConsent = store.values['consent_v1'];
-      final consentCalls = List<bool>.of(sink.consents);
-      await _tap(tester,
-          find.byKey(const Key('registration-analytics-privacy-link')));
-      expect(launcher.opened,
-          [Uri.parse('https://languagevoicetutor.com/privacy.html')]);
-      expect(_accepted(tester), optedIn);
-      expect(find.byType(Checkbox), findsOneWidget);
-      expect(analytics.consent, isNull);
-      expect(store.values['consent_v1'], storedConsent);
-      expect(sink.consents, consentCalls);
-      expect(sink.events, isEmpty);
-      expect(api.calls, isEmpty);
-      expect(find.byKey(const Key('registration-legal-sentence')), findsOneWidget);
-      expect(_submit(tester).onPressed, isNotNull);
-    });
-  }
 
   testWidgets('unavailable browser reports localized error', (tester) async {
     launcher.available = false;
@@ -409,16 +276,13 @@ void main() {
     await _tapLink(tester, 'Terms of Service');
     expect(find.text('Could not open the document. Please try again.'),
         findsOneWidget);
-    expect(_accepted(tester), isFalse);
     expect(api.calls, isEmpty);
   });
 
   testWidgets(
-      'real application root shows exactly one checkbox and no global panel or modal',
+      'application root has no analytics checkbox, global panel or modal',
       (tester) async {
-    final analytics = ConsentAnalyticsService(
-        store: MemoryAnalyticsStore(), sink: FakeAnalyticsSink());
-    await analytics.initialize();
+    final analytics = NoopAnalyticsService();
     addTearDown(analytics.dispose);
     auth = _SignedOutAuth(api: api, analytics: analytics);
     await tester.pumpWidget(LanguageVoiceTutorApp(
@@ -426,15 +290,12 @@ void main() {
         premiumPurchaseAdapter: const UnavailablePremiumPurchaseAdapter()));
     await tester.pumpAndSettle();
     expect(find.byType(LoginScreen), findsOneWidget);
-    expect(find.text('Optional analytics'), findsNothing);
-    expect(find.byType(SwitchListTile), findsNothing);
     await _registerMode(tester);
-    expect(find.byType(Checkbox), findsOneWidget);
-    expect(find.byType(CheckboxListTile), findsNothing);
+    expect(find.byType(Checkbox), findsNothing);
+    expect(find.byType(SwitchListTile), findsNothing);
     expect(find.byType(Dialog), findsNothing);
     expect(find.byType(BottomSheet), findsNothing);
     expect(find.byType(Card), findsNothing);
-    expect(analytics.consent, isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -482,7 +343,8 @@ void main() {
     }
   });
   for (final locale in AppLocalizations.supportedLocales) {
-    testWidgets('localized consent renders with inline links for $locale',
+    testWidgets(
+        'localized legal notice renders with working inline links for $locale',
         (tester) async {
       await tester.pumpWidget(_app(auth, launcher, locale: locale));
       await tester.pumpAndSettle();
@@ -497,22 +359,21 @@ void main() {
           sentence,
           text.registrationLegalNotice(
               text.termsOfService, text.privacyPolicy));
-      final privacyLink = find.byKey(const Key('registration-analytics-privacy-link'));
-      expect(find.descendant(of: privacyLink, matching: find.text(text.privacyPolicy)),
-          findsOneWidget);
-      await _tap(tester, privacyLink);
+      expect(find.byKey(const Key('registration-analytics-privacy-link')),
+          findsNothing);
+      await _tapLink(tester, text.privacyPolicy);
       expect(launcher.opened, [LegalDocuments.privacy]);
-      expect(_accepted(tester), isFalse);
+      expect(find.byType(Checkbox), findsNothing);
       if (locale.languageCode == 'sr') {
         expect(RegExp(r'[Ѐ-ӿ]').hasMatch(text.privacyPolicy), isFalse);
       }
-      expect(find.text(text.registrationAnalyticsConsent), findsOneWidget);
-      expect(tester.widget<Checkbox>(find.byType(Checkbox)).semanticLabel,
-          text.registrationAnalyticsConsent);
+      expect(find.text(text.registrationAnalyticsConsent), findsNothing);
+      await _tapLink(tester, text.termsOfService);
+      expect(launcher.opened, [LegalDocuments.privacy, LegalDocuments.terms]);
       expect(tester.takeException(), isNull);
     });
   }
-  testWidgets('Russian registration uses the approved short checkbox copy',
+  testWidgets('Russian registration hides the retained analytics translation',
       (tester) async {
     await tester.pumpWidget(_app(auth, launcher, locale: const Locale('ru')));
     await tester.pumpAndSettle();
@@ -520,8 +381,8 @@ void main() {
     expect(
         find.text(
             'Я согласен на передачу статистических данных об использовании приложения для его улучшения.'),
-        findsOneWidget);
-    expect(_accepted(tester), isFalse);
+        findsNothing);
+    expect(find.byType(Checkbox), findsNothing);
     expect(_submit(tester).onPressed, isNotNull);
   });
   for (final locale in [
@@ -543,13 +404,7 @@ void main() {
       await tester.pumpWidget(_app(auth, launcher, locale: locale, scale: 2.5));
       await tester.pumpAndSettle();
       await _registerMode(tester);
-      await tester.ensureVisible(
-          find.byKey(const Key('registration-analytics-checkbox')));
-      await tester.pumpAndSettle();
-      expect(tester.getSize(find.byType(Checkbox)).width,
-          greaterThanOrEqualTo(48));
-      await _accept(tester);
-      expect(_accepted(tester), isTrue);
+      expect(find.byType(Checkbox), findsNothing);
       await tester.ensureVisible(find.byType(FilledButton));
       await tester.pumpAndSettle();
       expect(_submit(tester).onPressed, isNotNull);
@@ -559,24 +414,13 @@ void main() {
     });
   }
   testWidgets(
-      'checkbox has an accessible name and document spans expose separate links',
+      'document spans expose separate accessible links without a checkbox',
       (tester) async {
     final handle = tester.ensureSemantics();
     await tester.pumpWidget(_app(auth, launcher));
     await tester.pumpAndSettle();
     await _registerMode(tester);
-    expect(
-        tester.getSemantics(find.byType(Checkbox)),
-        matchesSemantics(
-            label:
-                'I agree to share app usage statistics to help improve the app.',
-            hasCheckedState: true,
-            isChecked: false,
-            hasEnabledState: true,
-            isEnabled: true,
-            isFocusable: true,
-            hasTapAction: true,
-            hasFocusAction: true));
+    expect(find.byType(Checkbox), findsNothing);
     final links = <SemanticsNode>[];
     void collectLinks(SemanticsNode node) {
       if (node.getSemanticsData().flagsCollection.isLink) links.add(node);

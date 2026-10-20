@@ -6,6 +6,16 @@ As of 2026-10-19, `main` release source is `b66c0efccd1fbceb1bde9f70f4ad529de30d
 
 The latest owner-confirmed Google Play Console state is **uploaded to Production and submitted for review**. Managed publishing is disabled, so approved changes can publish automatically. Approval, public availability, publication time, and a Play-installed v14 smoke are not confirmed by the supplied evidence. The 2026-10-05 v13 Production record in the [README](../README.md) remains historical; it does not establish v14 publication.
 
+## 2026-10-20 follow-up: analytics disabled in the next Android build
+
+This source change is not published. The next Android build removes optional analytics controls from registration and App Settings and selects the existing `NoopAnalyticsService` at startup. Registration retains its Terms/Privacy legal notice and no longer reads or writes analytics consent. Operational device registration and Last App Active tracking remain independent and unchanged.
+
+The application manifest adds `firebase_analytics_collection_deactivated=true`, the [documented Firebase version-level deactivation setting](https://firebase.google.com/docs/analytics/android/configure-data-collection#permanently_deactivate_collection), so prior native collection grants cannot enable Analytics in this build. Existing denied defaults and advertising restrictions remain. Firebase dependencies, configuration, implementations, reusable consent widget, event definitions, translations and persisted consent records are retained.
+
+Future reactivation requires a separately approved consent-management decision; it must not silently reuse old consent while controls are hidden. The implementation, UI descriptions, QA steps and release evidence below describe the historical v14 behavior and do not establish publication of this follow-up. App version/versionCode remain unchanged.
+
+Verification on 2026-10-20: 204 focused Flutter tests passed (registration/legal links, Settings, retained consent/service behavior, disabled runtime and device activity), `flutter analyze --no-pub` reported no issues, and `flutter build apk --debug --no-pub` succeeded. The generated debug manifest and APK binary manifest both contain native deactivation; all seven existing denied defaults remain false and advertising permissions remain absent. Package/versionCode are unchanged. No physical-device upgrade or network-capture verification was performed; no commit, push or publication occurred.
+
 ## Firebase configuration — implemented
 
 Firebase project: `orralen-lvt-production`; Android package: `com.languagevoicetutor.mobile`; Analytics account: Orralen; GA4 property ID: **543566893**; Android data stream ID: **16152315974**. Property/stream console facts are supplied by the owner and were not independently queried in this documentation update.
