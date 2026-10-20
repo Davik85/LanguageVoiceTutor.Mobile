@@ -1,22 +1,44 @@
-# Android v14: analytics, consent and account device activity
+# Android v14 analytics history and Android v15 deactivation follow-up
 
-Current checkpoint: 2026-10-19. The original 2026-10-18 preparation used base `07f7b82ffd2c1aa465780cb9483674b074e40d68` at `0.1.0+13`; it remains historical implementation evidence. The verified release source/state follows.
+## Current Android v15 follow-up (2026-10-20)
 
-As of 2026-10-19, `main` release source is `b66c0efccd1fbceb1bde9f70f4ad529de30df2bd`, with `0.1.0+14` / versionCode **14**, package `com.languagevoicetutor.mobile`, and target SDK **36**. The supplied release verification records the v14 AAB build and signing-certificate verification, **897 passing Flutter tests**, and clean `flutter analyze`. These are recorded release results, not commands rerun for this documentation update.
+V15 removes the optional analytics checkbox, explanation, separate analytics Privacy Policy link and analytics-specific errors from Registration, while retaining the normal Terms of Service and Privacy Policy links. App Settings no longer shows the analytics switch/card. Startup uses `NoopAnalyticsService` and the Android manifest sets `firebase_analytics_collection_deactivated=true`; previously persisted consent cannot activate native collection in v15. Firebase implementation, dependencies, event definitions, translations, reusable components and persisted consent records remain available for a separately approved future reactivation, which must not silently reuse old consent while controls are hidden.
 
-The latest owner-confirmed Google Play Console state is **uploaded to Production and submitted for review**. Managed publishing is disabled, so approved changes can publish automatically. Approval, public availability, publication time, and a Play-installed v14 smoke are not confirmed by the supplied evidence. The 2026-10-05 v13 Production record in the [README](../README.md) remains historical; it does not establish v14 publication.
+Operational backend-owned device registration and Last App Active tracking remain independent and unchanged. Authentication, subscriptions, Google Play Billing, lessons and audio contracts did not change. Analytics deactivation does not stop authenticated operational user/device data collection.
 
-## 2026-10-20 follow-up: analytics disabled in the next Android build
+Release source: `31fca12b970c76c9860229e9fa7dc93f8b58c2a6` on `main`, pushed to `origin/main`; Android `0.1.0+15` / versionCode **15**, package `com.languagevoicetutor.mobile`, target SDK **36**. Supplied verification records the full **902 passing Flutter tests**, clean `flutter analyze`, successful release APK and AAB builds, and AAB signature verification with `jarsigner`. AAB SHA-256: `87765773EB715301CC83130138CE0B0F8D00F4B5B95BBA6E6E7B20B1FAFCD8C0`; upload certificate SHA-256: `36405DB45647B23C68EE2DAB122170CADE06113828D99D02AB625433E2F50BF7`. These release checks are recorded evidence and were not rerun in this documentation-only task.
 
-This source change is not published. The next Android build removes optional analytics controls from registration and App Settings and selects the existing `NoopAnalyticsService` at startup. Registration retains its Terms/Privacy legal notice and no longer reads or writes analytics consent. Operational device registration and Last App Active tracking remain independent and unchanged.
+Google Play Production v15 was submitted for review with managed publishing disabled. The owner subsequently reported v15 available through Google Play on **2026-10-20**. No exact approval timestamp, 100% rollout percentage or automatic-update evidence is supplied. A physical Play-installed v15 upgrade/smoke and network capture were not independently verified in this task.
+
+The owner has **not changed the Google Play Data safety declaration for v15**. The v14 declaration and GA4/Ads history below are preserved as dated evidence, not evidence of active v15 Analytics collection or attribution. No Play, Firebase, Ads or Data safety setting was changed by this documentation update.
+
+## Separate open backend speech investigations
+
+Production backend remains owner-reported as `0.1.35-backend.169`, shared by Android and Windows Desktop. Backend `.170` was rolled back and is not an accepted correction. No live backend or infrastructure check was performed in this documentation-only task.
+
+Both server-side speech investigations remain **OPEN**: (A) missing words inside completed WAV files, with confirmed silent PCM regions; (B) cold OpenAI connection/session startup after inactivity, sometimes causing delays or HTTP 504. These are owner-supplied investigation findings; no specific Android version, device playback or audio cache is established as the cause. Android v15 fixes neither issue. The shared overall backend speech timeout remains **20 seconds**. A periodic 30-minute OpenAI warm-up was proposed but was not approved or deployed; investigation and any backend change remain separate from the Mobile release.
+
+## Historical v14 release checkpoint (2026-10-19)
+
+Historical checkpoint: 2026-10-19. The original 2026-10-18 preparation used base `07f7b82ffd2c1aa465780cb9483674b074e40d68` at `0.1.0+13`; it remains historical implementation evidence. The verified release source/state follows.
+
+At the 2026-10-19 checkpoint, `main` release source was `b66c0efccd1fbceb1bde9f70f4ad529de30df2bd`, with `0.1.0+14` / versionCode **14**, package `com.languagevoicetutor.mobile`, and target SDK **36**. The supplied release verification records the v14 AAB build and signing-certificate verification, **897 passing Flutter tests**, and clean `flutter analyze`. These are recorded release results, not commands rerun for this documentation update.
+
+At that v14 checkpoint, the owner-confirmed Google Play Console state was **uploaded to Production and submitted for review**. Managed publishing is disabled, so approved changes can publish automatically. Approval, public availability, publication time, and a Play-installed v14 smoke are not confirmed by the supplied evidence. The 2026-10-05 v13 Production record in the [README](../README.md) remains historical; it does not establish v14 publication.
+
+## Historical 2026-10-20 deactivation preparation (before the v15 release)
+
+At this preparation checkpoint, the source change was not published. The planned next Android build removed optional analytics controls from registration and App Settings and selected the existing `NoopAnalyticsService` at startup. Registration retains its Terms/Privacy legal notice and no longer reads or writes analytics consent. Operational device registration and Last App Active tracking remain independent and unchanged.
 
 The application manifest adds `firebase_analytics_collection_deactivated=true`, the [documented Firebase version-level deactivation setting](https://firebase.google.com/docs/analytics/android/configure-data-collection#permanently_deactivate_collection), so prior native collection grants cannot enable Analytics in this build. Existing denied defaults and advertising restrictions remain. Firebase dependencies, configuration, implementations, reusable consent widget, event definitions, translations and persisted consent records are retained.
 
-Future reactivation requires a separately approved consent-management decision; it must not silently reuse old consent while controls are hidden. The implementation, UI descriptions, QA steps and release evidence below describe the historical v14 behavior and do not establish publication of this follow-up. App version/versionCode remain unchanged.
+Future reactivation requires a separately approved consent-management decision; it must not silently reuse old consent while controls are hidden. The implementation, UI descriptions, QA steps and release evidence below describe the historical v14 behavior and do not establish publication of this follow-up. At this preparation checkpoint, app version/versionCode remained `0.1.0+14` / 14; the subsequent v15 release is recorded above.
 
-Verification on 2026-10-20: 204 focused Flutter tests passed (registration/legal links, Settings, retained consent/service behavior, disabled runtime and device activity), `flutter analyze --no-pub` reported no issues, and `flutter build apk --debug --no-pub` succeeded. The generated debug manifest and APK binary manifest both contain native deactivation; all seven existing denied defaults remain false and advertising permissions remain absent. Package/versionCode are unchanged. No physical-device upgrade or network-capture verification was performed; no commit, push or publication occurred.
+Historical deactivation-preparation verification on 2026-10-20: **204 focused Flutter tests passed** (registration/legal links, Settings, retained consent/service behavior, disabled runtime and device activity), `flutter analyze --no-pub` reported no issues, and `flutter build apk --debug --no-pub` succeeded. The generated debug manifest and APK binary manifest both contain native deactivation; all seven existing denied defaults remain false and advertising permissions remain absent. Package/versionCode are unchanged. No physical-device upgrade or network-capture verification was performed; no commit, push or publication occurred.
 
-## Firebase configuration — implemented
+## Retained Firebase configuration and historical v14 implementation
+
+The event contracts, consent behavior and analytics validation procedures below describe the historical v14 opt-in implementation. They are inactive in v15 and must not be used as current v15 instructions to enable collection; operational device activity remains current and independent.
 
 Firebase project: `orralen-lvt-production`; Android package: `com.languagevoicetutor.mobile`; Analytics account: Orralen; GA4 property ID: **543566893**; Android data stream ID: **16152315974**. Property/stream console facts are supplied by the owner and were not independently queried in this documentation update.
 
@@ -61,7 +83,7 @@ Events are not queued for later consent, initialization or network recovery. Ded
 
 There is **no cross-device exactly-once guarantee**. Two devices can both observe empty history; one can create and finish a lesson before the other's delayed creation succeeds. Local state cannot prevent both from emitting. Concurrent active starts are rejected by the current backend, but this does not close the completed-between-check-and-start race. Backend history deletion/reset and the check/create crash window are further limits. A future authoritative backend conversion marker/transaction would require separately approved backend work.
 
-## Consent behavior
+## Historical v14 consent behavior (not current v15 instructions)
 
 The Android manifest disables collection and defaults analytics storage, advertising storage, advertising user data and advertising personalization to denied **before native SDK startup**. Advertising-ID collection is disabled; merged advertising-ID and AdServices permissions are explicitly removed. Automatic screen reporting is disabled. Android backup/transfer rules also exclude Analytics preferences/local queue and the secure-store preference file, so a restored native collection grant does not precede a new local choice.
 
@@ -71,7 +93,7 @@ Settings → App has one “Usage statistics” switch with the description “S
 
 On allowance, Firebase `setConsent` grants **only** analytics storage, with ad storage/user data/personalization explicitly denied; collection is then enabled. Withdrawal immediately closes the manual-event gate, disables SDK collection, denies all four consent types and resets local Analytics data. This reset is not a server-side erasure request for previously received events. No analytics-consent choice suppresses operational device activity.
 
-The shipped client grants only analytics storage on optional opt-in; advertising storage, advertising user data and personalization remain denied worldwide. The owner-reported GA4/Ads conversion configuration below does not change those SDK flags, establish advertising consent, or prove successful attribution. This documentation records the existing implementation and supplied console state; it is not a legal compliance certification.
+The historical v14 client granted only analytics storage on optional opt-in; advertising storage, advertising user data and personalization remain denied worldwide. The owner-reported GA4/Ads conversion configuration below does not change those SDK flags, establish advertising consent, or prove successful attribution. This documentation records the existing implementation and supplied console state; it is not a legal compliance certification.
 
 ## Operational Android device and activity contract
 
@@ -111,11 +133,11 @@ The owner also confirmed that an Android advertising campaign was created and la
 
 The existing public Privacy Policy link is `https://languagevoicetutor.com/privacy.html`. The 2026-10-18 local backend-policy draft review is historical and does not establish current live policy wording. Final live policy wording, retention/minors decisions and server-side deletion handling are not newly verified here; no legal approval or policy publication is inferred from the completed Data safety update. Withdrawal/reset does not erase previously received server-side events. No website, Play, Firebase or Ads setting was changed during this documentation update.
 
-## DebugView validation and remaining manual checks
+## Historical v14 DebugView validation and manual checks
 
 Owner-supplied device observations verified **`lesson_start`** and **`lesson_complete`** in Firebase DebugView. Other manual events remain source/test-backed; they are not all independently verified in production analytics reports. Automatic Firebase events and advertising attribution require their own evidence. The following is a validation procedure, not a claim that every step has passed.
 
-### DebugView procedure
+### Historical v14 DebugView procedure (not applicable to deactivated v15)
 
 Use a physical Google Play-capable Android device and the correctly configured debug client. Do not mark conversions/import events or change console links as part of validation. Follow [Firebase DebugView](https://firebase.google.com/docs/analytics/debugview) and [app consent guidance](https://developers.google.com/tag-platform/security/guides/app-consent?consentmode=basic&platform=android).
 
@@ -147,7 +169,7 @@ Use a physical Google Play-capable Android device and the correctly configured d
 
 Debug-mode events are development validation, not evidence that a Google Ads conversion is configured or that normal production reporting is complete.
 
-## Physical Android QA and release gate
+## Historical v14 physical Android QA and release gate
 
 - Login, signup, access-token refresh, startup session recovery, cross-device Restore Credentials, account switch, explicit logout and deletion request retain their existing behavior.
 - Operational device row has platform Android, generic label + stable UUID, installed app version/build and server LastSeenAt. Relaunch reuses the row; two same-model devices and a restored device do not merge. Verify no record churn or sensitive device identifiers.
@@ -157,7 +179,7 @@ Debug-mode events are development validation, not evidence that a Google Ads con
 - Firebase native-resource configuration, v14 release build/signing and the Data safety update are completed checkpoints. Confirm Play approval/publication later and record a v14 Play-installed smoke only after actual store installation; broader DebugView, device-transfer and billing lifecycle checks require separate evidence.
 - V14 packaging/signing and upload/submission are recorded completed actions. Any future artifact, console mutation, deployment or publication action needs its own authorization; this documentation update performs none.
 
-## Automated verification
+## Historical implementation and v14 automated verification
 
 Focused Dart tests cover consent, initialization/startup failure, exact success triggers, authoritative/ambiguous history, persistent local deduplication, payload allowlists, startup and cross-device session restoration, activity lifecycle/throttling/concurrency, installed package metadata, wrong/stale account responses, Premium rebuild behavior and the absence of manual purchase events. Native JVM tests cover actual file-backed identity reuse, distinct same-model installations, length/fallback and corrupt persistence.
 
