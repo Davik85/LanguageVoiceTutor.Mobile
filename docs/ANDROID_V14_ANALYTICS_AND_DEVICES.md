@@ -14,7 +14,9 @@ The owner has **not changed the Google Play Data safety declaration for v15**. T
 
 ## Separate open backend speech investigations
 
-Production backend remains owner-reported as `0.1.35-backend.169`, shared by Android and Windows Desktop. Backend `.170` was rolled back and is not an accepted correction. No live backend or infrastructure check was performed in this documentation-only task.
+As of **2026-10-22**, owner-reported production backend is `0.1.35-backend.171`, shared by Android and Windows Desktop, with `0.1.35-backend.169` as rollback. Production release source: `0238380e735035156fe696f2a4cc1a00462bf0ef`. Backend `.170` was unsuccessful and rolled back; it is not an accepted speech fix.
+
+User Analytics and the Admin MP4 background are deployed; lesson cleanup remains enabled. The **2026-11-08 Google Play renewal monitoring checkpoint remains OPEN**; billing lifecycle checks are not complete. No live backend or infrastructure check was performed in this documentation-only task.
 
 Both server-side speech investigations remain **OPEN**: (A) missing words inside completed WAV files, with confirmed silent PCM regions; (B) cold OpenAI connection/session startup after inactivity, sometimes causing delays or HTTP 504. These are owner-supplied investigation findings; no specific Android version, device playback or audio cache is established as the cause. Android v15 fixes neither issue. The shared overall backend speech timeout remains **20 seconds**. A periodic 30-minute OpenAI warm-up was proposed but was not approved or deployed; investigation and any backend change remain separate from the Mobile release.
 
